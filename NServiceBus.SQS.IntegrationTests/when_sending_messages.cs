@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using NUnit.Framework;
+using Newtonsoft.Json;
 
 namespace NServiceBus.SQS.IntegrationTests
 {
@@ -15,14 +16,19 @@ namespace NServiceBus.SQS.IntegrationTests
             _context = new SqsTestContext();
         }
 
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            _context.Dispose();
+        }
+
         [Test]
         public void body_should_transmit_correctly()
         {
             var transportMessage = new TransportMessage();
             transportMessage.Body = Encoding.Default.GetBytes("This is a test");
 
-            var received = _context.SendAndReceiveMessage(transportMessage,
-                new Unicast.SendOptions(new Address(SqsTestContext.QueueName, SqsTestContext.MachineName)));
+            var received = _context.SendAndReceiveMessage(transportMessage);
 
             Assert.AreEqual("This is a test", Encoding.Default.GetString( received.Body, 0, received.Body.Length));
 
@@ -32,8 +38,7 @@ namespace NServiceBus.SQS.IntegrationTests
         {
             var transportMessage = new TransportMessage();
 
-            var received = _context.SendAndReceiveMessage(transportMessage,
-                new Unicast.SendOptions(new Address(SqsTestContext.QueueName, SqsTestContext.MachineName)));
+            var received = _context.SendAndReceiveMessage(transportMessage);
 
             Assert.AreEqual(transportMessage.Id, received.Id);
         }
@@ -47,8 +52,7 @@ namespace NServiceBus.SQS.IntegrationTests
 
             transportMessage.Headers[NServiceBus.Headers.ReplyToAddress] = address.ToSqsQueueName();
           
-            var received = _context.SendAndReceiveMessage(transportMessage,
-                new Unicast.SendOptions(new Address(SqsTestContext.QueueName, SqsTestContext.MachineName)));
+            var received = _context.SendAndReceiveMessage(transportMessage);
 
             Assert.AreEqual(transportMessage.ReplyToAddress, received.ReplyToAddress);
         }
@@ -61,8 +65,7 @@ namespace NServiceBus.SQS.IntegrationTests
             transportMessage.Headers["h1"] = "v1";
             transportMessage.Headers["h2"] = "v2";
 
-            var received = _context.SendAndReceiveMessage(transportMessage,
-                new Unicast.SendOptions(new Address(SqsTestContext.QueueName, SqsTestContext.MachineName)));
+            var received = _context.SendAndReceiveMessage(transportMessage);
 
             Assert.AreEqual(transportMessage.Headers["h1"], received.Headers["h1"]);
             Assert.AreEqual(transportMessage.Headers["h2"], received.Headers["h2"]);
@@ -77,10 +80,17 @@ namespace NServiceBus.SQS.IntegrationTests
             var transportMessage = new TransportMessage();
             transportMessage.TimeToBeReceived = timeToBeReceived;
 
-            var received = _context.SendAndReceiveMessage(transportMessage,
-                new Unicast.SendOptions(new Address(SqsTestContext.QueueName, SqsTestContext.MachineName)));
+            var received = _context.SendAndReceiveMessage(transportMessage);
 
             Assert.AreEqual(received.TimeToBeReceived, transportMessage.TimeToBeReceived);
+        }
+
+        [Test]
+        public void malformed_message_is_handled_gracefully()
+        {
+            Assert.Throws<JsonReaderException>(() =>
+                _context.SendRawAndReceiveMessage("this is not valid json and so cant be deserialized by the receiver.")
+            );
         }
 	}
 }
