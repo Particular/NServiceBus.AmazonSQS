@@ -5,7 +5,7 @@ namespace NServiceBus.SQS
 {
     internal static class SqsClientFactory
     {
-        public static AmazonSQSClient CreateClient(SqsConnectionConfiguration connectionConfiguration)
+        public static IAmazonSQS CreateClient(SqsConnectionConfiguration connectionConfiguration)
         {
             return new AmazonSQSClient(new EnvironmentVariablesAWSCredentials(), connectionConfiguration.Region);
         }

@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 
 namespace NServiceBus.SQS
 {
-    internal class SqsConnectionStringParser
+    internal static class SqsConnectionStringParser
     {
-        public SqsConnectionConfiguration Parse(string connectionString)
+        public static SqsConnectionConfiguration Parse(string connectionString)
         {
             var connectionConfiguration = new SqsConnectionConfiguration();
 

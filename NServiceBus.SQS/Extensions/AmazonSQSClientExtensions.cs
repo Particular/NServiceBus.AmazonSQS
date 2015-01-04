@@ -9,7 +9,7 @@ namespace NServiceBus.SQS
 {
     internal static class AmazonSQSClientExtensions
     {
-        public static void SendTransportMessage(this AmazonSQSClient sqs, TransportMessage message, SendOptions sendOptions)
+        public static void SendTransportMessage(this IAmazonSQS sqs, TransportMessage message, SendOptions sendOptions)
         {
             var getQueueUrlRequest = new GetQueueUrlRequest(sendOptions.Destination.ToSqsQueueName());
             var getQueueUrlResponse = sqs.GetQueueUrl(getQueueUrlRequest);
@@ -20,7 +20,7 @@ namespace NServiceBus.SQS
             sqs.SendMessage(sendMessageRequest);
         }
 
-        public static Message DequeueMessage(this AmazonSQSClient sqs, string queueUrl)
+        public static Message DequeueMessage(this IAmazonSQS sqs, string queueUrl)
         {
             var receiveMessageRequest = new ReceiveMessageRequest
             {

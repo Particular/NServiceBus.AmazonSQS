@@ -1,4 +1,7 @@
 ﻿using Amazon.SQS.Model;
+using NServiceBus.ObjectBuilder;
+using NServiceBus.Pipeline;
+using NServiceBus.Settings;
 using NServiceBus.Transports.SQS;
 using NServiceBus.Unicast;
 using System;
@@ -8,6 +11,8 @@ using System.Reactive.Subjects;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using NSubstitute;
+using NServiceBus.ObjectBuilder.Common;
 
 namespace NServiceBus.SQS.IntegrationTests
 {
@@ -31,26 +36,32 @@ namespace NServiceBus.SQS.IntegrationTests
             get { return _exceptionsThrownByReceiver; } 
         }
 
-        private Address _address;
-        private SqsDequeueStrategy _dequeue;
-        private SqsQueueSender _sender;
+        public SqsDequeueStrategy DequeueStrategy { get; private set; }
+
+        public SqsQueueSender Sender { get; private set; }
+
+        public Address Address { get; private set; }
+
         private Subject<TransportMessage> _receivedMessages;
         private Subject<Exception> _exceptionsThrownByReceiver;
-
+        
         public SqsTestContext()
         {
-            _address = new Address(QueueName, MachineName);
+            Address = new Address(QueueName, MachineName);
             ConnectionConfiguration = new SqsConnectionConfiguration { Region = Amazon.RegionEndpoint.APSoutheast2 };
 
             _receivedMessages = new Subject<TransportMessage>();
             _exceptionsThrownByReceiver = new Subject<Exception>();
 
-            _sender = new SqsQueueSender();
-            _sender.ConnectionConfiguration = ConnectionConfiguration;
+            Sender = new SqsQueueSender();
+            Sender.ConnectionConfiguration = ConnectionConfiguration;
 
-            _dequeue = new SqsDequeueStrategy();
-            _dequeue.ConnectionConfiguration = ConnectionConfiguration;
-            _dequeue.Init(_address,
+            var configure = new Configure(new SettingsHolder(), new FakeContainer(), new List<Action<IConfigureComponents>>(), new PipelineSettings(new BusConfiguration()));
+            configure.Settings.Set("Transport.PurgeOnStartup", true);
+
+            DequeueStrategy = new SqsDequeueStrategy(configure);
+            DequeueStrategy.ConnectionConfiguration = ConnectionConfiguration;
+            DequeueStrategy.Init(Address,
                 null,
                 m =>
                 {
@@ -63,18 +74,11 @@ namespace NServiceBus.SQS.IntegrationTests
                         _exceptionsThrownByReceiver.OnNext(e);
                 });
 
-            _dequeue.Start(1);
+            DequeueStrategy.Start(1);
 
-            using (var sqs = SqsClientFactory.CreateClient(ConnectionConfiguration))
+            using (var c = SqsClientFactory.CreateClient(ConnectionConfiguration))
             {
-                QueueUrl = sqs.CreateQueue(_address.ToSqsQueueName()).QueueUrl;
-
-                // SQS only allows purging a queue once every 60 seconds or so. 
-                // If you try to purge a queue twice in relatively quick succession,
-                // PurgeQueueInProgressException will be thrown. 
-                // This will happen if you are trying to run many integration test runs
-                // in a short period of time.
-                sqs.PurgeQueue(QueueUrl);
+                QueueUrl = c.GetQueueUrl(Address.ToSqsQueueName()).QueueUrl;
             }
         }
 
@@ -122,12 +126,64 @@ namespace NServiceBus.SQS.IntegrationTests
 
         public TransportMessage SendAndReceiveMessage(TransportMessage messageToSend)
         {
-            return SendAndReceiveCore(() => _sender.Send(messageToSend, new Unicast.SendOptions(new Address(SqsTestContext.QueueName, SqsTestContext.MachineName))));
+            return SendAndReceiveCore(() => Sender.Send(messageToSend, new Unicast.SendOptions(new Address(SqsTestContext.QueueName, SqsTestContext.MachineName))));
         }
 
         public void Dispose()
         {
-            _dequeue.Stop();
+            DequeueStrategy.Stop();
+        }
+    }
+
+    class FakeContainer : IContainer
+    {
+        public void Dispose()
+        {
+        }
+
+        public object Build(Type typeToBuild)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IContainer BuildChildContainer()
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerable<object> BuildAll(Type typeToBuild)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Configure(Type component, DependencyLifecycle dependencyLifecycle)
+        {
+
+        }
+
+        public void Configure<T>(Func<T> component, DependencyLifecycle dependencyLifecycle)
+        {
+
+        }
+
+        public void ConfigureProperty(Type component, string property, object value)
+        {
+
+        }
+
+        public void RegisterSingleton(Type lookupType, object instance)
+        {
+
+        }
+
+        public bool HasComponent(Type componentType)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Release(object instance)
+        {
+
         }
     }
 }

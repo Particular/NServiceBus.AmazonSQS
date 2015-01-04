@@ -49,6 +49,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configure\SqsTransport.cs" />
+    <Compile Include="Configure\SqsTransportFeature.cs" />
     <Compile Include="Extensions\AddressExtensions.cs" />
     <Compile Include="Extensions\AmazonSQSClientExtensions.cs" />
     <Compile Include="Extensions\SqsMessageExtensions.cs" />

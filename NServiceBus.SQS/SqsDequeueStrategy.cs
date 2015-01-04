@@ -20,6 +20,11 @@ namespace NServiceBus.Transports.SQS
     {
         public SqsConnectionConfiguration ConnectionConfiguration { get; set; }
 
+        public SqsDequeueStrategy(Configure configure)
+        {
+            _purgeOnStartup = configure.PurgeOnStartup();
+        }
+
         public void Init(Address address, TransactionSettings transactionSettings, Func<TransportMessage, bool> tryProcessMessage, Action<TransportMessage, Exception> endProcessMessage)
         {
             using (var sqs = SqsClientFactory.CreateClient(ConnectionConfiguration))
@@ -27,6 +32,23 @@ namespace NServiceBus.Transports.SQS
                 var getQueueUrlRequest = new GetQueueUrlRequest(address.ToSqsQueueName());
                 var getQueueUrlResponse = sqs.GetQueueUrl(getQueueUrlRequest);
                 _queueUrl = getQueueUrlResponse.QueueUrl;
+
+                if (_purgeOnStartup)
+                {
+                    // SQS only allows purging a queue once every 60 seconds or so. 
+                    // If you try to purge a queue twice in relatively quick succession,
+                    // PurgeQueueInProgressException will be thrown. 
+                    // This will happen if you are trying to start an endpoint twice or more
+                    // in that time. 
+                    try
+                    {
+                        sqs.PurgeQueue(_queueUrl);
+                    }
+                    catch (PurgeQueueInProgressException ex)
+                    {
+                        Logger.Warn("Multiple queue purges within 60 seconds are not permitted by SQS.", ex);
+                    }
+                }
             }
 
             _tryProcessMessage = tryProcessMessage;
@@ -134,5 +156,6 @@ namespace NServiceBus.Transports.SQS
         Func<TransportMessage, bool> _tryProcessMessage;
         string _queueUrl;
         int _concurrencyLevel;
+        bool _purgeOnStartup;
     }
 }

@@ -13,9 +13,7 @@ namespace NServiceBus.SQS.Tests
         [Test]
         public void valid_region_works()
         {
-            var sut = new SqsConnectionStringParser();
-
-            var result = sut.Parse("Region=ap-southeast-2;");
+            var result = SqsConnectionStringParser.Parse("Region=ap-southeast-2;");
 
             Assert.AreEqual(Amazon.RegionEndpoint.APSoutheast2, result.Region);
         }
@@ -23,9 +21,7 @@ namespace NServiceBus.SQS.Tests
         [Test]
         public void invalid_region_throws()
         {
-            var sut = new SqsConnectionStringParser();
-
-            Assert.Throws<ArgumentException>(() => sut.Parse("Region=not-a-valid-region;"));
+            Assert.Throws<ArgumentException>(() => SqsConnectionStringParser.Parse("Region=not-a-valid-region;"));
         }
     }
 }

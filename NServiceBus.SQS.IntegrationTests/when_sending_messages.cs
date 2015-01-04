@@ -2,6 +2,9 @@
 using System.Text;
 using NUnit.Framework;
 using Newtonsoft.Json;
+using System.Threading.Tasks;
+using System.Threading;
+using NServiceBus.Unicast;
 
 namespace NServiceBus.SQS.IntegrationTests
 {
@@ -92,5 +95,19 @@ namespace NServiceBus.SQS.IntegrationTests
                 _context.SendRawAndReceiveMessage("this is not valid json and so cant be deserialized by the receiver.")
             );
         }
+
+        [Test, Explicit]
+        public void should_gracefully_shutdown()
+        {
+            _context.DequeueStrategy.Stop();
+
+            Parallel.For(0, 2000, i =>
+                _context.Sender.Send(new TransportMessage(), new SendOptions(_context.Address)));
+
+            _context.DequeueStrategy.Start(50);
+            Thread.Sleep(10);
+            _context.DequeueStrategy.Stop();
+        }
+
 	}
 }
