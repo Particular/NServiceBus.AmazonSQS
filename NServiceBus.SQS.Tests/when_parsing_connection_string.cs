@@ -40,5 +40,14 @@ namespace NServiceBus.SQS.Tests
 				"Region=ap-southeast-2;S3BucketForLargeMessages=myTestBucket;"));
 		}
 
+		[Test]
+		public void parsing_max_body_age_days_works()
+		{
+			var result = SqsConnectionStringParser.Parse(
+				"Region=ap-southeast-2;S3BucketForLargeMessages=myTestBucket;S3KeyPrefix=blah\blah;S3MaxBodyAgeDays=1");
+
+			Assert.AreEqual(1, result.S3MaxBodyAgeDays);
+		}
+
     }
 }

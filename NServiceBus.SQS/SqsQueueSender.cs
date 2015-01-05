@@ -51,9 +51,7 @@ namespace NServiceBus.Transports.SQS
 				var getQueueUrlRequest = new GetQueueUrlRequest(sendOptions.Destination.ToSqsQueueName());
 				var getQueueUrlResponse = sqs.GetQueueUrl(getQueueUrlRequest);
 
-				SendMessageRequest sendMessageRequest = new SendMessageRequest(getQueueUrlResponse.QueueUrl, "");
-
-				sendMessageRequest.MessageBody = serializedMessage;
+				SendMessageRequest sendMessageRequest = new SendMessageRequest(getQueueUrlResponse.QueueUrl, serializedMessage);
 
 				sqs.SendMessage(sendMessageRequest);
             }

@@ -135,6 +135,22 @@ namespace NServiceBus.Transports.SQS
                             if (messageProcessedOk)
                             {
                                 sqs.DeleteMessage(_queueUrl, message.ReceiptHandle);
+
+								try
+								{
+									s3.DeleteObject(ConnectionConfiguration.S3BucketForLargeMessages,
+										ConnectionConfiguration.S3KeyPrefix + transportMessage.Id);
+								}
+								catch (Exception e)
+								{
+									// If deleting the message body from S3 fails, we don't 
+									// want the exception to make its way through to the _endProcessMessage below,
+									// as the message has been successfully processed and deleted from the SQS queue
+									// and effectively doesn't exist anymore. 
+									// It doesn't really matter, as S3 is configured to delete message body data
+									// automatically after a certain period of time.
+									Logger.Warn("Couldn't delete message body from S3. Message body data will be aged out at a later time.", e);
+								}
                             }
                         }
                         catch (Exception ex)

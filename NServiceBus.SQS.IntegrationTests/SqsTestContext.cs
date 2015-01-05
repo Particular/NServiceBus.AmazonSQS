@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using NServiceBus.ObjectBuilder.Common;
+using System.Configuration;
 
 namespace NServiceBus.SQS.IntegrationTests
 {
@@ -51,12 +52,8 @@ namespace NServiceBus.SQS.IntegrationTests
         public SqsTestContext()
         {
             Address = new Address(QueueName, MachineName);
-            ConnectionConfiguration = new SqsConnectionConfiguration 
-			{ 
-				Region = Amazon.RegionEndpoint.APSoutheast2,
-				S3BucketForLargeMessages = "m1nf0sdevel0pment",
-				S3KeyPrefix = "test"
-			};
+			ConnectionConfiguration = 
+				SqsConnectionStringParser.Parse(ConfigurationManager.AppSettings["TestConnectionString"]);
 
 			ClientFactory = new AwsClientFactory();
 			Creator = new SqsQueueCreator();

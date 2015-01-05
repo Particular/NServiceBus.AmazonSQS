@@ -2,6 +2,7 @@
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,7 +17,8 @@ namespace NServiceBus.SQS.IntegrationTests
         [SetUp]
         public void SetUp()
         {
-            _connectionConfiguration = new SqsConnectionConfiguration { Region = Amazon.RegionEndpoint.APSoutheast2 };
+			_connectionConfiguration =
+				SqsConnectionStringParser.Parse(ConfigurationManager.AppSettings["TestConnectionString"]);
         }
 
 		[Test]

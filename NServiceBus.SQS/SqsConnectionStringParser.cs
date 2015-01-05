@@ -49,6 +49,10 @@ namespace NServiceBus.SQS
 				{
 					connectionConfiguration.S3KeyPrefix = keyAndValue[1];
 				}
+				else if (keyAndValue[0].ToLower() == "s3maxbodyagedays")
+				{
+					connectionConfiguration.S3MaxBodyAgeDays = int.Parse(keyAndValue[1]);
+				}
             }
 
 			if (!string.IsNullOrEmpty(connectionConfiguration.S3BucketForLargeMessages) &&

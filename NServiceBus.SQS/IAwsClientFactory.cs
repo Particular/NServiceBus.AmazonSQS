@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace NServiceBus.SQS
 {
-	interface IAwsClientFactory
+	internal interface IAwsClientFactory
 	{
 		IAmazonSQS CreateSqsClient(SqsConnectionConfiguration connectionConfiguration);
 

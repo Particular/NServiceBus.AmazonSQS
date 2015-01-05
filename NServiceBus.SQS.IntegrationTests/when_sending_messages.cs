@@ -101,18 +101,18 @@ namespace NServiceBus.SQS.IntegrationTests
 		{
 			var transportMessage = new TransportMessage();
 			StringBuilder sb = new StringBuilder();
-			while (sb.Length < 256 * 1024)
+			while (sb.Length <= 256 * 1024)
 			{
-				sb.Append("This is a long string. ");
+				sb.Append("a");
 			}
-			transportMessage.Body = Encoding.Default.GetBytes( sb.ToString() );
+			transportMessage.Body = Encoding.ASCII.GetBytes( sb.ToString() );
 
 			var received = _context.SendAndReceiveMessage(transportMessage);
 
-			string receivedBodyAsString = Encoding.Default.GetString(received.Body, 0, received.Body.Length);
+			string receivedBodyAsString = Encoding.ASCII.GetString(received.Body, 0, received.Body.Length);
 
 			Assert.IsTrue(receivedBodyAsString.Length > 256 * 1024);
-			Assert.IsTrue(receivedBodyAsString.Contains("This is a long string. "));
+			Assert.IsTrue(receivedBodyAsString.Contains("a"));
 		}
 
         [Test, Explicit]
