@@ -31,7 +31,7 @@ namespace NServiceBus.Features
 
         protected override string ExampleConnectionStringForErrorMessage
         {
-            get { return "Region=ap-southeast-2;"; }
+			get { return "Region=ap-southeast-2;S3BucketForLargeMessages=myBucketName;S3KeyPrefix=my/key/prefix;"; }
         }
 
 		protected override void InternalConfigure(Configure config)
