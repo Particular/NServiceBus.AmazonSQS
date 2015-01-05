@@ -1,15 +1,10 @@
-﻿using NServiceBus.Settings;
-using NServiceBus.SQS;
-using NServiceBus.Transports;
-using NServiceBus.Transports.SQS;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace NServiceBus.Features
+﻿namespace NServiceBus.Features
 {
+	using NServiceBus.Settings;
+	using NServiceBus.SQS;
+	using NServiceBus.Transports;
+	using NServiceBus.Transports.SQS;
+
     public class SqsTransportFeature : ConfigureTransport<SqsTransport>
     {
         public override void Initialize()

@@ -1,10 +1,10 @@
-﻿using Amazon.Runtime;
-using Amazon.S3;
-using Amazon.SQS;
-using System;
-
-namespace NServiceBus.SQS
+﻿namespace NServiceBus.SQS
 {
+	using Amazon.Runtime;
+	using Amazon.S3;
+	using Amazon.SQS;
+	using System;
+
     internal class AwsClientFactory : IAwsClientFactory
     {
         public IAmazonSQS CreateSqsClient(SqsConnectionConfiguration connectionConfiguration)

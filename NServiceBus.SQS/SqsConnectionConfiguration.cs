@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace NServiceBus.SQS
+﻿namespace NServiceBus.SQS
 {
+	using Amazon;
+
     class SqsConnectionConfiguration
     {
 		public SqsConnectionConfiguration()
@@ -13,7 +9,7 @@ namespace NServiceBus.SQS
 			S3MaxBodyAgeDays = 5;
 		}
 
-        public Amazon.RegionEndpoint Region { get; set; }
+        public RegionEndpoint Region { get; set; }
 
 		public string S3BucketForLargeMessages { get; set; }
 

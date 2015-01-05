@@ -1,10 +1,10 @@
-﻿using System;
-using Amazon.SQS.Model;
-using Amazon.S3;
-using Newtonsoft.Json;
-
-namespace NServiceBus.SQS
+﻿namespace NServiceBus.SQS
 {
+	using System;
+	using Amazon.SQS.Model;
+	using Amazon.S3;
+	using Newtonsoft.Json;
+
     internal static class SqsMessageExtensions
     {
         public static TransportMessage ToTransportMessage(this Message message, IAmazonS3 amazonS3, SqsConnectionConfiguration connectionConfiguration)

@@ -1,13 +1,8 @@
-﻿using Amazon.S3;
-using Amazon.SQS;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace NServiceBus.SQS
+﻿namespace NServiceBus.SQS
 {
+	using Amazon.S3;
+	using Amazon.SQS;
+
 	internal interface IAwsClientFactory
 	{
 		IAmazonSQS CreateSqsClient(SqsConnectionConfiguration connectionConfiguration);

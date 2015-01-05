@@ -1,21 +1,16 @@
-﻿using Amazon.Runtime;
-using Amazon.SQS;
-using Amazon.SQS.Model;
-using NServiceBus.CircuitBreakers;
-using NServiceBus.Logging;
-using NServiceBus.SQS;
-using NServiceBus.Transports;
-using NServiceBus.Unicast.Transport;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace NServiceBus.Transports.SQS
+﻿namespace NServiceBus.Transports.SQS
 {
+	using Amazon.Runtime;
+	using Amazon.SQS;
+	using Amazon.SQS.Model;
+	using NServiceBus.Logging;
+	using NServiceBus.SQS;
+	using NServiceBus.Transports;
+	using NServiceBus.Unicast.Transport;
+	using System;
+	using System.Threading;
+	using System.Threading.Tasks;
+
     internal class SqsDequeueStrategy : IDequeueMessages
     {
         public SqsConnectionConfiguration ConnectionConfiguration { get; set; }

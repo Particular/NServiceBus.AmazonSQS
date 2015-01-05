@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>NServiceBus.SQS</id>
+    <version>0.1.0</version>
+    <title>NServiceBus.SQS</title>
+    <authors>Adrian.Hofman</authors>
+    <owners>EBOS Group Limited</owners>
+    <description>
+      An Amazon SQS transport implementation for NServiceBus.
+    </description>
+    <releaseNotes>
+    </releaseNotes>
+    <summary>
+    </summary>
+    <language>en-US</language>
+    <projectUrl>https://github.com/ahofman/NServiceBus.SQS</projectUrl>
+    <iconUrl>https://nuget.org/Content/Images/packageDefaultIcon-50x50.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <licenseUrl>http://opensource.org/licenses/Apache-2.0</licenseUrl>
+    <copyright>Copyright EBOS Group Limited 2015</copyright>
+    <dependencies>
+        <group targetFramework="net45">
+          <dependency id="AWSSDK" version="2.3.14.0" />
+          <dependency id="Newtonsoft.Json" version="6.0.7" />
+          <dependency id="NServiceBus" version="4.3.2" />
+          <dependency id="NServiceBus.Interfaces" version="4.3.2" />
+        </group>
+    </dependencies>
+    <references></references>
+    <tags></tags>
+  </metadata>
+  <files>
+    <file src="lib\" target="lib" />
+    <file src="tools\" target="tools" />
+    <file src="content\" target="content" />
+  </files>
+</package>

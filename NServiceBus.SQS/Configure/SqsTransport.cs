@@ -1,13 +1,7 @@
-﻿using NServiceBus.Features;
-using NServiceBus.Transports;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace NServiceBus
+﻿namespace NServiceBus
 {
+	using NServiceBus.Transports;
+
     public class SqsTransport : TransportDefinition
     {
         public SqsTransport()

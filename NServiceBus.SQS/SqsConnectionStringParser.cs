@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-
-namespace NServiceBus.SQS
+﻿namespace NServiceBus.SQS
 {
+	using System;
+	using System.Linq;
+
     internal static class SqsConnectionStringParser
     {
         public static SqsConnectionConfiguration Parse(string connectionString)

@@ -1,12 +1,10 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Amazon.SQS;
-using Amazon.SQS.Model;
-using Newtonsoft.Json;
-using NServiceBus.Unicast;
-
-namespace NServiceBus.SQS
+﻿namespace NServiceBus.SQS
 {
+	using Amazon.SQS;
+	using Amazon.SQS.Model;
+	using System.Collections.Generic;
+	using System.Linq;
+
     internal static class AmazonSQSClientExtensions
     {
         public static Message DequeueMessage(this IAmazonSQS sqs, string queueUrl)
