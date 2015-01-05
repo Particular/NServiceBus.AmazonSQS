@@ -9,5 +9,9 @@ namespace NServiceBus.SQS
     class SqsConnectionConfiguration
     {
         public Amazon.RegionEndpoint Region { get; set; }
+
+		public string S3BucketForLargeMessages { get; set; }
+
+		public string S3KeyPrefix { get; set; }
     }
 }

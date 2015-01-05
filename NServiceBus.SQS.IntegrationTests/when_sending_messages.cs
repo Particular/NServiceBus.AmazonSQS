@@ -96,6 +96,25 @@ namespace NServiceBus.SQS.IntegrationTests
             );
         }
 
+		[Test]
+		public void messages_larger_than_256k_work()
+		{
+			var transportMessage = new TransportMessage();
+			StringBuilder sb = new StringBuilder();
+			while (sb.Length < 256 * 1024)
+			{
+				sb.Append("This is a long string. ");
+			}
+			transportMessage.Body = Encoding.Default.GetBytes( sb.ToString() );
+
+			var received = _context.SendAndReceiveMessage(transportMessage);
+
+			string receivedBodyAsString = Encoding.Default.GetString(received.Body, 0, received.Body.Length);
+
+			Assert.IsTrue(receivedBodyAsString.Length > 256 * 1024);
+			Assert.IsTrue(receivedBodyAsString.Contains("This is a long string. "));
+		}
+
         [Test, Explicit]
         public void should_gracefully_shutdown()
         {

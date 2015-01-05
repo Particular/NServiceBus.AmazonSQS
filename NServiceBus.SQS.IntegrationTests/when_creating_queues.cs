@@ -25,6 +25,7 @@ namespace NServiceBus.SQS.IntegrationTests
 			var sut = new SqsQueueCreator();
 
             sut.ConnectionConfiguration = _connectionConfiguration;
+			sut.ClientFactory = new AwsClientFactory();
 
 			Assert.DoesNotThrow( () => sut.CreateQueueIfNecessary(new NServiceBus.Address ("testQueueName", "testMachineName" ), ""));
 		}

@@ -20,6 +20,8 @@ namespace NServiceBus.Transports.SQS
     {
         public SqsConnectionConfiguration ConnectionConfiguration { get; set; }
 
+		public IAwsClientFactory ClientFactory { get; set; }
+
         public SqsDequeueStrategy(Configure configure)
         {
             _purgeOnStartup = configure.PurgeOnStartup();
@@ -27,7 +29,7 @@ namespace NServiceBus.Transports.SQS
 
         public void Init(Address address, TransactionSettings transactionSettings, Func<TransportMessage, bool> tryProcessMessage, Action<TransportMessage, Exception> endProcessMessage)
         {
-            using (var sqs = SqsClientFactory.CreateClient(ConnectionConfiguration))
+			using (var sqs = ClientFactory.CreateSqsClient(ConnectionConfiguration))
             {
                 var getQueueUrlRequest = new GetQueueUrlRequest(address.ToSqsQueueName());
                 var getQueueUrlResponse = sqs.GetQueueUrl(getQueueUrlRequest);
@@ -109,12 +111,16 @@ namespace NServiceBus.Transports.SQS
 
             try
             {
-                using (var sqs = SqsClientFactory.CreateClient(ConnectionConfiguration))
+				using (var sqs = ClientFactory.CreateSqsClient(ConnectionConfiguration))
+				using (var s3 = ClientFactory.CreateS3Client(ConnectionConfiguration))
                 {
                     while (!_isStopping)
                     {
                         Exception exception = null;
                         var message = sqs.DequeueMessage(_queueUrl);
+
+						if (message == null)
+							continue;
 
                         TransportMessage transportMessage = null;
 
@@ -122,7 +128,7 @@ namespace NServiceBus.Transports.SQS
                         {
                             var messageProcessedOk = false;
 
-                            transportMessage = message.ToTransportMessage();
+                            transportMessage = message.ToTransportMessage(s3, ConnectionConfiguration);
 
                             messageProcessedOk = _tryProcessMessage(transportMessage);
 

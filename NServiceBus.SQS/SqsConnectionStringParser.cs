@@ -25,22 +25,36 @@ namespace NServiceBus.SQS
                 if (keyAndValue.Length != 2)
                     throw new ArgumentException(String.Format("Malformed connection string around value: \"{0}\"", v));
 
-                if (keyAndValue[0].ToLower() == "region")
-                {
-                    foreach (var r in Amazon.RegionEndpoint.EnumerableAllRegions)
-                    {
-                        if (keyAndValue[1].ToLower() == r.SystemName)
-                        {
-                            connectionConfiguration.Region = r;
-                            break;
-                        }
-                    }
-                }
+				if (keyAndValue[0].ToLower() == "region")
+				{
+					foreach (var r in Amazon.RegionEndpoint.EnumerableAllRegions)
+					{
+						if (keyAndValue[1].ToLower() == r.SystemName)
+						{
+							connectionConfiguration.Region = r;
+							break;
+						}
+					}
+				}
+				else if (keyAndValue[0].ToLower() == "s3bucketforlargemessages")
+				{
+					connectionConfiguration.S3BucketForLargeMessages = keyAndValue[1];
+				}
+				else if (keyAndValue[0].ToLower() == "s3keyprefix")
+				{
+					connectionConfiguration.S3KeyPrefix = keyAndValue[1];
+				}
 
                 if (connectionConfiguration.Region == null)
                 {
                     throw new ArgumentException(String.Format("Unknown region: \"{0}\"", keyAndValue[1]));
                 }
+
+				if (!string.IsNullOrEmpty(connectionConfiguration.S3BucketForLargeMessages) && 
+					string.IsNullOrEmpty(connectionConfiguration.S3KeyPrefix))
+				{
+					throw new ArgumentException("An S3 bucket for large messages was specified, but no S3 key prefix was supplied. Supply an S3 key prefix.");
+				}
             }
 
             return connectionConfiguration;

@@ -12,9 +12,11 @@ namespace NServiceBus.Transports.SQS
     {
         public SqsConnectionConfiguration ConnectionConfiguration { get; set; }
 
+		public IAwsClientFactory ClientFactory { get; set; }
+
         public void CreateQueueIfNecessary(Address address, string account)
         {
-            using (var sqs = SqsClientFactory.CreateClient(ConnectionConfiguration))
+			using (var sqs = ClientFactory.CreateSqsClient(ConnectionConfiguration))
             {
                 CreateQueueRequest sqsRequest = new CreateQueueRequest();
                 sqsRequest.QueueName = address.ToSqsQueueName();

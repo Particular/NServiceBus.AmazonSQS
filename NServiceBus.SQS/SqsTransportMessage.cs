@@ -27,5 +27,7 @@ namespace NServiceBus.SQS
         public TimeSpan TimeToBeReceived { get; set; }
 
         public string Body { get; set; }
+
+		public string S3BodyKey { get; set; }
     }
 }

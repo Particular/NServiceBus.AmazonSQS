@@ -54,7 +54,8 @@
     <Compile Include="Extensions\AddressExtensions.cs" />
     <Compile Include="Extensions\AmazonSQSClientExtensions.cs" />
     <Compile Include="Extensions\SqsMessageExtensions.cs" />
-    <Compile Include="SqsClientFactory.cs" />
+    <Compile Include="IAwsClientFactory.cs" />
+    <Compile Include="AwsClientFactory.cs" />
     <Compile Include="SqsConnectionConfiguration.cs" />
     <Compile Include="SqsConnectionStringParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

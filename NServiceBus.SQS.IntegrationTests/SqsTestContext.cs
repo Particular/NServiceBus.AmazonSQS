@@ -11,7 +11,6 @@ using System.Reactive.Subjects;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using NSubstitute;
 using NServiceBus.ObjectBuilder.Common;
 
 namespace NServiceBus.SQS.IntegrationTests
@@ -23,6 +22,8 @@ namespace NServiceBus.SQS.IntegrationTests
         public static readonly string MachineName = "testMachine";
 
         public SqsConnectionConfiguration ConnectionConfiguration { get; private set; }
+
+		public IAwsClientFactory ClientFactory { get; private set; }
 
         public string QueueUrl { get; private set; }
 
@@ -40,6 +41,8 @@ namespace NServiceBus.SQS.IntegrationTests
 
         public SqsQueueSender Sender { get; private set; }
 
+		public SqsQueueCreator Creator { get; private set; }
+
         public Address Address { get; private set; }
 
         private Subject<TransportMessage> _receivedMessages;
@@ -48,19 +51,32 @@ namespace NServiceBus.SQS.IntegrationTests
         public SqsTestContext()
         {
             Address = new Address(QueueName, MachineName);
-            ConnectionConfiguration = new SqsConnectionConfiguration { Region = Amazon.RegionEndpoint.APSoutheast2 };
+            ConnectionConfiguration = new SqsConnectionConfiguration 
+			{ 
+				Region = Amazon.RegionEndpoint.APSoutheast2,
+				S3BucketForLargeMessages = "m1nf0sdevel0pment",
+				S3KeyPrefix = "test"
+			};
+
+			ClientFactory = new AwsClientFactory();
+			Creator = new SqsQueueCreator();
+			Creator.ConnectionConfiguration = ConnectionConfiguration;
+			Creator.ClientFactory = ClientFactory;
+			Creator.CreateQueueIfNecessary(Address, "");
 
             _receivedMessages = new Subject<TransportMessage>();
             _exceptionsThrownByReceiver = new Subject<Exception>();
 
             Sender = new SqsQueueSender();
             Sender.ConnectionConfiguration = ConnectionConfiguration;
+			Sender.ClientFactory = ClientFactory;
 
             var configure = new Configure(new SettingsHolder(), new FakeContainer(), new List<Action<IConfigureComponents>>(), new PipelineSettings(new BusConfiguration()));
             configure.Settings.Set("Transport.PurgeOnStartup", true);
 
             DequeueStrategy = new SqsDequeueStrategy(configure);
             DequeueStrategy.ConnectionConfiguration = ConnectionConfiguration;
+			DequeueStrategy.ClientFactory = ClientFactory;
             DequeueStrategy.Init(Address,
                 null,
                 m =>
@@ -76,7 +92,7 @@ namespace NServiceBus.SQS.IntegrationTests
 
             DequeueStrategy.Start(1);
 
-            using (var c = SqsClientFactory.CreateClient(ConnectionConfiguration))
+			using (var c = ClientFactory.CreateSqsClient(ConnectionConfiguration))
             {
                 QueueUrl = c.GetQueueUrl(Address.ToSqsQueueName()).QueueUrl;
             }
@@ -86,7 +102,7 @@ namespace NServiceBus.SQS.IntegrationTests
         {
             return SendAndReceiveCore(() =>
                 {
-                    using (var c = SqsClientFactory.CreateClient(ConnectionConfiguration))
+					using (var c = ClientFactory.CreateSqsClient(ConnectionConfiguration))
                     {
                         c.SendMessage(QueueUrl, rawMessageString);
                     }
