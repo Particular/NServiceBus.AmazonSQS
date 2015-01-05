@@ -20,6 +20,8 @@ namespace NServiceBus.SQS
             Body = transportMessage.Body != null ? Convert.ToBase64String(transportMessage.Body) : "empty message";
 
             TimeToBeReceived = transportMessage.TimeToBeReceived;
+
+			ReplyToAddress = transportMessage.ReplyToAddress;
         }
 
         public Dictionary<string, string> Headers { get; set; }
@@ -29,5 +31,7 @@ namespace NServiceBus.SQS
         public string Body { get; set; }
 
 		public string S3BodyKey { get; set; }
+
+		public Address ReplyToAddress { get; set; }
     }
 }

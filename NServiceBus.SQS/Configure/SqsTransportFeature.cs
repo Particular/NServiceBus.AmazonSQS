@@ -1,4 +1,5 @@
-﻿using NServiceBus.SQS;
+﻿using NServiceBus.Settings;
+using NServiceBus.SQS;
 using NServiceBus.Transports;
 using NServiceBus.Transports.SQS;
 using System;
@@ -9,26 +10,34 @@ using System.Threading.Tasks;
 
 namespace NServiceBus.Features
 {
-    public class SqsTransportFeature : ConfigureTransport
+    public class SqsTransportFeature : ConfigureTransport<SqsTransport>
     {
-        protected override void Configure(FeatureConfigurationContext context, string connectionString)
+        public override void Initialize()
         {
-            var queueName = GetLocalAddress(context.Settings);
-            
+			var connectionString = SettingsHolder.Get<string>("NServiceBus.Transport.ConnectionString");
             var connectionConfiguration = SqsConnectionStringParser.Parse(connectionString);
 
-            context.Container.RegisterSingleton(connectionConfiguration);
+			NServiceBus.Configure.Component<SqsConnectionConfiguration>(_ => connectionConfiguration, DependencyLifecycle.SingleInstance);
+				
+			NServiceBus.Configure.Component<AwsClientFactory>(DependencyLifecycle.SingleInstance);
 
-            context.Container.ConfigureComponent<SqsDequeueStrategy>(DependencyLifecycle.InstancePerCall);
+			NServiceBus.Configure.Component<SqsDequeueStrategy>(DependencyLifecycle.InstancePerCall)
+				.ConfigureProperty(p => p.PurgeOnStartup, ConfigurePurging.PurgeRequested);
 
-            context.Container.ConfigureComponent<SqsQueueSender>(DependencyLifecycle.InstancePerCall);
+			NServiceBus.Configure.Component<SqsQueueSender>(DependencyLifecycle.InstancePerCall);
 
-            context.Container.ConfigureComponent<SqsQueueCreator>(DependencyLifecycle.InstancePerCall);
+			NServiceBus.Configure.Component<SqsQueueCreator>(DependencyLifecycle.InstancePerCall);
         }
 
         protected override string ExampleConnectionStringForErrorMessage
         {
             get { return "Region=ap-southeast-2;"; }
         }
-    }
+
+		protected override void InternalConfigure(Configure config)
+		{
+			Enable<SqsTransportFeature>();
+			Enable<MessageDrivenSubscriptions>();
+		}
+	}
 }
