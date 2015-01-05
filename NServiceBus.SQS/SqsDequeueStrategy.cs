@@ -22,9 +22,10 @@ namespace NServiceBus.Transports.SQS
 
 		public IAwsClientFactory ClientFactory { get; set; }
 
-        public SqsDequeueStrategy(Configure configure)
+		public bool PurgeOnStartup { get; set; }
+
+        public SqsDequeueStrategy()
         {
-            _purgeOnStartup = configure.PurgeOnStartup();
         }
 
         public void Init(Address address, TransactionSettings transactionSettings, Func<TransportMessage, bool> tryProcessMessage, Action<TransportMessage, Exception> endProcessMessage)
@@ -35,7 +36,7 @@ namespace NServiceBus.Transports.SQS
                 var getQueueUrlResponse = sqs.GetQueueUrl(getQueueUrlRequest);
                 _queueUrl = getQueueUrlResponse.QueueUrl;
 
-                if (_purgeOnStartup)
+                if (PurgeOnStartup)
                 {
                     // SQS only allows purging a queue once every 60 seconds or so. 
                     // If you try to purge a queue twice in relatively quick succession,
@@ -178,6 +179,5 @@ namespace NServiceBus.Transports.SQS
         Func<TransportMessage, bool> _tryProcessMessage;
         string _queueUrl;
         int _concurrencyLevel;
-        bool _purgeOnStartup;
     }
 }

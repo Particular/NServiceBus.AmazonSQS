@@ -14,12 +14,6 @@ namespace NServiceBus
         {
             HasNativePubSubSupport = false;
             HasSupportForCentralizedPubSub = false;
-            HasSupportForDistributedTransactions = false;
-        }
-
-        protected override void Configure(BusConfiguration config)
-        {
-            config.EnableFeature<SqsTransportFeature>();
         }
     }
 }

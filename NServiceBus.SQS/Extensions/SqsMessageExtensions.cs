@@ -12,8 +12,9 @@ namespace NServiceBus.SQS
 			var sqsTransportMessage = JsonConvert.DeserializeObject<SqsTransportMessage>(message.Body);
 
             var messageId = sqsTransportMessage.Headers[NServiceBus.Headers.MessageId];
-            
-            var result = new TransportMessage(messageId, sqsTransportMessage.Headers);
+
+			var result = new TransportMessage(messageId, sqsTransportMessage.Headers);
+			result.ReplyToAddress = sqsTransportMessage.ReplyToAddress;
 
 			if (!string.IsNullOrEmpty(sqsTransportMessage.S3BodyKey))
 			{

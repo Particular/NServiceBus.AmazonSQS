@@ -68,12 +68,10 @@ namespace NServiceBus.SQS.IntegrationTests
             Sender.ConnectionConfiguration = ConnectionConfiguration;
 			Sender.ClientFactory = ClientFactory;
 
-            var configure = new Configure(new SettingsHolder(), new FakeContainer(), new List<Action<IConfigureComponents>>(), new PipelineSettings(new BusConfiguration()));
-            configure.Settings.Set("Transport.PurgeOnStartup", true);
-
-            DequeueStrategy = new SqsDequeueStrategy(configure);
+            DequeueStrategy = new SqsDequeueStrategy();
             DequeueStrategy.ConnectionConfiguration = ConnectionConfiguration;
 			DequeueStrategy.ClientFactory = ClientFactory;
+			DequeueStrategy.PurgeOnStartup = true;
             DequeueStrategy.Init(Address,
                 null,
                 m =>
@@ -139,7 +137,7 @@ namespace NServiceBus.SQS.IntegrationTests
 
         public TransportMessage SendAndReceiveMessage(TransportMessage messageToSend)
         {
-            return SendAndReceiveCore(() => Sender.Send(messageToSend, new Unicast.SendOptions(new Address(SqsTestContext.QueueName, SqsTestContext.MachineName))));
+			return SendAndReceiveCore(() => Sender.Send(messageToSend, new Address(SqsTestContext.QueueName, SqsTestContext.MachineName)));
         }
 
         public void Dispose()
