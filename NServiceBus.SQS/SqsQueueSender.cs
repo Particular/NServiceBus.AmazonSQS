@@ -19,6 +19,8 @@ namespace NServiceBus.Transports.SQS
 
 		public IAwsClientFactory ClientFactory { get; set; }
 
+		public SqsQueueUrlCache QueueUrlCache { get; set; }
+
         public void Send(TransportMessage message, Address address)
         {
 			var sqsTransportMessage = new SqsTransportMessage(message);
@@ -48,10 +50,7 @@ namespace NServiceBus.Transports.SQS
 			
 			using (var sqs = ClientFactory.CreateSqsClient(ConnectionConfiguration))
             {
-				var getQueueUrlRequest = new GetQueueUrlRequest(address.ToSqsQueueName());
-				var getQueueUrlResponse = sqs.GetQueueUrl(getQueueUrlRequest);
-
-				SendMessageRequest sendMessageRequest = new SendMessageRequest(getQueueUrlResponse.QueueUrl, serializedMessage);
+				SendMessageRequest sendMessageRequest = new SendMessageRequest(QueueUrlCache.GetQueueUrl(address), serializedMessage);
 
 				sqs.SendMessage(sendMessageRequest);
             }

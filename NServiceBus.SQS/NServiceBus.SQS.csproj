@@ -66,6 +66,7 @@
     <Compile Include="SqsDequeueStrategy.cs" />
     <Compile Include="SqsQueueCreator.cs" />
     <Compile Include="SqsQueueSender.cs" />
+    <Compile Include="SqsQueueUrlCache.cs" />
     <Compile Include="SqsTransportMessage.cs" />
   </ItemGroup>
   <ItemGroup>

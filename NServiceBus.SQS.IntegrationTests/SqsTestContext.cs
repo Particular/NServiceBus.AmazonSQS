@@ -26,7 +26,7 @@ namespace NServiceBus.SQS.IntegrationTests
 
 		public IAwsClientFactory ClientFactory { get; private set; }
 
-        public string QueueUrl { get; private set; }
+		public SqsQueueUrlCache QueueUrlCache { get; private set; }
 
         public IObservable<TransportMessage> ReceivedMessages 
         {
@@ -64,9 +64,14 @@ namespace NServiceBus.SQS.IntegrationTests
             _receivedMessages = new Subject<TransportMessage>();
             _exceptionsThrownByReceiver = new Subject<Exception>();
 
+			QueueUrlCache = new SqsQueueUrlCache();
+			QueueUrlCache.ClientFactory = ClientFactory;
+			QueueUrlCache.ConnectionConfiguration = ConnectionConfiguration;
+		
             Sender = new SqsQueueSender();
             Sender.ConnectionConfiguration = ConnectionConfiguration;
 			Sender.ClientFactory = ClientFactory;
+			Sender.QueueUrlCache = QueueUrlCache;
 
             DequeueStrategy = new SqsDequeueStrategy();
             DequeueStrategy.ConnectionConfiguration = ConnectionConfiguration;
@@ -86,11 +91,6 @@ namespace NServiceBus.SQS.IntegrationTests
                 });
 
             DequeueStrategy.Start(1);
-
-			using (var c = ClientFactory.CreateSqsClient(ConnectionConfiguration))
-            {
-                QueueUrl = c.GetQueueUrl(Address.ToSqsQueueName()).QueueUrl;
-            }
         }
 
         public TransportMessage SendRawAndReceiveMessage(string rawMessageString)
@@ -99,7 +99,7 @@ namespace NServiceBus.SQS.IntegrationTests
                 {
 					using (var c = ClientFactory.CreateSqsClient(ConnectionConfiguration))
                     {
-                        c.SendMessage(QueueUrl, rawMessageString);
+                        c.SendMessage(QueueUrlCache.GetQueueUrl(Address), rawMessageString);
                     }
                 });
         }
@@ -143,58 +143,6 @@ namespace NServiceBus.SQS.IntegrationTests
         public void Dispose()
         {
             DequeueStrategy.Stop();
-        }
-    }
-
-    class FakeContainer : IContainer
-    {
-        public void Dispose()
-        {
-        }
-
-        public object Build(Type typeToBuild)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IContainer BuildChildContainer()
-        {
-            throw new NotImplementedException();
-        }
-
-        public IEnumerable<object> BuildAll(Type typeToBuild)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Configure(Type component, DependencyLifecycle dependencyLifecycle)
-        {
-
-        }
-
-        public void Configure<T>(Func<T> component, DependencyLifecycle dependencyLifecycle)
-        {
-
-        }
-
-        public void ConfigureProperty(Type component, string property, object value)
-        {
-
-        }
-
-        public void RegisterSingleton(Type lookupType, object instance)
-        {
-
-        }
-
-        public bool HasComponent(Type componentType)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Release(object instance)
-        {
-
         }
     }
 }
