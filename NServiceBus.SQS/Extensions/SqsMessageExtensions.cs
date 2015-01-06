@@ -11,8 +11,7 @@
             var messageId = sqsTransportMessage.Headers[NServiceBus.Headers.MessageId];
 
 			var result = new TransportMessage(messageId, sqsTransportMessage.Headers);
-			result.ReplyToAddress = sqsTransportMessage.ReplyToAddress;
-
+			
 			if (!string.IsNullOrEmpty(sqsTransportMessage.S3BodyKey))
 			{
 				var s3GetResponse = amazonS3.GetObject(connectionConfiguration.S3BucketForLargeMessages, sqsTransportMessage.S3BodyKey);

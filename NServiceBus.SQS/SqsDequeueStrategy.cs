@@ -18,10 +18,12 @@
 
 		public IAwsClientFactory ClientFactory { get; set; }
 
-		public bool PurgeOnStartup { get; set; }
-
-        public SqsDequeueStrategy()
+        public SqsDequeueStrategy(Configure config)
         {
+			if (config != null)
+				_purgeOnStartup = config.PurgeOnStartup();
+			else
+				_purgeOnStartup = false;
         }
 
         public void Init(Address address, TransactionSettings transactionSettings, Func<TransportMessage, bool> tryProcessMessage, Action<TransportMessage, Exception> endProcessMessage)
@@ -32,7 +34,7 @@
                 var getQueueUrlResponse = sqs.GetQueueUrl(getQueueUrlRequest);
                 _queueUrl = getQueueUrlResponse.QueueUrl;
 
-                if (PurgeOnStartup)
+				if (_purgeOnStartup)
                 {
                     // SQS only allows purging a queue once every 60 seconds or so. 
                     // If you try to purge a queue twice in relatively quick succession,
@@ -191,5 +193,6 @@
         Func<TransportMessage, bool> _tryProcessMessage;
         string _queueUrl;
         int _concurrencyLevel;
+		bool _purgeOnStartup;
     }
 }
