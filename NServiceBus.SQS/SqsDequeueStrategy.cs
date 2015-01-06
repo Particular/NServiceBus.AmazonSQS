@@ -3,6 +3,7 @@
 	using Amazon.Runtime;
 	using Amazon.SQS;
 	using Amazon.SQS.Model;
+	using Newtonsoft.Json;
 	using NServiceBus.Logging;
 	using NServiceBus.SQS;
 	using NServiceBus.Transports;
@@ -124,7 +125,9 @@
                         {
                             var messageProcessedOk = false;
 
-                            transportMessage = message.ToTransportMessage(s3, ConnectionConfiguration);
+							var sqsTransportMessage = JsonConvert.DeserializeObject<SqsTransportMessage>(message.Body);
+
+                            transportMessage = sqsTransportMessage.ToTransportMessage(s3, ConnectionConfiguration);
 
                             messageProcessedOk = _tryProcessMessage(transportMessage);
 
@@ -132,20 +135,34 @@
                             {
                                 sqs.DeleteMessage(_queueUrl, message.ReceiptHandle);
 
-								try
+								if (!String.IsNullOrEmpty(sqsTransportMessage.S3BodyKey))
 								{
-									s3.DeleteObject(ConnectionConfiguration.S3BucketForLargeMessages,
-										ConnectionConfiguration.S3KeyPrefix + transportMessage.Id);
-								}
-								catch (Exception e)
-								{
-									// If deleting the message body from S3 fails, we don't 
-									// want the exception to make its way through to the _endProcessMessage below,
-									// as the message has been successfully processed and deleted from the SQS queue
-									// and effectively doesn't exist anymore. 
-									// It doesn't really matter, as S3 is configured to delete message body data
-									// automatically after a certain period of time.
-									Logger.Warn("Couldn't delete message body from S3. Message body data will be aged out at a later time.", e);
+									// Delete the S3 body asynchronously. 
+									// We don't really care too much if this call succeeds or fails - if it fails, 
+									// the S3 bucket lifecycle configuration will eventually delete the message anyway.
+									// So, we can get better performance by not waiting around for this call to finish.
+									var s3DeleteTask = s3.DeleteObjectAsync( 
+										new Amazon.S3.Model.DeleteObjectRequest 
+										{
+											BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
+											Key = ConnectionConfiguration.S3KeyPrefix + transportMessage.Id
+										});
+
+									s3DeleteTask.ContinueWith(t =>
+										{
+											if (t.Exception != null)
+											{
+												// If deleting the message body from S3 fails, we don't 
+												// want the exception to make its way through to the _endProcessMessage below,
+												// as the message has been successfully processed and deleted from the SQS queue
+												// and effectively doesn't exist anymore. 
+												// It doesn't really matter, as S3 is configured to delete message body data
+												// automatically after a certain period of time.
+												Logger.Warn("Couldn't delete message body from S3. Message body data will be aged out at a later time.", t.Exception);
+											}
+										});
+										
+									s3DeleteTask.Start();
 								}
                             }
                         }

@@ -3,14 +3,11 @@
 	using System;
 	using Amazon.SQS.Model;
 	using Amazon.S3;
-	using Newtonsoft.Json;
 
     internal static class SqsMessageExtensions
     {
-        public static TransportMessage ToTransportMessage(this Message message, IAmazonS3 amazonS3, SqsConnectionConfiguration connectionConfiguration)
+		public static TransportMessage ToTransportMessage(this SqsTransportMessage sqsTransportMessage, IAmazonS3 amazonS3, SqsConnectionConfiguration connectionConfiguration)
         {
-			var sqsTransportMessage = JsonConvert.DeserializeObject<SqsTransportMessage>(message.Body);
-
             var messageId = sqsTransportMessage.Headers[NServiceBus.Headers.MessageId];
 
 			var result = new TransportMessage(messageId, sqsTransportMessage.Headers);
