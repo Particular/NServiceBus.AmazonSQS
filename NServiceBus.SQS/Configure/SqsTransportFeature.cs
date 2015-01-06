@@ -16,6 +16,8 @@
 				
 			NServiceBus.Configure.Component<AwsClientFactory>(DependencyLifecycle.SingleInstance);
 
+			NServiceBus.Configure.Component<SqsQueueUrlCache>(DependencyLifecycle.SingleInstance);
+
 			NServiceBus.Configure.Component<SqsDequeueStrategy>(DependencyLifecycle.InstancePerCall)
 				.ConfigureProperty(p => p.PurgeOnStartup, ConfigurePurging.PurgeRequested);
 
