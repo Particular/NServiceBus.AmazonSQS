@@ -1,7 +1,8 @@
 ﻿namespace NServiceBus
 {
-	using NServiceBus.Features;
-	using NServiceBus.Transports;
+	using Configuration.AdvanceExtensibility;
+	using Features;
+	using Transports;
 
     public class SqsTransport : TransportDefinition
     {
@@ -16,6 +17,9 @@
 		{
 			config.EnableFeature<SqsTransportFeature>();
 			config.EnableFeature<MessageDrivenSubscriptions>();
+			config.EnableFeature<TimeoutManagerBasedDeferral>();
+			config.GetSettings().EnableFeatureByDefault<StorageDrivenPublishing>();
+			config.GetSettings().EnableFeatureByDefault<TimeoutManager>();
 		}
     }
 }

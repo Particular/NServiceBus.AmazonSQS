@@ -25,6 +25,11 @@
 
             result.TimeToBeReceived = sqsTransportMessage.TimeToBeReceived;
 
+			if (sqsTransportMessage.ReplyToAddress != null)
+			{
+				result.Headers[Headers.ReplyToAddress] = sqsTransportMessage.ReplyToAddress.ToString();
+			}
+
             return result;
         }
 
