@@ -53,7 +53,6 @@
     <Compile Include="Configure\SqsTransport.cs" />
     <Compile Include="Configure\SqsTransportFeature.cs" />
     <Compile Include="Extensions\AddressExtensions.cs" />
-    <Compile Include="Extensions\AmazonSQSClientExtensions.cs" />
     <Compile Include="Extensions\SqsMessageExtensions.cs" />
     <Compile Include="IAwsClientFactory.cs" />
     <Compile Include="AwsClientFactory.cs" />

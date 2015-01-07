@@ -9,6 +9,8 @@
 	using NServiceBus.Transports;
 	using NServiceBus.Unicast.Transport;
 	using System;
+	using System.Collections.Generic;
+	using System.Linq;
 	using System.Threading;
 	using System.Threading.Tasks;
 
@@ -58,7 +60,7 @@
 
         public void Start(int maximumConcurrencyLevel)
         {
-            _isStopping = false;
+			_cancellationTokenSource = new CancellationTokenSource();
             _concurrencyLevel = maximumConcurrencyLevel;
 
             _tracksRunningThreads = new SemaphoreSlim(_concurrencyLevel);
@@ -74,7 +76,7 @@
         /// </summary>
         public void Stop()
         {
-            _isStopping = true;
+			_cancellationTokenSource.Cancel();
 
             DrainStopSemaphore();
         }
@@ -94,10 +96,10 @@
         void StartConsumer(string queue)
         {
             Task.Factory
-                .StartNew(ConsumeMessages, TaskCreationOptions.LongRunning)
+                .StartNew(ConsumeMessages, _cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default)
                 .ContinueWith(t =>
                 {
-                    if (!_isStopping)
+                    if (!_cancellationTokenSource.IsCancellationRequested)
                     {
                         StartConsumer(queue);
                     }
@@ -113,10 +115,22 @@
 				using (var sqs = ClientFactory.CreateSqsClient(ConnectionConfiguration))
 				using (var s3 = ClientFactory.CreateS3Client(ConnectionConfiguration))
                 {
-                    while (!_isStopping)
+                    while (!_cancellationTokenSource.IsCancellationRequested)
                     {
                         Exception exception = null;
-                        var message = sqs.DequeueMessage(_queueUrl);
+						
+						var receiveTask = sqs.ReceiveMessageAsync(new ReceiveMessageRequest
+							{
+								MaxNumberOfMessages = 1,
+								QueueUrl = _queueUrl,
+								WaitTimeSeconds = 20,
+								MessageAttributeNames = new List<string> { "All" }
+							},
+							_cancellationTokenSource.Token);
+
+						receiveTask.Wait(_cancellationTokenSource.Token);
+
+						var message = receiveTask.Result.Messages.FirstOrDefault();
 
 						if (message == null)
 							continue;
@@ -187,8 +201,8 @@
 
         static ILog Logger = LogManager.GetLogger(typeof(SqsDequeueStrategy));
 
+		CancellationTokenSource _cancellationTokenSource;
         SemaphoreSlim _tracksRunningThreads;
-        volatile bool _isStopping;
         Action<TransportMessage, Exception> _endProcessMessage;
         Func<TransportMessage, bool> _tryProcessMessage;
         string _queueUrl;
