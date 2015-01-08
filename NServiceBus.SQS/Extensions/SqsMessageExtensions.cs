@@ -33,5 +33,10 @@
             return result;
         }
 
+		public static DateTime GetSentDateTime(this Message message)
+		{
+			var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+			return epoch.AddMilliseconds(long.Parse(message.Attributes["SentTimestamp"]));
+		}
     }
 }

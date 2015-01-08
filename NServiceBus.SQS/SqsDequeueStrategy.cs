@@ -1,6 +1,7 @@
 ﻿namespace NServiceBus.Transports.SQS
 {
 	using Amazon.Runtime;
+	using Amazon.S3;
 	using Amazon.SQS;
 	using Amazon.SQS.Model;
 	using Newtonsoft.Json;
@@ -56,6 +57,8 @@
 
             _tryProcessMessage = tryProcessMessage;
             _endProcessMessage = endProcessMessage;
+
+			_isTransactional = transactionSettings.IsTransactional;
         }
 
         public void Start(int maximumConcurrencyLevel)
@@ -124,7 +127,7 @@
 								MaxNumberOfMessages = 1,
 								QueueUrl = _queueUrl,
 								WaitTimeSeconds = 20,
-								MessageAttributeNames = new List<string> { "All" }
+								AttributeNames = new List<String> { "SentTimestamp" }
 							},
 							_cancellationTokenSource.Token);
 
@@ -136,51 +139,33 @@
 							continue;
 
                         TransportMessage transportMessage = null;
+						SqsTransportMessage sqsTransportMessage = null;
+
+						var messageProcessedOk = false;
+						var messageExpired = false;
 
                         try
                         {
-                            var messageProcessedOk = false;
-
-							var sqsTransportMessage = JsonConvert.DeserializeObject<SqsTransportMessage>(message.Body);
+							sqsTransportMessage = JsonConvert.DeserializeObject<SqsTransportMessage>(message.Body);
 
                             transportMessage = sqsTransportMessage.ToTransportMessage(s3, ConnectionConfiguration);
 
-                            messageProcessedOk = _tryProcessMessage(transportMessage);
-
-                            if (messageProcessedOk)
-                            {
-                                sqs.DeleteMessage(_queueUrl, message.ReceiptHandle);
-
-								if (!String.IsNullOrEmpty(sqsTransportMessage.S3BodyKey))
+							// Check that the message hasn't expired
+							if (transportMessage.TimeToBeReceived != TimeSpan.MaxValue)
+							{
+								DateTime sentDateTime = message.GetSentDateTime();
+								if (sentDateTime + transportMessage.TimeToBeReceived <= DateTime.UtcNow)
 								{
-									// Delete the S3 body asynchronously. 
-									// We don't really care too much if this call succeeds or fails - if it fails, 
-									// the S3 bucket lifecycle configuration will eventually delete the message anyway.
-									// So, we can get better performance by not waiting around for this call to finish.
-									var s3DeleteTask = s3.DeleteObjectAsync( 
-										new Amazon.S3.Model.DeleteObjectRequest 
-										{
-											BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
-											Key = ConnectionConfiguration.S3KeyPrefix + transportMessage.Id
-										});
-
-									s3DeleteTask.ContinueWith(t =>
-										{
-											if (t.Exception != null)
-											{
-												// If deleting the message body from S3 fails, we don't 
-												// want the exception to make its way through to the _endProcessMessage below,
-												// as the message has been successfully processed and deleted from the SQS queue
-												// and effectively doesn't exist anymore. 
-												// It doesn't really matter, as S3 is configured to delete message body data
-												// automatically after a certain period of time.
-												Logger.Warn("Couldn't delete message body from S3. Message body data will be aged out at a later time.", t.Exception);
-											}
-										});
-										
-									s3DeleteTask.Start();
+									// Message has expired. 
+									Logger.Warn(String.Format("Discarding expired message with Id {0}", transportMessage.Id));
+									messageExpired = true;
 								}
-                            }
+							}
+
+							if (!messageExpired)
+							{
+								messageProcessedOk = _tryProcessMessage(transportMessage);
+							}
                         }
                         catch (Exception ex)
                         {
@@ -188,6 +173,17 @@
                         }
                         finally
                         {
+							bool deleteMessage = !_isTransactional || (_isTransactional && messageProcessedOk);
+
+							if (deleteMessage)
+							{
+								DeleteMessage(sqs, s3, message, sqsTransportMessage, transportMessage);
+							}
+							else
+							{
+								sqs.ChangeMessageVisibility(_queueUrl, message.ReceiptHandle, 0);
+							}
+
                             _endProcessMessage(transportMessage, exception);
                         }
                     }
@@ -199,6 +195,43 @@
             }
         }
 
+		private void DeleteMessage(IAmazonSQS sqs, 
+			IAmazonS3 s3,
+			Message message, 
+			SqsTransportMessage sqsTransportMessage, 
+			TransportMessage transportMessage)
+		{
+			sqs.DeleteMessage(_queueUrl, message.ReceiptHandle);
+
+			if (!String.IsNullOrEmpty(sqsTransportMessage.S3BodyKey))
+			{
+				// Delete the S3 body asynchronously. 
+				// We don't really care too much if this call succeeds or fails - if it fails, 
+				// the S3 bucket lifecycle configuration will eventually delete the message anyway.
+				// So, we can get better performance by not waiting around for this call to finish.
+				var s3DeleteTask = s3.DeleteObjectAsync(
+					new Amazon.S3.Model.DeleteObjectRequest
+					{
+						BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
+						Key = ConnectionConfiguration.S3KeyPrefix + transportMessage.Id
+					});
+
+				s3DeleteTask.ContinueWith(t =>
+				{
+					if (t.Exception != null)
+					{
+						// If deleting the message body from S3 fails, we don't 
+						// want the exception to make its way through to the _endProcessMessage below,
+						// as the message has been successfully processed and deleted from the SQS queue
+						// and effectively doesn't exist anymore. 
+						// It doesn't really matter, as S3 is configured to delete message body data
+						// automatically after a certain period of time.
+						Logger.Warn("Couldn't delete message body from S3. Message body data will be aged out at a later time.", t.Exception);
+					}
+				});
+			}
+		}
+
         static ILog Logger = LogManager.GetLogger(typeof(SqsDequeueStrategy));
 
 		CancellationTokenSource _cancellationTokenSource;
@@ -208,5 +241,6 @@
         string _queueUrl;
         int _concurrencyLevel;
 		bool _purgeOnStartup;
+		bool _isTransactional;
     }
 }
