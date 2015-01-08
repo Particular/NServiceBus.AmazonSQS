@@ -58,7 +58,10 @@
             _tryProcessMessage = tryProcessMessage;
             _endProcessMessage = endProcessMessage;
 
-			_isTransactional = transactionSettings.IsTransactional;
+			if (transactionSettings != null)
+				_isTransactional = transactionSettings.IsTransactional;
+			else
+				_isTransactional = true;
         }
 
         public void Start(int maximumConcurrencyLevel)
