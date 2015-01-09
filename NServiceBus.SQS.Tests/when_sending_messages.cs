@@ -1,4 +1,5 @@
 ﻿using NServiceBus.Transports.SQS;
+using NServiceBus.Unicast;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -30,7 +31,8 @@ namespace NServiceBus.SQS.Tests
 			}
 			largeTransportMessageToSend.Body = Encoding.Default.GetBytes(stringBuilder.ToString());
 
-			Assert.Throws<InvalidOperationException>(() => sut.Send(largeTransportMessageToSend, null));
+			Assert.Throws<InvalidOperationException>(() => sut.Send(largeTransportMessageToSend,
+				new SendOptions(Address.Self)));
 		}
 	}
 }

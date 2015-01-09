@@ -37,12 +37,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Newtonsoft.Json.6.0.7\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="NServiceBus">
-      <HintPath>..\packages\NServiceBus.Interfaces.4.3.2\lib\net40\NServiceBus.dll</HintPath>
-    </Reference>
-    <Reference Include="NServiceBus.Core, Version=4.3.0.0, Culture=neutral, PublicKeyToken=9fc386479f8a226c, processorArchitecture=MSIL">
+    <Reference Include="NServiceBus.Core, Version=5.0.0.0, Culture=neutral, PublicKeyToken=9fc386479f8a226c, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\NServiceBus.4.3.2\lib\net40\NServiceBus.Core.dll</HintPath>
+      <HintPath>..\packages\NServiceBus.5.1.2\lib\net45\NServiceBus.Core.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -56,7 +53,6 @@
     <Compile Include="Configure\SqsTransport.cs" />
     <Compile Include="Configure\SqsTransportFeature.cs" />
     <Compile Include="Extensions\AddressExtensions.cs" />
-    <Compile Include="Extensions\AmazonSQSClientExtensions.cs" />
     <Compile Include="Extensions\SqsMessageExtensions.cs" />
     <Compile Include="IAwsClientFactory.cs" />
     <Compile Include="AwsClientFactory.cs" />

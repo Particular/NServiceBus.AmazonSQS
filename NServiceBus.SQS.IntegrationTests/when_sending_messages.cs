@@ -53,7 +53,7 @@ namespace NServiceBus.SQS.IntegrationTests
 
             var transportMessage = new TransportMessage();
 
-			transportMessage.ReplyToAddress = address;
+			transportMessage.Headers[Headers.ReplyToAddress] = address.ToString();
 
             var received = _context.SendAndReceiveMessage(transportMessage);
 
@@ -121,7 +121,7 @@ namespace NServiceBus.SQS.IntegrationTests
             _context.DequeueStrategy.Stop();
 
             Parallel.For(0, 2000, i =>
-                _context.Sender.Send(new TransportMessage(), _context.Address));
+                _context.Sender.Send(new TransportMessage(), new SendOptions( _context.Address)));
 
             _context.DequeueStrategy.Start(50);
             Thread.Sleep(10);

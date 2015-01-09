@@ -67,16 +67,27 @@ namespace NServiceBus.SQS.IntegrationTests
 			QueueUrlCache = new SqsQueueUrlCache();
 			QueueUrlCache.ClientFactory = ClientFactory;
 			QueueUrlCache.ConnectionConfiguration = ConnectionConfiguration;
-		
+
+			using (var sqs = ClientFactory.CreateSqsClient(ConnectionConfiguration))
+			{
+				try
+				{
+					sqs.PurgeQueue(QueueUrlCache.GetQueueUrl(Address));
+				}
+				catch (PurgeQueueInProgressException)
+				{
+					
+				}
+			}
+
             Sender = new SqsQueueSender();
             Sender.ConnectionConfiguration = ConnectionConfiguration;
 			Sender.ClientFactory = ClientFactory;
 			Sender.QueueUrlCache = QueueUrlCache;
 
-            DequeueStrategy = new SqsDequeueStrategy();
+            DequeueStrategy = new SqsDequeueStrategy(null);
             DequeueStrategy.ConnectionConfiguration = ConnectionConfiguration;
 			DequeueStrategy.ClientFactory = ClientFactory;
-			DequeueStrategy.PurgeOnStartup = true;
             DequeueStrategy.Init(Address,
                 null,
                 m =>
@@ -137,7 +148,7 @@ namespace NServiceBus.SQS.IntegrationTests
 
         public TransportMessage SendAndReceiveMessage(TransportMessage messageToSend)
         {
-			return SendAndReceiveCore(() => Sender.Send(messageToSend, new Address(SqsTestContext.QueueName, SqsTestContext.MachineName)));
+			return SendAndReceiveCore(() => Sender.Send(messageToSend, new SendOptions(new Address(SqsTestContext.QueueName, SqsTestContext.MachineName))));
         }
 
         public void Dispose()

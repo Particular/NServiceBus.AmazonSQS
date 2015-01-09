@@ -1,4 +1,5 @@
 ﻿using Amazon.SQS.Model;
+using NServiceBus.Unicast;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +14,7 @@ namespace NServiceBus.SQS
         {
         }
 
-        public SqsTransportMessage(TransportMessage transportMessage)
+        public SqsTransportMessage(TransportMessage transportMessage, SendOptions sendOptions)
         {
             Headers = transportMessage.Headers;
 
@@ -21,7 +22,7 @@ namespace NServiceBus.SQS
 
             TimeToBeReceived = transportMessage.TimeToBeReceived;
 
-			ReplyToAddress = transportMessage.ReplyToAddress;
+			ReplyToAddress = sendOptions.ReplyToAddress;
         }
 
         public Dictionary<string, string> Headers { get; set; }

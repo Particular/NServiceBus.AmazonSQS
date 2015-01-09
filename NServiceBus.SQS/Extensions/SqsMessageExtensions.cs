@@ -11,8 +11,7 @@
             var messageId = sqsTransportMessage.Headers[NServiceBus.Headers.MessageId];
 
 			var result = new TransportMessage(messageId, sqsTransportMessage.Headers);
-			result.ReplyToAddress = sqsTransportMessage.ReplyToAddress;
-
+			
 			if (!string.IsNullOrEmpty(sqsTransportMessage.S3BodyKey))
 			{
 				var s3GetResponse = amazonS3.GetObject(connectionConfiguration.S3BucketForLargeMessages, sqsTransportMessage.S3BodyKey);
@@ -26,8 +25,18 @@
 
             result.TimeToBeReceived = sqsTransportMessage.TimeToBeReceived;
 
+			if (sqsTransportMessage.ReplyToAddress != null)
+			{
+				result.Headers[Headers.ReplyToAddress] = sqsTransportMessage.ReplyToAddress.ToString();
+			}
+
             return result;
         }
 
+		public static DateTime GetSentDateTime(this Message message)
+		{
+			var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+			return epoch.AddMilliseconds(long.Parse(message.Attributes["SentTimestamp"]));
+		}
     }
 }

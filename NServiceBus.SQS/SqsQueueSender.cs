@@ -21,9 +21,9 @@ namespace NServiceBus.Transports.SQS
 
 		public SqsQueueUrlCache QueueUrlCache { get; set; }
 
-        public void Send(TransportMessage message, Address address)
+        public void Send(TransportMessage message, SendOptions sendOptions)
         {
-			var sqsTransportMessage = new SqsTransportMessage(message);
+			var sqsTransportMessage = new SqsTransportMessage(message, sendOptions);
 			var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
 			if (serializedMessage.Length > 256 * 1024)
 			{
@@ -50,10 +50,10 @@ namespace NServiceBus.Transports.SQS
 			
 			using (var sqs = ClientFactory.CreateSqsClient(ConnectionConfiguration))
             {
-				SendMessageRequest sendMessageRequest = new SendMessageRequest(QueueUrlCache.GetQueueUrl(address), serializedMessage);
+				SendMessageRequest sendMessageRequest = new SendMessageRequest(QueueUrlCache.GetQueueUrl(sendOptions.Destination), serializedMessage);
 
 				sqs.SendMessage(sendMessageRequest);
             }
         }
-    }
+	}
 }

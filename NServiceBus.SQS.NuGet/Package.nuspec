@@ -21,10 +21,9 @@
     <copyright>Copyright EBOS Group Limited 2015</copyright>
     <dependencies>
         <group targetFramework="net45">
-          <dependency id="AWSSDK" version="2.3.14.0" />
-          <dependency id="Newtonsoft.Json" version="6.0.7" />
-          <dependency id="NServiceBus" version="4.3.2" />
-          <dependency id="NServiceBus.Interfaces" version="4.3.2" />
+          <dependency id="AWSSDK" version="2.3.14.0"/>
+          <dependency id="Newtonsoft.Json" version="6.0.7"/>
+          <dependency id="NServiceBus" version="5.1.2"/>
         </group>
     </dependencies>
     <references></references>
