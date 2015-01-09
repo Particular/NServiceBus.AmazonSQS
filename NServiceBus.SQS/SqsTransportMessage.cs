@@ -1,10 +1,6 @@
-﻿using Amazon.SQS.Model;
-using NServiceBus.Unicast;
+﻿using NServiceBus.Unicast;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NServiceBus.SQS
 {

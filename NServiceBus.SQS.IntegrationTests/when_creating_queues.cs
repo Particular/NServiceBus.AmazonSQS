@@ -1,14 +1,9 @@
-﻿using NServiceBus.Transports.SQS;
-using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace NServiceBus.SQS.IntegrationTests
+﻿namespace NServiceBus.SQS.IntegrationTests
 {
+	using NServiceBus.Transports.SQS;
+	using NUnit.Framework;
+	using System.Configuration;
+
 	[TestFixture]
 	public class when_creating_queues
 	{
@@ -24,12 +19,13 @@ namespace NServiceBus.SQS.IntegrationTests
 		[Test]
 		public void smoke_test()
 		{
-			var sut = new SqsQueueCreator();
+			var sut = new SqsQueueCreator
+			{
+				ConnectionConfiguration = _connectionConfiguration,
+				ClientFactory = new AwsClientFactory()
+			};
 
-            sut.ConnectionConfiguration = _connectionConfiguration;
-			sut.ClientFactory = new AwsClientFactory();
-
-			Assert.DoesNotThrow( () => sut.CreateQueueIfNecessary(new NServiceBus.Address ("testQueueName", "testMachineName" ), ""));
+			Assert.DoesNotThrow( () => sut.CreateQueueIfNecessary(new Address ("testQueueName", "testMachineName" ), ""));
 		}
 	}
 }

@@ -1,19 +1,13 @@
-﻿using Amazon.Runtime;
-using Amazon.SQS;
-using Amazon.SQS.Model;
-using Newtonsoft.Json;
-using NServiceBus.SQS;
-using NServiceBus.Unicast;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace NServiceBus.Transports.SQS
+﻿namespace NServiceBus.Transports.SQS
 {
-    class SqsQueueSender : ISendMessages
+	using Amazon.SQS.Model;
+	using Newtonsoft.Json;
+	using NServiceBus.SQS;
+	using System;
+	using System.IO;
+	using Unicast;
+
+    internal class SqsQueueSender : ISendMessages
     {
         public SqsConnectionConfiguration ConnectionConfiguration { get; set; }
 
@@ -50,7 +44,7 @@ namespace NServiceBus.Transports.SQS
 			
 			using (var sqs = ClientFactory.CreateSqsClient(ConnectionConfiguration))
             {
-				SendMessageRequest sendMessageRequest = new SendMessageRequest(QueueUrlCache.GetQueueUrl(sendOptions.Destination), serializedMessage);
+				var sendMessageRequest = new SendMessageRequest(QueueUrlCache.GetQueueUrl(sendOptions.Destination), serializedMessage);
 
 				sqs.SendMessage(sendMessageRequest);
             }

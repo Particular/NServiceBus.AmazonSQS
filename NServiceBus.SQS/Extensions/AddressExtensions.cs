@@ -9,7 +9,7 @@
 			// SQS queue names can only have alphanumeric characters, hyphens and underscores.
 			// Any other characters will be replaced with a hyphen.
 			var s = address.ToString();
-			for (int i = 0; i<s.Length; ++i)
+			for (var i = 0; i<s.Length; ++i)
 			{
 				var c = s[i];
 				if ( !char.IsLetterOrDigit(c) 
@@ -24,7 +24,7 @@
 			if (s.Length > 80)
 			{
 				throw new InvalidOperationException(String.Format("Address {0} is longer than 80 characters and therefore cannot be used to create an SQS queue. Use a shorter queue name.",
-					address.ToString()));
+					address));
 			}
 
 			return s;

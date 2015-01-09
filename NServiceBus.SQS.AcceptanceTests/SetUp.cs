@@ -1,13 +1,4 @@
-﻿using Amazon;
-using Amazon.Runtime;
-using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using NUnit.Framework;
 
 namespace NServiceBus.AcceptanceTests
 {

@@ -1,15 +1,11 @@
-﻿using Amazon.S3;
-using Amazon.S3.Model;
-using Amazon.SQS.Model;
-using NServiceBus.SQS;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace NServiceBus.Transports.SQS
+﻿namespace NServiceBus.Transports.SQS
 {
+	using Amazon.S3;
+	using Amazon.S3.Model;
+	using Amazon.SQS.Model;
+	using NServiceBus.SQS;
+	using System.Collections.Generic;
+
     class SqsQueueCreator : ICreateQueues
     {
         public SqsConnectionConfiguration ConnectionConfiguration { get; set; }
@@ -20,9 +16,11 @@ namespace NServiceBus.Transports.SQS
         {
 			using (var sqs = ClientFactory.CreateSqsClient(ConnectionConfiguration))
             {
-                CreateQueueRequest sqsRequest = new CreateQueueRequest();
-                sqsRequest.QueueName = address.ToSqsQueueName();
-                sqs.CreateQueue(sqsRequest);
+                var sqsRequest = new CreateQueueRequest
+                {
+	                QueueName = address.ToSqsQueueName()
+                };
+	            sqs.CreateQueue(sqsRequest);
             }
 
 			using (var s3 = ClientFactory.CreateS3Client(ConnectionConfiguration))

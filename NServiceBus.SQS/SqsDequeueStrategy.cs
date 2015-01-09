@@ -1,6 +1,5 @@
 ﻿namespace NServiceBus.Transports.SQS
 {
-	using Amazon.Runtime;
 	using Amazon.S3;
 	using Amazon.SQS;
 	using Amazon.SQS.Model;
@@ -156,7 +155,7 @@
 							// Check that the message hasn't expired
 							if (transportMessage.TimeToBeReceived != TimeSpan.MaxValue)
 							{
-								DateTime sentDateTime = message.GetSentDateTime();
+								var sentDateTime = message.GetSentDateTime();
 								if (sentDateTime + transportMessage.TimeToBeReceived <= DateTime.UtcNow)
 								{
 									// Message has expired. 
@@ -176,7 +175,7 @@
                         }
                         finally
                         {
-							bool deleteMessage = !_isTransactional || (_isTransactional && messageProcessedOk);
+							var deleteMessage = !_isTransactional || (_isTransactional && messageProcessedOk);
 
 							if (deleteMessage)
 							{

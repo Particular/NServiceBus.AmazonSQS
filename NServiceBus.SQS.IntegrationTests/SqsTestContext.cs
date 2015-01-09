@@ -1,22 +1,14 @@
-﻿using Amazon.SQS.Model;
-using NServiceBus.ObjectBuilder;
-using NServiceBus.Pipeline;
-using NServiceBus.Settings;
-using NServiceBus.Transports.SQS;
-using NServiceBus.Unicast;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reactive.Subjects;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using NServiceBus.ObjectBuilder.Common;
-using System.Configuration;
-
-namespace NServiceBus.SQS.IntegrationTests
+﻿namespace NServiceBus.SQS.IntegrationTests
 {
-    class SqsTestContext : IDisposable
+	using Amazon.SQS.Model;
+	using NServiceBus.Transports.SQS;
+	using NServiceBus.Unicast;
+	using System;
+	using System.Reactive.Subjects;
+	using System.Threading;
+	using System.Configuration;
+
+    internal class SqsTestContext : IDisposable
     {
         public static readonly string QueueName = "testQueue";
 
@@ -56,19 +48,23 @@ namespace NServiceBus.SQS.IntegrationTests
 				SqsConnectionStringParser.Parse(ConfigurationManager.AppSettings["TestConnectionString"]);
 
 			ClientFactory = new AwsClientFactory();
-			Creator = new SqsQueueCreator();
-			Creator.ConnectionConfiguration = ConnectionConfiguration;
-			Creator.ClientFactory = ClientFactory;
-			Creator.CreateQueueIfNecessary(Address, "");
+			Creator = new SqsQueueCreator
+			{
+				ConnectionConfiguration = ConnectionConfiguration,
+				ClientFactory = ClientFactory
+			};
+	        Creator.CreateQueueIfNecessary(Address, "");
 
             _receivedMessages = new Subject<TransportMessage>();
             _exceptionsThrownByReceiver = new Subject<Exception>();
 
-			QueueUrlCache = new SqsQueueUrlCache();
-			QueueUrlCache.ClientFactory = ClientFactory;
-			QueueUrlCache.ConnectionConfiguration = ConnectionConfiguration;
+			QueueUrlCache = new SqsQueueUrlCache
+			{
+				ClientFactory = ClientFactory,
+				ConnectionConfiguration = ConnectionConfiguration
+			};
 
-			using (var sqs = ClientFactory.CreateSqsClient(ConnectionConfiguration))
+	        using (var sqs = ClientFactory.CreateSqsClient(ConnectionConfiguration))
 			{
 				try
 				{
@@ -80,15 +76,19 @@ namespace NServiceBus.SQS.IntegrationTests
 				}
 			}
 
-            Sender = new SqsQueueSender();
-            Sender.ConnectionConfiguration = ConnectionConfiguration;
-			Sender.ClientFactory = ClientFactory;
-			Sender.QueueUrlCache = QueueUrlCache;
+            Sender = new SqsQueueSender
+            {
+	            ConnectionConfiguration = ConnectionConfiguration,
+	            ClientFactory = ClientFactory,
+	            QueueUrlCache = QueueUrlCache
+            };
 
-            DequeueStrategy = new SqsDequeueStrategy(null);
-            DequeueStrategy.ConnectionConfiguration = ConnectionConfiguration;
-			DequeueStrategy.ClientFactory = ClientFactory;
-            DequeueStrategy.Init(Address,
+	        DequeueStrategy = new SqsDequeueStrategy(null)
+	        {
+		        ConnectionConfiguration = ConnectionConfiguration,
+		        ClientFactory = ClientFactory
+	        };
+	        DequeueStrategy.Init(Address,
                 null,
                 m =>
                 {
@@ -123,10 +123,10 @@ namespace NServiceBus.SQS.IntegrationTests
             TransportMessage lastReceivedMessage = null;
             Exception lastThrownException = null;
 
-            int retryCount = 0;
+            var retryCount = 0;
 
-            using (var receiveSubscription = ReceivedMessages.Subscribe(m => lastReceivedMessage = m))
-            using (var exceptionSubscription = ExceptionsThrownByReceiver.Subscribe(e => lastThrownException = e))
+            using (ReceivedMessages.Subscribe(m => lastReceivedMessage = m))
+            using (ExceptionsThrownByReceiver.Subscribe(e => lastThrownException = e))
             {
                 doSend();
 
@@ -148,7 +148,7 @@ namespace NServiceBus.SQS.IntegrationTests
 
         public TransportMessage SendAndReceiveMessage(TransportMessage messageToSend)
         {
-			return SendAndReceiveCore(() => Sender.Send(messageToSend, new SendOptions(new Address(SqsTestContext.QueueName, SqsTestContext.MachineName))));
+			return SendAndReceiveCore(() => Sender.Send(messageToSend, new SendOptions(new Address(QueueName, MachineName))));
         }
 
         public void Dispose()

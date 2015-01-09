@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace NServiceBus.SQS
+﻿namespace NServiceBus.SQS
 {
+	using System.Collections.Concurrent;
+
 	internal class SqsQueueUrlCache
 	{
 		public IAwsClientFactory ClientFactory { get; set; }
@@ -20,7 +15,7 @@ namespace NServiceBus.SQS
 
 		public string GetQueueUrl(Address address)
 		{
-			string result = string.Empty;
+			string result;
 			var addressKey = address.ToString();
 			if (!_cache.TryGetValue(addressKey, out result))
 			{

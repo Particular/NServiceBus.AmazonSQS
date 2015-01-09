@@ -2,10 +2,7 @@
 using NServiceBus.Unicast;
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace NServiceBus.SQS.Tests
 {
@@ -15,12 +12,13 @@ namespace NServiceBus.SQS.Tests
 		[Test]
 		public void throws_when_message_is_large_and_no_s3_bucket_configured()
 		{
-			var sut = new SqsQueueSender();
-			
-			sut.ConnectionConfiguration = new SqsConnectionConfiguration 
-			{ 
-				Region = Amazon.RegionEndpoint.APSoutheast2, 
-				S3BucketForLargeMessages = String.Empty 
+			var sut = new SqsQueueSender
+			{
+				ConnectionConfiguration = new SqsConnectionConfiguration
+				{
+					Region = Amazon.RegionEndpoint.APSoutheast2,
+					S3BucketForLargeMessages = String.Empty
+				}
 			};
 
 			var largeTransportMessageToSend = new TransportMessage();

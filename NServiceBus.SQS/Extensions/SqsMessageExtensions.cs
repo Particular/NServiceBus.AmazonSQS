@@ -8,7 +8,7 @@
     {
 		public static TransportMessage ToTransportMessage(this SqsTransportMessage sqsTransportMessage, IAmazonS3 amazonS3, SqsConnectionConfiguration connectionConfiguration)
         {
-            var messageId = sqsTransportMessage.Headers[NServiceBus.Headers.MessageId];
+            var messageId = sqsTransportMessage.Headers[Headers.MessageId];
 
 			var result = new TransportMessage(messageId, sqsTransportMessage.Headers);
 			

@@ -1,9 +1,8 @@
 ﻿namespace NServiceBus.Features
 {
-	using NServiceBus.Settings;
-	using NServiceBus.SQS;
-	using NServiceBus.Transports;
-	using NServiceBus.Transports.SQS;
+	using SQS;
+	using Transports;
+	using Transports.SQS;
 
     public class SqsTransportFeature : ConfigureTransport
     {
@@ -11,7 +10,7 @@
         {
             var connectionConfiguration = SqsConnectionStringParser.Parse(connectionString);
 
-			context.Container.ConfigureComponent<SqsConnectionConfiguration>(_ => connectionConfiguration, DependencyLifecycle.SingleInstance);
+			context.Container.ConfigureComponent(_ => connectionConfiguration, DependencyLifecycle.SingleInstance);
 
 			context.Container.ConfigureComponent<AwsClientFactory>(DependencyLifecycle.SingleInstance);
 

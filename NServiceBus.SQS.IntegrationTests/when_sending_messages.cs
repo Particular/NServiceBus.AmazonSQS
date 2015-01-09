@@ -28,10 +28,12 @@ namespace NServiceBus.SQS.IntegrationTests
         [Test]
         public void body_should_transmit_correctly()
         {
-            var transportMessage = new TransportMessage();
-            transportMessage.Body = Encoding.Default.GetBytes("This is a test");
+            var transportMessage = new TransportMessage
+            {
+	            Body = Encoding.Default.GetBytes("This is a test")
+            };
 
-            var received = _context.SendAndReceiveMessage(transportMessage);
+	        var received = _context.SendAndReceiveMessage(transportMessage);
 
             Assert.AreEqual("This is a test", Encoding.Default.GetString( received.Body, 0, received.Body.Length));
 
@@ -80,10 +82,12 @@ namespace NServiceBus.SQS.IntegrationTests
         {
             var timeToBeReceived = TimeSpan.FromDays(1);
 
-            var transportMessage = new TransportMessage();
-            transportMessage.TimeToBeReceived = timeToBeReceived;
+            var transportMessage = new TransportMessage
+            {
+	            TimeToBeReceived = timeToBeReceived
+            };
 
-            var received = _context.SendAndReceiveMessage(transportMessage);
+	        var received = _context.SendAndReceiveMessage(transportMessage);
 
             Assert.AreEqual(received.TimeToBeReceived, transportMessage.TimeToBeReceived);
         }
@@ -100,7 +104,7 @@ namespace NServiceBus.SQS.IntegrationTests
 		public void messages_larger_than_256k_work()
 		{
 			var transportMessage = new TransportMessage();
-			StringBuilder sb = new StringBuilder();
+			var sb = new StringBuilder();
 			while (sb.Length <= 256 * 1024)
 			{
 				sb.Append("a");
@@ -109,7 +113,7 @@ namespace NServiceBus.SQS.IntegrationTests
 
 			var received = _context.SendAndReceiveMessage(transportMessage);
 
-			string receivedBodyAsString = Encoding.ASCII.GetString(received.Body, 0, received.Body.Length);
+			var receivedBodyAsString = Encoding.ASCII.GetString(received.Body, 0, received.Body.Length);
 
 			Assert.IsTrue(receivedBodyAsString.Length > 256 * 1024);
 			Assert.IsTrue(receivedBodyAsString.Contains("a"));
