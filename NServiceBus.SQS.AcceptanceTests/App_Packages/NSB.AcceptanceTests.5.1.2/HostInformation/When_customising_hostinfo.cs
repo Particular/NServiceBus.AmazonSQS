@@ -3,7 +3,6 @@ namespace NServiceBus.AcceptanceTests.HostInformation
     using System;
     using NServiceBus.AcceptanceTesting;
     using NServiceBus.AcceptanceTests.EndpointTemplates;
-    using NServiceBus.Utils;
     using NUnit.Framework;
 
     public class When_customising_hostinfo : NServiceBusAcceptanceTest

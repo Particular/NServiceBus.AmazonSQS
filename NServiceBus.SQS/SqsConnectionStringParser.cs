@@ -44,9 +44,21 @@
 				{
 					connectionConfiguration.S3KeyPrefix = keyAndValue[1];
 				}
-				else if (keyAndValue[0].ToLower() == "s3maxbodyagedays")
+				else if (keyAndValue[0].ToLower() == "maxttldays")
 				{
-					connectionConfiguration.S3MaxBodyAgeDays = int.Parse(keyAndValue[1]);
+					connectionConfiguration.MaxTTLDays = int.Parse(keyAndValue[1]);
+                    if (connectionConfiguration.MaxTTLDays <= 0 || connectionConfiguration.MaxTTLDays > 14)
+                    {
+                        throw new ArgumentException("Max TTL needs to be greater than 0 and less than 15.");
+                    }
+                }
+                else if (keyAndValue[0].ToLower() == "maxreceivemessagebatchsize")
+				{
+					connectionConfiguration.MaxReceiveMessageBatchSize = int.Parse(keyAndValue[1]);
+                    if (connectionConfiguration.MaxReceiveMessageBatchSize <= 0 || connectionConfiguration.MaxReceiveMessageBatchSize > 10)
+                    {
+                        throw new ArgumentException("Max receive message batch size needs to be a number from 1 to 10.");
+                    }
 				}
             }
 

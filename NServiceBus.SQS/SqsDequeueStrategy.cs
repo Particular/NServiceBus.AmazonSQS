@@ -1,18 +1,17 @@
 ﻿namespace NServiceBus.Transports.SQS
 {
-	using Amazon.S3;
-	using Amazon.SQS;
-	using Amazon.SQS.Model;
-	using Newtonsoft.Json;
-	using NServiceBus.Logging;
-	using NServiceBus.SQS;
-	using NServiceBus.Transports;
-	using NServiceBus.Unicast.Transport;
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Threading;
-	using System.Threading.Tasks;
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Amazon.S3;
+    using Amazon.S3.Model;
+    using Amazon.SQS;
+    using Amazon.SQS.Model;
+    using Newtonsoft.Json;
+    using NServiceBus.Logging;
+    using NServiceBus.SQS;
+    using NServiceBus.Unicast.Transport;
 
     internal class SqsDequeueStrategy : IDequeueMessages
     {
@@ -72,7 +71,7 @@
 
             for (var i = 0; i < maximumConcurrencyLevel; i++)
             {
-                StartConsumer(_queueUrl);
+                StartConsumer();
             }
         }
 
@@ -98,7 +97,7 @@
             _tracksRunningThreads.Dispose();
         }
 
-        void StartConsumer(string queue)
+        void StartConsumer()
         {
             Task.Factory
                 .StartNew(ConsumeMessages, _cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default)
@@ -106,7 +105,7 @@
                 {
                     if (!_cancellationTokenSource.IsCancellationRequested)
                     {
-                        StartConsumer(queue);
+                        StartConsumer();
                     }
                 }, TaskContinuationOptions.OnlyOnFaulted);
         }
@@ -126,7 +125,7 @@
 						
 						var receiveTask = sqs.ReceiveMessageAsync(new ReceiveMessageRequest
 							{
-								MaxNumberOfMessages = 1,
+								MaxNumberOfMessages = ConnectionConfiguration.MaxReceiveMessageBatchSize,
 								QueueUrl = _queueUrl,
 								WaitTimeSeconds = 20,
 								AttributeNames = new List<String> { "SentTimestamp" }
@@ -135,58 +134,56 @@
 
 						receiveTask.Wait(_cancellationTokenSource.Token);
 
-						var message = receiveTask.Result.Messages.FirstOrDefault();
-
-						if (message == null)
-							continue;
-
-                        TransportMessage transportMessage = null;
-						SqsTransportMessage sqsTransportMessage = null;
-
-						var messageProcessedOk = false;
-						var messageExpired = false;
-
-                        try
+                        foreach (var message in receiveTask.Result.Messages)
                         {
-							sqsTransportMessage = JsonConvert.DeserializeObject<SqsTransportMessage>(message.Body);
+                            TransportMessage transportMessage = null;
+                            SqsTransportMessage sqsTransportMessage = null;
 
-                            transportMessage = sqsTransportMessage.ToTransportMessage(s3, ConnectionConfiguration);
+                            var messageProcessedOk = false;
+                            var messageExpired = false;
 
-							// Check that the message hasn't expired
-							if (transportMessage.TimeToBeReceived != TimeSpan.MaxValue)
-							{
-								var sentDateTime = message.GetSentDateTime();
-								if (sentDateTime + transportMessage.TimeToBeReceived <= DateTime.UtcNow)
-								{
-									// Message has expired. 
-									Logger.Warn(String.Format("Discarding expired message with Id {0}", transportMessage.Id));
-									messageExpired = true;
-								}
-							}
+                            try
+                            {
+                                sqsTransportMessage = JsonConvert.DeserializeObject<SqsTransportMessage>(message.Body);
 
-							if (!messageExpired)
-							{
-								messageProcessedOk = _tryProcessMessage(transportMessage);
-							}
-                        }
-                        catch (Exception ex)
-                        {
-                            exception = ex;
-                        }
-                        finally
-                        {
-							var deleteMessage = !_isTransactional || (_isTransactional && messageProcessedOk);
+                                transportMessage = sqsTransportMessage.ToTransportMessage(s3, ConnectionConfiguration);
 
-							if (deleteMessage)
-							{
-								DeleteMessage(sqs, s3, message, sqsTransportMessage, transportMessage);
-							}
-							else
-							{
-								sqs.ChangeMessageVisibility(_queueUrl, message.ReceiptHandle, 0);
-							}
+                                // Check that the message hasn't expired
+                                if (transportMessage.TimeToBeReceived != TimeSpan.MaxValue)
+                                {
+                                    var sentDateTime = message.GetSentDateTime();
+                                    if (sentDateTime + transportMessage.TimeToBeReceived <= DateTime.UtcNow)
+                                    {
+                                        // Message has expired. 
+                                        Logger.Warn(String.Format("Discarding expired message with Id {0}", transportMessage.Id));
+                                        messageExpired = true;
+                                    }
+                                }
 
-                            _endProcessMessage(transportMessage, exception);
+                                if (!messageExpired)
+                                {
+                                    messageProcessedOk = _tryProcessMessage(transportMessage);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                exception = ex;
+                            }
+                            finally
+                            {
+                                var deleteMessage = !_isTransactional || (_isTransactional && messageProcessedOk);
+
+                                if (deleteMessage)
+                                {
+                                    DeleteMessage(sqs, s3, message, sqsTransportMessage, transportMessage);
+                                }
+                                else
+                                {
+                                    sqs.ChangeMessageVisibility(_queueUrl, message.ReceiptHandle, 0);
+                                }
+
+                                _endProcessMessage(transportMessage, exception);
+                            }
                         }
                     }
                 }
@@ -212,7 +209,7 @@
 				// the S3 bucket lifecycle configuration will eventually delete the message anyway.
 				// So, we can get better performance by not waiting around for this call to finish.
 				var s3DeleteTask = s3.DeleteObjectAsync(
-					new Amazon.S3.Model.DeleteObjectRequest
+					new DeleteObjectRequest
 					{
 						BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
 						Key = ConnectionConfiguration.S3KeyPrefix + transportMessage.Id

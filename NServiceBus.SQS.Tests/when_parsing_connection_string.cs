@@ -37,13 +37,36 @@ namespace NServiceBus.SQS.Tests
 		}
 
 		[Test]
-		public void parsing_max_body_age_days_works()
+		public void parsing_max_ttl_days_works()
 		{
 			var result = SqsConnectionStringParser.Parse(
-				"Region=ap-southeast-2;S3BucketForLargeMessages=myTestBucket;S3KeyPrefix=blah\blah;S3MaxBodyAgeDays=1");
+				"Region=ap-southeast-2;S3BucketForLargeMessages=myTestBucket;S3KeyPrefix=blah\blah;MaxTTLDays=1");
 
-			Assert.AreEqual(1, result.S3MaxBodyAgeDays);
+			Assert.AreEqual(1, result.MaxTTLDays);
 		}
+
+        [Test]
+        public void invalid_max_ttl_days_throws()
+        {
+            Assert.Throws<ArgumentException>(() => SqsConnectionStringParser.Parse(
+                "Region=ap-southeast-2;S3BucketForLargeMessages=myTestBucket;S3KeyPrefix=blah\blah;MaxTTLDays=100"));
+        }
+
+        [Test]
+        public void parsing_max_receive_message_batch_size_works()
+        {
+            var result = SqsConnectionStringParser.Parse(
+                "Region=ap-southeast-2;MaxReceiveMessageBatchSize=1");
+
+            Assert.AreEqual(1, result.MaxReceiveMessageBatchSize);
+        }
+
+        [Test]
+        public void invalid_max_receive_message_batch_size_throws()
+        {
+            Assert.Throws<ArgumentException>(() => SqsConnectionStringParser.Parse(
+                "Region=ap-southeast-2;S3BucketForLargeMessages=myTestBucket;MaxReceiveMessageBatchSize=100"));
+        }
 
     }
 }
