@@ -6,6 +6,12 @@ namespace NServiceBus.SQS.Tests
     [TestFixture]
     public class when_parsing_connection_string
     {
+	    [Test]
+	    public void parsing_unknown_key_throws()
+	    {
+		    Assert.Throws<ArgumentException>(() => SqsConnectionStringParser.Parse("NotAValidKey=some_value;"));
+	    }
+
         [Test]
 		public void parsing_valid_region_works()
         {
@@ -67,6 +73,8 @@ namespace NServiceBus.SQS.Tests
             Assert.Throws<ArgumentException>(() => SqsConnectionStringParser.Parse(
                 "Region=ap-southeast-2;S3BucketForLargeMessages=myTestBucket;MaxReceiveMessageBatchSize=100"));
         }
+
+
 
     }
 }

@@ -8,6 +8,7 @@
 		{
             MaxTTLDays = 4;
             MaxReceiveMessageBatchSize = 10;
+			TruncateLongQueueNames = false;
 		}
 
         public RegionEndpoint Region { get; set; }
@@ -19,5 +20,7 @@
 		public string S3KeyPrefix { get; set; }
 
         public int MaxReceiveMessageBatchSize { get; set; }
+
+		public bool TruncateLongQueueNames { get; set; }
     }
 }

@@ -60,6 +60,18 @@
                         throw new ArgumentException("Max receive message batch size needs to be a number from 1 to 10.");
                     }
 				}
+				else if (keyAndValue[0].ToLower() == "truncatelongqueuenames")
+				{
+					connectionConfiguration.TruncateLongQueueNames = bool.Parse(keyAndValue[1]);
+					if (connectionConfiguration.TruncateLongQueueNames)
+					{
+						AddressExtensions.TruncateLongQueueNames = true;
+					}
+				}
+				else
+				{
+					throw new ArgumentException(String.Format("Unknown configuration key \"{0}\"", keyAndValue[0]));
+				}
             }
 
 			if (!string.IsNullOrEmpty(connectionConfiguration.S3BucketForLargeMessages) &&
