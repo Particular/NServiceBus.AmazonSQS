@@ -74,7 +74,11 @@ namespace NServiceBus.SQS.Tests
                 "Region=ap-southeast-2;S3BucketForLargeMessages=myTestBucket;MaxReceiveMessageBatchSize=100"));
         }
 
-
-
+	    [Test]
+	    public void parsing_queue_name_prefix_works()
+	    {
+		    var result = SqsConnectionStringParser.Parse("Region=ap-southeast-2;QueueNamePrefix=DEV");
+			Assert.AreEqual("DEV", result.QueueNamePrefix);
+	    }
     }
 }

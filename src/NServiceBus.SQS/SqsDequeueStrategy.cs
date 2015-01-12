@@ -31,7 +31,7 @@
         {
 			using (var sqs = ClientFactory.CreateSqsClient(ConnectionConfiguration))
             {
-                var getQueueUrlRequest = new GetQueueUrlRequest(address.ToSqsQueueName());
+                var getQueueUrlRequest = new GetQueueUrlRequest(address.ToSqsQueueName(ConnectionConfiguration));
                 var getQueueUrlResponse = sqs.GetQueueUrl(getQueueUrlRequest);
                 _queueUrl = getQueueUrlResponse.QueueUrl;
 

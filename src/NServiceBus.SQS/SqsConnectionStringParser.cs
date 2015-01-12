@@ -92,10 +92,10 @@
 				else if (keyAndValue[0].ToLower() == "truncatelongqueuenames")
 				{
 					connectionConfiguration.TruncateLongQueueNames = bool.Parse(keyAndValue[1]);
-					if (connectionConfiguration.TruncateLongQueueNames)
-					{
-						AddressExtensions.TruncateLongQueueNames = true;
-					}
+				}
+				else if (keyAndValue[0].ToLower() == "queuenameprefix")
+				{
+					connectionConfiguration.QueueNamePrefix = keyAndValue[1];
 				}
 				else
 				{

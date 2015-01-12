@@ -21,6 +21,8 @@
 
         public int MaxReceiveMessageBatchSize { get; set; }
 
+		public string QueueNamePrefix { get; set; }
+
 		public bool TruncateLongQueueNames { get; set; }
     }
 }

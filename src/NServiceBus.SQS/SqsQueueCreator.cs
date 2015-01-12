@@ -21,7 +21,7 @@
             {
                 var sqsRequest = new CreateQueueRequest
                 {
-	                QueueName = address.ToSqsQueueName(),
+	                QueueName = address.ToSqsQueueName(ConnectionConfiguration),
                 };
 	            var createQueueResponse = sqs.CreateQueue(sqsRequest);
 
