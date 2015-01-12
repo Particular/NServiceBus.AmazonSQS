@@ -3,7 +3,7 @@
 	using System;
 	using System.Linq;
 
-    internal static class SqsConnectionStringParser
+	internal static class SqsConnectionStringParser
     {
         public static SqsConnectionConfiguration Parse(string connectionString)
         {
@@ -38,7 +38,36 @@
 				}
 				else if (keyAndValue[0].ToLower() == "s3bucketforlargemessages")
 				{
-					connectionConfiguration.S3BucketForLargeMessages = keyAndValue[1];
+					connectionConfiguration.S3BucketForLargeMessages = keyAndValue[1].ToLower();
+
+					// https://forums.aws.amazon.com/message.jspa?messageID=315883
+					// S3 bucket names have the following restrictions:
+					// - Should not contain uppercase characters
+					// - Should not contain underscores (_)
+					// - Should be between 3 and 63 characters long
+					// - Should not end with a dash
+					// - Cannot contain two, adjacent periods
+					// - Cannot contain dashes next to periods (e.g., "my-.bucket.com" and "my.-bucket" are invalid)
+					if ( connectionConfiguration.S3BucketForLargeMessages.Length < 3 ||
+						connectionConfiguration.S3BucketForLargeMessages.Length > 63)
+						throw new ArgumentException("S3 Bucket names must be between 3 and 63 characters in length.");
+
+					if (connectionConfiguration.S3BucketForLargeMessages.Any(c => !char.IsLetterOrDigit(c)
+					                                                              && c != '-'
+					                                                              && c != '.'))
+					{
+						throw new ArgumentException("S3 Bucket names must only contain letters, numbers, hyphens and periods.");
+					}
+
+					if ( connectionConfiguration.S3BucketForLargeMessages.EndsWith("-") )
+						throw new ArgumentException("S3 Bucket names must not end with a hyphen.");
+
+					if ( connectionConfiguration.S3BucketForLargeMessages.Contains("..") )
+						throw new ArgumentException("S3 Bucket names must not contain two adjacent periods.");
+
+					if (connectionConfiguration.S3BucketForLargeMessages.Contains(".-") || 
+						connectionConfiguration.S3BucketForLargeMessages.Contains("-."))
+						throw new ArgumentException("S3 Bucket names must not contain hyphens adjacent to periods.");
 				}
 				else if (keyAndValue[0].ToLower() == "s3keyprefix")
 				{
