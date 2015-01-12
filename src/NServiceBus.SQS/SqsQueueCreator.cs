@@ -23,9 +23,20 @@
                 {
 	                QueueName = address.ToSqsQueueName(),
                 };
-                sqsRequest.Attributes.Add( QueueAttributeName.MessageRetentionPeriod,
+	            var createQueueResponse = sqs.CreateQueue(sqsRequest);
+
+				// Set the queue attributes in a separate call. 
+				// If you call CreateQueue with a queue name that already exists, and with a different
+				// value for MessageRetentionPeriod, the service throws. This will happen if you 
+				// change the MaxTTLDays configuration property. 
+	            var sqsAttributesRequest = new SetQueueAttributesRequest
+	            {
+					QueueUrl = createQueueResponse.QueueUrl
+	            };
+				sqsAttributesRequest.Attributes.Add( QueueAttributeName.MessageRetentionPeriod,
                     ((int)(TimeSpan.FromDays(ConnectionConfiguration.MaxTTLDays).TotalSeconds)).ToString());
-	            sqs.CreateQueue(sqsRequest);
+
+	            sqs.SetQueueAttributes(sqsAttributesRequest);
             }
 
             if (!string.IsNullOrEmpty(ConnectionConfiguration.S3BucketForLargeMessages))
