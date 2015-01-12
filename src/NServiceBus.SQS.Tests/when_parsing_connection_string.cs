@@ -32,7 +32,7 @@ namespace NServiceBus.SQS.Tests
 			var result = SqsConnectionStringParser.Parse(
 				"Region=ap-southeast-2;S3BucketForLargeMessages=myTestBucket;S3KeyPrefix=blah\blah;");
 
-			Assert.AreEqual("myTestBucket", result.S3BucketForLargeMessages);
+			Assert.AreEqual("mytestbucket", result.S3BucketForLargeMessages);
 		}
 
 		[Test]
