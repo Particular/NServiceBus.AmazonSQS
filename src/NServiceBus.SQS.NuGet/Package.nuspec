@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>NServiceBus.SQS</id>
-    <version>0.1.0</version>
+    <version>0.2.0-pre</version>
     <title>NServiceBus.SQS</title>
     <authors>Adrian.Hofman</authors>
     <owners>EBOS Group Limited</owners>
@@ -10,6 +10,12 @@
       An Amazon SQS transport implementation for NServiceBus.
     </description>
     <releaseNotes>
+      See the project wiki for more details: https://github.com/ahofman/NServiceBus.SQS/wiki
+      * Added a new configuration option, MaxReceiveMessageBatchSize, which allows receivers to receive up to 10 messages per API call. This can drastically reduce the amount of money you pay to Amazon.
+      * Added another new configuration option, MaxTTLDays, which specifies the maximum time-to-live of all messages in the transport in days. This applies to data SQS and S3.
+      * Loads of minor fixes.
+
+      As always, the NServiceBus Acceptance Test suite is leveraged to provide the highest possible quality.
     </releaseNotes>
     <summary>
     </summary>
