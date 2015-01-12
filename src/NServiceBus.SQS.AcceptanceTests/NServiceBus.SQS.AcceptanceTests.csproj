@@ -206,7 +206,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="DeleteAllQueuesInRegion.ps1" />
+    <None Include="DeleteQueues.ps1" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
