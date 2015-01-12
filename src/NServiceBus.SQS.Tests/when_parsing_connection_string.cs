@@ -80,5 +80,26 @@ namespace NServiceBus.SQS.Tests
 		    var result = SqsConnectionStringParser.Parse("Region=ap-southeast-2;QueueNamePrefix=DEV");
 			Assert.AreEqual("DEV", result.QueueNamePrefix);
 	    }
+
+	    [Test]
+	    public void parsing_instance_profile_credential_source_works()
+	    {
+		    var result = SqsConnectionStringParser.Parse("Region=ap-southeast-2;CredentialSource=InstanceProfile");
+			Assert.AreEqual(SqsCredentialSource.InstanceProfile, result.CredentialSource);
+	    }
+
+		[Test]
+		public void parsing_environment_variables_credential_source_works()
+		{
+			var result = SqsConnectionStringParser.Parse("Region=ap-southeast-2;CredentialSource=EnvironmentVariables");
+			Assert.AreEqual(SqsCredentialSource.EnvironmentVariables, result.CredentialSource);
+		}
+
+		[Test]
+		public void invalid_credential_source_throws()
+		{
+			// Don't implement the environment credentials source!
+			Assert.Throws<ArgumentException>(() => SqsConnectionStringParser.Parse("Region=ap-southeast-2;CredentialSource=Environment"));
+		}
     }
 }

@@ -59,6 +59,7 @@
     <Compile Include="SqsConnectionConfiguration.cs" />
     <Compile Include="SqsConnectionStringParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SqsCredentialSource.cs" />
     <Compile Include="SqsDequeueStrategy.cs" />
     <Compile Include="SqsQueueCreator.cs" />
     <Compile Include="SqsQueueSender.cs" />

@@ -97,6 +97,10 @@
 				{
 					connectionConfiguration.QueueNamePrefix = keyAndValue[1];
 				}
+				else if (keyAndValue[0].ToLower() == "credentialsource")
+				{
+					connectionConfiguration.CredentialSource = (SqsCredentialSource)Enum.Parse(typeof(SqsCredentialSource), keyAndValue[1]);
+				}
 				else
 				{
 					throw new ArgumentException(String.Format("Unknown configuration key \"{0}\"", keyAndValue[0]));
