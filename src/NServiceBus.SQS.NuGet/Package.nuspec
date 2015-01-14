@@ -13,6 +13,8 @@
       See the project wiki for more details: https://github.com/ahofman/NServiceBus.SQS/wiki
       * Added ability to get credentials from the EC2 instance profile. Set the "CredentialSource" config property to "InstanceProfile".
       * Added ability to specify a prefix for all queue names via the "QueueUrlPrefix" config property.
+      * Fixed a bug where subscription messages would be sent to queues that didn't exist. 
+      * Updated to latest AWSSDK.
       As always, the NServiceBus Acceptance Test suite is leveraged to provide the highest possible quality.
     </releaseNotes>
     <summary>
@@ -25,7 +27,7 @@
     <copyright>Copyright EBOS Group Limited 2015</copyright>
     <dependencies>
         <group targetFramework="net45">
-          <dependency id="AWSSDK" version="2.3.14.0"/>
+          <dependency id="AWSSDK" version="2.3.15.0"/>
           <dependency id="Newtonsoft.Json" version="6.0.7"/>
           <dependency id="NServiceBus" version="5.1.2"/>
         </group>

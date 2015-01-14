@@ -30,9 +30,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="AWSSDK, Version=2.3.14.0, Culture=neutral, PublicKeyToken=9f476d3089b52be3, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\AWSSDK.2.3.14.0\lib\net45\AWSSDK.dll</HintPath>
+    <Reference Include="AWSSDK">
+      <HintPath>..\packages\AWSSDK.2.3.15.0\lib\net45\AWSSDK.dll</HintPath>
     </Reference>
     <Reference Include="NServiceBus.AcceptanceTesting">
       <HintPath>..\packages\NServiceBus.AcceptanceTesting.5.1.2\lib\net45\NServiceBus.AcceptanceTesting.dll</HintPath>
