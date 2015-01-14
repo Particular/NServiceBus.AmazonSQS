@@ -1,31 +1,30 @@
 ﻿namespace NServiceBus.SQS.IntegrationTests
 {
-	using NServiceBus.Transports.SQS;
 	using NUnit.Framework;
-	using System.Configuration;
-
+	
 	[TestFixture]
 	public class when_creating_queues
 	{
-        private SqsConnectionConfiguration _connectionConfiguration;
+		SqsTestContext _context;
 
-        [SetUp]
+        [TestFixtureSetUp]
         public void SetUp()
         {
-			_connectionConfiguration =
-				SqsConnectionStringParser.Parse(ConfigurationManager.AppSettings["TestConnectionString"]);
+			_context = new SqsTestContext(this);
         }
 
-		[Test]
-		public void smoke_test()
+		[TestFixtureTearDown]
+		public void TearDown()
 		{
-			var sut = new SqsQueueCreator
-			{
-				ConnectionConfiguration = _connectionConfiguration,
-				ClientFactory = new AwsClientFactory()
-			};
+			_context.Dispose();
+		}
 
-			Assert.DoesNotThrow( () => sut.CreateQueueIfNecessary(new Address ("testQueueName", "testMachineName" ), ""));
+		[Test]
+		public void creating_queue_works()
+		{
+			Assert.DoesNotThrow(() => _context.CreateQueue());
+
+			Assert.IsTrue( _context.MyQueueExists() );
 		}
 	}
 }

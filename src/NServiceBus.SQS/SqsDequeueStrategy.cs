@@ -80,21 +80,27 @@
         /// </summary>
         public void Stop()
         {
-			_cancellationTokenSource.Cancel();
+			if ( _cancellationTokenSource != null )
+				_cancellationTokenSource.Cancel();
 
             DrainStopSemaphore();
         }
 
         void DrainStopSemaphore()
         {
-            for (var index = 0; index < _concurrencyLevel; index++)
-            {
-                _tracksRunningThreads.Wait();
-            }
+	        if (_tracksRunningThreads != null)
+	        {
+				for (var index = 0; index < _concurrencyLevel; index++)
+				{
+					_tracksRunningThreads.Wait();
+				}
 
-            _tracksRunningThreads.Release(_concurrencyLevel);
+				_tracksRunningThreads.Release(_concurrencyLevel);
 
-            _tracksRunningThreads.Dispose();
+				_tracksRunningThreads.Dispose();
+
+		        _tracksRunningThreads = null;
+	        }
         }
 
         void StartConsumer()

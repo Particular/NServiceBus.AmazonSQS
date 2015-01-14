@@ -16,7 +16,9 @@ namespace NServiceBus.SQS.IntegrationTests
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            _context = new SqsTestContext();
+            _context = new SqsTestContext(this);
+			_context.CreateQueue();
+			_context.InitAndStartDequeueing();
         }
 
         [TestFixtureTearDown]

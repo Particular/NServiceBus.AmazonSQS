@@ -15,6 +15,8 @@
 
 		public SqsQueueUrlCache QueueUrlCache { get; set; }
 
+		public ICreateQueues QueueCreator { get; set; }
+
         public void Send(TransportMessage message, SendOptions sendOptions)
         {
 			var sqsTransportMessage = new SqsTransportMessage(message, sendOptions);
@@ -41,13 +43,27 @@
 					serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
 				}
 			}
-			
+
+	        try
+	        {
+				SendMessage(serializedMessage, sendOptions);   
+	        }
+	        catch (QueueDoesNotExistException)
+	        {
+		        QueueCreator.CreateQueueIfNecessary(sendOptions.Destination, "");
+
+				SendMessage(serializedMessage, sendOptions);
+	        }
+        }
+
+	    private void SendMessage(string message, SendOptions sendOptions)
+	    {
 			using (var sqs = ClientFactory.CreateSqsClient(ConnectionConfiguration))
-            {
-				var sendMessageRequest = new SendMessageRequest(QueueUrlCache.GetQueueUrl(sendOptions.Destination), serializedMessage);
+			{
+				var sendMessageRequest = new SendMessageRequest(QueueUrlCache.GetQueueUrl(sendOptions.Destination), message);
 
 				sqs.SendMessage(sendMessageRequest);
-            }
-        }
+			}
+	    }
 	}
 }

@@ -65,10 +65,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extensions\SqsContextExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SqsTestContext.cs" />
     <Compile Include="when_creating_queues.cs" />
     <Compile Include="when_sending_messages.cs" />
+    <Compile Include="when_sending_messages_and_queue_doesnt_exist.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config">

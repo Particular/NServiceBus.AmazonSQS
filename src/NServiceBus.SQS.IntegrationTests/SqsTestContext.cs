@@ -1,19 +1,15 @@
 ﻿namespace NServiceBus.SQS.IntegrationTests
 {
 	using Amazon.SQS.Model;
-	using NServiceBus.Transports.SQS;
-	using NServiceBus.Unicast;
 	using System;
 	using System.Reactive.Subjects;
 	using System.Threading;
 	using System.Configuration;
-
-    internal class SqsTestContext : IDisposable
+	using Transports.SQS;
+	using Unicast;
+	
+	internal class SqsTestContext : IDisposable
     {
-        public static readonly string QueueName = "testQueue";
-
-        public static readonly string MachineName = "testMachine";
-
         public SqsConnectionConfiguration ConnectionConfiguration { get; private set; }
 
 		public IAwsClientFactory ClientFactory { get; private set; }
@@ -41,9 +37,9 @@
         private Subject<TransportMessage> _receivedMessages;
         private Subject<Exception> _exceptionsThrownByReceiver;
         
-        public SqsTestContext()
+        public SqsTestContext(object fixture)
         {
-            Address = new Address(QueueName, MachineName);
+            Address = new Address(fixture.GetType().Name, Environment.MachineName);
 			ConnectionConfiguration = 
 				SqsConnectionStringParser.Parse(ConfigurationManager.AppSettings["TestConnectionString"]);
 
@@ -53,8 +49,7 @@
 				ConnectionConfiguration = ConnectionConfiguration,
 				ClientFactory = ClientFactory
 			};
-	        Creator.CreateQueueIfNecessary(Address, "");
-
+	        
             _receivedMessages = new Subject<TransportMessage>();
             _exceptionsThrownByReceiver = new Subject<Exception>();
 
@@ -64,23 +59,13 @@
 				ConnectionConfiguration = ConnectionConfiguration
 			};
 
-	        using (var sqs = ClientFactory.CreateSqsClient(ConnectionConfiguration))
-			{
-				try
-				{
-					sqs.PurgeQueue(QueueUrlCache.GetQueueUrl(Address));
-				}
-				catch (PurgeQueueInProgressException)
-				{
-					
-				}
-			}
 
             Sender = new SqsQueueSender
             {
 	            ConnectionConfiguration = ConnectionConfiguration,
 	            ClientFactory = ClientFactory,
-	            QueueUrlCache = QueueUrlCache
+	            QueueUrlCache = QueueUrlCache,
+				QueueCreator = Creator
             };
 
 	        DequeueStrategy = new SqsDequeueStrategy(null)
@@ -88,21 +73,42 @@
 		        ConnectionConfiguration = ConnectionConfiguration,
 		        ClientFactory = ClientFactory
 	        };
-	        DequeueStrategy.Init(Address,
-                null,
-                m =>
-                {
-                    _receivedMessages.OnNext(m);
-                    return true;
-                },
-                (m, e) => 
-                {
-                    if (e != null)
-                        _exceptionsThrownByReceiver.OnNext(e);
-                });
-
-            DequeueStrategy.Start(1);
+	        
         }
+
+	    public void CreateQueue()
+	    {
+			Creator.CreateQueueIfNecessary(Address, "");
+
+			using (var sqs = ClientFactory.CreateSqsClient(ConnectionConfiguration))
+			{
+				try
+				{
+					sqs.PurgeQueue(QueueUrlCache.GetQueueUrl(Address));
+				}
+				catch (PurgeQueueInProgressException)
+				{
+
+				}
+			}
+	    }
+
+		public void InitAndStartDequeueing()
+		{
+			DequeueStrategy.Init(Address,
+				null,
+				m =>
+				{
+					_receivedMessages.OnNext(m);
+					return true;
+				},
+				(m, e) =>
+				{
+					if (e != null)
+						_exceptionsThrownByReceiver.OnNext(e);
+				});
+			DequeueStrategy.Start(1);	
+		}
 
         public TransportMessage SendRawAndReceiveMessage(string rawMessageString)
         {
@@ -148,12 +154,14 @@
 
         public TransportMessage SendAndReceiveMessage(TransportMessage messageToSend)
         {
-			return SendAndReceiveCore(() => Sender.Send(messageToSend, new SendOptions(new Address(QueueName, MachineName))));
+			return SendAndReceiveCore(() => Sender.Send(messageToSend, new SendOptions(Address)));
         }
 
         public void Dispose()
         {
             DequeueStrategy.Stop();
         }
+
+		
     }
 }
