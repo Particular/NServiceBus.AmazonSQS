@@ -1,8 +1,8 @@
 ﻿namespace NServiceBus.Features
 {
-	using AmazonSQS;
-	using Transports;
-	using Transports.SQS;
+    using AmazonSQS;
+    using Transports;
+    using Transports.SQS;
 
     public class SqsTransportFeature : ConfigureTransport
     {
@@ -12,7 +12,9 @@
 
 			context.Container.ConfigureComponent(_ => connectionConfiguration, DependencyLifecycle.SingleInstance);
 
-			context.Container.ConfigureComponent<AwsClientFactory>(DependencyLifecycle.SingleInstance);
+            context.Container.ConfigureComponent(_ => AwsClientFactory.CreateSqsClient(connectionConfiguration), DependencyLifecycle.SingleInstance);
+
+            context.Container.ConfigureComponent(_ => AwsClientFactory.CreateS3Client(connectionConfiguration), DependencyLifecycle.SingleInstance);
 
 			context.Container.ConfigureComponent<SqsQueueUrlCache>(DependencyLifecycle.SingleInstance);
 

@@ -17,19 +17,16 @@ namespace NServiceBus.AmazonSQS.IntegrationTests
 			_context = new SqsTestContext(this);
 
 			// ensure queue doesn't exist
-			using (var sqs = _context.ClientFactory.CreateSqsClient(_context.ConnectionConfiguration))
+			var listQueuesResponse = _context.SqsClient.ListQueues("");
+			foreach (var q in listQueuesResponse.QueueUrls)
 			{
-				var listQueuesResponse = sqs.ListQueues("");
-				foreach (var q in listQueuesResponse.QueueUrls)
+				if (q.Contains(_context.Address.Queue))
 				{
-					if (q.Contains(_context.Address.Queue))
-					{
-						sqs.DeleteQueue(q);		
-						// We'll be creating the queue again shortly.
-						// SQS wants you to wait a little while before you create
-						// a queue with the same name. 
-						Thread.Sleep(TimeSpan.FromSeconds(61));
-					}
+					_context.SqsClient.DeleteQueue(q);		
+					// We'll be creating the queue again shortly.
+					// SQS wants you to wait a little while before you create
+					// a queue with the same name. 
+					Thread.Sleep(TimeSpan.FromSeconds(61));
 				}
 			}
 		}

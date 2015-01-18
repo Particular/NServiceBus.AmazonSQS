@@ -17,7 +17,9 @@
     {
         public SqsConnectionConfiguration ConnectionConfiguration { get; set; }
 
-		public IAwsClientFactory ClientFactory { get; set; }
+        public IAmazonS3 S3Client { get; set; }
+
+        public IAmazonSQS SqsClient { get; set; }
 
         public SqsDequeueStrategy(Configure config)
         {
@@ -29,27 +31,24 @@
 
         public void Init(Address address, TransactionSettings transactionSettings, Func<TransportMessage, bool> tryProcessMessage, Action<TransportMessage, Exception> endProcessMessage)
         {
-			using (var sqs = ClientFactory.CreateSqsClient(ConnectionConfiguration))
-            {
-                var getQueueUrlRequest = new GetQueueUrlRequest(address.ToSqsQueueName(ConnectionConfiguration));
-                var getQueueUrlResponse = sqs.GetQueueUrl(getQueueUrlRequest);
-                _queueUrl = getQueueUrlResponse.QueueUrl;
+            var getQueueUrlRequest = new GetQueueUrlRequest(address.ToSqsQueueName(ConnectionConfiguration));
+            var getQueueUrlResponse = SqsClient.GetQueueUrl(getQueueUrlRequest);
+            _queueUrl = getQueueUrlResponse.QueueUrl;
 
-				if (_purgeOnStartup)
+			if (_purgeOnStartup)
+            {
+                // SQS only allows purging a queue once every 60 seconds or so. 
+                // If you try to purge a queue twice in relatively quick succession,
+                // PurgeQueueInProgressException will be thrown. 
+                // This will happen if you are trying to start an endpoint twice or more
+                // in that time. 
+                try
                 {
-                    // SQS only allows purging a queue once every 60 seconds or so. 
-                    // If you try to purge a queue twice in relatively quick succession,
-                    // PurgeQueueInProgressException will be thrown. 
-                    // This will happen if you are trying to start an endpoint twice or more
-                    // in that time. 
-                    try
-                    {
-                        sqs.PurgeQueue(_queueUrl);
-                    }
-                    catch (PurgeQueueInProgressException ex)
-                    {
-                        Logger.Warn("Multiple queue purges within 60 seconds are not permitted by SQS.", ex);
-                    }
+                    SqsClient.PurgeQueue(_queueUrl);
+                }
+                catch (PurgeQueueInProgressException ex)
+                {
+                    Logger.Warn("Multiple queue purges within 60 seconds are not permitted by SQS.", ex);
                 }
             }
 
@@ -122,74 +121,70 @@
 
             try
             {
-				using (var sqs = ClientFactory.CreateSqsClient(ConnectionConfiguration))
-				using (var s3 = ClientFactory.CreateS3Client(ConnectionConfiguration))
+                while (!_cancellationTokenSource.IsCancellationRequested)
                 {
-                    while (!_cancellationTokenSource.IsCancellationRequested)
-                    {
-                        Exception exception = null;
+                    Exception exception = null;
 						
-						var receiveTask = sqs.ReceiveMessageAsync(new ReceiveMessageRequest
-							{
-								MaxNumberOfMessages = ConnectionConfiguration.MaxReceiveMessageBatchSize,
-								QueueUrl = _queueUrl,
-								WaitTimeSeconds = 20,
-								AttributeNames = new List<String> { "SentTimestamp" }
-							},
-							_cancellationTokenSource.Token);
+					var receiveTask = SqsClient.ReceiveMessageAsync(new ReceiveMessageRequest
+						{
+							MaxNumberOfMessages = ConnectionConfiguration.MaxReceiveMessageBatchSize,
+							QueueUrl = _queueUrl,
+							WaitTimeSeconds = 20,
+							AttributeNames = new List<String> { "SentTimestamp" }
+						},
+						_cancellationTokenSource.Token);
 
-						receiveTask.Wait(_cancellationTokenSource.Token);
+					receiveTask.Wait(_cancellationTokenSource.Token);
 
-                        foreach (var message in receiveTask.Result.Messages)
+                    foreach (var message in receiveTask.Result.Messages)
+                    {
+                        TransportMessage transportMessage = null;
+                        SqsTransportMessage sqsTransportMessage = null;
+
+                        var messageProcessedOk = false;
+                        var messageExpired = false;
+
+                        try
                         {
-                            TransportMessage transportMessage = null;
-                            SqsTransportMessage sqsTransportMessage = null;
+                            sqsTransportMessage = JsonConvert.DeserializeObject<SqsTransportMessage>(message.Body);
 
-                            var messageProcessedOk = false;
-                            var messageExpired = false;
+                            transportMessage = sqsTransportMessage.ToTransportMessage(S3Client, ConnectionConfiguration);
 
-                            try
+                            // Check that the message hasn't expired
+                            if (transportMessage.TimeToBeReceived != TimeSpan.MaxValue)
                             {
-                                sqsTransportMessage = JsonConvert.DeserializeObject<SqsTransportMessage>(message.Body);
-
-                                transportMessage = sqsTransportMessage.ToTransportMessage(s3, ConnectionConfiguration);
-
-                                // Check that the message hasn't expired
-                                if (transportMessage.TimeToBeReceived != TimeSpan.MaxValue)
+                                var sentDateTime = message.GetSentDateTime();
+                                if (sentDateTime + transportMessage.TimeToBeReceived <= DateTime.UtcNow)
                                 {
-                                    var sentDateTime = message.GetSentDateTime();
-                                    if (sentDateTime + transportMessage.TimeToBeReceived <= DateTime.UtcNow)
-                                    {
-                                        // Message has expired. 
-                                        Logger.Warn(String.Format("Discarding expired message with Id {0}", transportMessage.Id));
-                                        messageExpired = true;
-                                    }
-                                }
-
-                                if (!messageExpired)
-                                {
-                                    messageProcessedOk = _tryProcessMessage(transportMessage);
+                                    // Message has expired. 
+                                    Logger.Warn(String.Format("Discarding expired message with Id {0}", transportMessage.Id));
+                                    messageExpired = true;
                                 }
                             }
-                            catch (Exception ex)
-                            {
-                                exception = ex;
-                            }
-                            finally
-                            {
-                                var deleteMessage = !_isTransactional || (_isTransactional && messageProcessedOk);
 
-                                if (deleteMessage)
-                                {
-                                    DeleteMessage(sqs, s3, message, sqsTransportMessage, transportMessage);
-                                }
-                                else
-                                {
-                                    sqs.ChangeMessageVisibility(_queueUrl, message.ReceiptHandle, 0);
-                                }
-
-                                _endProcessMessage(transportMessage, exception);
+                            if (!messageExpired)
+                            {
+                                messageProcessedOk = _tryProcessMessage(transportMessage);
                             }
+                        }
+                        catch (Exception ex)
+                        {
+                            exception = ex;
+                        }
+                        finally
+                        {
+                            var deleteMessage = !_isTransactional || (_isTransactional && messageProcessedOk);
+
+                            if (deleteMessage)
+                            {
+                                DeleteMessage(SqsClient, S3Client, message, sqsTransportMessage, transportMessage);
+                            }
+                            else
+                            {
+                                SqsClient.ChangeMessageVisibility(_queueUrl, message.ReceiptHandle, 0);
+                            }
+
+                            _endProcessMessage(transportMessage, exception);
                         }
                     }
                 }

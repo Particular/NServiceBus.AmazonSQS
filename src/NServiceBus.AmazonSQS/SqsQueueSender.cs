@@ -5,13 +5,17 @@
 	using NServiceBus.AmazonSQS;
 	using System;
 	using System.IO;
+	using Amazon.S3;
+	using Amazon.SQS;
 	using Unicast;
 
     internal class SqsQueueSender : ISendMessages
     {
         public SqsConnectionConfiguration ConnectionConfiguration { get; set; }
 
-		public IAwsClientFactory ClientFactory { get; set; }
+        public IAmazonSQS SqsClient { get; set; }
+
+        public IAmazonS3 S3Client { get; set; }
 
 		public SqsQueueUrlCache QueueUrlCache { get; set; }
 
@@ -28,20 +32,17 @@
 					throw new InvalidOperationException("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
 				}
 
-				using (var s3 = ClientFactory.CreateS3Client(ConnectionConfiguration))
+				var key = ConnectionConfiguration.S3KeyPrefix + "/" + message.Id;
+				S3Client.PutObject(new Amazon.S3.Model.PutObjectRequest
 				{
-					var key = ConnectionConfiguration.S3KeyPrefix + "/" + message.Id;
-					s3.PutObject(new Amazon.S3.Model.PutObjectRequest
-					{
-						BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
-						InputStream = new MemoryStream(message.Body),
-						Key = key
-					});
+					BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
+					InputStream = new MemoryStream(message.Body),
+					Key = key
+				});
 
-					sqsTransportMessage.S3BodyKey = key;
-					sqsTransportMessage.Body = String.Empty;
-					serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
-				}
+				sqsTransportMessage.S3BodyKey = key;
+				sqsTransportMessage.Body = String.Empty;
+				serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
 			}
 
 	        try
@@ -58,12 +59,9 @@
 
 	    private void SendMessage(string message, SendOptions sendOptions)
 	    {
-			using (var sqs = ClientFactory.CreateSqsClient(ConnectionConfiguration))
-			{
-				var sendMessageRequest = new SendMessageRequest(QueueUrlCache.GetQueueUrl(sendOptions.Destination), message);
+			var sendMessageRequest = new SendMessageRequest(QueueUrlCache.GetQueueUrl(sendOptions.Destination), message);
 
-				sqs.SendMessage(sendMessageRequest);
-			}
+			SqsClient.SendMessage(sendMessageRequest);
 	    }
-	}
+    }
 }
