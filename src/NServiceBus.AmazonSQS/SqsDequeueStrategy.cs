@@ -13,7 +13,7 @@
     using NServiceBus.AmazonSQS;
     using Unicast.Transport;
 
-    internal class SqsDequeueStrategy : IDequeueMessages, IDisposable
+    internal class SqsDequeueStrategy : IDequeueMessages
     {
         public SqsConnectionConfiguration ConnectionConfiguration { get; set; }
 
@@ -242,13 +242,5 @@
         int _concurrencyLevel;
 		bool _purgeOnStartup;
 		bool _isTransactional;
-
-        public void Dispose()
-        {
-            if (SqsClient != null)
-                SqsClient.Dispose();
-            if ( S3Client != null)
-                S3Client.Dispose();
-        }
     }
 }
