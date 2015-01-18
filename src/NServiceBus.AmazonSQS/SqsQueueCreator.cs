@@ -9,7 +9,7 @@
     using System.Collections.Generic;
     using System.Linq;
 
-    class SqsQueueCreator : ICreateQueues, IDisposable
+    class SqsQueueCreator : ICreateQueues
     {
         public SqsConnectionConfiguration ConnectionConfiguration { get; set; }
 
@@ -72,14 +72,6 @@
                     }
                 });
             }
-        }
-
-        public void Dispose()
-        {
-            if (SqsClient != null)
-                SqsClient.Dispose();
-            if (S3Client != null)
-                S3Client.Dispose();
         }
     }
 }

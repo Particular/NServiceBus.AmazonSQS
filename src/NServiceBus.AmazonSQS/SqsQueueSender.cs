@@ -9,7 +9,7 @@
 	using Amazon.SQS;
 	using Unicast;
 
-    internal class SqsQueueSender : ISendMessages, IDisposable
+    internal class SqsQueueSender : ISendMessages
     {
         public SqsConnectionConfiguration ConnectionConfiguration { get; set; }
 
@@ -63,13 +63,5 @@
 
 			SqsClient.SendMessage(sendMessageRequest);
 	    }
-
-        public void Dispose()
-        {
-            if (SqsClient != null)
-                SqsClient.Dispose();
-            if (S3Client != null)
-                S3Client.Dispose();
-        }
     }
 }

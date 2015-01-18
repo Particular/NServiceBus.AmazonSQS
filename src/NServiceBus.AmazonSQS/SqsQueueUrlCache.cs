@@ -1,10 +1,9 @@
 ﻿namespace NServiceBus.AmazonSQS
 {
-    using System;
     using System.Collections.Concurrent;
 	using Amazon.SQS;
 
-    internal class SqsQueueUrlCache : IDisposable 
+    internal class SqsQueueUrlCache 
 	{
         public IAmazonSQS SqsClient { get; set; }
 		
@@ -29,11 +28,5 @@
 		}
 
 		private ConcurrentDictionary<string, string> _cache;
-
-        public void Dispose()
-        {
-            if ( SqsClient != null )
-                SqsClient.Dispose();
-        }
     }
 }
