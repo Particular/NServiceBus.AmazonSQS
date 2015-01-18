@@ -1,15 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NServiceBus.SQS", "NServiceBus.SQS\NServiceBus.SQS.csproj", "{A40EBAE3-ADF8-4CD8-87DA-025BCA6BA1C2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NServiceBus.AmazonSQS", "NServiceBus.AmazonSQS\NServiceBus.AmazonSQS.csproj", "{A40EBAE3-ADF8-4CD8-87DA-025BCA6BA1C2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NServiceBus.SQS.Tests", "NServiceBus.SQS.Tests\NServiceBus.SQS.Tests.csproj", "{7E15376E-8902-49AA-8AB9-3916A012D588}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NServiceBus.AmazonSQS.Tests", "NServiceBus.AmazonSQS.Tests\NServiceBus.AmazonSQS.Tests.csproj", "{7E15376E-8902-49AA-8AB9-3916A012D588}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NServiceBus.SQS.IntegrationTests", "NServiceBus.SQS.IntegrationTests\NServiceBus.SQS.IntegrationTests.csproj", "{8747782D-0BDB-4FA3-9C59-C0920E289339}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NServiceBus.AmazonSQS.IntegrationTests", "NServiceBus.AmazonSQS.IntegrationTests\NServiceBus.AmazonSQS.IntegrationTests.csproj", "{8747782D-0BDB-4FA3-9C59-C0920E289339}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NServiceBus.SQS.NuGet", "NServiceBus.SQS.NuGet\NServiceBus.SQS.NuGet.csproj", "{0451BAEF-DF2E-4B98-8644-94EE9415E389}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NServiceBus.AmazonSQS.NuGet", "NServiceBus.AmazonSQS.NuGet\NServiceBus.AmazonSQS.NuGet.csproj", "{0451BAEF-DF2E-4B98-8644-94EE9415E389}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NServiceBus.SQS.AcceptanceTests", "NServiceBus.SQS.AcceptanceTests\NServiceBus.SQS.AcceptanceTests.csproj", "{E87BA318-68A7-4EEE-8817-DFC91296299B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NServiceBus.AmazonSQS.AcceptanceTests", "NServiceBus.AmazonSQS.AcceptanceTests\NServiceBus.AmazonSQS.AcceptanceTests.csproj", "{E87BA318-68A7-4EEE-8817-DFC91296299B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
