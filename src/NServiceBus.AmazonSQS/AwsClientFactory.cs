@@ -5,7 +5,7 @@
 	using Amazon.S3;
 	using Amazon.SQS;
 
-    internal class AwsClientFactory : IAwsClientFactory
+    internal static class AwsClientFactory
     {
 	    static AWSCredentials CreateCredentials(SqsConnectionConfiguration connectionConfiguration)
 	    {
@@ -19,12 +19,12 @@
 		    throw new NotImplementedException(String.Format("No implementation for credential type {0}", connectionConfiguration.CredentialSource));
 	    }
 
-	    public IAmazonSQS CreateSqsClient(SqsConnectionConfiguration connectionConfiguration)
+	    public static IAmazonSQS CreateSqsClient(SqsConnectionConfiguration connectionConfiguration)
         {
 			return new AmazonSQSClient(CreateCredentials(connectionConfiguration), connectionConfiguration.Region);
         }
 
-		public IAmazonS3 CreateS3Client(SqsConnectionConfiguration connectionConfiguration)
+		public static IAmazonS3 CreateS3Client(SqsConnectionConfiguration connectionConfiguration)
 		{
 			return new AmazonS3Client(CreateCredentials(connectionConfiguration), connectionConfiguration.Region);
 		}

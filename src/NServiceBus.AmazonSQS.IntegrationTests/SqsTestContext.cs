@@ -5,6 +5,8 @@
 	using System.Reactive.Subjects;
 	using System.Threading;
 	using System.Configuration;
+	using Amazon.S3;
+	using Amazon.SQS;
 	using Transports.SQS;
 	using Unicast;
 	
@@ -12,7 +14,9 @@
     {
         public SqsConnectionConfiguration ConnectionConfiguration { get; private set; }
 
-		public IAwsClientFactory ClientFactory { get; private set; }
+		public IAmazonSQS SqsClient { get; set; }
+
+        public IAmazonS3 S3Client { get; set; }
 
 		public SqsQueueUrlCache QueueUrlCache { get; private set; }
 
@@ -43,11 +47,14 @@
 			ConnectionConfiguration = 
 				SqsConnectionStringParser.Parse(ConfigurationManager.AppSettings["TestConnectionString"]);
 
-			ClientFactory = new AwsClientFactory();
+            S3Client = AwsClientFactory.CreateS3Client(ConnectionConfiguration);
+            SqsClient = AwsClientFactory.CreateSqsClient(ConnectionConfiguration);
+
 			Creator = new SqsQueueCreator
 			{
 				ConnectionConfiguration = ConnectionConfiguration,
-				ClientFactory = ClientFactory
+				SqsClient = SqsClient,
+                S3Client = S3Client
 			};
 	        
             _receivedMessages = new Subject<TransportMessage>();
@@ -55,7 +62,7 @@
 
 			QueueUrlCache = new SqsQueueUrlCache
 			{
-				ClientFactory = ClientFactory,
+                SqsClient = SqsClient,
 				ConnectionConfiguration = ConnectionConfiguration
 			};
 
@@ -63,7 +70,8 @@
             Sender = new SqsQueueSender
             {
 	            ConnectionConfiguration = ConnectionConfiguration,
-	            ClientFactory = ClientFactory,
+	            SqsClient = SqsClient,
+                S3Client = S3Client,
 	            QueueUrlCache = QueueUrlCache,
 				QueueCreator = Creator
             };
@@ -71,8 +79,9 @@
 	        DequeueStrategy = new SqsDequeueStrategy(null)
 	        {
 		        ConnectionConfiguration = ConnectionConfiguration,
-		        ClientFactory = ClientFactory
-	        };
+                SqsClient = SqsClient,
+                S3Client = S3Client
+            };
 	        
         }
 
@@ -80,16 +89,13 @@
 	    {
 			Creator.CreateQueueIfNecessary(Address, "");
 
-			using (var sqs = ClientFactory.CreateSqsClient(ConnectionConfiguration))
+			try
 			{
-				try
-				{
-					sqs.PurgeQueue(QueueUrlCache.GetQueueUrl(Address));
-				}
-				catch (PurgeQueueInProgressException)
-				{
+				SqsClient.PurgeQueue(QueueUrlCache.GetQueueUrl(Address));
+			}
+			catch (PurgeQueueInProgressException)
+			{
 
-				}
 			}
 	    }
 
@@ -114,10 +120,7 @@
         {
             return SendAndReceiveCore(() =>
                 {
-					using (var c = ClientFactory.CreateSqsClient(ConnectionConfiguration))
-                    {
-                        c.SendMessage(QueueUrlCache.GetQueueUrl(Address), rawMessageString);
-                    }
+                    SqsClient.SendMessage(QueueUrlCache.GetQueueUrl(Address), rawMessageString);
                 });
         }
 
@@ -160,6 +163,11 @@
         public void Dispose()
         {
             DequeueStrategy.Stop();
+
+            if (S3Client != null)
+                S3Client.Dispose();
+            if (SqsClient != null)
+                SqsClient.Dispose();
         }
 
 		

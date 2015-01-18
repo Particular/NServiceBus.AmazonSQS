@@ -13,15 +13,13 @@ namespace NServiceBus.AmazonSQS.IntegrationTests
 			while (!queueExists && tryCount < 10)
 			{
 				++tryCount;
-				using (var sqs = context.ClientFactory.CreateSqsClient(context.ConnectionConfiguration))
+				
+				var listQueuesResponse = context.SqsClient.ListQueues(context.ConnectionConfiguration.QueueNamePrefix);
+				foreach (var q in listQueuesResponse.QueueUrls)
 				{
-					var listQueuesResponse = sqs.ListQueues(context.ConnectionConfiguration.QueueNamePrefix);
-					foreach (var q in listQueuesResponse.QueueUrls)
+					if (q.Contains(context.Address.Queue))
 					{
-						if (q.Contains(context.Address.Queue))
-						{
-							queueExists = true;
-						}
+						queueExists = true;
 					}
 				}
 

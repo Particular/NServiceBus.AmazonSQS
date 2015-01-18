@@ -1,11 +1,13 @@
 ﻿namespace NServiceBus.AmazonSQS
 {
-	using System.Collections.Concurrent;
+    using System;
+    using System.Collections.Concurrent;
+	using Amazon.SQS;
 
-	internal class SqsQueueUrlCache
+    internal class SqsQueueUrlCache : IDisposable 
 	{
-		public IAwsClientFactory ClientFactory { get; set; }
-
+        public IAmazonSQS SqsClient { get; set; }
+		
 		public SqsConnectionConfiguration ConnectionConfiguration { get; set; }
 
 		public SqsQueueUrlCache()
@@ -19,16 +21,19 @@
 			var addressKey = address.ToString();
 			if (!_cache.TryGetValue(addressKey, out result))
 			{
-				using (var sqs = ClientFactory.CreateSqsClient(ConnectionConfiguration))
-				{
-					var getQueueUrlResponse = sqs.GetQueueUrl(address.ToSqsQueueName(ConnectionConfiguration));
-					result = getQueueUrlResponse.QueueUrl;
-					_cache.AddOrUpdate(addressKey, result, (x, y) => result);
-				}
+				var getQueueUrlResponse = SqsClient.GetQueueUrl(address.ToSqsQueueName(ConnectionConfiguration));
+				result = getQueueUrlResponse.QueueUrl;
+				_cache.AddOrUpdate(addressKey, result, (x, y) => result);
 			}
 			return result;
 		}
 
 		private ConcurrentDictionary<string, string> _cache;
-	}
+
+        public void Dispose()
+        {
+            if ( SqsClient != null )
+                SqsClient.Dispose();
+        }
+    }
 }
