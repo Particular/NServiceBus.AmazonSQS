@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <package >
   <metadata>
-    <id>NServiceBus.SQS</id>
+    <id>NServiceBus.AmazonSQS</id>
     <version>0.3.0-pre</version>
-    <title>NServiceBus.SQS</title>
+    <title>NServiceBus.AmazonSQS</title>
     <authors>Adrian.Hofman</authors>
     <owners>EBOS Group Limited</owners>
     <description>
