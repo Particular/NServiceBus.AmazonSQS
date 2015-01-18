@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.SQS
+﻿namespace NServiceBus.AmazonSQS
 {
 	using Amazon;
 

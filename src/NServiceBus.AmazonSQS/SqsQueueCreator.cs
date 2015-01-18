@@ -4,7 +4,7 @@
     using Amazon.S3.Model;
     using Amazon.SQS;
     using Amazon.SQS.Model;
-    using NServiceBus.SQS;
+    using NServiceBus.AmazonSQS;
     using System;
     using System.Collections.Generic;
     using System.Linq;

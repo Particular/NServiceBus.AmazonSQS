@@ -1,6 +1,6 @@
 ﻿namespace NServiceBus.Features
 {
-	using SQS;
+	using AmazonSQS;
 	using Transports;
 	using Transports.SQS;
 

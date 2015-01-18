@@ -10,7 +10,7 @@
     using Amazon.SQS.Model;
     using Newtonsoft.Json;
     using Logging;
-    using NServiceBus.SQS;
+    using NServiceBus.AmazonSQS;
     using Unicast.Transport;
 
     internal class SqsDequeueStrategy : IDequeueMessages

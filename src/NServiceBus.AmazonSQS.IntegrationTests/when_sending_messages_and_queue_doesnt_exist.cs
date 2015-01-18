@@ -1,6 +1,6 @@
 ﻿using NUnit.Framework;
 
-namespace NServiceBus.SQS.IntegrationTests
+namespace NServiceBus.AmazonSQS.IntegrationTests
 {
 	using System.Threading;
 	using Unicast;

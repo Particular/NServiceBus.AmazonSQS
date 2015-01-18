@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("NServiceBus.SQS")]
+[assembly: AssemblyTitle("NServiceBus.AmazonSQS")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("NServiceBus.SQS")]
+[assembly: AssemblyProduct("NServiceBus.AmazonSQS")]
 [assembly: AssemblyCopyright("Copyright ©  2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -34,5 +34,5 @@ using System.Runtime.InteropServices;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
-[assembly: InternalsVisibleTo("NServiceBus.SQS.Tests")]
-[assembly: InternalsVisibleTo("NServiceBus.SQS.IntegrationTests")]
+[assembly: InternalsVisibleTo("NServiceBus.AmazonSQS.Tests")]
+[assembly: InternalsVisibleTo("NServiceBus.AmazonSQS.IntegrationTests")]

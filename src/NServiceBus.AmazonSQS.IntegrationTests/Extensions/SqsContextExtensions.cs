@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 
-namespace NServiceBus.SQS.IntegrationTests
+namespace NServiceBus.AmazonSQS.IntegrationTests
 {
 	static class SqsContextExtensions
 	{

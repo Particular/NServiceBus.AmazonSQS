@@ -2,7 +2,7 @@
 {
 	using Amazon.SQS.Model;
 	using Newtonsoft.Json;
-	using NServiceBus.SQS;
+	using NServiceBus.AmazonSQS;
 	using System;
 	using System.IO;
 	using Unicast;

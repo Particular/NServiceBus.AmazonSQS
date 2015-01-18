@@ -1,7 +1,7 @@
 ﻿using NUnit.Framework;
 using System;
 
-namespace NServiceBus.SQS.Tests
+namespace NServiceBus.AmazonSQS.Tests
 {
     [TestFixture]
     public class when_parsing_connection_string

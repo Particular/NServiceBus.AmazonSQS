@@ -7,8 +7,8 @@
     <ProjectGuid>{8747782D-0BDB-4FA3-9C59-C0920E289339}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>NServiceBus.SQS.IntegrationTests</RootNamespace>
-    <AssemblyName>NServiceBus.SQS.IntegrationTests</AssemblyName>
+    <RootNamespace>NServiceBus.AmazonSQS.IntegrationTests</RootNamespace>
+    <AssemblyName>NServiceBus.AmazonSQS.IntegrationTests</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -79,7 +79,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NServiceBus.SQS\NServiceBus.SQS.csproj">
+    <ProjectReference Include="..\NServiceBus.AmazonSQS\NServiceBus.AmazonSQS.csproj">
       <Project>{a40ebae3-adf8-4cd8-87da-025bca6ba1c2}</Project>
       <Name>NServiceBus.SQS</Name>
     </ProjectReference>

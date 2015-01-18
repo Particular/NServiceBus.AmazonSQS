@@ -4,7 +4,7 @@ using NUnit.Framework;
 using System;
 using System.Text;
 
-namespace NServiceBus.SQS.Tests
+namespace NServiceBus.AmazonSQS.Tests
 {
 	[TestFixture]
 	public class when_sending_messages

@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.SQS.IntegrationTests
+﻿namespace NServiceBus.AmazonSQS.IntegrationTests
 {
 	using NUnit.Framework;
 	

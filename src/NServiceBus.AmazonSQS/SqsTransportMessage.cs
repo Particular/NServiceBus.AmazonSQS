@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace NServiceBus.SQS
+namespace NServiceBus.AmazonSQS
 {
     internal class SqsTransportMessage
     {

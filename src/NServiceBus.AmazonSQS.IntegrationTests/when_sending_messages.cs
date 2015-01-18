@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using NServiceBus.Unicast;
 
-namespace NServiceBus.SQS.IntegrationTests
+namespace NServiceBus.AmazonSQS.IntegrationTests
 {
 	[TestFixture]
 	public class when_sending_messages
