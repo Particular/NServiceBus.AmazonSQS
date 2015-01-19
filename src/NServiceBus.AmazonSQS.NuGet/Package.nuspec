@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>NServiceBus.AmazonSQS</id>
-    <version>0.3.0-pre</version>
+    <version>1.0.0</version>
     <title>NServiceBus.AmazonSQS</title>
     <authors>Adrian.Hofman</authors>
     <owners>EBOS Group Limited</owners>
@@ -10,17 +10,13 @@
       An Amazon SQS transport implementation for NServiceBus.
     </description>
     <releaseNotes>
-      See the project wiki for more details: https://github.com/ahofman/NServiceBus.SQS/wiki
-      * Added ability to get credentials from the EC2 instance profile. Set the "CredentialSource" config property to "InstanceProfile".
-      * Added ability to specify a prefix for all queue names via the "QueueUrlPrefix" config property.
-      * Fixed a bug where subscription messages would be sent to queues that didn't exist. 
-      * Updated to latest AWSSDK.
+      See the project wiki for more details: https://github.com/ahofman/NServiceBus.AmazonSQS/wiki
       As always, the NServiceBus Acceptance Test suite is leveraged to provide the highest possible quality.
     </releaseNotes>
     <summary>
     </summary>
     <language>en-US</language>
-    <projectUrl>https://github.com/ahofman/NServiceBus.SQS</projectUrl>
+    <projectUrl>https://github.com/ahofman/NServiceBus.AmazonSQS</projectUrl>
     <iconUrl>https://nuget.org/Content/Images/packageDefaultIcon-50x50.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <licenseUrl>http://opensource.org/licenses/Apache-2.0</licenseUrl>
@@ -29,7 +25,7 @@
         <group targetFramework="net45">
           <dependency id="AWSSDK" version="2.3.15.0"/>
           <dependency id="Newtonsoft.Json" version="6.0.7"/>
-          <dependency id="NServiceBus" version="5.1.2"/>
+          <dependency id="NServiceBus" version="[5.0.0, 6.0.0)"/>
         </group>
     </dependencies>
     <references></references>
