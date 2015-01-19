@@ -1,7 +1,7 @@
 NServiceBus.AmazonSQS
 ===============
 
-This is an Amazon SQS transport for NServiceBus V5. It currently in the early stages of development and is not suitable for production use at this point in time. However, if you'd like to try a pre-release version, follow the below steps!
+This is an Amazon SQS transport for NServiceBus V5. It currently in the early stages of development but should be stable enough for serious users. If you'd like to get up and running quickly, follow the below steps!
 
 Feel free to browse and contribute!
 
@@ -25,11 +25,9 @@ Once you have a pair of Access Keys (Access Key ID and Secret Access Key), you w
 
 ### Install The NuGet Package
 
-There are only pre-release versions of the NuGet package available at this point in time, so you must supply the `-Pre` flag when installing the pacakge.
+    PM> Install-Package NServiceBus.AmazonSQS
 
-    PM> Install-Package NServiceBus.SQS -Pre
-
-See the [NuGet Gallery](https://www.nuget.org/packages/NServiceBus.SQS) for details. 
+See the [NuGet Gallery](https://www.nuget.org/packages/NServiceBus.AmazonSQS) for details. 
 
 ### Configure Your Endpoint
 When self-hosting:
