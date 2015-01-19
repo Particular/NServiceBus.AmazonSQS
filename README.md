@@ -1,4 +1,4 @@
-NServiceBus.SQS
+NServiceBus.AmazonSQS
 ===============
 
 This is an Amazon SQS transport for NServiceBus V5. It currently in the early stages of development and is not suitable for production use at this point in time. However, if you'd like to try a pre-release version, follow the below steps!
