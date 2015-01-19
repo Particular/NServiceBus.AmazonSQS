@@ -1,12 +1,12 @@
 NServiceBus.SQS
 ===============
 
-This is an SQS transport for NServiceBus. It currently in the early stages of development and is not suitable for production use at this point in time. However, if you'd like to try a pre-release version, follow the below steps!
+This is an Amazon SQS transport for NServiceBus V5. It currently in the early stages of development and is not suitable for production use at this point in time. However, if you'd like to try a pre-release version, follow the below steps!
 
 Feel free to browse and contribute!
 
 ### Set Up An AWS Account
-You will need an [AWS IAM](http://docs.aws.amazon.com/IAM/latest/UserGuide/IAM_Introduction.html) account with a pair of [Access Keys](http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSGettingStartedGuide/AWSCredentials.html) to use NServiceBus.SQS. 
+You will need an [AWS IAM](http://docs.aws.amazon.com/IAM/latest/UserGuide/IAM_Introduction.html) account with a pair of [Access Keys](http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSGettingStartedGuide/AWSCredentials.html) to use NServiceBus.AmazonSQS. 
 The account needs the following permissions:
 * SQS::CreateQueue
 * SQS::DeleteMessage
@@ -52,4 +52,4 @@ Add a connection string to your app.config (or web.config):
 
 And you should be good to go!
 
-For more documentation on what you can pass to the connection string, check out [this page](https://github.com/ahofman/NServiceBus.SQS/wiki/Configuration-Options).
+For more documentation on what you can pass to the connection string, check out [this page](https://github.com/ahofman/NServiceBus.AmazonSQS/wiki/Configuration-Options).
