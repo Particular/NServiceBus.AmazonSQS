@@ -32,7 +32,16 @@
         public void Init(Address address, TransactionSettings transactionSettings, Func<TransportMessage, bool> tryProcessMessage, Action<TransportMessage, Exception> endProcessMessage)
         {
             var getQueueUrlRequest = new GetQueueUrlRequest(address.ToSqsQueueName(ConnectionConfiguration));
-            var getQueueUrlResponse = SqsClient.GetQueueUrl(getQueueUrlRequest);
+            GetQueueUrlResponse getQueueUrlResponse;
+            try
+            {
+                getQueueUrlResponse = SqsClient.GetQueueUrl(getQueueUrlRequest);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Exception thrown from GetQueueUrl.", ex);
+                throw;
+            }
             _queueUrl = getQueueUrlResponse.QueueUrl;
 
 			if (_purgeOnStartup)
@@ -49,6 +58,11 @@
                 catch (PurgeQueueInProgressException ex)
                 {
                     Logger.Warn("Multiple queue purges within 60 seconds are not permitted by SQS.", ex);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("Exception thrown from PurgeQueue.", ex);
+                    throw;
                 }
             }
 

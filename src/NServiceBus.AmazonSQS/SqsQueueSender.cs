@@ -8,6 +8,7 @@
 	using Amazon.S3;
 	using Amazon.SQS;
 	using Unicast;
+    using NServiceBus.Logging;
 
     internal class SqsQueueSender : ISendMessages
     {
@@ -23,45 +24,56 @@
 
         public void Send(TransportMessage message, SendOptions sendOptions)
         {
-			var sqsTransportMessage = new SqsTransportMessage(message, sendOptions);
-			var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
-			if (serializedMessage.Length > 256 * 1024)
-			{
-				if (string.IsNullOrEmpty(ConnectionConfiguration.S3BucketForLargeMessages))
-				{
-					throw new InvalidOperationException("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
-				}
+            try
+            {
+                var sqsTransportMessage = new SqsTransportMessage(message, sendOptions);
+                var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
+                if (serializedMessage.Length > 256*1024)
+                {
+                    if (string.IsNullOrEmpty(ConnectionConfiguration.S3BucketForLargeMessages))
+                    {
+                        throw new InvalidOperationException("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
+                    }
 
-				var key = ConnectionConfiguration.S3KeyPrefix + "/" + message.Id;
-				S3Client.PutObject(new Amazon.S3.Model.PutObjectRequest
-				{
-					BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
-					InputStream = new MemoryStream(message.Body),
-					Key = key
-				});
+                    var key = ConnectionConfiguration.S3KeyPrefix + "/" + message.Id;
 
-				sqsTransportMessage.S3BodyKey = key;
-				sqsTransportMessage.Body = String.Empty;
-				serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
-			}
+                    S3Client.PutObject(new Amazon.S3.Model.PutObjectRequest
+                    {
+                        BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
+                        InputStream = new MemoryStream(message.Body),
+                        Key = key
+                    });
 
-	        try
-	        {
-				SendMessage(serializedMessage, sendOptions);   
-	        }
-	        catch (QueueDoesNotExistException)
-	        {
-		        QueueCreator.CreateQueueIfNecessary(sendOptions.Destination, "");
+                    sqsTransportMessage.S3BodyKey = key;
+                    sqsTransportMessage.Body = String.Empty;
+                    serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
+                }
 
-				SendMessage(serializedMessage, sendOptions);
-	        }
+                try
+                {
+                    SendMessage(serializedMessage, sendOptions);
+                }
+                catch (QueueDoesNotExistException)
+                {
+                    QueueCreator.CreateQueueIfNecessary(sendOptions.Destination, "");
+
+                    SendMessage(serializedMessage, sendOptions);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error("Exception from Send.", e);
+                throw;
+            }
         }
 
 	    private void SendMessage(string message, SendOptions sendOptions)
 	    {
 			var sendMessageRequest = new SendMessageRequest(QueueUrlCache.GetQueueUrl(sendOptions.Destination), message);
 
-			SqsClient.SendMessage(sendMessageRequest);
+	        SqsClient.SendMessage(sendMessageRequest);
 	    }
+
+        static ILog Logger = LogManager.GetLogger(typeof(SqsQueueSender));
     }
 }

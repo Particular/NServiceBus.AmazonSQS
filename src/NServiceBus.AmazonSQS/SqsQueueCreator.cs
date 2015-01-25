@@ -8,6 +8,7 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using NServiceBus.Logging;
 
     class SqsQueueCreator : ICreateQueues
     {
@@ -19,59 +20,70 @@
 		
         public void CreateQueueIfNecessary(Address address, string account)
         {
-            var sqsRequest = new CreateQueueRequest
+            try
             {
-	            QueueName = address.ToSqsQueueName(ConnectionConfiguration),
-            };
-	        var createQueueResponse = SqsClient.CreateQueue(sqsRequest);
-
-			// Set the queue attributes in a separate call. 
-			// If you call CreateQueue with a queue name that already exists, and with a different
-			// value for MessageRetentionPeriod, the service throws. This will happen if you 
-			// change the MaxTTLDays configuration property. 
-	        var sqsAttributesRequest = new SetQueueAttributesRequest
-	        {
-				QueueUrl = createQueueResponse.QueueUrl
-	        };
-			sqsAttributesRequest.Attributes.Add( QueueAttributeName.MessageRetentionPeriod,
-                ((int)(TimeSpan.FromDays(ConnectionConfiguration.MaxTTLDays).TotalSeconds)).ToString());
-
-	        SqsClient.SetQueueAttributes(sqsAttributesRequest);
-
-            if (!string.IsNullOrEmpty(ConnectionConfiguration.S3BucketForLargeMessages))
-            {
-                // determine if the configured bucket exists; create it if it doesn't
-                var listBucketsResponse = S3Client.ListBuckets(new ListBucketsRequest());
-                var bucketExists = listBucketsResponse.Buckets.Any(x => x.BucketName.ToLower() == ConnectionConfiguration.S3BucketForLargeMessages.ToLower());
-                if (!bucketExists)
+                var sqsRequest = new CreateQueueRequest
                 {
-                    S3Client.PutBucket(new PutBucketRequest
+                    QueueName = address.ToSqsQueueName(ConnectionConfiguration),
+                };
+                Logger.Info(String.Format("Creating SQS Queue with name \"{0}\" for address \"{1}\".", sqsRequest.QueueName, address));
+                var createQueueResponse = SqsClient.CreateQueue(sqsRequest);
+
+                // Set the queue attributes in a separate call. 
+                // If you call CreateQueue with a queue name that already exists, and with a different
+                // value for MessageRetentionPeriod, the service throws. This will happen if you 
+                // change the MaxTTLDays configuration property. 
+                var sqsAttributesRequest = new SetQueueAttributesRequest
+                {
+                    QueueUrl = createQueueResponse.QueueUrl
+                };
+                sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod,
+                    ((int) (TimeSpan.FromDays(ConnectionConfiguration.MaxTTLDays).TotalSeconds)).ToString());
+
+                SqsClient.SetQueueAttributes(sqsAttributesRequest);
+
+                if (!string.IsNullOrEmpty(ConnectionConfiguration.S3BucketForLargeMessages))
+                {
+                    // determine if the configured bucket exists; create it if it doesn't
+                    var listBucketsResponse = S3Client.ListBuckets(new ListBucketsRequest());
+                    var bucketExists = listBucketsResponse.Buckets.Any(x => x.BucketName.ToLower() == ConnectionConfiguration.S3BucketForLargeMessages.ToLower());
+                    if (!bucketExists)
+                    {
+                        S3Client.PutBucket(new PutBucketRequest
                         {
                             BucketName = ConnectionConfiguration.S3BucketForLargeMessages
                         });
-                }
-
-                S3Client.PutLifecycleConfiguration(new PutLifecycleConfigurationRequest
-                {
-                    BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
-                    Configuration = new LifecycleConfiguration
-                    {
-                        Rules = new List<LifecycleRule>
-						{
-							new LifecycleRule
-							{
-								Id = "NServiceBus.SQS.DeleteMessageBodies",
-								Prefix = ConnectionConfiguration.S3KeyPrefix,
-								Status = LifecycleRuleStatus.Enabled,
-								Expiration = new LifecycleRuleExpiration 
-								{ 
-									Days = ConnectionConfiguration.MaxTTLDays
-								}
-							}
-						}
                     }
-                });
+
+                    S3Client.PutLifecycleConfiguration(new PutLifecycleConfigurationRequest
+                    {
+                        BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
+                        Configuration = new LifecycleConfiguration
+                        {
+                            Rules = new List<LifecycleRule>
+                            {
+                                new LifecycleRule
+                                {
+                                    Id = "NServiceBus.SQS.DeleteMessageBodies",
+                                    Prefix = ConnectionConfiguration.S3KeyPrefix,
+                                    Status = LifecycleRuleStatus.Enabled,
+                                    Expiration = new LifecycleRuleExpiration
+                                    {
+                                        Days = ConnectionConfiguration.MaxTTLDays
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error("Exception from CreateQueueIfNecessary.", e);
+                throw;
             }
         }
+
+        static ILog Logger = LogManager.GetLogger(typeof(SqsQueueCreator));
     }
 }
