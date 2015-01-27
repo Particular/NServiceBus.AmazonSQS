@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>NServiceBus.AmazonSQS</id>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
     <title>NServiceBus.AmazonSQS</title>
     <authors>Adrian.Hofman</authors>
     <owners>EBOS Group Limited</owners>
@@ -10,6 +10,7 @@
       An Amazon SQS transport implementation for NServiceBus.
     </description>
     <releaseNotes>
+      * Improved error logging when AWS API calls fail.
       See the project wiki for more details: https://github.com/ahofman/NServiceBus.AmazonSQS/wiki
       As always, the NServiceBus Acceptance Test suite is leveraged to provide the highest possible quality.
     </releaseNotes>
