@@ -17,9 +17,9 @@
 		{
 			config.EnableFeature<SqsTransportFeature>();
 			config.EnableFeature<MessageDrivenSubscriptions>();
-			config.EnableFeature<TimeoutManagerBasedDeferral>();
+		//	config.EnableFeature<TimeoutManagerBasedDeferral>();
 			config.GetSettings().EnableFeatureByDefault<StorageDrivenPublishing>();
-			config.GetSettings().EnableFeatureByDefault<TimeoutManager>();
+		//	config.GetSettings().EnableFeatureByDefault<TimeoutManager>();
 
 			//enable the outbox unless the users hasn't disabled it
 			if (config.GetSettings().GetOrDefault<bool>(typeof(Features.Outbox).FullName))

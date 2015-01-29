@@ -69,7 +69,20 @@
 
 	    private void SendMessage(string message, SendOptions sendOptions)
 	    {
+            TimeSpan delayDeliveryBy = TimeSpan.MaxValue;
+            if (sendOptions.DelayDeliveryWith.HasValue)
+                delayDeliveryBy = sendOptions.DelayDeliveryWith.Value;
+            else
+            {
+                if (sendOptions.DeliverAt.HasValue)
+                {
+                    delayDeliveryBy = sendOptions.DeliverAt.Value - DateTime.UtcNow;
+                }
+            }
+
 			var sendMessageRequest = new SendMessageRequest(QueueUrlCache.GetQueueUrl(sendOptions.Destination), message);
+	        if ( delayDeliveryBy != TimeSpan.MaxValue)
+                sendMessageRequest.DelaySeconds = delayDeliveryBy.Seconds;
 
 	        SqsClient.SendMessage(sendMessageRequest);
 	    }

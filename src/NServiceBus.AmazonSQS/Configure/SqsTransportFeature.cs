@@ -23,6 +23,8 @@
 			context.Container.ConfigureComponent<SqsQueueSender>(DependencyLifecycle.InstancePerCall);
 
 			context.Container.ConfigureComponent<SqsQueueCreator>(DependencyLifecycle.InstancePerCall);
+
+            context.Container.ConfigureComponent<SqsDeferrer>(DependencyLifecycle.InstancePerCall);
         }
 
         protected override string ExampleConnectionStringForErrorMessage
