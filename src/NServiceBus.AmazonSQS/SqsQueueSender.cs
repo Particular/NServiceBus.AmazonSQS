@@ -69,7 +69,7 @@
 
 	    private void SendMessage(string message, SendOptions sendOptions)
 	    {
-            TimeSpan delayDeliveryBy = TimeSpan.MaxValue;
+            var delayDeliveryBy = TimeSpan.MaxValue;
             if (sendOptions.DelayDeliveryWith.HasValue)
                 delayDeliveryBy = sendOptions.DelayDeliveryWith.Value;
             else
