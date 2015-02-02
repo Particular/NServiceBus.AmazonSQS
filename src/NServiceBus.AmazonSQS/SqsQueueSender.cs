@@ -82,7 +82,7 @@
 
 			var sendMessageRequest = new SendMessageRequest(QueueUrlCache.GetQueueUrl(sendOptions.Destination), message);
 	        if ( delayDeliveryBy != TimeSpan.MaxValue)
-                sendMessageRequest.DelaySeconds = delayDeliveryBy.Seconds;
+                sendMessageRequest.DelaySeconds = Math.Max(0, (int)delayDeliveryBy.TotalSeconds);
 
 	        SqsClient.SendMessage(sendMessageRequest);
 	    }
