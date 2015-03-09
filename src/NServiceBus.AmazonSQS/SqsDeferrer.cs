@@ -12,7 +12,9 @@ namespace NServiceBus.Transports.SQS
 
         public void ClearDeferredMessages(string headerKey, string headerValue)
         {
-            
+            // An implementation doesn't appear to be necessary.
+            // It would seem that this method only exists on the IDeferMessages interface
+            // to allow the TimeoutManager deferral implementation to delete timeouts for completed sagas.
         }
     }
 }

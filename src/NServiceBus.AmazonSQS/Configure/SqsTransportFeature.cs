@@ -24,7 +24,8 @@
 
 			context.Container.ConfigureComponent<SqsQueueCreator>(DependencyLifecycle.InstancePerCall);
 
-            context.Container.ConfigureComponent<SqsDeferrer>(DependencyLifecycle.InstancePerCall);
+            if ( context.Settings.UseSqsDeferral() )
+                context.Container.ConfigureComponent<SqsDeferrer>(DependencyLifecycle.InstancePerCall);
         }
 
         protected override string ExampleConnectionStringForErrorMessage
