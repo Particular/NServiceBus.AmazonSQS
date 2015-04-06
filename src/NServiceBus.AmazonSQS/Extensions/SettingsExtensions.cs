@@ -16,7 +16,7 @@
             transportExtensions.GetSettings().Set("UseSqsDeferral", use);
         }
 
-        static bool UseSqsDeferral(this ReadOnlySettings settings)
+        internal static bool UseSqsDeferral(this ReadOnlySettings settings)
         {
             return settings.GetOrDefault<bool>("UseSqsDeferral");
         }
