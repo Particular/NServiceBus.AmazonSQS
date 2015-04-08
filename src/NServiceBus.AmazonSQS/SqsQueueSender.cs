@@ -81,7 +81,10 @@
             }
 
 			var sendMessageRequest = new SendMessageRequest(QueueUrlCache.GetQueueUrl(sendOptions.Destination), message);
-	        if ( delayDeliveryBy != TimeSpan.MaxValue)
+	        
+            // There should be no need to check if the delay time is greater than the maximum allowed
+            // by SQS (15 minutes); the call to AWS will fail with an appropriate exception if the limit is exceeded.
+            if ( delayDeliveryBy != TimeSpan.MaxValue)
                 sendMessageRequest.DelaySeconds = Math.Max(0, (int)delayDeliveryBy.TotalSeconds);
 
 	        SqsClient.SendMessage(sendMessageRequest);
