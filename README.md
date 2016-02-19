@@ -13,11 +13,14 @@ The account needs the following permissions:
 * SQS::GetQueueUrl
 * SQS::ReceiveMessage
 * SQS::SendMessage
+* SQS::SetQueueAttributes
+* SQS::ChangeMessageVisibility
 * S3::PutBucket
 * S3::DeleteObject
 * S3::GetObject
 * S3::PutObject
 * S3::PutLifecycleConfiguration
+* S3::ListAllMyBuckets
 
 Once you have a pair of Access Keys (Access Key ID and Secret Access Key), you will need to store them in environment variables of the machine that is running your endpoint:
 * Access Key ID goes in AWS_ACCESS_KEY_ID 
