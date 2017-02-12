@@ -8,6 +8,7 @@
     using System;
     using System.Collections.Generic;
     using System.Net;
+    using System.Threading;
     using NServiceBus.AmazonSQS.Extensions;
     using NServiceBus.Logging;
 
@@ -52,7 +53,8 @@
             }
         }
 
-        public const int MaxS3BucketRetries = 3;
+        public const int MaxS3BucketRetries = 5;
+        private const int WaitTimeMs = 250;
 
         private void CreateS3ResourcesIfNecessary(int attemptCount = 0)
         {
@@ -113,8 +115,12 @@
                 {
                     throw;
                 }
-                if (attemptCount++ < MaxS3BucketRetries)
+                attemptCount++;
+                if (attemptCount < MaxS3BucketRetries)
                 {
+                    var backOffWait = attemptCount*WaitTimeMs;
+                    Logger.Warn(string.Format("Retrying s3 resource creation after {0} attempts.  Waiting {1}ms before retry.", attemptCount, backOffWait));
+                    Thread.Sleep(backOffWait);
                     CreateS3ResourcesIfNecessary(attemptCount);
                     return;
                 }

@@ -3,7 +3,6 @@
     using System;
     using System.Collections.Generic;
     using System.Net;
-    using Amazon.AWSSupport.Model;
     using Amazon.Runtime;
     using Amazon.S3;
     using Amazon.S3.Model;
@@ -99,7 +98,7 @@
             var bucketName = Guid.NewGuid().ToString();
             var address = new Address(Guid.NewGuid().ToString(), null);
 
-            var mockS3Client = GetMockS3Client(bucketName, SqsQueueCreator.MaxS3BucketRetries+1);
+            var mockS3Client = GetMockS3Client(bucketName, SqsQueueCreator.MaxS3BucketRetries);
             var mockSqsClient = GetMockSqsClient();
 
             var sut = GetQueueCreator(mockS3Client.Object, mockSqsClient.Object, bucketName);
