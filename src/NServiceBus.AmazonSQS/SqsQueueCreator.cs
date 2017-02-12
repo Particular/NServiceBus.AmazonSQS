@@ -52,7 +52,7 @@
             }
         }
 
-        private const int MaxS3BucketRetries = 3;
+        public const int MaxS3BucketRetries = 3;
 
         private void CreateS3ResourcesIfNecessary(int attemptCount = 0)
         {
