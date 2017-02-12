@@ -7,7 +7,8 @@
     using NServiceBus.AmazonSQS;
     using System;
     using System.Collections.Generic;
-    using System.Linq;
+    using System.Net;
+    using NServiceBus.AmazonSQS.Extensions;
     using NServiceBus.Logging;
 
     class SqsQueueCreator : ICreateQueues
@@ -42,19 +43,56 @@
 
                 SqsClient.SetQueueAttributes(sqsAttributesRequest);
 
-                if (!string.IsNullOrEmpty(ConnectionConfiguration.S3BucketForLargeMessages))
-                {
-                    // determine if the configured bucket exists; create it if it doesn't
-                    var listBucketsResponse = S3Client.ListBuckets(new ListBucketsRequest());
-                    var bucketExists = listBucketsResponse.Buckets.Any(x => x.BucketName.ToLower() == ConnectionConfiguration.S3BucketForLargeMessages.ToLower());
-                    if (!bucketExists)
-                    {
-                        S3Client.PutBucket(new PutBucketRequest
-                        {
-                            BucketName = ConnectionConfiguration.S3BucketForLargeMessages
-                        });
-                    }
+                CreateS3ResourcesIfNecessary();
+            }
+            catch (Exception e)
+            {
+                Logger.Error("Exception from CreateQueueIfNecessary.", e);
+                throw;
+            }
+        }
 
+        private const int MaxS3BucketRetries = 3;
+
+        private void CreateS3ResourcesIfNecessary(int attemptCount = 0)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(ConnectionConfiguration.S3BucketForLargeMessages))
+                {
+                    return;
+                }
+
+                var bucketForLargeMessages = ConnectionConfiguration.S3BucketForLargeMessages;
+
+                // determine if the configured bucket exists; create it if it doesn't
+
+                if (S3Client.DoesS3BucketExist(bucketForLargeMessages))
+                {
+                    S3Client.PutBucket(new PutBucketRequest
+                    {
+                        BucketName = bucketForLargeMessages
+                    });
+                }
+
+                var lifecycleConfigurationResponse = S3Client.GetLifecycleConfiguration(new GetLifecycleConfigurationRequest
+                {
+                    BucketName = bucketForLargeMessages
+                });
+
+                var lifeCycleRule = new LifecycleRule
+                {
+                    Id = "NServiceBus.SQS.DeleteMessageBodies",
+                    Prefix = ConnectionConfiguration.S3KeyPrefix,
+                    Status = LifecycleRuleStatus.Enabled,
+                    Expiration = new LifecycleRuleExpiration
+                    {
+                        Days = ConnectionConfiguration.MaxTTLDays
+                    }
+                };
+
+                if (!lifecycleConfigurationResponse.Configuration.ContainsMatchingRule(lifeCycleRule))
+                {
                     S3Client.PutLifecycleConfiguration(new PutLifecycleConfigurationRequest
                     {
                         BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
@@ -62,26 +100,28 @@
                         {
                             Rules = new List<LifecycleRule>
                             {
-                                new LifecycleRule
-                                {
-                                    Id = "NServiceBus.SQS.DeleteMessageBodies",
-                                    Prefix = ConnectionConfiguration.S3KeyPrefix,
-                                    Status = LifecycleRuleStatus.Enabled,
-                                    Expiration = new LifecycleRuleExpiration
-                                    {
-                                        Days = ConnectionConfiguration.MaxTTLDays
-                                    }
-                                }
+                                lifeCycleRule
                             }
                         }
-                    });
+                    });    
                 }
+                
             }
-            catch (Exception e)
+            catch (AmazonS3Exception exception)
             {
-                Logger.Error("Exception from CreateQueueIfNecessary.", e);
+                if (exception.StatusCode != HttpStatusCode.Conflict)
+                {
+                    throw;
+                }
+                if (attemptCount++ < MaxS3BucketRetries)
+                {
+                    CreateS3ResourcesIfNecessary(attemptCount);
+                    return;
+                }
+                Logger.Error(string.Format("Unable to create s3 bucket and/or lifecycle configuration rule after {0} attempts.", attemptCount), exception);
                 throw;
             }
+            
         }
 
         static ILog Logger = LogManager.GetLogger(typeof(SqsQueueCreator));
