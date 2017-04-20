@@ -65,7 +65,13 @@
                                 new LifecycleRule
                                 {
                                     Id = "NServiceBus.SQS.DeleteMessageBodies",
-                                    Prefix = ConnectionConfiguration.S3KeyPrefix,
+                                    Filter = new LifecycleFilter()
+                                    {
+                                        LifecycleFilterPredicate = new LifecyclePrefixPredicate
+                                        {
+                                            Prefix = ConnectionConfiguration.S3KeyPrefix
+                                        }
+                                    },
                                     Status = LifecycleRuleStatus.Enabled,
                                     Expiration = new LifecycleRuleExpiration
                                     {
