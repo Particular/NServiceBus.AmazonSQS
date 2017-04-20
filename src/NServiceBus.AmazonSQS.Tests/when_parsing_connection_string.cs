@@ -101,5 +101,19 @@ namespace NServiceBus.AmazonSQS.Tests
 			// Don't implement the environment credentials source!
 			Assert.Throws<ArgumentException>(() => SqsConnectionStringParser.Parse("Region=ap-southeast-2;CredentialSource=Environment"));
 		}
+
+        [Test]
+        public void parsing_proxy_host_and_port_works()
+        {
+            var result = SqsConnectionStringParser.Parse("Region=ap-southeast-2;CredentialSource=EnvironmentVariables;ProxyHost=localhost;ProxyPort=8080");
+            Assert.AreEqual(8080, result.ProxyPort);
+            Assert.AreEqual("localhost", result.ProxyHost);
+        }
+
+        [Test]
+        public void throws_if_parsing_proxy_host_without_proxy_port()
+        {
+            Assert.Throws<ArgumentException>(() => SqsConnectionStringParser.Parse("Region=ap-southeast-2;CredentialSource=EnvironmentVariables;ProxyHost=localhost"));
+        }
     }
 }
