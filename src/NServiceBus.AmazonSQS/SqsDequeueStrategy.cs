@@ -189,6 +189,15 @@
                         {
                             var deleteMessage = !_isTransactional || (_isTransactional && messageProcessedOk);
 
+                            // If transportMessage is null, the sqsTransportMessage could not be deserialized
+                            // or otherwise converted to a transport message. This message can be considered
+                            // a poison message and should be deleted.
+                            if (transportMessage == null)
+                            {
+                                Logger.Warn($"Deleting poison message with SQS Message Id {message.MessageId}");
+                                deleteMessage = true;
+                            }
+
                             if (deleteMessage)
                             {
                                 DeleteMessage(SqsClient, S3Client, message, sqsTransportMessage, transportMessage);
@@ -217,7 +226,7 @@
 		{
 			sqs.DeleteMessage(_queueUrl, message.ReceiptHandle);
 
-			if (!String.IsNullOrEmpty(sqsTransportMessage.S3BodyKey))
+			if (sqsTransportMessage != null && !String.IsNullOrEmpty(sqsTransportMessage.S3BodyKey))
 			{
 				// Delete the S3 body asynchronously. 
 				// We don't really care too much if this call succeeds or fails - if it fails, 
@@ -240,10 +249,14 @@
 						// and effectively doesn't exist anymore. 
 						// It doesn't really matter, as S3 is configured to delete message body data
 						// automatically after a certain period of time.
-						Logger.Warn("Couldn't delete message body from S3. Message body data will be aged out at a later time.", t.Exception);
+						Logger.Warn("Couldn't delete message body from S3. Message body data will be aged out by the S3 lifecycle policy when the TTL expires.", t.Exception);
 					}
 				});
 			}
+            else
+            {
+                Logger.Warn("Couldn't delete message body from S3 because the SqsTransportMessage was null. Message body data will be aged out by the S3 lifecycle policy when the TTL expires.");
+            }
 		}
 
         static ILog Logger = LogManager.GetLogger(typeof(SqsDequeueStrategy));

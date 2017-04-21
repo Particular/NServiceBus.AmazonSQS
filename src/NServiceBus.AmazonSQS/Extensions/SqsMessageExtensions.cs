@@ -21,9 +21,12 @@
                 {
                     int count;
                     int transferred = 0;
-                    while ((count = bufferedStream.Read(result.Body, transferred, 8192)) > 0)
+                    const int maxChunkSize = 8 * 1024;
+                    int bytesToRead = Math.Min(maxChunkSize, result.Body.Length - transferred);
+                    while ((count = bufferedStream.Read(result.Body, transferred, bytesToRead)) > 0)
                     {
                         transferred += count;
+                        bytesToRead = Math.Min(maxChunkSize, result.Body.Length - transferred);
                     }
                 }
             }
