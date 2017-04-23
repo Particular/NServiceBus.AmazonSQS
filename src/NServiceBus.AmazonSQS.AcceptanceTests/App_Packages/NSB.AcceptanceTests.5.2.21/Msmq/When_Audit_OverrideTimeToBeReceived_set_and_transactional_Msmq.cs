@@ -8,6 +8,7 @@
     using NServiceBus.Config;
     using NUnit.Framework;
 
+    [Ignore("Ignored for NServiceBus.AmazonSQS because this is an MSMQ specific test")]
     public class When_Audit_OverrideTimeToBeReceived_set_and_transactional_Msmq : NServiceBusAcceptanceTest
     {
         [Test]

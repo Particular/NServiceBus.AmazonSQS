@@ -6,6 +6,7 @@
     using NUnit.Framework;
     using ScenarioDescriptors;
 
+    [Ignore("Ignored for NServiceBus.AmazonSQS because this is an MSMQ specific test")]
     public class When_TimeToBeReceived_set_and_receivetransaction_Msmq : NServiceBusAcceptanceTest
     {
         [Test]

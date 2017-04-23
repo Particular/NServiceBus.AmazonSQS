@@ -14,6 +14,7 @@
 
         [Test]
         [Explicit("Since perf counters need to be enabled with powershell")]
+        [Ignore("Ignored for NServiceBus.AmazonSQS: Since perf counters need to be enabled with powershell")]
         public void Critical_time_should_not_include_the_time_message_was_waiting_in_the_timeout_store()
         {
             using (var counter = new PerformanceCounter("NServiceBus", "Critical Time", "DeferringAMessage.Endpoint", false))

@@ -63,8 +63,7 @@
 
                 public void Handle(StartMessage message)
                 {
-                    Bus.SendLocal(new MyMessage())
-;
+                    Bus.SendLocal(new MyMessage());
                 }
             }
 
@@ -73,7 +72,9 @@
                 public DispatcherInterceptor()
                 {
                     EnableByDefault();
-                    DependsOn<MsmqTransportConfigurator>();
+                    // NServiceBus.AmazonSQS:
+                    //DependsOn<MsmqTransportConfigurator>();
+                    DependsOn<SqsTransportFeature>();
                 }
 
                 protected override void Setup(FeatureConfigurationContext context)

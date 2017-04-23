@@ -13,6 +13,7 @@
 
         [Test]
         [Explicit("Since perf counters need to be enabled with powershell")]
+        [Ignore("Ignored for NServiceBus.AmazonSQS: Since perf counters need to be enabled with powershell")]
         public void Should_have_perf_counter_set()
         {
             using (var counter = new PerformanceCounter("NServiceBus", "Critical Time", "CriticaltimeEnabled.Endpoint", false))
