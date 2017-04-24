@@ -13,6 +13,7 @@
     public class When_timeout_already_removed : NServiceBusAcceptanceTest
     {
         [Test]
+        [Ignore("Ignored for NServiceBus.AmazonSQS because it doesn't support distributed transactions")]
         public void Should_rollback_and_not_deliver_timeout_when_using_dtc()
         {
             var context = new Context();
