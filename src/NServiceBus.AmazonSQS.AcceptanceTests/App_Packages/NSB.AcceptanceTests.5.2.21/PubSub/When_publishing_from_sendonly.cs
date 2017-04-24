@@ -14,6 +14,7 @@
     public class When_publishing_from_sendonly : NServiceBusAcceptanceTest
     {
         [Test]
+        [Ignore("Ignored for NServiceBus.AmazonSQS as it is not a message driven pubsub transport")]
         public void Should_be_delivered_to_all_subscribers()
         {
             var context = new Context();
