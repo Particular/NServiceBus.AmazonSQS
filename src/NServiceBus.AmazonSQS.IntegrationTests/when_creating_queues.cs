@@ -1,8 +1,9 @@
 ﻿namespace NServiceBus.AmazonSQS.IntegrationTests
 {
-	using NUnit.Framework;
-	
-	[TestFixture]
+    using NUnit.Framework;
+    using System.Threading.Tasks;
+
+    [TestFixture]
 	public class when_creating_queues
 	{
 		SqsTestContext _context;
@@ -26,5 +27,17 @@
 
 			Assert.IsTrue( _context.MyQueueExists() );
 		}
+
+        [Test]
+        public void creating_same_queue_concurrently_works()
+        {
+            Assert.DoesNotThrow(() =>
+            {
+                Parallel.For(0, 10, x =>
+                {
+                    _context.CreateQueue();
+                });
+            });
+        }
 	}
 }
