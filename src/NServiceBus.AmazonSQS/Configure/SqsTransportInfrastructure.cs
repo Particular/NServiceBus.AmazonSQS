@@ -5,44 +5,49 @@
     using AmazonSQS;
     using Routing;
     using Transport;
+    using System.Threading.Tasks;
+    using Amazon.SQS;
+    using Amazon.S3;
+    using Settings;
 
     public class SqsTransportInfrastructure : TransportInfrastructure
     {
-        protected override void Configure(FeatureConfigurationContext context, string connectionString)
+        readonly IAmazonSQS _sqsClient;
+        readonly IAmazonS3 _s3Client;
+        readonly SqsQueueUrlCache _sqsQueueUrlCache;
+        readonly SqsConnectionConfiguration _connectionConfiguration;
+
+        public SqsTransportInfrastructure(SettingsHolder settings, string connectionString)
         {
-            var connectionConfiguration = SqsConnectionStringParser.Parse(connectionString);
+            _connectionConfiguration = SqsConnectionStringParser.Parse(connectionString);
 
-			context.Container.ConfigureComponent(_ => connectionConfiguration, DependencyLifecycle.SingleInstance);
+            _sqsClient = AwsClientFactory.CreateSqsClient(_connectionConfiguration);
+            _s3Client = AwsClientFactory.CreateS3Client(_connectionConfiguration);
 
-            context.Container.ConfigureComponent(_ => AwsClientFactory.CreateSqsClient(connectionConfiguration), DependencyLifecycle.SingleInstance);
-
-            context.Container.ConfigureComponent(_ => AwsClientFactory.CreateS3Client(connectionConfiguration), DependencyLifecycle.SingleInstance);
-
-			context.Container.ConfigureComponent<SqsQueueUrlCache>(DependencyLifecycle.SingleInstance);
-
-			context.Container.ConfigureComponent<SqsDequeueStrategy>(DependencyLifecycle.InstancePerCall);
-				
-			context.Container.ConfigureComponent<SqsQueueSender>(DependencyLifecycle.InstancePerCall);
-
-			context.Container.ConfigureComponent<SqsQueueCreator>(DependencyLifecycle.InstancePerCall);
-
-            if ( context.Settings.UseSqsDeferral() )
-                context.Container.ConfigureComponent<SqsDeferrer>(DependencyLifecycle.InstancePerCall);
+            _sqsQueueUrlCache = new SqsQueueUrlCache();
+            _sqsQueueUrlCache.ConnectionConfiguration = _connectionConfiguration;
+            _sqsQueueUrlCache.SqsClient = _sqsClient;
         }
-
+        
         public override TransportReceiveInfrastructure ConfigureReceiveInfrastructure()
         {
-            throw new NotImplementedException();
+            return new TransportReceiveInfrastructure(
+                () => new SqsDequeueStrategy(),
+                () => new SqsQueueCreator(),
+                () => Task.FromResult(StartupCheckResult.Success));
         }
 
         public override TransportSendInfrastructure ConfigureSendInfrastructure()
         {
-            throw new NotImplementedException();
+            return new TransportSendInfrastructure(
+               () => new SqsMessageDispatcher(),
+               () => Task.FromResult(StartupCheckResult.Success));
         }
 
         public override TransportSubscriptionInfrastructure ConfigureSubscriptionInfrastructure()
         {
-            throw new NotImplementedException();
+            return new TransportSubscriptionInfrastructure(
+                () => null);
         }
 
         public override EndpointInstance BindToLocalEndpoint(EndpointInstance instance)
@@ -52,7 +57,7 @@
 
         public override string ToTransportAddress(LogicalAddress logicalAddress)
         {
-            throw new NotImplementedException();
+            return SqsQueueNameHelper.GetSqsQueueName(logicalAddress.Qualifier);
         }
 
         protected override string ExampleConnectionStringForErrorMessage
