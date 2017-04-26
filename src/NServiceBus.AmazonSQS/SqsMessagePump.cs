@@ -11,8 +11,8 @@
     using Newtonsoft.Json;
     using Logging;
     using NServiceBus.AmazonSQS;
-    using Unicast.Transport;
     using Transport;
+    using Extensibility;
 
     internal class SqsMessagePump : IPushMessages
     {
@@ -24,7 +24,8 @@
 
         public async Task Init(Func<MessageContext, Task> onMessage, Func<ErrorContext, Task<ErrorHandleResult>> onError, CriticalError criticalError, PushSettings settings)
         {
-            var getQueueUrlRequest = new GetQueueUrlRequest(address.ToSqsQueueName(ConnectionConfiguration));
+            var sqsQueueName = settings.InputQueue;
+            var getQueueUrlRequest = new GetQueueUrlRequest(sqsQueueName);
             GetQueueUrlResponse getQueueUrlResponse;
             try
             {
@@ -62,10 +63,7 @@
             _onMessage = onMessage;
             _onError = onError;
 
-			if (transactionSettings != null)
-				_isTransactional = transactionSettings.IsTransactional;
-			else
-				_isTransactional = true;
+            _isTransactional = settings.RequiredTransactionMode != TransportTransactionMode.None;
         }
 
         public void Start(PushRuntimeSettings limitations)
@@ -122,7 +120,7 @@
                 }, TaskContinuationOptions.OnlyOnFaulted);
         }
 
-        void ConsumeMessages()
+        async Task ConsumeMessages()
         {
             _tracksRunningThreads.Wait(TimeSpan.FromSeconds(1));
 
@@ -132,7 +130,7 @@
                 {
                     Exception exception = null;
 						
-					var receiveTask = SqsClient.ReceiveMessageAsync(new ReceiveMessageRequest
+					var receiveResult = await SqsClient.ReceiveMessageAsync(new ReceiveMessageRequest
 						{
 							MaxNumberOfMessages = ConnectionConfiguration.MaxReceiveMessageBatchSize,
 							QueueUrl = _queueUrl,
@@ -141,12 +139,12 @@
 						},
 						_cancellationTokenSource.Token);
 
-					receiveTask.Wait(_cancellationTokenSource.Token);
-
-                    foreach (var message in receiveTask.Result.Messages)
+                    foreach (var message in receiveResult.Messages)
                     {
-                        TransportMessage transportMessage = null;
+                        IncomingMessage incomingMessage = null;
                         SqsTransportMessage sqsTransportMessage = null;
+                        TransportTransaction transportTransaction = new TransportTransaction();
+                        ContextBag contextBag = new ContextBag();
 
                         var messageProcessedOk = false;
                         var messageExpired = false;
@@ -155,23 +153,32 @@
                         {
                             sqsTransportMessage = JsonConvert.DeserializeObject<SqsTransportMessage>(message.Body);
 
-                            transportMessage = sqsTransportMessage.ToTransportMessage(S3Client, ConnectionConfiguration);
+                            incomingMessage = await sqsTransportMessage.ToIncomingMessage(S3Client, ConnectionConfiguration);
 
                             // Check that the message hasn't expired
-                            if (transportMessage.TimeToBeReceived != TimeSpan.MaxValue)
+                            var timeToBeReceived = incomingMessage.GetTimeToBeReceived();
+                            if (timeToBeReceived != TimeSpan.MaxValue)
                             {
                                 var sentDateTime = message.GetSentDateTime();
-                                if (sentDateTime + transportMessage.TimeToBeReceived <= DateTime.UtcNow)
+                                if (sentDateTime + timeToBeReceived <= DateTime.UtcNow)
                                 {
                                     // Message has expired. 
-                                    Logger.Warn(String.Format("Discarding expired message with Id {0}", transportMessage.Id));
+                                    Logger.Warn(String.Format("Discarding expired message with Id {0}", incomingMessage.MessageId));
                                     messageExpired = true;
                                 }
                             }
 
                             if (!messageExpired)
                             {
-                                messageProcessedOk = _tryProcessMessage(transportMessage);
+                                MessageContext messageContext = new MessageContext(
+                                    incomingMessage.MessageId,
+                                    incomingMessage.Headers,
+                                    incomingMessage.Body,
+                                    transportTransaction,
+                                    _cancellationTokenSource,
+                                    contextBag);
+
+                                await _onMessage(messageContext);
                             }
                         }
                         catch (Exception ex)
@@ -182,10 +189,10 @@
                         {
                             var deleteMessage = !_isTransactional || (_isTransactional && messageProcessedOk);
 
-                            // If transportMessage is null, the sqsTransportMessage could not be deserialized
+                            // If incomingMessage is null, the sqsTransportMessage could not be deserialized
                             // or otherwise converted to a transport message. This message can be considered
                             // a poison message and should be deleted.
-                            if (transportMessage == null)
+                            if (incomingMessage == null)
                             {
                                 Logger.Warn($"Deleting poison message with SQS Message Id {message.MessageId}");
                                 deleteMessage = true;
@@ -193,14 +200,22 @@
 
                             if (deleteMessage)
                             {
-                                DeleteMessage(SqsClient, S3Client, message, sqsTransportMessage, transportMessage);
+                                await DeleteMessage(SqsClient, S3Client, message, sqsTransportMessage, incomingMessage);
                             }
                             else
                             {
-                                SqsClient.ChangeMessageVisibility(_queueUrl, message.ReceiptHandle, 0);
+                                await SqsClient.ChangeMessageVisibilityAsync(_queueUrl, message.ReceiptHandle, 0);
                             }
 
-                            _endProcessMessage(transportMessage, exception);
+                            if (exception != null)
+                            {
+                                await _onError(new ErrorContext(exception,
+                                    incomingMessage.Headers,
+                                    incomingMessage.MessageId,
+                                    incomingMessage.Body,
+                                    transportTransaction,
+                                    1));
+                            }
                         }
                     }
                 }
@@ -211,40 +226,38 @@
             }
         }
 
-		private void DeleteMessage(IAmazonSQS sqs, 
+		async Task DeleteMessage(IAmazonSQS sqs, 
 			IAmazonS3 s3,
 			Message message, 
 			SqsTransportMessage sqsTransportMessage, 
-			TransportMessage transportMessage)
+			IncomingMessage incomingMessage)
 		{
-			sqs.DeleteMessage(_queueUrl, message.ReceiptHandle);
+			await sqs.DeleteMessageAsync(_queueUrl, message.ReceiptHandle);
 
-			if (sqsTransportMessage != null && !String.IsNullOrEmpty(sqsTransportMessage.S3BodyKey))
+			if (sqsTransportMessage != null)
 			{
-				// Delete the S3 body asynchronously. 
-				// We don't really care too much if this call succeeds or fails - if it fails, 
-				// the S3 bucket lifecycle configuration will eventually delete the message anyway.
-				// So, we can get better performance by not waiting around for this call to finish.
-				var s3DeleteTask = s3.DeleteObjectAsync(
-					new DeleteObjectRequest
-					{
-						BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
-						Key = ConnectionConfiguration.S3KeyPrefix + transportMessage.Id
-					});
-
-				s3DeleteTask.ContinueWith(t =>
-				{
-					if (t.Exception != null)
-					{
-						// If deleting the message body from S3 fails, we don't 
-						// want the exception to make its way through to the _endProcessMessage below,
-						// as the message has been successfully processed and deleted from the SQS queue
-						// and effectively doesn't exist anymore. 
-						// It doesn't really matter, as S3 is configured to delete message body data
-						// automatically after a certain period of time.
-						Logger.Warn("Couldn't delete message body from S3. Message body data will be aged out by the S3 lifecycle policy when the TTL expires.", t.Exception);
-					}
-				});
+                if (!String.IsNullOrEmpty(sqsTransportMessage.S3BodyKey))
+                {
+                    try
+                    {
+                        await s3.DeleteObjectAsync(
+                            new DeleteObjectRequest
+                            {
+                                BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
+                                Key = ConnectionConfiguration.S3KeyPrefix + incomingMessage.MessageId
+                            });
+                    }
+                    catch (Exception ex)
+                    {
+                        // If deleting the message body from S3 fails, we don't 
+                        // want the exception to make its way through to the _endProcessMessage below,
+                        // as the message has been successfully processed and deleted from the SQS queue
+                        // and effectively doesn't exist anymore. 
+                        // It doesn't really matter, as S3 is configured to delete message body data
+                        // automatically after a certain period of time.
+                        Logger.Warn("Couldn't delete message body from S3. Message body data will be aged out by the S3 lifecycle policy when the TTL expires.", ex);
+                    }
+                }
 			}
             else
             {

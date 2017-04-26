@@ -1,46 +1,45 @@
 ﻿namespace NServiceBus.AmazonSQS
 {
-	using System;
-	using System.IO;
-	using Amazon.SQS.Model;
-	using Amazon.S3;
+    using System;
+    using System.IO;
+    using Amazon.SQS.Model;
+    using Amazon.S3;
+    using Transport;
+    using System.Threading.Tasks;
 
     internal static class SqsMessageExtensions
     {
-		public static TransportMessage ToTransportMessage(this SqsTransportMessage sqsTransportMessage, IAmazonS3 amazonS3, SqsConnectionConfiguration connectionConfiguration)
+		public static async Task<IncomingMessage> ToIncomingMessage(this SqsTransportMessage sqsTransportMessage, 
+            IAmazonS3 amazonS3, 
+            SqsConnectionConfiguration connectionConfiguration)
         {
             var messageId = sqsTransportMessage.Headers[Headers.MessageId];
 
-			var result = new TransportMessage(messageId, sqsTransportMessage.Headers);
+            byte[] body = null;
 
             if (!string.IsNullOrEmpty(sqsTransportMessage.S3BodyKey))
             {
-                var s3GetResponse = amazonS3.GetObject(connectionConfiguration.S3BucketForLargeMessages, sqsTransportMessage.S3BodyKey);
-                result.Body = new byte[s3GetResponse.ResponseStream.Length];
+                var s3GetResponse = await amazonS3.GetObjectAsync(connectionConfiguration.S3BucketForLargeMessages, sqsTransportMessage.S3BodyKey);
+                body = new byte[s3GetResponse.ResponseStream.Length];
                 using (BufferedStream bufferedStream = new BufferedStream(s3GetResponse.ResponseStream))
                 {
                     int count;
                     int transferred = 0;
                     const int maxChunkSize = 8 * 1024;
-                    int bytesToRead = Math.Min(maxChunkSize, result.Body.Length - transferred);
-                    while ((count = bufferedStream.Read(result.Body, transferred, bytesToRead)) > 0)
+                    int bytesToRead = Math.Min(maxChunkSize, body.Length - transferred);
+                    while ((count = bufferedStream.Read(body, transferred, bytesToRead)) > 0)
                     {
                         transferred += count;
-                        bytesToRead = Math.Min(maxChunkSize, result.Body.Length - transferred);
+                        bytesToRead = Math.Min(maxChunkSize, body.Length - transferred);
                     }
                 }
             }
             else
 			{
-				result.Body = Convert.FromBase64String(sqsTransportMessage.Body);
+                body = Convert.FromBase64String(sqsTransportMessage.Body);
 			}
 
-            result.TimeToBeReceived = sqsTransportMessage.TimeToBeReceived;
-
-			if (sqsTransportMessage.ReplyToAddress != null)
-			{
-				result.Headers[Headers.ReplyToAddress] = sqsTransportMessage.ReplyToAddress.ToString();
-			}
+            var result = new IncomingMessage(messageId, sqsTransportMessage.Headers, body);
 
             return result;
         }

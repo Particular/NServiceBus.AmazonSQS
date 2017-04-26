@@ -1,19 +1,30 @@
 ﻿namespace NServiceBus
 {
-	using Configuration.AdvanceExtensibility;
-	using Features;
-	using Transports;
+    using System;
+    using Configuration.AdvanceExtensibility;
+    using Features;
+    using Settings;
+    using Transport;
 
     public class SqsTransport : TransportDefinition
     {
         public SqsTransport()
         {
             HasNativePubSubSupport = false;
-            HasSupportForCentralizedPubSub = false;
 			HasSupportForDistributedTransactions = false;
         }
 
-		protected override void Configure(BusConfiguration config)
+        public override string ExampleConnectionStringForErrorMessage
+        {
+            get { return "Region=ap-southeast-2;S3BucketForLargeMessages=myBucketName;S3KeyPrefix=my/key/prefix;"; }
+        }
+
+        public override TransportInfrastructure Initialize(SettingsHolder settings, string connectionString)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override void Configure(BusConfiguration config)
 		{
 			config.EnableFeature<SqsTransportFeature>();
 			config.EnableFeature<MessageDrivenSubscriptions>();

@@ -62,6 +62,7 @@
   <ItemGroup>
     <Compile Include="Configure\SqsTransport.cs" />
     <Compile Include="Configure\SqsTransportInfrastructure.cs" />
+    <Compile Include="Extensions\IncomingMessageExtensions.cs" />
     <Compile Include="SqsQueueNameHelper.cs" />
     <Compile Include="Extensions\AmazonServiceExtensions.cs" />
     <Compile Include="Extensions\SettingsExtensions.cs" />

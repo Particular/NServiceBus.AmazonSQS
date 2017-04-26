@@ -29,18 +29,47 @@
             _sqsQueueUrlCache.SqsClient = _sqsClient;
         }
         
+        SqsMessagePump CreateMessagePump()
+        {
+            var result = new SqsMessagePump();
+            result.ConnectionConfiguration = _connectionConfiguration;
+            result.S3Client = _s3Client;
+            result.SqsClient = _sqsClient;
+            return result;
+        }
+
+        SqsQueueCreator CreateQueueCreator()
+        {
+            var result = new SqsQueueCreator();
+            result.ConnectionConfiguration = _connectionConfiguration;
+            result.S3Client = _s3Client;
+            result.SqsClient = _sqsClient;
+            return result;
+        }
+
+        SqsMessageDispatcher CreateMessageDispatcher()
+        {
+            var result = new SqsMessageDispatcher();
+            result.ConnectionConfiguration = _connectionConfiguration;
+            result.QueueCreator = CreateQueueCreator();
+            result.QueueUrlCache = _sqsQueueUrlCache;
+            result.S3Client = _s3Client;
+            result.SqsClient = _sqsClient;
+            return result;
+        }
+
         public override TransportReceiveInfrastructure ConfigureReceiveInfrastructure()
         {
             return new TransportReceiveInfrastructure(
-                () => new SqsDequeueStrategy(),
-                () => new SqsQueueCreator(),
+                CreateMessagePump,
+                CreateQueueCreator,
                 () => Task.FromResult(StartupCheckResult.Success));
         }
 
         public override TransportSendInfrastructure ConfigureSendInfrastructure()
         {
             return new TransportSendInfrastructure(
-               () => new SqsMessageDispatcher(),
+               CreateMessageDispatcher,
                () => Task.FromResult(StartupCheckResult.Success));
         }
 
@@ -57,14 +86,10 @@
 
         public override string ToTransportAddress(LogicalAddress logicalAddress)
         {
-            return SqsQueueNameHelper.GetSqsQueueName(logicalAddress.Qualifier);
+            return SqsQueueNameHelper.GetSqsQueueName(logicalAddress.Qualifier,
+                _connectionConfiguration);
         }
-
-        protected override string ExampleConnectionStringForErrorMessage
-        {
-			get { return "Region=ap-southeast-2;S3BucketForLargeMessages=myBucketName;S3KeyPrefix=my/key/prefix;"; }
-        }
-
+        
         public override IEnumerable<Type> DeliveryConstraints
         {
             get
@@ -77,7 +102,7 @@
         {
             get
             {
-                throw new NotImplementedException();
+                return TransportTransactionMode.ReceiveOnly;
             }
         }
 
@@ -85,7 +110,9 @@
         {
             get
             {
-                throw new NotImplementedException();
+                return new OutboundRoutingPolicy(OutboundRoutingType.Unicast,
+                    OutboundRoutingType.Unicast,
+                    OutboundRoutingType.Unicast);
             }
         }
     }
