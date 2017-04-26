@@ -27,5 +27,9 @@
 		public SqsCredentialSource CredentialSource { get; set; }
 
 		public bool TruncateLongQueueNames { get; set; }
+
+        public string ProxyHost { get; set; }
+
+        public int ProxyPort { get; set; }
     }
 }

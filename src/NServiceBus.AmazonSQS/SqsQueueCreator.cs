@@ -49,31 +49,51 @@
                     var bucketExists = listBucketsResponse.Buckets.Any(x => x.BucketName.ToLower() == ConnectionConfiguration.S3BucketForLargeMessages.ToLower());
                     if (!bucketExists)
                     {
-                        S3Client.PutBucket(new PutBucketRequest
+                        S3Client.RetryConflicts(() =>
                         {
-                            BucketName = ConnectionConfiguration.S3BucketForLargeMessages
+                            return S3Client.PutBucket(new PutBucketRequest
+                            {
+                                BucketName = ConnectionConfiguration.S3BucketForLargeMessages
+                            });
+                        },
+                        onRetry: x =>
+                        {
+                            Logger.Warn($"Conflict when creating S3 bucket, retrying after {x}ms.");
                         });
                     }
 
-                    S3Client.PutLifecycleConfiguration(new PutLifecycleConfigurationRequest
+                    S3Client.RetryConflicts(() =>
                     {
-                        BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
-                        Configuration = new LifecycleConfiguration
+                        return S3Client.PutLifecycleConfiguration(new PutLifecycleConfigurationRequest
                         {
-                            Rules = new List<LifecycleRule>
+                            BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
+                            Configuration = new LifecycleConfiguration
                             {
-                                new LifecycleRule
+                                Rules = new List<LifecycleRule>
                                 {
-                                    Id = "NServiceBus.SQS.DeleteMessageBodies",
-                                    Prefix = ConnectionConfiguration.S3KeyPrefix,
-                                    Status = LifecycleRuleStatus.Enabled,
-                                    Expiration = new LifecycleRuleExpiration
+                                    new LifecycleRule
                                     {
-                                        Days = ConnectionConfiguration.MaxTTLDays
+                                        Id = "NServiceBus.SQS.DeleteMessageBodies",
+                                        Filter = new LifecycleFilter()
+                                        {
+                                            LifecycleFilterPredicate = new LifecyclePrefixPredicate
+                                            {
+                                                Prefix = ConnectionConfiguration.S3KeyPrefix
+                                            }
+                                        },
+                                        Status = LifecycleRuleStatus.Enabled,
+                                        Expiration = new LifecycleRuleExpiration
+                                        {
+                                            Days = ConnectionConfiguration.MaxTTLDays
+                                        }
                                     }
                                 }
                             }
-                        }
+                        });
+                    },
+                    onRetry: x =>
+                    {
+                        Logger.Warn($"Conflict when setting S3 lifecycle configuration, retrying after {x}ms.");
                     });
                 }
             }

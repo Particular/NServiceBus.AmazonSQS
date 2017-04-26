@@ -101,7 +101,15 @@
 				{
 					connectionConfiguration.CredentialSource = (SqsCredentialSource)Enum.Parse(typeof(SqsCredentialSource), keyAndValue[1]);
 				}
-				else
+                else if (keyAndValue[0].ToLower() == "proxyhost")
+                {
+                    connectionConfiguration.ProxyHost = keyAndValue[1];
+                }
+                else if (keyAndValue[0].ToLower() == "proxyport")
+                {
+                    connectionConfiguration.ProxyPort = int.Parse(keyAndValue[1]);
+                }
+                else
 				{
 					throw new ArgumentException(String.Format("Unknown configuration key \"{0}\"", keyAndValue[0]));
 				}
@@ -112,6 +120,11 @@
 			{
 				throw new ArgumentException("An S3 bucket for large messages was specified, but no S3 key prefix was supplied. Supply an S3 key prefix.");
 			}
+
+            if (!string.IsNullOrEmpty(connectionConfiguration.ProxyHost) && connectionConfiguration.ProxyPort == 0)
+            {
+                throw new ArgumentException("A proxy host was specified, but no proxy port was specified. Specify both a proxy host and proxy port.");
+            }
 
             return connectionConfiguration;
         }

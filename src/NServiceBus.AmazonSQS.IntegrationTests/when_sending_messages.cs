@@ -121,17 +121,21 @@ namespace NServiceBus.AmazonSQS.IntegrationTests
 			Assert.IsTrue(receivedBodyAsString.Contains("a"));
 		}
 
+        [Ignore("The purge operation in this test appears to interfere with subsequent tests - run manually!")]
         [Test, Explicit]
         public void should_gracefully_shutdown()
         {
             _context.DequeueStrategy.Stop();
 
-            Parallel.For(0, 2000, i =>
+            Parallel.For(0, 200, i =>
                 _context.Sender.Send(new TransportMessage(), new SendOptions( _context.Address)));
 
             _context.DequeueStrategy.Start(50);
             Thread.Sleep(10);
             _context.DequeueStrategy.Stop();
+
+            // Delete all those messages we sent above!
+            _context.PurgeQueue();
         }
 
 	}

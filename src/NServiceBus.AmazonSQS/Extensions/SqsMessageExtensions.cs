@@ -1,6 +1,7 @@
 ﻿namespace NServiceBus.AmazonSQS
 {
 	using System;
+	using System.IO;
 	using Amazon.SQS.Model;
 	using Amazon.S3;
 
@@ -11,14 +12,25 @@
             var messageId = sqsTransportMessage.Headers[Headers.MessageId];
 
 			var result = new TransportMessage(messageId, sqsTransportMessage.Headers);
-			
-			if (!string.IsNullOrEmpty(sqsTransportMessage.S3BodyKey))
-			{
-				var s3GetResponse = amazonS3.GetObject(connectionConfiguration.S3BucketForLargeMessages, sqsTransportMessage.S3BodyKey);
-				result.Body = new byte[s3GetResponse.ResponseStream.Length];
-				s3GetResponse.ResponseStream.Read(result.Body, 0, result.Body.Length);
-			}
-			else
+
+            if (!string.IsNullOrEmpty(sqsTransportMessage.S3BodyKey))
+            {
+                var s3GetResponse = amazonS3.GetObject(connectionConfiguration.S3BucketForLargeMessages, sqsTransportMessage.S3BodyKey);
+                result.Body = new byte[s3GetResponse.ResponseStream.Length];
+                using (BufferedStream bufferedStream = new BufferedStream(s3GetResponse.ResponseStream))
+                {
+                    int count;
+                    int transferred = 0;
+                    const int maxChunkSize = 8 * 1024;
+                    int bytesToRead = Math.Min(maxChunkSize, result.Body.Length - transferred);
+                    while ((count = bufferedStream.Read(result.Body, transferred, bytesToRead)) > 0)
+                    {
+                        transferred += count;
+                        bytesToRead = Math.Min(maxChunkSize, result.Body.Length - transferred);
+                    }
+                }
+            }
+            else
 			{
 				result.Body = Convert.FromBase64String(sqsTransportMessage.Body);
 			}

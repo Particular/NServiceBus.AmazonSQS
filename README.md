@@ -1,6 +1,8 @@
 NServiceBus.AmazonSQS
 ===============
 
+[![Build status](https://ci.appveyor.com/api/projects/status/p4yb15sa17kq89gs/branch/master?svg=true)](https://ci.appveyor.com/project/ahofman/nservicebus-amazonsqs/branch/master)
+
 This is an Amazon SQS transport for NServiceBus V5. It currently in the early stages of development but should be stable enough for serious users. If you'd like to get up and running quickly, follow the below steps!
 
 Feel free to browse and contribute!

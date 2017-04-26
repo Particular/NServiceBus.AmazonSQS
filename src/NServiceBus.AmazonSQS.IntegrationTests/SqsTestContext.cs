@@ -1,16 +1,17 @@
 ﻿namespace NServiceBus.AmazonSQS.IntegrationTests
 {
-	using Amazon.SQS.Model;
-	using System;
-	using System.Reactive.Subjects;
-	using System.Threading;
-	using System.Configuration;
-	using Amazon.S3;
-	using Amazon.SQS;
-	using Transports.SQS;
-	using Unicast;
-	
-	internal class SqsTestContext : IDisposable
+    using Amazon.SQS.Model;
+    using System;
+    using System.Reactive.Subjects;
+    using System.Threading;
+    using System.Configuration;
+    using Amazon.S3;
+    using Amazon.SQS;
+    using Transports.SQS;
+    using Unicast;
+    using System.Diagnostics;
+
+    internal class SqsTestContext : IDisposable
     {
         public SqsConnectionConfiguration ConnectionConfiguration { get; private set; }
 
@@ -88,16 +89,42 @@
 	    public void CreateQueue()
 	    {
 			Creator.CreateQueueIfNecessary(Address, "");
-
-			try
-			{
-				SqsClient.PurgeQueue(QueueUrlCache.GetQueueUrl(Address));
-			}
-			catch (PurgeQueueInProgressException)
-			{
-
-			}
 	    }
+
+        public void PurgeQueue()
+        {   
+            try
+            {
+                SqsClient.PurgeQueue(QueueUrlCache.GetQueueUrl(Address));
+            }
+            catch (PurgeQueueInProgressException)
+            {
+
+            }
+
+            int approxNumberOfMessages = 0;
+            do
+            {
+                Thread.Sleep(2000);
+
+                // The purge operation above may not have succeeded - there is an 
+                // annoying restriction that we can only do one purge every 60 seconds.
+                // In that case, try to manually delete everything in the queue.
+                var messages = SqsClient.ReceiveMessage(new ReceiveMessageRequest
+                {
+                    QueueUrl = QueueUrlCache.GetQueueUrl(Address),
+                    MaxNumberOfMessages = 10
+                });
+
+                approxNumberOfMessages = messages.Messages.Count;
+
+                foreach (var m in messages.Messages)
+                {
+                    SqsClient.DeleteMessage(QueueUrlCache.GetQueueUrl(Address), m.ReceiptHandle);
+                }
+
+            } while (approxNumberOfMessages != 0);
+        }
 
 		public void InitAndStartDequeueing()
 		{
@@ -133,26 +160,31 @@
             Exception lastThrownException = null;
 
             var retryCount = 0;
+            const int maxRetryCount = 100;
 
             using (ReceivedMessages.Subscribe(m => lastReceivedMessage = m))
             using (ExceptionsThrownByReceiver.Subscribe(e => lastThrownException = e))
             {
                 doSend();
 
-                while (lastReceivedMessage == null && lastThrownException == null && retryCount < 100)
+                while (lastReceivedMessage == null && lastThrownException == null && retryCount < maxRetryCount)
                 {
                     retryCount++;
                     Thread.Sleep(50);
                 }
             }
 
-            if (retryCount >= 100)
+            if (retryCount >= maxRetryCount)
                 throw new TimeoutException("Receiving a message timed out.");
 
             if (lastThrownException == null)
                 return lastReceivedMessage;
             else
+            {
+                Trace.WriteLine($"Exception from {nameof(SendAndReceiveCore)}: {lastThrownException}"); 
                 throw lastThrownException;
+            }
+                
         }
 
         public TransportMessage SendAndReceiveMessage(TransportMessage messageToSend)
