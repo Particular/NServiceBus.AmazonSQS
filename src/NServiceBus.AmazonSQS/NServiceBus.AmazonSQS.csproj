@@ -61,8 +61,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Configure\SqsTransport.cs" />
-    <Compile Include="Configure\SqsTransportFeature.cs" />
-    <Compile Include="Extensions\AddressExtensions.cs" />
+    <Compile Include="Configure\SqsTransportInfrastructure.cs" />
+    <Compile Include="SqsQueueNameHelper.cs" />
     <Compile Include="Extensions\AmazonServiceExtensions.cs" />
     <Compile Include="Extensions\SettingsExtensions.cs" />
     <Compile Include="Extensions\SqsMessageExtensions.cs" />
@@ -74,7 +74,7 @@
     <Compile Include="SqsDeferrer.cs" />
     <Compile Include="SqsDequeueStrategy.cs" />
     <Compile Include="SqsQueueCreator.cs" />
-    <Compile Include="SqsQueueSender.cs" />
+    <Compile Include="SqsMessageDispatcher.cs" />
     <Compile Include="SqsQueueUrlCache.cs" />
     <Compile Include="SqsTransportMessage.cs" />
   </ItemGroup>

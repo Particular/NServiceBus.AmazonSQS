@@ -2,13 +2,13 @@
 {
 	using System;
 
-	static class AddressExtensions
+	static class SqsQueueNameHelper
 	{
-        public static string ToSqsQueueName(this Address address, SqsConnectionConfiguration connectionConfiguration)
+        public static string GetSqsQueueName(string destination, SqsConnectionConfiguration connectionConfiguration)
         {
 			// SQS queue names can only have alphanumeric characters, hyphens and underscores.
 			// Any other characters will be replaced with a hyphen.
-			var s = connectionConfiguration.QueueNamePrefix + address.Queue;
+			var s = connectionConfiguration.QueueNamePrefix + destination;
 			for (var i = 0; i<s.Length; ++i)
 			{
 				var c = s[i];
@@ -29,7 +29,7 @@
 			{
 				throw new InvalidOperationException(
 					String.Format("Address {0} with configured prefix {1} is longer than 80 characters and therefore cannot be used to create an SQS queue. Use a shorter queue name.",
-					address.Queue, connectionConfiguration.QueueNamePrefix));
+                    destination, connectionConfiguration.QueueNamePrefix));
 			}
 
 	        return s;

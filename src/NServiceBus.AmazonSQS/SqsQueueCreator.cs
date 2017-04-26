@@ -9,6 +9,8 @@
     using System.Collections.Generic;
     using System.Linq;
     using NServiceBus.Logging;
+    using Transport;
+    using System.Threading.Tasks;
 
     class SqsQueueCreator : ICreateQueues
     {
@@ -17,8 +19,8 @@
         public IAmazonS3 S3Client { get; set; }
 
         public IAmazonSQS SqsClient { get; set; }
-		
-        public void CreateQueueIfNecessary(Address address, string account)
+
+        public Task CreateQueueIfNecessary(QueueBindings queueBindings, string identity)
         {
             try
             {
@@ -103,7 +105,7 @@
                 throw;
             }
         }
-
+        
         static ILog Logger = LogManager.GetLogger(typeof(SqsQueueCreator));
     }
 }

@@ -14,15 +14,14 @@
 			_cache = new ConcurrentDictionary<string, string>();
 		}
 
-		public string GetQueueUrl(Address address)
+		public string GetQueueUrl(string destination)
 		{
 			string result;
-			var addressKey = address.ToString();
-			if (!_cache.TryGetValue(addressKey, out result))
+			if (!_cache.TryGetValue(destination, out result))
 			{
-				var getQueueUrlResponse = SqsClient.GetQueueUrl(address.ToSqsQueueName(ConnectionConfiguration));
+				var getQueueUrlResponse = SqsClient.GetQueueUrl(SqsQueueNameHelper.GetSqsQueueName(destination, ConnectionConfiguration));
 				result = getQueueUrlResponse.QueueUrl;
-				_cache.AddOrUpdate(addressKey, result, (x, y) => result);
+				_cache.AddOrUpdate(destination, result, (x, y) => result);
 			}
 			return result;
 		}
