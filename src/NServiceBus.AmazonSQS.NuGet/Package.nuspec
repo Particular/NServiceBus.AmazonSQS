@@ -11,6 +11,7 @@
     </description>
     <releaseNotes>
       * Added support for proxy authentication.
+      * Fix endpoints failing to start with 409 responses from SQS when starting the same endpoint many times concurrently.
       * Upgraded to AWS SDK v3.
       * Some minor bug fixes.
       See the project wiki for more details: https://github.com/ahofman/NServiceBus.AmazonSQS/wiki
@@ -27,8 +28,8 @@
     <dependencies>
         <group targetFramework="net45">
           <dependency id="AWSSDK.Core" version="3.3.12"/>
-          <dependency id="AWSSDK.S3" version="3.3.12"/>
-          <dependency id="AWSSDK.SQS" version="3.3.12"/>
+          <dependency id="AWSSDK.S3" version="3.3.5.12"/>
+          <dependency id="AWSSDK.SQS" version="3.3.1.12"/>
           <dependency id="Newtonsoft.Json" version="6.0.7"/>
           <dependency id="NServiceBus" version="[5.0.0, 6.0.0)"/>
         </group>
