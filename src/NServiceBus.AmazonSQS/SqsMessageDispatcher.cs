@@ -7,12 +7,10 @@
     using System.IO;
     using Amazon.S3;
     using Amazon.SQS;
-    using Unicast;
     using NServiceBus.Logging;
     using Transport;
     using Extensibility;
     using System.Threading.Tasks;
-    using System.Collections.Generic;
 
     internal class SqsMessageDispatcher : IDispatchMessages
     {
@@ -26,7 +24,7 @@
 
 		public ICreateQueues QueueCreator { get; set; }
 
-        public Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
+        public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
         {
             try
             {
@@ -43,7 +41,7 @@
 
                         var key = ConnectionConfiguration.S3KeyPrefix + "/" + unicastMessage.Message.MessageId;
 
-                        S3Client.PutObject(new Amazon.S3.Model.PutObjectRequest
+                        await S3Client.PutObjectAsync(new Amazon.S3.Model.PutObjectRequest
                         {
                             BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
                             InputStream = new MemoryStream(unicastMessage.Message.Body),
@@ -55,16 +53,17 @@
                         serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
                     }
 
-                    try
-                    {
-                        SendMessage(serializedMessage, unicastMessage.Destination);
-                    }
-                    catch (QueueDoesNotExistException)
-                    {
-                        QueueCreator.CreateQueueIfNecessary(unicastMessage.Destination, "");
+                    //try
+                    //{
+                        await SendMessage(serializedMessage, unicastMessage.Destination);
+                    //}
+                    //catch (QueueDoesNotExistException)
+                    //{
+                    // NSB6 TODO:
+                    //    QueueCreator.CreateQueueIfNecessary(unicastMessage.Destination, "");
 
-                        SendMessage(serializedMessage, unicastMessage.Destination);
-                    }
+                    //    SendMessage(serializedMessage, unicastMessage.Destination);
+                   // }
                 }                
             }
             catch (Exception e)
@@ -76,6 +75,8 @@
 
 	    private Task SendMessage(string message, string destination)
 	    {
+            // NSB6 TODO:
+            /*
             var delayDeliveryBy = TimeSpan.MaxValue;
             if (sendOptions.DelayDeliveryFor.HasValue)
                 delayDeliveryBy = sendOptions.DelayDeliveryWith.Value;
@@ -86,13 +87,14 @@
                     delayDeliveryBy = sendOptions.DeliverAt.Value - DateTime.UtcNow;
                 }
             }
-
+            */
 			var sendMessageRequest = new SendMessageRequest(QueueUrlCache.GetQueueUrl(destination), message);
 	        
+            // NSB6 TODO:
             // There should be no need to check if the delay time is greater than the maximum allowed
             // by SQS (15 minutes); the call to AWS will fail with an appropriate exception if the limit is exceeded.
-            if ( delayDeliveryBy != TimeSpan.MaxValue)
-                sendMessageRequest.DelaySeconds = Math.Max(0, (int)delayDeliveryBy.TotalSeconds);
+            //if ( delayDeliveryBy != TimeSpan.MaxValue)
+            //    sendMessageRequest.DelaySeconds = Math.Max(0, (int)delayDeliveryBy.TotalSeconds);
 
 	        return SqsClient.SendMessageAsync(sendMessageRequest);
 	    }

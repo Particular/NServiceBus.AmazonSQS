@@ -1,7 +1,11 @@
-﻿using NServiceBus.Transports.SQS;
+﻿using NServiceBus.Extensibility;
+using NServiceBus.Routing;
+using NServiceBus.Transport;
+using NServiceBus.Transports.SQS;
 using NServiceBus.Unicast;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace NServiceBus.AmazonSQS.Tests
@@ -12,7 +16,7 @@ namespace NServiceBus.AmazonSQS.Tests
 		[Test]
 		public void throws_when_message_is_large_and_no_s3_bucket_configured()
 		{
-			var sut = new SqsQueueSender
+			var sut = new SqsMessageDispatcher
 			{
 				ConnectionConfiguration = new SqsConnectionConfiguration
 				{
@@ -21,16 +25,25 @@ namespace NServiceBus.AmazonSQS.Tests
 				}
 			};
 
-			var largeTransportMessageToSend = new TransportMessage();
-			var stringBuilder = new StringBuilder();
-			while (stringBuilder.Length < 256 * 1024)
-			{
-				stringBuilder.Append("This is a large string. ");
-			}
-			largeTransportMessageToSend.Body = Encoding.Default.GetBytes(stringBuilder.ToString());
+            var stringBuilder = new StringBuilder();
+            while (stringBuilder.Length < 256 * 1024)
+            {
+                stringBuilder.Append("This is a large string. ");
+            }
 
-			Assert.Throws<InvalidOperationException>(() => sut.Send(largeTransportMessageToSend,
-				new SendOptions(Address.Self)));
+            var largeOutgoingMessageToSend = new OutgoingMessage("1234", 
+                new Dictionary<string, string>(),
+                Encoding.Default.GetBytes(stringBuilder.ToString()));
+
+            var transportOperations = new TransportOperations(
+                new TransportOperation(
+                    largeOutgoingMessageToSend,
+                    null));
+
+            var transportTransaction = new TransportTransaction();
+            var context = new ContextBag();
+
+			Assert.ThrowsAsync<InvalidOperationException>(async () => await sut.Dispatch(transportOperations, transportTransaction, context));
 		}
 	}
 }
