@@ -12,8 +12,9 @@
     using Logging;
     using NServiceBus.AmazonSQS;
     using Unicast.Transport;
+    using Transport;
 
-    internal class SqsDequeueStrategy : IDequeueMessages
+    internal class SqsMessagePump : IPushMessages
     {
         public SqsConnectionConfiguration ConnectionConfiguration { get; set; }
 
@@ -21,21 +22,13 @@
 
         public IAmazonSQS SqsClient { get; set; }
 
-        public SqsDequeueStrategy(Configure config)
-        {
-			if (config != null)
-				_purgeOnStartup = config.PurgeOnStartup();
-			else
-				_purgeOnStartup = false;
-        }
-
-        public void Init(Address address, TransactionSettings transactionSettings, Func<TransportMessage, bool> tryProcessMessage, Action<TransportMessage, Exception> endProcessMessage)
+        public async Task Init(Func<MessageContext, Task> onMessage, Func<ErrorContext, Task<ErrorHandleResult>> onError, CriticalError criticalError, PushSettings settings)
         {
             var getQueueUrlRequest = new GetQueueUrlRequest(address.ToSqsQueueName(ConnectionConfiguration));
             GetQueueUrlResponse getQueueUrlResponse;
             try
             {
-                getQueueUrlResponse = SqsClient.GetQueueUrl(getQueueUrlRequest);
+                getQueueUrlResponse = await SqsClient.GetQueueUrlAsync(getQueueUrlRequest);
             }
             catch (Exception ex)
             {
@@ -44,7 +37,7 @@
             }
             _queueUrl = getQueueUrlResponse.QueueUrl;
 
-			if (_purgeOnStartup)
+			if (settings.PurgeOnStartup)
             {
                 // SQS only allows purging a queue once every 60 seconds or so. 
                 // If you try to purge a queue twice in relatively quick succession,
@@ -53,7 +46,7 @@
                 // in that time. 
                 try
                 {
-                    SqsClient.PurgeQueue(_queueUrl);
+                    await SqsClient.PurgeQueueAsync(_queueUrl);
                 }
                 catch (PurgeQueueInProgressException ex)
                 {
@@ -66,8 +59,8 @@
                 }
             }
 
-            _tryProcessMessage = tryProcessMessage;
-            _endProcessMessage = endProcessMessage;
+            _onMessage = onMessage;
+            _onError = onError;
 
 			if (transactionSettings != null)
 				_isTransactional = transactionSettings.IsTransactional;
@@ -75,14 +68,14 @@
 				_isTransactional = true;
         }
 
-        public void Start(int maximumConcurrencyLevel)
+        public void Start(PushRuntimeSettings limitations)
         {
 			_cancellationTokenSource = new CancellationTokenSource();
-            _concurrencyLevel = maximumConcurrencyLevel;
+            _concurrencyLevel = limitations.MaxConcurrency;
 
             _tracksRunningThreads = new SemaphoreSlim(_concurrencyLevel);
 
-            for (var i = 0; i < maximumConcurrencyLevel; i++)
+            for (var i = 0; i < _concurrencyLevel; i++)
             {
                 StartConsumer();
             }
@@ -91,21 +84,21 @@
         /// <summary>
         ///     Stops the dequeuing of messages.
         /// </summary>
-        public void Stop()
+        public Task Stop()
         {
 			if ( _cancellationTokenSource != null )
 				_cancellationTokenSource.Cancel();
 
-            DrainStopSemaphore();
+            return DrainStopSemaphore();
         }
 
-        void DrainStopSemaphore()
+        async Task DrainStopSemaphore()
         {
 	        if (_tracksRunningThreads != null)
 	        {
 				for (var index = 0; index < _concurrencyLevel; index++)
 				{
-					_tracksRunningThreads.Wait();
+					await _tracksRunningThreads.WaitAsync();
 				}
 
 				_tracksRunningThreads.Release(_concurrencyLevel);
@@ -259,15 +252,14 @@
             }
 		}
 
-        static ILog Logger = LogManager.GetLogger(typeof(SqsDequeueStrategy));
+        static ILog Logger = LogManager.GetLogger(typeof(SqsMessagePump));
 
 		CancellationTokenSource _cancellationTokenSource;
         SemaphoreSlim _tracksRunningThreads;
-        Action<TransportMessage, Exception> _endProcessMessage;
-        Func<TransportMessage, bool> _tryProcessMessage;
+        Func<ErrorContext, Task<ErrorHandleResult>> _onError;
+        Func<MessageContext, Task> _onMessage;
         string _queueUrl;
         int _concurrencyLevel;
-		bool _purgeOnStartup;
 		bool _isTransactional;
     }
 }

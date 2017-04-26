@@ -71,7 +71,7 @@
     <Compile Include="SqsConnectionStringParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SqsCredentialSource.cs" />
-    <Compile Include="SqsDequeueStrategy.cs" />
+    <Compile Include="SqsMessagePump.cs" />
     <Compile Include="SqsQueueCreator.cs" />
     <Compile Include="SqsMessageDispatcher.cs" />
     <Compile Include="SqsQueueUrlCache.cs" />
