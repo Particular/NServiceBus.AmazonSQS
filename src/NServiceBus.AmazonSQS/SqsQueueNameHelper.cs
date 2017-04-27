@@ -6,6 +6,11 @@
 	{
         public static string GetSqsQueueName(string destination, SqsConnectionConfiguration connectionConfiguration)
         {
+            if (string.IsNullOrWhiteSpace(destination))
+            {
+                throw new ArgumentNullException(nameof(destination));
+            }
+
 			// SQS queue names can only have alphanumeric characters, hyphens and underscores.
 			// Any other characters will be replaced with a hyphen.
 			var s = connectionConfiguration.QueueNamePrefix + destination;

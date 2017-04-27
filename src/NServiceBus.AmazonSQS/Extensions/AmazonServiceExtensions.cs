@@ -1,12 +1,12 @@
 ﻿using Amazon.Runtime;
 using System;
-using System.Threading;
+using System.Threading.Tasks;
 
 namespace NServiceBus.AmazonSQS
 {
     static class AmazonServiceExtensions
     {
-        public static T RetryConflicts<T>(this IAmazonService client, Func<T> a, Action<int> onRetry)
+        public static async Task<T> RetryConflictsAsync<T>(this IAmazonService client, Func<Task<T>> a, Action<int> onRetry)
         {
             int tryCount = 0;
             int sleepTimeMs = 2000;
@@ -17,7 +17,7 @@ namespace NServiceBus.AmazonSQS
                 try
                 {
                     tryCount++;
-                    return a();
+                    return await a();
                 }
                 catch (AmazonServiceException ex)
                     when (ex.StatusCode == System.Net.HttpStatusCode.Conflict && 
@@ -28,7 +28,7 @@ namespace NServiceBus.AmazonSQS
 
                     var sleepTime = (sleepTimeMs * tryCount);
                     onRetry(sleepTime);
-                    Thread.Sleep(sleepTime);
+                    await Task.Delay(sleepTime);
                 }
             }
         }

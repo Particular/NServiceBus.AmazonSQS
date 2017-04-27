@@ -41,7 +41,7 @@
             {
                 var sqsRequest = new CreateQueueRequest
                 {
-                    QueueName = SqsQueueNameHelper.GetSqsQueueName(address, ConnectionConfiguration),
+                    QueueName = address,
                 };
                 Logger.Info(String.Format("Creating SQS Queue with name \"{0}\" for address \"{1}\".", sqsRequest.QueueName, address));
                 var createQueueResponse = await SqsClient.CreateQueueAsync(sqsRequest);
@@ -66,7 +66,7 @@
                     var bucketExists = listBucketsResponse.Buckets.Any(x => x.BucketName.ToLower() == ConnectionConfiguration.S3BucketForLargeMessages.ToLower());
                     if (!bucketExists)
                     {
-                        await S3Client.RetryConflicts(async () =>
+                        await S3Client.RetryConflictsAsync(async () =>
                         {
                             return await S3Client.PutBucketAsync(new PutBucketRequest
                             {
@@ -79,7 +79,7 @@
                         });
                     }
 
-                    await S3Client.RetryConflicts(async () =>
+                    await S3Client.RetryConflictsAsync(async () =>
                     {
                         return await S3Client.PutLifecycleConfigurationAsync(new PutLifecycleConfigurationRequest
                         {

@@ -86,7 +86,7 @@
 
         public override string ToTransportAddress(LogicalAddress logicalAddress)
         {
-            return SqsQueueNameHelper.GetSqsQueueName(logicalAddress.Qualifier,
+            return SqsQueueNameHelper.GetSqsQueueName(logicalAddress.EndpointInstance.Endpoint,
                 _connectionConfiguration);
         }
         
