@@ -269,7 +269,9 @@
     <Compile Include="App_Packages\NSB.AcceptanceTests.6.2.1\Tx\When_receiving_with_the_default_settings.cs" />
     <Compile Include="App_Packages\NSB.AcceptanceTests.6.2.1\Tx\When_sending_within_an_ambient_transaction.cs" />
     <Compile Include="App_Packages\NSB.AcceptanceTests.6.2.1\Versioning\When_multiple_versions_of_a_message_is_published.cs" />
+    <Compile Include="ConfigureEndpointSqsTransport.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TestSuiteConstraints.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="DeleteQueues.ps1" />
