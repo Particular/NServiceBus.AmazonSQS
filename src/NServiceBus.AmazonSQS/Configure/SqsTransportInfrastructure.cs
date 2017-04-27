@@ -81,7 +81,7 @@
 
         public override EndpointInstance BindToLocalEndpoint(EndpointInstance instance)
         {
-            throw new NotImplementedException();
+            return instance;
         }
 
         public override string ToTransportAddress(LogicalAddress logicalAddress)
@@ -94,7 +94,7 @@
         {
             get
             {
-                throw new NotImplementedException();
+                return new List<Type>();
             }
         }
 
