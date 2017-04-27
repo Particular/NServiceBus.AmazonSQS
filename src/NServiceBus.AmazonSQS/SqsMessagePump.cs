@@ -29,7 +29,7 @@
             GetQueueUrlResponse getQueueUrlResponse;
             try
             {
-                getQueueUrlResponse = await SqsClient.GetQueueUrlAsync(getQueueUrlRequest);
+                getQueueUrlResponse = await SqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -47,7 +47,7 @@
                 // in that time. 
                 try
                 {
-                    await SqsClient.PurgeQueueAsync(_queueUrl);
+                    await SqsClient.PurgeQueueAsync(_queueUrl).ConfigureAwait(false);
                 }
                 catch (PurgeQueueInProgressException ex)
                 {
@@ -96,7 +96,7 @@
 	        {
 				for (var index = 0; index < _concurrencyLevel; index++)
 				{
-					await _tracksRunningThreads.WaitAsync();
+					await _tracksRunningThreads.WaitAsync().ConfigureAwait(false);
 				}
 
 				_tracksRunningThreads.Release(_concurrencyLevel);
@@ -122,7 +122,7 @@
 
         async Task ConsumeMessages()
         {
-            _tracksRunningThreads.Wait(TimeSpan.FromSeconds(1));
+            await _tracksRunningThreads.WaitAsync(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
 
             try
             {
@@ -137,7 +137,7 @@
 							WaitTimeSeconds = 20,
 							AttributeNames = new List<String> { "SentTimestamp" }
 						},
-						_cancellationTokenSource.Token);
+						_cancellationTokenSource.Token).ConfigureAwait(false);
 
                     foreach (var message in receiveResult.Messages)
                     {
@@ -178,7 +178,8 @@
                                     _cancellationTokenSource,
                                     contextBag);
 
-                                await _onMessage(messageContext);
+                                await _onMessage(messageContext)
+                                    .ConfigureAwait(false);
                             }
                         }
                         catch (Exception ex)
@@ -200,11 +201,14 @@
 
                             if (deleteMessage)
                             {
-                                await DeleteMessage(SqsClient, S3Client, message, sqsTransportMessage, incomingMessage);
+                                await DeleteMessage(SqsClient, S3Client, message, sqsTransportMessage, incomingMessage).ConfigureAwait(false);
                             }
                             else
                             {
-                                await SqsClient.ChangeMessageVisibilityAsync(_queueUrl, message.ReceiptHandle, 0);
+                                await SqsClient.ChangeMessageVisibilityAsync(_queueUrl, 
+                                    message.ReceiptHandle, 
+                                    0,
+                                    _cancellationTokenSource.Token).ConfigureAwait(false);
                             }
 
                             if (exception != null)
@@ -214,7 +218,7 @@
                                     incomingMessage.MessageId,
                                     incomingMessage.Body,
                                     transportTransaction,
-                                    1));
+                                    1)).ConfigureAwait(false);
                             }
                         }
                     }
@@ -232,7 +236,7 @@
 			SqsTransportMessage sqsTransportMessage, 
 			IncomingMessage incomingMessage)
 		{
-			await sqs.DeleteMessageAsync(_queueUrl, message.ReceiptHandle);
+			await sqs.DeleteMessageAsync(_queueUrl, message.ReceiptHandle, _cancellationTokenSource.Token).ConfigureAwait(false);
 
 			if (sqsTransportMessage != null)
 			{
@@ -245,7 +249,8 @@
                             {
                                 BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
                                 Key = ConnectionConfiguration.S3KeyPrefix + incomingMessage.MessageId
-                            });
+                            },
+                            _cancellationTokenSource.Token).ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
