@@ -8,7 +8,9 @@ using System.Text;
 
 namespace NServiceBus.AmazonSQS.Tests
 {
-	[TestFixture]
+    using NServiceBus.Routing;
+
+    [TestFixture]
 	public class when_sending_messages
 	{
 		[Test]
@@ -19,7 +21,7 @@ namespace NServiceBus.AmazonSQS.Tests
 				ConnectionConfiguration = new SqsConnectionConfiguration
 				{
 					Region = Amazon.RegionEndpoint.APSoutheast2,
-					S3BucketForLargeMessages = String.Empty
+					S3BucketForLargeMessages = string.Empty
 				}
 			};
 
@@ -36,7 +38,7 @@ namespace NServiceBus.AmazonSQS.Tests
             var transportOperations = new TransportOperations(
                 new TransportOperation(
                     largeOutgoingMessageToSend,
-                    null));
+                    new UnicastAddressTag("address")));
 
             var transportTransaction = new TransportTransaction();
             var context = new ContextBag();
