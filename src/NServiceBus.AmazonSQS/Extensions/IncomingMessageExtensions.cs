@@ -7,7 +7,7 @@ namespace NServiceBus.AmazonSQS
     {
         public static TimeSpan? GetTimeToBeReceived(this IncomingMessage messageContext)
         {
-            var ttbr = string.Empty;
+            string ttbr;
             if (messageContext.Headers.TryGetValue(Headers.TimeToBeReceived, out ttbr))
             {
                 return TimeSpan.Parse(ttbr);

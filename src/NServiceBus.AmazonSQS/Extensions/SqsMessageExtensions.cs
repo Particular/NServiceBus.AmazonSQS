@@ -15,7 +15,7 @@
         {
             var messageId = sqsTransportMessage.Headers[Headers.MessageId];
 
-            byte[] body = null;
+            byte[] body;
 
             if (!string.IsNullOrEmpty(sqsTransportMessage.S3BodyKey))
             {

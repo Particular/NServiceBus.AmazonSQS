@@ -24,37 +24,48 @@
             _sqsClient = AwsClientFactory.CreateSqsClient(_connectionConfiguration);
             _s3Client = AwsClientFactory.CreateS3Client(_connectionConfiguration);
 
-            _sqsQueueUrlCache = new SqsQueueUrlCache();
-            _sqsQueueUrlCache.ConnectionConfiguration = _connectionConfiguration;
-            _sqsQueueUrlCache.SqsClient = _sqsClient;
+            _sqsQueueUrlCache = new SqsQueueUrlCache()
+            {
+                ConnectionConfiguration = _connectionConfiguration,
+                SqsClient = _sqsClient
+            };
         }
-        
+
         SqsMessagePump CreateMessagePump()
         {
-            var result = new SqsMessagePump();
-            result.ConnectionConfiguration = _connectionConfiguration;
-            result.S3Client = _s3Client;
-            result.SqsClient = _sqsClient;
+            var result = new SqsMessagePump()
+            {
+                ConnectionConfiguration = _connectionConfiguration,
+                S3Client = _s3Client,
+                SqsClient = _sqsClient
+            };
+
             return result;
         }
 
         SqsQueueCreator CreateQueueCreator()
         {
-            var result = new SqsQueueCreator();
-            result.ConnectionConfiguration = _connectionConfiguration;
-            result.S3Client = _s3Client;
-            result.SqsClient = _sqsClient;
+            var result = new SqsQueueCreator()
+            {
+                ConnectionConfiguration = _connectionConfiguration,
+                S3Client = _s3Client,
+                SqsClient = _sqsClient
+            };
+
             return result;
         }
 
         SqsMessageDispatcher CreateMessageDispatcher()
         {
-            var result = new SqsMessageDispatcher();
-            result.ConnectionConfiguration = _connectionConfiguration;
-            result.QueueCreator = CreateQueueCreator();
-            result.QueueUrlCache = _sqsQueueUrlCache;
-            result.S3Client = _s3Client;
-            result.SqsClient = _sqsClient;
+            var result = new SqsMessageDispatcher()
+            {
+                ConnectionConfiguration = _connectionConfiguration,
+                QueueCreator = CreateQueueCreator(),
+                QueueUrlCache = _sqsQueueUrlCache,
+                S3Client = _s3Client,
+                SqsClient = _sqsClient
+            };
+            
             return result;
         }
 

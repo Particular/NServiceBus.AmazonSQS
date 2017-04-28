@@ -37,10 +37,12 @@
         }
 
 	    public static IAmazonSQS CreateSqsClient(SqsConnectionConfiguration connectionConfiguration)
-        {
-            var config = new AmazonSQSConfig();
-            config.RegionEndpoint = connectionConfiguration.Region;
-
+	    {
+	        var config = new AmazonSQSConfig()
+	        {
+	            RegionEndpoint = connectionConfiguration.Region
+	        };
+   
             SetProxyConfig(config, connectionConfiguration);
 
 			var result = new AmazonSQSClient(CreateCredentials(connectionConfiguration), config);
@@ -49,9 +51,11 @@
 
 		public static IAmazonS3 CreateS3Client(SqsConnectionConfiguration connectionConfiguration)
 		{
-            var config = new AmazonS3Config();
-            config.RegionEndpoint = connectionConfiguration.Region;
-
+		    var config = new AmazonS3Config()
+		    {
+		        RegionEndpoint = connectionConfiguration.Region,
+		    };
+            
             SetProxyConfig(config, connectionConfiguration);
 
             var result = new AmazonS3Client(CreateCredentials(connectionConfiguration), config);

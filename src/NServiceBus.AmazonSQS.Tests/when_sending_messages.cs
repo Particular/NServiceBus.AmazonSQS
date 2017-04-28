@@ -1,8 +1,6 @@
 ﻿using NServiceBus.Extensibility;
-using NServiceBus.Routing;
 using NServiceBus.Transport;
 using NServiceBus.Transports.SQS;
-using NServiceBus.Unicast;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;

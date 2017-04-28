@@ -1,6 +1,5 @@
 ﻿using NServiceBus.AcceptanceTesting.Support;
 using NServiceBus.AcceptanceTests.ScenarioDescriptors;
-using System;
 using System.Threading.Tasks;
 
 namespace NServiceBus.AcceptanceTests

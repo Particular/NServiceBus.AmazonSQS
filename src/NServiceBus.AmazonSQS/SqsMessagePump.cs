@@ -148,77 +148,91 @@
 
                         var messageProcessedOk = false;
                         var messageExpired = false;
+                        var isPoisonMessage = false;
 
                         try
                         {
                             sqsTransportMessage = JsonConvert.DeserializeObject<SqsTransportMessage>(message.Body);
 
                             incomingMessage = await sqsTransportMessage.ToIncomingMessage(S3Client, ConnectionConfiguration);
-
-                            // Check that the message hasn't expired
-                            var timeToBeReceived = incomingMessage.GetTimeToBeReceived();
-                            if (timeToBeReceived.HasValue && timeToBeReceived.Value != TimeSpan.MaxValue)
-                            {
-                                var sentDateTime = message.GetSentDateTime();
-                                if (sentDateTime + timeToBeReceived.Value <= DateTime.UtcNow)
-                                {
-                                    // Message has expired. 
-                                    Logger.Warn(String.Format("Discarding expired message with Id {0}", incomingMessage.MessageId));
-                                    messageExpired = true;
-                                }
-                            }
-
-                            if (!messageExpired)
-                            {
-                                MessageContext messageContext = new MessageContext(
-                                    incomingMessage.MessageId,
-                                    incomingMessage.Headers,
-                                    incomingMessage.Body,
-                                    transportTransaction,
-                                    _cancellationTokenSource,
-                                    contextBag);
-
-                                await _onMessage(messageContext)
-                                    .ConfigureAwait(false);
-                            }
                         }
                         catch (Exception ex)
                         {
-                            exception = ex;
+                            // Can't deserialize. This is a poison message
+                            Logger.Warn($"Deleting poison message with SQS Message Id {message.MessageId} due to exception {ex}");
+                            isPoisonMessage = true;
                         }
-                        finally
+
+                        if (incomingMessage == null || sqsTransportMessage == null)
                         {
-                            var deleteMessage = !_isTransactional || (_isTransactional && messageProcessedOk);
+                            Logger.Warn($"Deleting poison message with SQS Message Id {message.MessageId}");
+                            isPoisonMessage = true;
+                        }
 
-                            // If incomingMessage is null, the sqsTransportMessage could not be deserialized
-                            // or otherwise converted to a transport message. This message can be considered
-                            // a poison message and should be deleted.
-                            if (incomingMessage == null)
+                        if (isPoisonMessage)
+                        {
+                            await DeleteMessage(SqsClient, S3Client, message, sqsTransportMessage, incomingMessage).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            try
                             {
-                                Logger.Warn($"Deleting poison message with SQS Message Id {message.MessageId}");
-                                deleteMessage = true;
-                            }
+                                // Check that the message hasn't expired
+                                var timeToBeReceived = incomingMessage.GetTimeToBeReceived();
+                                if (timeToBeReceived.HasValue && timeToBeReceived.Value != TimeSpan.MaxValue)
+                                {
+                                    var sentDateTime = message.GetSentDateTime();
+                                    if (sentDateTime + timeToBeReceived.Value <= DateTime.UtcNow)
+                                    {
+                                        // Message has expired. 
+                                        Logger.Warn(String.Format("Discarding expired message with Id {0}", incomingMessage.MessageId));
+                                        messageExpired = true;
+                                    }
+                                }
 
-                            if (deleteMessage)
-                            {
-                                await DeleteMessage(SqsClient, S3Client, message, sqsTransportMessage, incomingMessage).ConfigureAwait(false);
-                            }
-                            else
-                            {
-                                await SqsClient.ChangeMessageVisibilityAsync(_queueUrl, 
-                                    message.ReceiptHandle, 
-                                    0,
-                                    _cancellationTokenSource.Token).ConfigureAwait(false);
-                            }
+                                if (!messageExpired)
+                                {
+                                    MessageContext messageContext = new MessageContext(
+                                        incomingMessage.MessageId,
+                                        incomingMessage.Headers,
+                                        incomingMessage.Body,
+                                        transportTransaction,
+                                        _cancellationTokenSource,
+                                        contextBag);
 
-                            if (exception != null)
+                                    await _onMessage(messageContext)
+                                        .ConfigureAwait(false);
+                                }
+                            }
+                            catch (Exception ex)
                             {
-                                await _onError(new ErrorContext(exception,
-                                    incomingMessage.Headers,
-                                    incomingMessage.MessageId,
-                                    incomingMessage.Body,
-                                    transportTransaction,
-                                    1)).ConfigureAwait(false);
+                                exception = ex;
+                            }
+                            finally
+                            {
+                                var deleteMessage = !_isTransactional || (_isTransactional && messageProcessedOk);
+
+                                if (deleteMessage)
+                                {
+                                    await DeleteMessage(SqsClient, S3Client, message, sqsTransportMessage, incomingMessage).ConfigureAwait(false);
+                                }
+                                else
+                                {
+                                    await SqsClient.ChangeMessageVisibilityAsync(_queueUrl,
+                                        message.ReceiptHandle,
+                                        0,
+                                        _cancellationTokenSource.Token).ConfigureAwait(false);
+                                }
+
+                                if (exception != null)
+                                {
+                                    await _onError(new ErrorContext(exception,
+                                        incomingMessage.Headers,
+                                        incomingMessage.MessageId,
+                                        incomingMessage.Body,
+                                        transportTransaction,
+                                        1)).ConfigureAwait(false);
+                                }
                             }
                         }
                     }
