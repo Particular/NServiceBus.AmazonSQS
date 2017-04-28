@@ -24,19 +24,7 @@
 
         public async Task Init(Func<MessageContext, Task> onMessage, Func<ErrorContext, Task<ErrorHandleResult>> onError, CriticalError criticalError, PushSettings settings)
         {
-            var sqsQueueName = settings.InputQueue;
-            var getQueueUrlRequest = new GetQueueUrlRequest(sqsQueueName);
-            GetQueueUrlResponse getQueueUrlResponse;
-            try
-            {
-                getQueueUrlResponse = await SqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error("Exception thrown from GetQueueUrl.", ex);
-                throw;
-            }
-            _queueUrl = getQueueUrlResponse.QueueUrl;
+            _queueUrl = settings.InputQueue;
 
 			if (settings.PurgeOnStartup)
             {
@@ -84,8 +72,7 @@
         /// </summary>
         public Task Stop()
         {
-			if ( _cancellationTokenSource != null )
-				_cancellationTokenSource.Cancel();
+            _cancellationTokenSource?.Cancel();
 
             return DrainStopSemaphore();
         }
@@ -185,7 +172,7 @@
                                     if (sentDateTime + timeToBeReceived.Value <= DateTime.UtcNow)
                                     {
                                         // Message has expired. 
-                                        Logger.Warn(String.Format("Discarding expired message with Id {0}", incomingMessage.MessageId));
+                                        Logger.Warn($"Discarding expired message with Id {incomingMessage.MessageId}");
                                         messageExpired = true;
                                     }
                                 }

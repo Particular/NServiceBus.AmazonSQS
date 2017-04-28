@@ -7,9 +7,7 @@
     public class SqsTransport : TransportDefinition
     {
         public override string ExampleConnectionStringForErrorMessage
-        {
-            get { return "Region=ap-southeast-2;S3BucketForLargeMessages=myBucketName;S3KeyPrefix=my/key/prefix;"; }
-        }
+         => "Region=ap-southeast-2;S3BucketForLargeMessages=myBucketName;S3KeyPrefix=my/key/prefix;";
 
         public override TransportInfrastructure Initialize(SettingsHolder settings, string connectionString)
         {

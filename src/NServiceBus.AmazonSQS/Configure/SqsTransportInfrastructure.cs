@@ -26,7 +26,6 @@
 
             _sqsQueueUrlCache = new SqsQueueUrlCache()
             {
-                ConnectionConfiguration = _connectionConfiguration,
                 SqsClient = _sqsClient
             };
         }
@@ -61,7 +60,6 @@
             {
                 ConnectionConfiguration = _connectionConfiguration,
                 QueueCreator = CreateQueueCreator(),
-                QueueUrlCache = _sqsQueueUrlCache,
                 S3Client = _s3Client,
                 SqsClient = _sqsClient
             };
@@ -97,35 +95,18 @@
 
         public override string ToTransportAddress(LogicalAddress logicalAddress)
         {
-            // NSB6 TODO: Convert to a Queue Url instead, use SqsQueueUrlCache
-            return SqsQueueNameHelper.GetSqsQueueName(logicalAddress.EndpointInstance.Endpoint,
+            var sqsQueueName = SqsQueueNameHelper.GetSqsQueueName(logicalAddress.EndpointInstance.Endpoint,
                 _connectionConfiguration);
+            return _sqsQueueUrlCache.GetQueueUrl(sqsQueueName);
         }
+
+        public override IEnumerable<Type> DeliveryConstraints => new List<Type>();
+
+        public override TransportTransactionMode TransactionMode => TransportTransactionMode.ReceiveOnly;
         
-        public override IEnumerable<Type> DeliveryConstraints
-        {
-            get
-            {
-                return new List<Type>();
-            }
-        }
-
-        public override TransportTransactionMode TransactionMode
-        {
-            get
-            {
-                return TransportTransactionMode.ReceiveOnly;
-            }
-        }
-
         public override OutboundRoutingPolicy OutboundRoutingPolicy
-        {
-            get
-            {
-                return new OutboundRoutingPolicy(OutboundRoutingType.Unicast,
-                    OutboundRoutingType.Unicast,
-                    OutboundRoutingType.Unicast);
-            }
-        }
+            => new OutboundRoutingPolicy(OutboundRoutingType.Unicast,
+                OutboundRoutingType.Unicast,
+                OutboundRoutingType.Unicast);
     }
 }

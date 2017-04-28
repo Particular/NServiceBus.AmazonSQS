@@ -19,9 +19,7 @@
         public IAmazonSQS SqsClient { get; set; }
 
         public IAmazonS3 S3Client { get; set; }
-
-		public SqsQueueUrlCache QueueUrlCache { get; set; }
-
+        
 		public SqsQueueCreator QueueCreator { get; set; }
 
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
@@ -87,7 +85,7 @@
                 }
             }
             */
-			var sendMessageRequest = new SendMessageRequest(await QueueUrlCache.GetQueueUrl(destination), message);
+			var sendMessageRequest = new SendMessageRequest(destination, message);
 	        
             // NSB6 TODO:
             // There should be no need to check if the delay time is greater than the maximum allowed

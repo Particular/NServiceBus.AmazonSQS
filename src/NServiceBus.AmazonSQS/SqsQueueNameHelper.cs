@@ -33,8 +33,7 @@
 			if (s.Length > 80)
 			{
 				throw new InvalidOperationException(
-					String.Format("Address {0} with configured prefix {1} is longer than 80 characters and therefore cannot be used to create an SQS queue. Use a shorter queue name.",
-                    destination, connectionConfiguration.QueueNamePrefix));
+					$"Address {destination} with configured prefix {connectionConfiguration.QueueNamePrefix} is longer than 80 characters and therefore cannot be used to create an SQS queue. Use a shorter queue name.");
 			}
 
 	        return s;

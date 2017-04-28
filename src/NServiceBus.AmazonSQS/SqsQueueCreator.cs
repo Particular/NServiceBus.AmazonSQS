@@ -43,7 +43,7 @@
                 {
                     QueueName = address,
                 };
-                Logger.Info(String.Format("Creating SQS Queue with name \"{0}\" for address \"{1}\".", sqsRequest.QueueName, address));
+                Logger.Info($"Creating SQS Queue with name \"{sqsRequest.QueueName}\" for address \"{address}\".");
                 var createQueueResponse = await SqsClient.CreateQueueAsync(sqsRequest);
 
                 // Set the queue attributes in a separate call. 
@@ -63,16 +63,14 @@
                 {
                     // determine if the configured bucket exists; create it if it doesn't
                     var listBucketsResponse = await S3Client.ListBucketsAsync(new ListBucketsRequest());
-                    var bucketExists = listBucketsResponse.Buckets.Any(x => x.BucketName.ToLower() == ConnectionConfiguration.S3BucketForLargeMessages.ToLower());
+                    var bucketExists = listBucketsResponse.Buckets.Any(x => string.Equals(x.BucketName, ConnectionConfiguration.S3BucketForLargeMessages, StringComparison.InvariantCultureIgnoreCase));
                     if (!bucketExists)
                     {
                         await S3Client.RetryConflictsAsync(async () =>
-                        {
-                            return await S3Client.PutBucketAsync(new PutBucketRequest
+                            await S3Client.PutBucketAsync(new PutBucketRequest
                             {
                                 BucketName = ConnectionConfiguration.S3BucketForLargeMessages
-                            });
-                        },
+                            }),
                         onRetry: x =>
                         {
                             Logger.Warn($"Conflict when creating S3 bucket, retrying after {x}ms.");
@@ -80,8 +78,7 @@
                     }
 
                     await S3Client.RetryConflictsAsync(async () =>
-                    {
-                        return await S3Client.PutLifecycleConfigurationAsync(new PutLifecycleConfigurationRequest
+                        await S3Client.PutLifecycleConfigurationAsync(new PutLifecycleConfigurationRequest
                         {
                             BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
                             Configuration = new LifecycleConfiguration
@@ -106,8 +103,7 @@
                                     }
                                 }
                             }
-                        });
-                    },
+                        }),
                     onRetry: x =>
                     {
                         Logger.Warn($"Conflict when setting S3 lifecycle configuration, retrying after {x}ms.");
