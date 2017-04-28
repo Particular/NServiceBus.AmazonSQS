@@ -86,6 +86,7 @@
 
         public override string ToTransportAddress(LogicalAddress logicalAddress)
         {
+            // NSB6 TODO: Convert to a Queue Url instead, use SqsQueueUrlCache
             return SqsQueueNameHelper.GetSqsQueueName(logicalAddress.EndpointInstance.Endpoint,
                 _connectionConfiguration);
         }

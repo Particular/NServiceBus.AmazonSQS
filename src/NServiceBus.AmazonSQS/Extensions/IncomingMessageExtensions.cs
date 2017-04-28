@@ -5,9 +5,14 @@ namespace NServiceBus.AmazonSQS
 {
     static class IncomingMessageExtensions
     {
-        public static TimeSpan GetTimeToBeReceived(this IncomingMessage messageContext)
+        public static TimeSpan? GetTimeToBeReceived(this IncomingMessage messageContext)
         {
-            return TimeSpan.Parse(messageContext.Headers[Headers.TimeToBeReceived]);
+            var ttbr = string.Empty;
+            if (messageContext.Headers.TryGetValue(Headers.TimeToBeReceived, out ttbr))
+            {
+                return TimeSpan.Parse(ttbr);
+            }
+            return null;
         }
     }
 }

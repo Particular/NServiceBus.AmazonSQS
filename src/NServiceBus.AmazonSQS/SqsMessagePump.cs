@@ -157,10 +157,10 @@
 
                             // Check that the message hasn't expired
                             var timeToBeReceived = incomingMessage.GetTimeToBeReceived();
-                            if (timeToBeReceived != TimeSpan.MaxValue)
+                            if (timeToBeReceived.HasValue && timeToBeReceived.Value != TimeSpan.MaxValue)
                             {
                                 var sentDateTime = message.GetSentDateTime();
-                                if (sentDateTime + timeToBeReceived <= DateTime.UtcNow)
+                                if (sentDateTime + timeToBeReceived.Value <= DateTime.UtcNow)
                                 {
                                     // Message has expired. 
                                     Logger.Warn(String.Format("Discarding expired message with Id {0}", incomingMessage.MessageId));

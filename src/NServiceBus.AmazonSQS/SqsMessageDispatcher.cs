@@ -22,7 +22,7 @@
 
 		public SqsQueueUrlCache QueueUrlCache { get; set; }
 
-		public ICreateQueues QueueCreator { get; set; }
+		public SqsQueueCreator QueueCreator { get; set; }
 
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
         {
@@ -53,17 +53,16 @@
                         serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
                     }
 
-                    //try
-                    //{
+                    try
+                    {
                         await SendMessage(serializedMessage, unicastMessage.Destination);
-                    //}
-                    //catch (QueueDoesNotExistException)
-                    //{
-                    // NSB6 TODO:
-                    //    QueueCreator.CreateQueueIfNecessary(unicastMessage.Destination, "");
+                    }
+                    catch (QueueDoesNotExistException)
+                    {
+                        await QueueCreator.CreateQueueIfNecessary(unicastMessage.Destination);
 
-                    //    SendMessage(serializedMessage, unicastMessage.Destination);
-                   // }
+                        await SendMessage(serializedMessage, unicastMessage.Destination);
+                    }
                 }                
             }
             catch (Exception e)
@@ -73,7 +72,7 @@
             }
         }
 
-	    private Task SendMessage(string message, string destination)
+	    private async Task SendMessage(string message, string destination)
 	    {
             // NSB6 TODO:
             /*
@@ -88,7 +87,7 @@
                 }
             }
             */
-			var sendMessageRequest = new SendMessageRequest(QueueUrlCache.GetQueueUrl(destination), message);
+			var sendMessageRequest = new SendMessageRequest(await QueueUrlCache.GetQueueUrl(destination), message);
 	        
             // NSB6 TODO:
             // There should be no need to check if the delay time is greater than the maximum allowed
@@ -96,7 +95,7 @@
             //if ( delayDeliveryBy != TimeSpan.MaxValue)
             //    sendMessageRequest.DelaySeconds = Math.Max(0, (int)delayDeliveryBy.TotalSeconds);
 
-	        return SqsClient.SendMessageAsync(sendMessageRequest);
+	        await SqsClient.SendMessageAsync(sendMessageRequest);
 	    }
         
         static ILog Logger = LogManager.GetLogger(typeof(SqsMessageDispatcher));
