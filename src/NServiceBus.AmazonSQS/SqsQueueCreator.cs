@@ -20,7 +20,9 @@
 
         public IAmazonSQS SqsClient { get; set; }
 
-        public SqsQueueUrlCache SqsQueueUrlCache{ get; set; }
+        public SqsQueueUrlCache QueueUrlCache{ get; set; }
+
+        public SqsTransportInfrastructure TransportInfrastructure { get; set; }
 
         public Task CreateQueueIfNecessary(QueueBindings queueBindings, string identity)
         {
@@ -43,13 +45,13 @@
             {
                 var sqsRequest = new CreateQueueRequest
                 {
-                    QueueName = address,
+                    QueueName = TransportInfrastructure.ToTransportAddress(address),
                 };
 
                 Logger.Info($"Creating SQS Queue with name \"{sqsRequest.QueueName}\" for address \"{address}\".");
                 var createQueueResponse = await SqsClient.CreateQueueAsync(sqsRequest);
 
-                SqsQueueUrlCache.SetQueueUrl(address, createQueueResponse.QueueUrl);
+                QueueUrlCache.SetQueueUrl(address, createQueueResponse.QueueUrl);
 
                 // Set the queue attributes in a separate call. 
                 // If you call CreateQueue with a queue name that already exists, and with a different

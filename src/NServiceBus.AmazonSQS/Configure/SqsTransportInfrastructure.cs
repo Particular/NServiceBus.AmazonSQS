@@ -50,7 +50,8 @@
                 ConnectionConfiguration = _connectionConfiguration,
                 S3Client = _s3Client,
                 SqsClient = _sqsClient,
-                SqsQueueUrlCache = _sqsQueueUrlCache
+                QueueUrlCache = _sqsQueueUrlCache,
+                TransportInfrastructure = this
             };
 
             return result;
