@@ -84,37 +84,43 @@
                         });
                     }
 
-                    await S3Client.RetryConflictsAsync(async () =>
-                        await S3Client.PutLifecycleConfigurationAsync(new PutLifecycleConfigurationRequest
-                        {
-                            BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
-                            Configuration = new LifecycleConfiguration
-                            {
-                                Rules = new List<LifecycleRule>
+                    var lifecycleConfig = await S3Client.GetLifecycleConfigurationAsync(ConnectionConfiguration.S3BucketForLargeMessages);
+                    bool setLifecycleConfig = lifecycleConfig.Configuration.Rules.All(x => x.Id != "NServiceBus.SQS.DeleteMessageBodies");
+
+                    if (setLifecycleConfig)
+                    {
+                        await S3Client.RetryConflictsAsync(async () =>
+                            await S3Client.PutLifecycleConfigurationAsync(new PutLifecycleConfigurationRequest
                                 {
-                                    new LifecycleRule
+                                    BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
+                                    Configuration = new LifecycleConfiguration
                                     {
-                                        Id = "NServiceBus.SQS.DeleteMessageBodies",
-                                        Filter = new LifecycleFilter()
+                                        Rules = new List<LifecycleRule>
                                         {
-                                            LifecycleFilterPredicate = new LifecyclePrefixPredicate
+                                            new LifecycleRule
                                             {
-                                                Prefix = ConnectionConfiguration.S3KeyPrefix
+                                                Id = "NServiceBus.SQS.DeleteMessageBodies",
+                                                Filter = new LifecycleFilter()
+                                                {
+                                                    LifecycleFilterPredicate = new LifecyclePrefixPredicate
+                                                    {
+                                                        Prefix = ConnectionConfiguration.S3KeyPrefix
+                                                    }
+                                                },
+                                                Status = LifecycleRuleStatus.Enabled,
+                                                Expiration = new LifecycleRuleExpiration
+                                                {
+                                                    Days = ConnectionConfiguration.MaxTTLDays
+                                                }
                                             }
-                                        },
-                                        Status = LifecycleRuleStatus.Enabled,
-                                        Expiration = new LifecycleRuleExpiration
-                                        {
-                                            Days = ConnectionConfiguration.MaxTTLDays
                                         }
                                     }
-                                }
-                            }
-                        }),
-                    onRetry: x =>
-                    {
-                        Logger.Warn($"Conflict when setting S3 lifecycle configuration, retrying after {x}ms.");
-                    });
+                                }),
+                            onRetry: x =>
+                            {
+                                Logger.Warn($"Conflict when setting S3 lifecycle configuration, retrying after {x}ms.");
+                            });
+                    }
                 }
             }
             catch (Exception e)
