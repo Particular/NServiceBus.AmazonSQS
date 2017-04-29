@@ -51,7 +51,6 @@
                 S3Client = _s3Client,
                 SqsClient = _sqsClient,
                 QueueUrlCache = _sqsQueueUrlCache,
-                TransportInfrastructure = this
             };
 
             return result;
@@ -105,7 +104,9 @@
         /// <returns></returns>
         public override string ToTransportAddress(LogicalAddress logicalAddress)
         {
-            return ToTransportAddress(logicalAddress.EndpointInstance.Endpoint);
+            return logicalAddress.EndpointInstance.Endpoint;
+
+            //return ToTransportAddress(logicalAddress.EndpointInstance.Endpoint);
         }
 
         public string ToTransportAddress(string logicalAddress)

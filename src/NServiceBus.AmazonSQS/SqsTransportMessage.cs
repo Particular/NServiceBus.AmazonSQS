@@ -17,7 +17,7 @@ namespace NServiceBus.AmazonSQS
             Body = outgoingMessage.Body != null ? Convert.ToBase64String(outgoingMessage.Body) : "empty message";
         }
 
-        public Dictionary<string, string> Headers { get; }
+        public Dictionary<string, string> Headers { get; set; }
 
         public string Body { get; set; }
 

@@ -87,7 +87,10 @@
                 }
             }
             */
-			var sendMessageRequest = new SendMessageRequest(SqsQueueUrlCache.GetQueueUrl(destination), message);
+			var sendMessageRequest = new SendMessageRequest(
+                SqsQueueUrlCache.GetQueueUrl(
+                    SqsQueueNameHelper.GetSqsQueueName(destination, ConnectionConfiguration)),
+                message);
 	        
             // NSB6 TODO:
             // There should be no need to check if the delay time is greater than the maximum allowed

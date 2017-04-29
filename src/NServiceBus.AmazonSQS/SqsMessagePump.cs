@@ -26,7 +26,7 @@
 
         public async Task Init(Func<MessageContext, Task> onMessage, Func<ErrorContext, Task<ErrorHandleResult>> onError, CriticalError criticalError, PushSettings settings)
         {
-            _queueUrl = SqsQueueUrlCache.GetQueueUrl(settings.InputQueue);
+            _queueUrl = SqsQueueUrlCache.GetQueueUrl(SqsQueueNameHelper.GetSqsQueueName(settings.InputQueue, ConnectionConfiguration));
 
 			if (settings.PurgeOnStartup)
             {
@@ -191,6 +191,8 @@
 
                                     await _onMessage(messageContext)
                                         .ConfigureAwait(false);
+
+                                    messageProcessedOk = true;
                                 }
                             }
                             catch (Exception ex)
@@ -199,7 +201,7 @@
                             }
                             finally
                             {
-                                var deleteMessage = !_isTransactional || (_isTransactional && messageProcessedOk);
+                                var deleteMessage = !_isTransactional || (_isTransactional && (messageProcessedOk || messageExpired));
 
                                 if (deleteMessage)
                                 {

@@ -22,8 +22,6 @@
 
         public SqsQueueUrlCache QueueUrlCache{ get; set; }
 
-        public SqsTransportInfrastructure TransportInfrastructure { get; set; }
-
         public Task CreateQueueIfNecessary(QueueBindings queueBindings, string identity)
         {
             var tasks = new List<Task>();
@@ -43,15 +41,16 @@
         {
             try
             {
+                var queueName = SqsQueueNameHelper.GetSqsQueueName(address, ConnectionConfiguration);
                 var sqsRequest = new CreateQueueRequest
                 {
-                    QueueName = TransportInfrastructure.ToTransportAddress(address),
+                    QueueName = queueName,
                 };
 
                 Logger.Info($"Creating SQS Queue with name \"{sqsRequest.QueueName}\" for address \"{address}\".");
                 var createQueueResponse = await SqsClient.CreateQueueAsync(sqsRequest);
 
-                QueueUrlCache.SetQueueUrl(address, createQueueResponse.QueueUrl);
+                QueueUrlCache.SetQueueUrl(queueName, createQueueResponse.QueueUrl);
 
                 // Set the queue attributes in a separate call. 
                 // If you call CreateQueue with a queue name that already exists, and with a different
