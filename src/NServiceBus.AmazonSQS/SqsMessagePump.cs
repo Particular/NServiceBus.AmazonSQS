@@ -22,9 +22,11 @@
 
         public IAmazonSQS SqsClient { get; set; }
 
+        public SqsQueueUrlCache SqsQueueUrlCache { get; set; }
+
         public async Task Init(Func<MessageContext, Task> onMessage, Func<ErrorContext, Task<ErrorHandleResult>> onError, CriticalError criticalError, PushSettings settings)
         {
-            _queueUrl = settings.InputQueue;
+            _queueUrl = SqsQueueUrlCache.GetQueueUrl(settings.InputQueue);
 
 			if (settings.PurgeOnStartup)
             {

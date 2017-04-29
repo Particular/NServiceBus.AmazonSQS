@@ -36,7 +36,8 @@
             {
                 ConnectionConfiguration = _connectionConfiguration,
                 S3Client = _s3Client,
-                SqsClient = _sqsClient
+                SqsClient = _sqsClient,
+                SqsQueueUrlCache = _sqsQueueUrlCache
             };
 
             return result;
@@ -48,7 +49,8 @@
             {
                 ConnectionConfiguration = _connectionConfiguration,
                 S3Client = _s3Client,
-                SqsClient = _sqsClient
+                SqsClient = _sqsClient,
+                SqsQueueUrlCache = _sqsQueueUrlCache
             };
 
             return result;
@@ -61,7 +63,8 @@
                 ConnectionConfiguration = _connectionConfiguration,
                 QueueCreator = CreateQueueCreator(),
                 S3Client = _s3Client,
-                SqsClient = _sqsClient
+                SqsClient = _sqsClient,
+                SqsQueueUrlCache = _sqsQueueUrlCache
             };
             
             return result;
@@ -93,11 +96,22 @@
             return instance;
         }
 
+        /// <summary>
+        /// A "transport address" for SQS is the Queue Name. 
+        /// It must be converted to a Queue Url for some cases.
+        /// </summary>
+        /// <param name="logicalAddress"></param>
+        /// <returns></returns>
         public override string ToTransportAddress(LogicalAddress logicalAddress)
         {
-            var sqsQueueName = SqsQueueNameHelper.GetSqsQueueName(logicalAddress.EndpointInstance.Endpoint,
+            return ToTransportAddress(logicalAddress.EndpointInstance.Endpoint);
+        }
+
+        public string ToTransportAddress(string logicalAddress)
+        {
+            var sqsQueueName = SqsQueueNameHelper.GetSqsQueueName(logicalAddress,
                 _connectionConfiguration);
-            return _sqsQueueUrlCache.GetQueueUrl(sqsQueueName);
+            return sqsQueueName;
         }
 
         public override IEnumerable<Type> DeliveryConstraints => new List<Type>();

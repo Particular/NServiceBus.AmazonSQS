@@ -22,6 +22,8 @@
         
 		public SqsQueueCreator QueueCreator { get; set; }
 
+        public SqsQueueUrlCache SqsQueueUrlCache { get; set; }
+
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
         {
             try
@@ -85,7 +87,7 @@
                 }
             }
             */
-			var sendMessageRequest = new SendMessageRequest(destination, message);
+			var sendMessageRequest = new SendMessageRequest(SqsQueueUrlCache.GetQueueUrl(destination), message);
 	        
             // NSB6 TODO:
             // There should be no need to check if the delay time is greater than the maximum allowed

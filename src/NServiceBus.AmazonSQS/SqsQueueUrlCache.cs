@@ -12,11 +12,16 @@
 			_cache = new ConcurrentDictionary<string, string>();
 		}
 
-		public string GetQueueUrl(string destination)
+	    public void SetQueueUrl(string queueName, string queueUrl)
+	    {
+	        _cache.TryAdd(queueName, queueUrl);
+	    }
+
+		public string GetQueueUrl(string queueName)
 		{
-		    return _cache.GetOrAdd(destination, x =>
+		    return _cache.GetOrAdd(queueName, x =>
 		    {
-		        var getQueueUrlResponse = SqsClient.GetQueueUrl(destination);
+		        var getQueueUrlResponse = SqsClient.GetQueueUrl(queueName);
 		        var result = getQueueUrlResponse.QueueUrl;
 		        return result;
 		    });

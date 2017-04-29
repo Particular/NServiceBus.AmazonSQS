@@ -53,11 +53,8 @@ namespace NServiceBus.AcceptanceTests
         }
 
         public IConfigureEndpointTestExecution TransportConfiguration
-        {
-            get
-            {
-                return new ConfigureEndpointSqsTransport();
-            }
-        }
+            => new ConfigureEndpointSqsTransport();
+                //return new ConfigureEndpointMsmqTransport();
+
     }
 }
