@@ -9,6 +9,7 @@
     using Amazon.SQS;
     using Amazon.S3;
     using Settings;
+    using Performance.TimeToBeReceived;
 
     public class SqsTransportInfrastructure : TransportInfrastructure
     {
@@ -97,8 +98,6 @@
         }
 
         /// <summary>
-        /// A "transport address" for SQS is the Queue Name. 
-        /// It must be converted to a Queue Url for some cases.
         /// </summary>
         /// <param name="logicalAddress"></param>
         /// <returns></returns>
@@ -109,14 +108,11 @@
             //return ToTransportAddress(logicalAddress.EndpointInstance.Endpoint);
         }
 
-        public string ToTransportAddress(string logicalAddress)
-        {
-            var sqsQueueName = SqsQueueNameHelper.GetSqsQueueName(logicalAddress,
-                _connectionConfiguration);
-            return sqsQueueName;
-        }
 
-        public override IEnumerable<Type> DeliveryConstraints => new List<Type>();
+        public override IEnumerable<Type> DeliveryConstraints => new List<Type>()
+        {
+            typeof(DiscardIfNotReceivedBefore)
+        };
 
         public override TransportTransactionMode TransactionMode => TransportTransactionMode.ReceiveOnly;
         
