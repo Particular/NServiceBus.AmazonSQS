@@ -61,72 +61,38 @@
 			_cancellationTokenSource = new CancellationTokenSource();
             _concurrencyLevel = limitations.MaxConcurrency;
 
-            _tracksRunningThreads = new SemaphoreSlim(_concurrencyLevel);
+            _consumerTasks = new List<Task>();
 
             for (var i = 0; i < _concurrencyLevel; i++)
             {
-                StartConsumer();
+                _consumerTasks.Add(ConsumeMessages());
             }
         }
 
         /// <summary>
         ///     Stops the dequeuing of messages.
         /// </summary>
-        public Task Stop()
+        public async Task Stop()
         {
             _cancellationTokenSource?.Cancel();
 
-            return DrainStopSemaphore();
-        }
-
-        async Task DrainStopSemaphore()
-        {
-	        if (_tracksRunningThreads != null)
-	        {
-				for (var index = 0; index < _concurrencyLevel; index++)
-				{
-					await _tracksRunningThreads.WaitAsync().ConfigureAwait(false);
-				}
-
-				_tracksRunningThreads.Release(_concurrencyLevel);
-
-				_tracksRunningThreads.Dispose();
-
-		        _tracksRunningThreads = null;
-	        }
-        }
-
-        void StartConsumer()
-        {
-            Task.Factory
-                .StartNew(ConsumeMessages, _cancellationTokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default)
-                .ContinueWith(t =>
-                {
-                    if (!_cancellationTokenSource.IsCancellationRequested)
-                    {
-                        StartConsumer();
-                    }
-                }, TaskContinuationOptions.OnlyOnFaulted);
+            await Task.WhenAll(_consumerTasks.ToArray());
         }
 
         async Task ConsumeMessages()
         {
-            await _tracksRunningThreads.WaitAsync(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
-
-            try
+            while (!_cancellationTokenSource.IsCancellationRequested)
             {
-                while (!_cancellationTokenSource.IsCancellationRequested)
+                try
                 {
-                    Exception exception = null;
-						
-					var receiveResult = await SqsClient.ReceiveMessageAsync(new ReceiveMessageRequest
-						{
-							MaxNumberOfMessages = ConnectionConfiguration.MaxReceiveMessageBatchSize,
-							QueueUrl = _queueUrl,
-							WaitTimeSeconds = 20,
-							AttributeNames = new List<String> { "SentTimestamp" }
-						},
-						_cancellationTokenSource.Token).ConfigureAwait(false);
+                    var receiveResult = await SqsClient.ReceiveMessageAsync(new ReceiveMessageRequest
+                    {
+                        MaxNumberOfMessages = ConnectionConfiguration.MaxReceiveMessageBatchSize,
+                        QueueUrl = _queueUrl,
+                        WaitTimeSeconds = 20,
+                        AttributeNames = new List<String> { "SentTimestamp" }
+                    },
+                    _cancellationTokenSource.Token).ConfigureAwait(false);
 
                     foreach (var message in receiveResult.Messages)
                     {
@@ -138,6 +104,7 @@
                         var messageProcessedOk = false;
                         var messageExpired = false;
                         var isPoisonMessage = false;
+                        var errorHandled = false;
 
                         try
                         {
@@ -164,24 +131,28 @@
                         }
                         else
                         {
-                            try
+                            // Check that the message hasn't expired
+                            var timeToBeReceived = incomingMessage.GetTimeToBeReceived();
+                            if (timeToBeReceived.HasValue && timeToBeReceived.Value != TimeSpan.MaxValue)
                             {
-                                // Check that the message hasn't expired
-                                var timeToBeReceived = incomingMessage.GetTimeToBeReceived();
-                                if (timeToBeReceived.HasValue && timeToBeReceived.Value != TimeSpan.MaxValue)
+                                var sentDateTime = message.GetSentDateTime();
+                                if (sentDateTime + timeToBeReceived.Value <= DateTime.UtcNow)
                                 {
-                                    var sentDateTime = message.GetSentDateTime();
-                                    if (sentDateTime + timeToBeReceived.Value <= DateTime.UtcNow)
-                                    {
-                                        // Message has expired. 
-                                        Logger.Warn($"Discarding expired message with Id {incomingMessage.MessageId}");
-                                        messageExpired = true;
-                                    }
+                                    // Message has expired. 
+                                    Logger.Warn($"Discarding expired message with Id {incomingMessage.MessageId}");
+                                    messageExpired = true;
                                 }
+                            }
 
-                                if (!messageExpired)
+                            if (!messageExpired)
+                            {
+                                int immediateProcessingAttempts = 0;
+
+                                while (!errorHandled && !messageProcessedOk)
                                 {
-                                    MessageContext messageContext = new MessageContext(
+                                    try
+                                    {
+                                        MessageContext messageContext = new MessageContext(
                                         incomingMessage.MessageId,
                                         incomingMessage.Headers,
                                         incomingMessage.Body,
@@ -189,50 +160,46 @@
                                         _cancellationTokenSource,
                                         contextBag);
 
-                                    await _onMessage(messageContext)
-                                        .ConfigureAwait(false);
+                                        await _onMessage(messageContext)
+                                            .ConfigureAwait(false);
 
-                                    messageProcessedOk = true;
+                                        messageProcessedOk = true;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        immediateProcessingAttempts++;
+                                        var errorHandlerResult = await _onError(new ErrorContext(ex,
+                                            incomingMessage.Headers,
+                                            incomingMessage.MessageId,
+                                            incomingMessage.Body,
+                                            transportTransaction,
+                                            immediateProcessingAttempts)).ConfigureAwait(false);
+                                        errorHandled = (errorHandlerResult == ErrorHandleResult.Handled);
+                                    }
                                 }
                             }
-                            catch (Exception ex)
+
+                            var deleteMessage = !_isTransactional || (_isTransactional && (messageProcessedOk || messageExpired || errorHandled));
+
+                            if (deleteMessage)
                             {
-                                exception = ex;
+                                await DeleteMessage(SqsClient, S3Client, message, sqsTransportMessage, incomingMessage).ConfigureAwait(false);
                             }
-                            finally
+                            else
                             {
-                                var deleteMessage = !_isTransactional || (_isTransactional && (messageProcessedOk || messageExpired));
-
-                                if (deleteMessage)
-                                {
-                                    await DeleteMessage(SqsClient, S3Client, message, sqsTransportMessage, incomingMessage).ConfigureAwait(false);
-                                }
-                                else
-                                {
-                                    await SqsClient.ChangeMessageVisibilityAsync(_queueUrl,
-                                        message.ReceiptHandle,
-                                        0,
-                                        _cancellationTokenSource.Token).ConfigureAwait(false);
-                                }
-
-                                if (exception != null)
-                                {
-                                    await _onError(new ErrorContext(exception,
-                                        incomingMessage.Headers,
-                                        incomingMessage.MessageId,
-                                        incomingMessage.Body,
-                                        transportTransaction,
-                                        1)).ConfigureAwait(false);
-                                }
+                                await SqsClient.ChangeMessageVisibilityAsync(_queueUrl,
+                                    message.ReceiptHandle,
+                                    0,
+                                    _cancellationTokenSource.Token).ConfigureAwait(false);
                             }
                         }
-                    }
+                    } //foreach
+                } // try
+                catch (Exception ex)
+                {
+                    Logger.Error("Exception thrown when consuming messages", ex);
                 }
-            }
-            finally
-            {
-                _tracksRunningThreads.Release();
-            }
+            }// while
         }
 
 		async Task DeleteMessage(IAmazonSQS sqs, 
@@ -242,7 +209,7 @@
 			IncomingMessage incomingMessage)
 		{
 			await sqs.DeleteMessageAsync(_queueUrl, message.ReceiptHandle, _cancellationTokenSource.Token).ConfigureAwait(false);
-
+            
 			if (sqsTransportMessage != null)
 			{
                 if (!String.IsNullOrEmpty(sqsTransportMessage.S3BodyKey))
@@ -278,7 +245,7 @@
         static ILog Logger = LogManager.GetLogger(typeof(SqsMessagePump));
 
 		CancellationTokenSource _cancellationTokenSource;
-        SemaphoreSlim _tracksRunningThreads;
+        List<Task> _consumerTasks;
         Func<ErrorContext, Task<ErrorHandleResult>> _onError;
         Func<MessageContext, Task> _onMessage;
         string _queueUrl;
