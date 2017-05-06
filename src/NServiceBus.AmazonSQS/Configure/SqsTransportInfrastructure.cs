@@ -10,6 +10,7 @@
     using Amazon.S3;
     using Settings;
     using Performance.TimeToBeReceived;
+    using System.Text;
 
     public class SqsTransportInfrastructure : TransportInfrastructure
     {
@@ -88,8 +89,7 @@
 
         public override TransportSubscriptionInfrastructure ConfigureSubscriptionInfrastructure()
         {
-            return new TransportSubscriptionInfrastructure(
-                () => null);
+            throw new NotImplementedException("NServiceBus.AmazonSQS does not support native pub/sub.");
         }
 
         public override EndpointInstance BindToLocalEndpoint(EndpointInstance instance)
@@ -103,9 +103,17 @@
         /// <returns></returns>
         public override string ToTransportAddress(LogicalAddress logicalAddress)
         {
-            return logicalAddress.EndpointInstance.Endpoint;
-
-            //return ToTransportAddress(logicalAddress.EndpointInstance.Endpoint);
+            string queueName = logicalAddress.EndpointInstance.Endpoint;
+            var queue = new StringBuilder(queueName);
+            if (logicalAddress.EndpointInstance.Discriminator != null)
+            {
+                queue.Append("-" + logicalAddress.EndpointInstance.Discriminator);
+            }
+            if (logicalAddress.Qualifier != null)
+            {
+                queue.Append("-" + logicalAddress.Qualifier);
+            }
+            return queue.ToString();
         }
 
 
