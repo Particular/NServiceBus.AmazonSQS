@@ -1,5 +1,8 @@
-﻿using NServiceBus.AcceptanceTesting.Support;
+﻿using Amazon.SQS;
+using NServiceBus.AcceptanceTesting.Support;
 using NServiceBus.AcceptanceTests.ScenarioDescriptors;
+using NServiceBus.AmazonSQS;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace NServiceBus.AcceptanceTests
@@ -20,9 +23,22 @@ namespace NServiceBus.AcceptanceTests
             return Task.FromResult(0);
         }
 
-        public Task Cleanup()
+        public async Task Cleanup()
         {
-            return Task.FromResult(0);
+            var connectionConfig = SqsConnectionStringParser.Parse(_connectionString);
+            var sqsClient = AwsClientFactory.CreateSqsClient(connectionConfig);
+            var listQueuesResponse = await sqsClient.ListQueuesAsync(connectionConfig.QueueNamePrefix);
+            foreach( var queue in listQueuesResponse.QueueUrls)
+            {
+                try
+                {
+                    await sqsClient.DeleteQueueAsync(queue);
+                }
+                catch(AmazonSQSException)
+                {
+                    // Probably just trying to delete a queue that was already deleted
+                }
+            }
         }
 
         string _connectionString;

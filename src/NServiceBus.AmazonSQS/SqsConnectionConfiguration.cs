@@ -2,7 +2,7 @@
 {
 	using Amazon;
 
-    class SqsConnectionConfiguration
+    internal class SqsConnectionConfiguration
     {
 		public SqsConnectionConfiguration()
 		{
