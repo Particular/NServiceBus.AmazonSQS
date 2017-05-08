@@ -18,7 +18,7 @@
             {
                 var keyAndValue = v.Split('=');
                 if (keyAndValue.Length != 2)
-                    throw new ArgumentException(String.Format("Malformed connection string around value: \"{0}\"", v));
+                    throw new ArgumentException($"Malformed connection string around value: \"{v}\"");
 
 				if (keyAndValue[0].ToLower() == "region")
 				{
@@ -33,7 +33,7 @@
 
 					if (connectionConfiguration.Region == null)
 					{
-						throw new ArgumentException(String.Format("Unknown region: \"{0}\"", keyAndValue[1]));
+						throw new ArgumentException($"Unknown region: \"{keyAndValue[1]}\"");
 					}
 				}
 				else if (keyAndValue[0].ToLower() == "s3bucketforlargemessages")
@@ -111,7 +111,7 @@
                 }
                 else
 				{
-					throw new ArgumentException(String.Format("Unknown configuration key \"{0}\"", keyAndValue[0]));
+					throw new ArgumentException($"Unknown configuration key \"{keyAndValue[0]}\"");
 				}
             }
 
