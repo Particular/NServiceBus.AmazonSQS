@@ -42,7 +42,7 @@
 	        {
 	            RegionEndpoint = connectionConfiguration.Region
 	        };
-   
+
             SetProxyConfig(config, connectionConfiguration);
 
 			var result = new AmazonSQSClient(CreateCredentials(connectionConfiguration), config);
@@ -55,7 +55,7 @@
 		    {
 		        RegionEndpoint = connectionConfiguration.Region,
 		    };
-            
+
             SetProxyConfig(config, connectionConfiguration);
 
             var result = new AmazonS3Client(CreateCredentials(connectionConfiguration), config);

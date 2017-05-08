@@ -68,7 +68,7 @@
                 SqsClient = _sqsClient,
                 SqsQueueUrlCache = _sqsQueueUrlCache
             };
-            
+
             return result;
         }
 
@@ -123,7 +123,7 @@
         };
 
         public override TransportTransactionMode TransactionMode => TransportTransactionMode.ReceiveOnly;
-        
+
         public override OutboundRoutingPolicy OutboundRoutingPolicy
             => new OutboundRoutingPolicy(OutboundRoutingType.Unicast,
                 OutboundRoutingType.Unicast,

@@ -65,7 +65,7 @@
 					if ( connectionConfiguration.S3BucketForLargeMessages.Contains("..") )
 						throw new ArgumentException("S3 Bucket names must not contain two adjacent periods.");
 
-					if (connectionConfiguration.S3BucketForLargeMessages.Contains(".-") || 
+					if (connectionConfiguration.S3BucketForLargeMessages.Contains(".-") ||
 						connectionConfiguration.S3BucketForLargeMessages.Contains("-."))
 						throw new ArgumentException("S3 Bucket names must not contain hyphens adjacent to periods.");
 				}
