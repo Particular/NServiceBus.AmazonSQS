@@ -26,7 +26,7 @@
             _sqsClient = AwsClientFactory.CreateSqsClient(_connectionConfiguration);
             _s3Client = AwsClientFactory.CreateS3Client(_connectionConfiguration);
 
-            _sqsQueueUrlCache = new SqsQueueUrlCache()
+            _sqsQueueUrlCache = new SqsQueueUrlCache
             {
                 SqsClient = _sqsClient
             };
@@ -34,7 +34,7 @@
 
         SqsMessagePump CreateMessagePump()
         {
-            var result = new SqsMessagePump()
+            var result = new SqsMessagePump
             {
                 ConnectionConfiguration = _connectionConfiguration,
                 S3Client = _s3Client,
@@ -47,7 +47,7 @@
 
         SqsQueueCreator CreateQueueCreator()
         {
-            var result = new SqsQueueCreator()
+            var result = new SqsQueueCreator
             {
                 ConnectionConfiguration = _connectionConfiguration,
                 S3Client = _s3Client,
@@ -60,7 +60,7 @@
 
         SqsMessageDispatcher CreateMessageDispatcher()
         {
-            var result = new SqsMessageDispatcher()
+            var result = new SqsMessageDispatcher
             {
                 ConnectionConfiguration = _connectionConfiguration,
                 QueueCreator = CreateQueueCreator(),
@@ -117,7 +117,7 @@
         }
 
 
-        public override IEnumerable<Type> DeliveryConstraints => new List<Type>()
+        public override IEnumerable<Type> DeliveryConstraints => new List<Type>
         {
             typeof(DiscardIfNotReceivedBefore)
         };

@@ -38,7 +38,7 @@
 
 	    public static IAmazonSQS CreateSqsClient(SqsConnectionConfiguration connectionConfiguration)
 	    {
-	        var config = new AmazonSQSConfig()
+	        var config = new AmazonSQSConfig
 	        {
 	            RegionEndpoint = connectionConfiguration.Region
 	        };
@@ -51,7 +51,7 @@
 
 		public static IAmazonS3 CreateS3Client(SqsConnectionConfiguration connectionConfiguration)
 		{
-		    var config = new AmazonS3Config()
+		    var config = new AmazonS3Config
 		    {
 		        RegionEndpoint = connectionConfiguration.Region,
 		    };
