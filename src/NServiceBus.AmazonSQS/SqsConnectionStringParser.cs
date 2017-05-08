@@ -12,7 +12,7 @@
             var values = connectionString.Split(';');
             if (string.IsNullOrEmpty(values.Last()))
             {
-                values = values.Take(values.Count() - 1).ToArray();
+                values = values.Take(values.Length - 1).ToArray();
             }
             foreach (var v in values)
             {
