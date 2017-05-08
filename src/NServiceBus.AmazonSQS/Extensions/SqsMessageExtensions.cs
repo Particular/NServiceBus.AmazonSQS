@@ -9,8 +9,8 @@
 
     internal static class SqsMessageExtensions
     {
-		public static async Task<IncomingMessage> ToIncomingMessage(this SqsTransportMessage sqsTransportMessage, 
-            IAmazonS3 amazonS3, 
+		public static async Task<IncomingMessage> ToIncomingMessage(this SqsTransportMessage sqsTransportMessage,
+            IAmazonS3 amazonS3,
             SqsConnectionConfiguration connectionConfiguration)
         {
             var messageId = sqsTransportMessage.Headers[Headers.MessageId];
@@ -19,7 +19,7 @@
 
             if (!string.IsNullOrEmpty(sqsTransportMessage.S3BodyKey))
             {
-                var s3GetResponse = await amazonS3.GetObjectAsync(connectionConfiguration.S3BucketForLargeMessages, sqsTransportMessage.S3BodyKey);
+                var s3GetResponse = await amazonS3.GetObjectAsync(connectionConfiguration.S3BucketForLargeMessages, sqsTransportMessage.S3BodyKey).ConfigureAwait(false);
                 body = new byte[s3GetResponse.ResponseStream.Length];
                 using (BufferedStream bufferedStream = new BufferedStream(s3GetResponse.ResponseStream))
                 {
@@ -27,7 +27,7 @@
                     int transferred = 0;
                     const int maxChunkSize = 8 * 1024;
                     int bytesToRead = Math.Min(maxChunkSize, body.Length - transferred);
-                    while ((count = bufferedStream.Read(body, transferred, bytesToRead)) > 0)
+                    while ((count = await bufferedStream.ReadAsync(body, transferred, bytesToRead).ConfigureAwait(false)) > 0)
                     {
                         transferred += count;
                         bytesToRead = Math.Min(maxChunkSize, body.Length - transferred);
@@ -39,9 +39,7 @@
                 body = Convert.FromBase64String(sqsTransportMessage.Body);
 			}
 
-            var result = new IncomingMessage(messageId, sqsTransportMessage.Headers, body);
-
-            return result;
+            return new IncomingMessage(messageId, sqsTransportMessage.Headers, body);
         }
 
 		public static DateTime GetSentDateTime(this Message message)

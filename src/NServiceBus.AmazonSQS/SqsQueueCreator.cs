@@ -48,14 +48,14 @@
                 };
 
                 Logger.Info($"Creating SQS Queue with name \"{sqsRequest.QueueName}\" for address \"{address}\".");
-                var createQueueResponse = await SqsClient.CreateQueueAsync(sqsRequest);
+                var createQueueResponse = await SqsClient.CreateQueueAsync(sqsRequest).ConfigureAwait(false);
 
                 QueueUrlCache.SetQueueUrl(queueName, createQueueResponse.QueueUrl);
 
-                // Set the queue attributes in a separate call. 
+                // Set the queue attributes in a separate call.
                 // If you call CreateQueue with a queue name that already exists, and with a different
-                // value for MessageRetentionPeriod, the service throws. This will happen if you 
-                // change the MaxTTLDays configuration property. 
+                // value for MessageRetentionPeriod, the service throws. This will happen if you
+                // change the MaxTTLDays configuration property.
                 var sqsAttributesRequest = new SetQueueAttributesRequest
                 {
                     QueueUrl = createQueueResponse.QueueUrl
@@ -63,12 +63,12 @@
                 sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod,
                     ((int) (TimeSpan.FromDays(ConnectionConfiguration.MaxTTLDays).TotalSeconds)).ToString());
 
-                await SqsClient.SetQueueAttributesAsync(sqsAttributesRequest);
+                await SqsClient.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
 
                 if (!string.IsNullOrEmpty(ConnectionConfiguration.S3BucketForLargeMessages))
                 {
                     // determine if the configured bucket exists; create it if it doesn't
-                    var listBucketsResponse = await S3Client.ListBucketsAsync(new ListBucketsRequest());
+                    var listBucketsResponse = await S3Client.ListBucketsAsync(new ListBucketsRequest()).ConfigureAwait(false);
                     var bucketExists = listBucketsResponse.Buckets.Any(x => string.Equals(x.BucketName, ConnectionConfiguration.S3BucketForLargeMessages, StringComparison.InvariantCultureIgnoreCase));
                     if (!bucketExists)
                     {
@@ -76,14 +76,14 @@
                             await S3Client.PutBucketAsync(new PutBucketRequest
                             {
                                 BucketName = ConnectionConfiguration.S3BucketForLargeMessages
-                            }),
+                            }).ConfigureAwait(false),
                         onRetry: x =>
                         {
                             Logger.Warn($"Conflict when creating S3 bucket, retrying after {x}ms.");
-                        });
+                        }).ConfigureAwait(false);
                     }
 
-                    var lifecycleConfig = await S3Client.GetLifecycleConfigurationAsync(ConnectionConfiguration.S3BucketForLargeMessages);
+                    var lifecycleConfig = await S3Client.GetLifecycleConfigurationAsync(ConnectionConfiguration.S3BucketForLargeMessages).ConfigureAwait(false);
                     bool setLifecycleConfig = lifecycleConfig.Configuration.Rules.All(x => x.Id != "NServiceBus.SQS.DeleteMessageBodies");
 
                     if (setLifecycleConfig)
@@ -114,11 +114,11 @@
                                             }
                                         }
                                     }
-                                }),
+                                }).ConfigureAwait(false),
                             onRetry: x =>
                             {
                                 Logger.Warn($"Conflict when setting S3 lifecycle configuration, retrying after {x}ms.");
-                            });
+                            }).ConfigureAwait(false);
                     }
                 }
             }
@@ -128,7 +128,7 @@
                 throw;
             }
         }
-        
+
         static ILog Logger = LogManager.GetLogger(typeof(SqsQueueCreator));
     }
 }
