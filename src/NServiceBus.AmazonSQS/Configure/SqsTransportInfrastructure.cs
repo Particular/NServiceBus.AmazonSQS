@@ -33,33 +33,29 @@
 
         SqsMessagePump CreateMessagePump()
         {
-            var result = new SqsMessagePump
+            return new SqsMessagePump
             {
                 ConnectionConfiguration = _connectionConfiguration,
                 S3Client = _s3Client,
                 SqsClient = _sqsClient,
                 SqsQueueUrlCache = _sqsQueueUrlCache
             };
-
-            return result;
         }
 
         SqsQueueCreator CreateQueueCreator()
         {
-            var result = new SqsQueueCreator
+            return new SqsQueueCreator
             {
                 ConnectionConfiguration = _connectionConfiguration,
                 S3Client = _s3Client,
                 SqsClient = _sqsClient,
                 QueueUrlCache = _sqsQueueUrlCache,
             };
-
-            return result;
         }
 
         SqsMessageDispatcher CreateMessageDispatcher()
         {
-            var result = new SqsMessageDispatcher
+            return new SqsMessageDispatcher
             {
                 ConnectionConfiguration = _connectionConfiguration,
                 QueueCreator = CreateQueueCreator(),
@@ -67,8 +63,6 @@
                 SqsClient = _sqsClient,
                 SqsQueueUrlCache = _sqsQueueUrlCache
             };
-
-            return result;
         }
 
         public override TransportReceiveInfrastructure ConfigureReceiveInfrastructure()

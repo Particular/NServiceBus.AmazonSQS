@@ -45,8 +45,7 @@
 
             SetProxyConfig(config, connectionConfiguration);
 
-			var result = new AmazonSQSClient(CreateCredentials(connectionConfiguration), config);
-            return result;
+			return new AmazonSQSClient(CreateCredentials(connectionConfiguration), config);
         }
 
 		public static IAmazonS3 CreateS3Client(SqsConnectionConfiguration connectionConfiguration)
@@ -58,8 +57,7 @@
 
             SetProxyConfig(config, connectionConfiguration);
 
-            var result = new AmazonS3Client(CreateCredentials(connectionConfiguration), config);
-            return result;
+            return new AmazonS3Client(CreateCredentials(connectionConfiguration), config);
 		}
 	}
 }
