@@ -8,7 +8,6 @@
     using System.Threading.Tasks;
     using Amazon.SQS;
     using Amazon.S3;
-    using Settings;
     using Performance.TimeToBeReceived;
     using System.Text;
 
