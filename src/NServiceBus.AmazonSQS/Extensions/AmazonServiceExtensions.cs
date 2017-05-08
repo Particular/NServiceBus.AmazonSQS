@@ -11,16 +11,16 @@ namespace NServiceBus.AmazonSQS
             int tryCount = 0;
             int sleepTimeMs = 2000;
             const int maxTryCount = 5;
-            
+
             while (true)
             {
                 try
                 {
                     tryCount++;
-                    return await a();
+                    return await a().ConfigureAwait(false);
                 }
                 catch (AmazonServiceException ex)
-                    when (ex.StatusCode == System.Net.HttpStatusCode.Conflict && 
+                    when (ex.StatusCode == System.Net.HttpStatusCode.Conflict &&
                         ex.ErrorCode == "OperationAborted")
                 {
                     if (tryCount >= maxTryCount)
@@ -28,7 +28,7 @@ namespace NServiceBus.AmazonSQS
 
                     var sleepTime = (sleepTimeMs * tryCount);
                     onRetry(sleepTime);
-                    await Task.Delay(sleepTime);
+                    await Task.Delay(sleepTime).ConfigureAwait(false);
                 }
             }
         }
