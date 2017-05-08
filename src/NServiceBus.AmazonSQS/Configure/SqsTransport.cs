@@ -11,7 +11,7 @@
 
         public override TransportInfrastructure Initialize(SettingsHolder settings, string connectionString)
         {
-            return new SqsTransportInfrastructure(settings, connectionString);
+            return new SqsTransportInfrastructure(connectionString);
         }
     }
 }

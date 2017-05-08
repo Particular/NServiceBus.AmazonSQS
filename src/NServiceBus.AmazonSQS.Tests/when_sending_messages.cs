@@ -31,7 +31,7 @@ namespace NServiceBus.AmazonSQS.Tests
                 stringBuilder.Append("This is a large string. ");
             }
 
-            var largeOutgoingMessageToSend = new OutgoingMessage("1234", 
+            var largeOutgoingMessageToSend = new OutgoingMessage("1234",
                 new Dictionary<string, string>(),
                 Encoding.Default.GetBytes(stringBuilder.ToString()));
 

@@ -99,7 +99,7 @@
                                             new LifecycleRule
                                             {
                                                 Id = "NServiceBus.SQS.DeleteMessageBodies",
-                                                Filter = new LifecycleFilter()
+                                                Filter = new LifecycleFilter
                                                 {
                                                     LifecycleFilterPredicate = new LifecyclePrefixPredicate
                                                     {

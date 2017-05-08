@@ -3,10 +3,10 @@
     using System.Collections.Concurrent;
     using Amazon.SQS;
 
-    internal class SqsQueueUrlCache 
+    internal class SqsQueueUrlCache
 	{
         public IAmazonSQS SqsClient { get; set; }
-		
+
 		public SqsQueueUrlCache()
 		{
 			_cache = new ConcurrentDictionary<string, string>();
