@@ -90,10 +90,6 @@
             return instance;
         }
 
-        /// <summary>
-        /// </summary>
-        /// <param name="logicalAddress"></param>
-        /// <returns></returns>
         public override string ToTransportAddress(LogicalAddress logicalAddress)
         {
             string queueName = logicalAddress.EndpointInstance.Endpoint;
