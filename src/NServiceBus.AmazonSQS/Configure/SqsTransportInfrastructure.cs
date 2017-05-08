@@ -19,7 +19,7 @@
         readonly SqsQueueUrlCache _sqsQueueUrlCache;
         readonly SqsConnectionConfiguration _connectionConfiguration;
 
-        public SqsTransportInfrastructure(SettingsHolder settings, string connectionString)
+        public SqsTransportInfrastructure(string connectionString)
         {
             _connectionConfiguration = SqsConnectionStringParser.Parse(connectionString);
 
