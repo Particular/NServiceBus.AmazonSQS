@@ -11,7 +11,7 @@
     using Performance.TimeToBeReceived;
     using System.Text;
 
-    public class SqsTransportInfrastructure : TransportInfrastructure
+    internal class SqsTransportInfrastructure : TransportInfrastructure
     {
         readonly IAmazonSQS _sqsClient;
         readonly IAmazonS3 _s3Client;
