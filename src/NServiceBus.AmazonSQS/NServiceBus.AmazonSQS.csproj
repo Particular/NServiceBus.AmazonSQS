@@ -53,11 +53,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Configure\SqsTransport.cs" />
@@ -88,11 +84,4 @@
     <PostBuildEvent>copy $(TargetPath) $(ProjectDir)..\$(TargetName).NuGet\lib\net45
 copy $(TargetDir)$(TargetName).pdb $(ProjectDir)..\$(TargetName).NuGet\lib\net45</PostBuildEvent>
   </PropertyGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>

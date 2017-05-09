@@ -16,9 +16,9 @@ $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentL
 $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&No'))
 
 $decision = $Host.UI.PromptForChoice($message, $question, $choices, 1)
-if ($decision -ne 0) 
+if ($decision -ne 0)
 {
-    return 
+    return
 }
 
 Import-Module AWSPowershell

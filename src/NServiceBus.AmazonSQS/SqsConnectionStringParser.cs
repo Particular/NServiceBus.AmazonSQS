@@ -12,13 +12,13 @@
             var values = connectionString.Split(';');
             if (string.IsNullOrEmpty(values.Last()))
             {
-                values = values.Take(values.Count() - 1).ToArray();
+                values = values.Take(values.Length - 1).ToArray();
             }
             foreach (var v in values)
             {
                 var keyAndValue = v.Split('=');
                 if (keyAndValue.Length != 2)
-                    throw new ArgumentException(String.Format("Malformed connection string around value: \"{0}\"", v));
+                    throw new ArgumentException($"Malformed connection string around value: \"{v}\"");
 
 				if (keyAndValue[0].ToLower() == "region")
 				{
@@ -33,7 +33,7 @@
 
 					if (connectionConfiguration.Region == null)
 					{
-						throw new ArgumentException(String.Format("Unknown region: \"{0}\"", keyAndValue[1]));
+						throw new ArgumentException($"Unknown region: \"{keyAndValue[1]}\"");
 					}
 				}
 				else if (keyAndValue[0].ToLower() == "s3bucketforlargemessages")
@@ -65,7 +65,7 @@
 					if ( connectionConfiguration.S3BucketForLargeMessages.Contains("..") )
 						throw new ArgumentException("S3 Bucket names must not contain two adjacent periods.");
 
-					if (connectionConfiguration.S3BucketForLargeMessages.Contains(".-") || 
+					if (connectionConfiguration.S3BucketForLargeMessages.Contains(".-") ||
 						connectionConfiguration.S3BucketForLargeMessages.Contains("-."))
 						throw new ArgumentException("S3 Bucket names must not contain hyphens adjacent to periods.");
 				}
@@ -111,7 +111,7 @@
                 }
                 else
 				{
-					throw new ArgumentException(String.Format("Unknown configuration key \"{0}\"", keyAndValue[0]));
+					throw new ArgumentException($"Unknown configuration key \"{keyAndValue[0]}\"");
 				}
             }
 

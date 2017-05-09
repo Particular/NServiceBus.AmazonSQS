@@ -20,7 +20,7 @@
 				case SqsCredentialSource.InstanceProfile:
 					return new InstanceProfileAWSCredentials();
 		    }
-		    throw new NotImplementedException(String.Format("No implementation for credential type {0}", connectionConfiguration.CredentialSource));
+		    throw new NotImplementedException($"No implementation for credential type {connectionConfiguration.CredentialSource}");
 	    }
 
         static void SetProxyConfig(ClientConfig clientConfig, SqsConnectionConfiguration connectionConfig)
@@ -38,28 +38,26 @@
 
 	    public static IAmazonSQS CreateSqsClient(SqsConnectionConfiguration connectionConfiguration)
 	    {
-	        var config = new AmazonSQSConfig()
+	        var config = new AmazonSQSConfig
 	        {
 	            RegionEndpoint = connectionConfiguration.Region
 	        };
-   
+
             SetProxyConfig(config, connectionConfiguration);
 
-			var result = new AmazonSQSClient(CreateCredentials(connectionConfiguration), config);
-            return result;
+			return new AmazonSQSClient(CreateCredentials(connectionConfiguration), config);
         }
 
 		public static IAmazonS3 CreateS3Client(SqsConnectionConfiguration connectionConfiguration)
 		{
-		    var config = new AmazonS3Config()
+		    var config = new AmazonS3Config
 		    {
 		        RegionEndpoint = connectionConfiguration.Region,
 		    };
-            
+
             SetProxyConfig(config, connectionConfiguration);
 
-            var result = new AmazonS3Client(CreateCredentials(connectionConfiguration), config);
-            return result;
+            return new AmazonS3Client(CreateCredentials(connectionConfiguration), config);
 		}
 	}
 }

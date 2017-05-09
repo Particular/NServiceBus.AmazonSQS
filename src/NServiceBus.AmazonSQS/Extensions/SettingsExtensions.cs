@@ -6,7 +6,7 @@
     public static class SettingsExtensions
     {
         /// <summary>
-        /// Configures the SQS transport to use SQS message delays for deferring messages. 
+        /// Configures the SQS transport to use SQS message delays for deferring messages.
         /// If not called, the default is to use a TimeoutManager based deferral.
         /// </summary>
         /// <param name="transportExtensions"></param>

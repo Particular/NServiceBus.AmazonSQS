@@ -19,7 +19,7 @@
         public IAmazonSQS SqsClient { get; set; }
 
         public IAmazonS3 S3Client { get; set; }
-        
+
 		public SqsQueueCreator QueueCreator { get; set; }
 
         public SqsQueueUrlCache SqsQueueUrlCache { get; set; }
@@ -46,7 +46,7 @@
                             BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
                             InputStream = new MemoryStream(unicastMessage.Message.Body),
                             Key = key
-                        });
+                        }).ConfigureAwait(false);
 
                         sqsTransportMessage.S3BodyKey = key;
                         sqsTransportMessage.Body = String.Empty;
@@ -55,15 +55,15 @@
 
                     try
                     {
-                        await SendMessage(serializedMessage, unicastMessage.Destination);
+                        await SendMessage(serializedMessage, unicastMessage.Destination).ConfigureAwait(false);
                     }
                     catch (QueueDoesNotExistException)
                     {
-                        await QueueCreator.CreateQueueIfNecessary(unicastMessage.Destination);
+                        await QueueCreator.CreateQueueIfNecessary(unicastMessage.Destination).ConfigureAwait(false);
 
-                        await SendMessage(serializedMessage, unicastMessage.Destination);
+                        await SendMessage(serializedMessage, unicastMessage.Destination).ConfigureAwait(false);
                     }
-                }                
+                }
             }
             catch (Exception e)
             {
@@ -91,16 +91,16 @@
                 SqsQueueUrlCache.GetQueueUrl(
                     SqsQueueNameHelper.GetSqsQueueName(destination, ConnectionConfiguration)),
                 message);
-	        
+
             // NSB6 TODO:
             // There should be no need to check if the delay time is greater than the maximum allowed
             // by SQS (15 minutes); the call to AWS will fail with an appropriate exception if the limit is exceeded.
             //if ( delayDeliveryBy != TimeSpan.MaxValue)
             //    sendMessageRequest.DelaySeconds = Math.Max(0, (int)delayDeliveryBy.TotalSeconds);
 
-	        await SqsClient.SendMessageAsync(sendMessageRequest);
+	        await SqsClient.SendMessageAsync(sendMessageRequest).ConfigureAwait(false);
 	    }
-        
+
         static ILog Logger = LogManager.GetLogger(typeof(SqsMessageDispatcher));
     }
 }

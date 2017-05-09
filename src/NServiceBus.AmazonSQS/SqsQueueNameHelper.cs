@@ -17,7 +17,7 @@
 			for (var i = 0; i<s.Length; ++i)
 			{
 				var c = s[i];
-				if ( !char.IsLetterOrDigit(c) 
+				if ( !char.IsLetterOrDigit(c)
 					&& c != '-'
 					&& c != '_')
 				{
@@ -29,7 +29,7 @@
 	        {
 				return s.Substring(0, Math.Min(80, s.Length));
 	        }
-			
+
 			if (s.Length > 80)
 			{
 				throw new InvalidOperationException(

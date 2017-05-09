@@ -30,11 +30,11 @@
 
 			if (settings.PurgeOnStartup)
             {
-                // SQS only allows purging a queue once every 60 seconds or so. 
+                // SQS only allows purging a queue once every 60 seconds or so.
                 // If you try to purge a queue twice in relatively quick succession,
-                // PurgeQueueInProgressException will be thrown. 
+                // PurgeQueueInProgressException will be thrown.
                 // This will happen if you are trying to start an endpoint twice or more
-                // in that time. 
+                // in that time.
                 try
                 {
                     await SqsClient.PurgeQueueAsync(_queueUrl).ConfigureAwait(false);
@@ -72,11 +72,11 @@
         /// <summary>
         ///     Stops the dequeuing of messages.
         /// </summary>
-        public async Task Stop()
+        public Task Stop()
         {
             _cancellationTokenSource?.Cancel();
 
-            await Task.WhenAll(_consumerTasks.ToArray());
+            return Task.WhenAll(_consumerTasks.ToArray());
         }
 
         async Task ConsumeMessages()
@@ -110,7 +110,7 @@
                         {
                             sqsTransportMessage = JsonConvert.DeserializeObject<SqsTransportMessage>(message.Body);
 
-                            incomingMessage = await sqsTransportMessage.ToIncomingMessage(S3Client, ConnectionConfiguration);
+                            incomingMessage = await sqsTransportMessage.ToIncomingMessage(S3Client, ConnectionConfiguration).ConfigureAwait(false);
                         }
                         catch (Exception ex)
                         {
@@ -138,7 +138,7 @@
                                 var sentDateTime = message.GetSentDateTime();
                                 if (sentDateTime + timeToBeReceived.Value <= DateTime.UtcNow)
                                 {
-                                    // Message has expired. 
+                                    // Message has expired.
                                     Logger.Warn($"Discarding expired message with Id {incomingMessage.MessageId}");
                                     messageExpired = true;
                                 }
@@ -202,14 +202,14 @@
             }// while
         }
 
-		async Task DeleteMessage(IAmazonSQS sqs, 
+		async Task DeleteMessage(IAmazonSQS sqs,
 			IAmazonS3 s3,
-			Message message, 
-			SqsTransportMessage sqsTransportMessage, 
+			Message message,
+			SqsTransportMessage sqsTransportMessage,
 			IncomingMessage incomingMessage)
 		{
 			await sqs.DeleteMessageAsync(_queueUrl, message.ReceiptHandle, _cancellationTokenSource.Token).ConfigureAwait(false);
-            
+
 			if (sqsTransportMessage != null)
 			{
                 if (!String.IsNullOrEmpty(sqsTransportMessage.S3BodyKey))
@@ -226,10 +226,10 @@
                     }
                     catch (Exception ex)
                     {
-                        // If deleting the message body from S3 fails, we don't 
+                        // If deleting the message body from S3 fails, we don't
                         // want the exception to make its way through to the _endProcessMessage below,
                         // as the message has been successfully processed and deleted from the SQS queue
-                        // and effectively doesn't exist anymore. 
+                        // and effectively doesn't exist anymore.
                         // It doesn't really matter, as S3 is configured to delete message body data
                         // automatically after a certain period of time.
                         Logger.Warn("Couldn't delete message body from S3. Message body data will be aged out by the S3 lifecycle policy when the TTL expires.", ex);
