@@ -20,16 +20,29 @@ namespace NServiceBus.AcceptanceTests
 
             transportConfig.ConnectionString(_connectionString);
 
+            var routingConfig = transportConfig.Routing();
+
+            foreach (var publisher in publisherMetadata.Publishers)
+            {
+                foreach (var eventType in publisher.Events)
+                {
+                    routingConfig.RegisterPublisher(eventType, publisher.PublisherName);
+                }
+            }
+
             return Task.FromResult(0);
         }
 
         public async Task Cleanup()
-        {
+        {/*
             var connectionConfig = SqsConnectionStringParser.Parse(_connectionString);
             var sqsClient = AwsClientFactory.CreateSqsClient(connectionConfig);
             var listQueuesResponse = await sqsClient.ListQueuesAsync(connectionConfig.QueueNamePrefix);
             foreach( var queue in listQueuesResponse.QueueUrls)
             {
+                if (queue.Contains(connectionConfig.QueueNamePrefix + "error"))
+                    continue;
+
                 try
                 {
                     await sqsClient.DeleteQueueAsync(queue);
@@ -38,7 +51,7 @@ namespace NServiceBus.AcceptanceTests
                 {
                     // Probably just trying to delete a queue that was already deleted
                 }
-            }
+            }*/
         }
 
         string _connectionString;
