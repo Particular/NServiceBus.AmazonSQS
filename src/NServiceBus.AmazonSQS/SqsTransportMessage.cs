@@ -14,6 +14,14 @@ namespace NServiceBus.AmazonSQS
         {
             Headers = outgoingMessage.Headers;
 
+            var messageId = string.Empty;
+            Headers.TryGetValue(NServiceBus.Headers.MessageId, out messageId);
+            if (string.IsNullOrEmpty(messageId))
+            {
+                messageId = Guid.NewGuid().ToString();
+                Headers[NServiceBus.Headers.MessageId] = messageId;
+            }
+
             Body = outgoingMessage.Body != null ? Convert.ToBase64String(outgoingMessage.Body) : "empty message";
         }
 
