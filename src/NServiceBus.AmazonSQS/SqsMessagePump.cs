@@ -13,6 +13,7 @@
     using NServiceBus.AmazonSQS;
     using Transport;
     using Extensibility;
+    using System.Linq;
 
     internal class SqsMessagePump : IPushMessages
     {
@@ -94,7 +95,7 @@
                     },
                     _cancellationTokenSource.Token).ConfigureAwait(false);
 
-                    foreach (var message in receiveResult.Messages)
+                    var tasks = receiveResult.Messages.Select(async message =>
                     {
                         IncomingMessage incomingMessage = null;
                         SqsTransportMessage sqsTransportMessage = null;
@@ -193,7 +194,9 @@
                                     _cancellationTokenSource.Token).ConfigureAwait(false);
                             }
                         }
-                    } //foreach
+                    });
+
+                    await Task.WhenAll(tasks);
                 } // try
                 catch (Exception ex)
                 {

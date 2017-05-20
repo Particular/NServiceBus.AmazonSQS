@@ -19,7 +19,6 @@
             public const string S3KeyPrefix = Prefix + nameof(S3KeyPrefix);
             public const string QueueNamePrefix = Prefix + nameof(QueueNamePrefix);
             public const string CredentialSource = Prefix + nameof(CredentialSource);
-            public const string TruncateLongQueueNames = Prefix + nameof(TruncateLongQueueNames);
             public const string ProxyHost = Prefix + nameof(ProxyHost);
             public const string ProxyPort = Prefix + nameof(ProxyPort);
         }
@@ -139,19 +138,7 @@
             
             return transportExtensions;
         }
-
-        /// <summary>
-        /// Internal use only. 
-        /// </summary>
-        /// <param name="transportExtensions"></param>
-        /// <param name="truncateLongQueueNames"></param>
-        internal static TransportExtensions<SqsTransport> TruncateLongQueueNames(this TransportExtensions<SqsTransport> transportExtensions, bool truncateLongQueueNames)
-        {
-            transportExtensions.GetSettings().Set(Keys.TruncateLongQueueNames, truncateLongQueueNames);
-
-            return transportExtensions;
-        }
-
+        
         /// <summary>
         /// This tells the endpoint where to look for AWS credentials. 
         /// If not specified, the endpoint defaults to EnvironmentVariables.

@@ -60,14 +60,6 @@
             }
         }
          
-		public bool TruncateLongQueueNames
-        {
-            get
-            {
-                return _settings.GetOrDefault<bool>(SqsTransportSettings.Keys.TruncateLongQueueNames);
-            }
-        }
-
         public string ProxyHost
         {
             get

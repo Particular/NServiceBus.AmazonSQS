@@ -16,7 +16,6 @@
         {
             settings.SetDefault(SqsTransportSettings.Keys.S3BucketForLargeMessages, string.Empty);
             settings.SetDefault(SqsTransportSettings.Keys.S3KeyPrefix, string.Empty);
-            settings.SetDefault(SqsTransportSettings.Keys.TruncateLongQueueNames, false);
             settings.SetDefault(SqsTransportSettings.Keys.MaxTTLDays, 4);
             settings.SetDefault(SqsTransportSettings.Keys.CredentialSource, SqsCredentialSource.EnvironmentVariables);
             settings.SetDefault(SqsTransportSettings.Keys.ProxyHost, string.Empty);

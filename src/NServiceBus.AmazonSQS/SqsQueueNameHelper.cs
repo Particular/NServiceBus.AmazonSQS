@@ -24,12 +24,7 @@
 					s = s.Replace(c, '-');
 				}
 			}
-
-			if (connectionConfiguration.TruncateLongQueueNames)
-	        {
-				return s.Substring(0, Math.Min(80, s.Length));
-	        }
-
+            
 			if (s.Length > 80)
 			{
 				throw new InvalidOperationException(
