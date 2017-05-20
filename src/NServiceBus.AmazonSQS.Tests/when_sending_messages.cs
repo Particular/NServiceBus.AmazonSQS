@@ -9,6 +9,7 @@ using System.Text;
 namespace NServiceBus.AmazonSQS.Tests
 {
     using NServiceBus.Routing;
+    using Settings;
 
     [TestFixture]
 	public class when_sending_messages
@@ -16,13 +17,14 @@ namespace NServiceBus.AmazonSQS.Tests
 		[Test]
 		public void throws_when_message_is_large_and_no_s3_bucket_configured()
 		{
-			var sut = new SqsMessageDispatcher
-			{
-				ConnectionConfiguration = new SqsConnectionConfiguration
-				{
-					Region = Amazon.RegionEndpoint.APSoutheast2,
-					S3BucketForLargeMessages = string.Empty
-				}
+            var settings = new SettingsHolder();
+            var transportSettings = new TransportExtensions<SqsTransport>(settings);
+            transportSettings
+                .Region("ap-southeast-2");
+
+            var sut = new SqsMessageDispatcher
+            {
+                ConnectionConfiguration = new SqsConnectionConfiguration(settings)
 			};
 
             var stringBuilder = new StringBuilder();

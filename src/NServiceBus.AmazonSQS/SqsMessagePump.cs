@@ -87,7 +87,7 @@
                 {
                     var receiveResult = await SqsClient.ReceiveMessageAsync(new ReceiveMessageRequest
                     {
-                        MaxNumberOfMessages = ConnectionConfiguration.MaxReceiveMessageBatchSize,
+                        MaxNumberOfMessages = 10,
                         QueueUrl = _queueUrl,
                         WaitTimeSeconds = 20,
                         AttributeNames = new List<String> { "SentTimestamp" }

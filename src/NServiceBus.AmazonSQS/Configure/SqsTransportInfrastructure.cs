@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.Transports.SQS
+﻿namespace NServiceBus
 {
     using System;
     using System.Collections.Generic;
@@ -10,6 +10,8 @@
     using Amazon.S3;
     using Performance.TimeToBeReceived;
     using System.Text;
+    using Settings;
+    using Transports.SQS;
 
     internal class SqsTransportInfrastructure : TransportInfrastructure
     {
@@ -18,9 +20,9 @@
         readonly SqsQueueUrlCache _sqsQueueUrlCache;
         readonly SqsConnectionConfiguration _connectionConfiguration;
 
-        public SqsTransportInfrastructure(string connectionString)
+        public SqsTransportInfrastructure(SettingsHolder settings, string connectionString)
         {
-            _connectionConfiguration = SqsConnectionStringParser.Parse(connectionString);
+            _connectionConfiguration = new SqsConnectionConfiguration(settings);
 
             _sqsClient = AwsClientFactory.CreateSqsClient(_connectionConfiguration);
             _s3Client = AwsClientFactory.CreateS3Client(_connectionConfiguration);
@@ -84,7 +86,7 @@
         {
             throw new NotImplementedException("NServiceBus.AmazonSQS does not support native pub/sub.");
         }
-
+        
         public override EndpointInstance BindToLocalEndpoint(EndpointInstance instance)
         {
             return instance;

@@ -8,11 +8,22 @@
     public class SqsTransport : TransportDefinition, IMessageDrivenSubscriptionTransport
     {
         public override string ExampleConnectionStringForErrorMessage
-         => "Region=ap-southeast-2;S3BucketForLargeMessages=myBucketName;S3KeyPrefix=my/key/prefix;";
+            => "";
+
+        public override bool RequiresConnectionString => false;
 
         public override TransportInfrastructure Initialize(SettingsHolder settings, string connectionString)
         {
-            return new SqsTransportInfrastructure(connectionString);
+            settings.SetDefault(SqsTransportSettings.Keys.S3BucketForLargeMessages, string.Empty);
+            settings.SetDefault(SqsTransportSettings.Keys.S3KeyPrefix, string.Empty);
+            settings.SetDefault(SqsTransportSettings.Keys.TruncateLongQueueNames, false);
+            settings.SetDefault(SqsTransportSettings.Keys.MaxTTLDays, 4);
+            settings.SetDefault(SqsTransportSettings.Keys.CredentialSource, SqsCredentialSource.EnvironmentVariables);
+            settings.SetDefault(SqsTransportSettings.Keys.ProxyHost, string.Empty);
+            settings.SetDefault(SqsTransportSettings.Keys.ProxyPort, 0);
+            settings.SetDefault(SqsTransportSettings.Keys.QueueNamePrefix, string.Empty);
+
+            return new SqsTransportInfrastructure(settings, connectionString);
         }
     }
 }
