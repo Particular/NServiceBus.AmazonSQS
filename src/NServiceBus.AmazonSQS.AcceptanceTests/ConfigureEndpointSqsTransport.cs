@@ -2,6 +2,7 @@
 using NServiceBus.AcceptanceTesting.Support;
 using NServiceBus.AcceptanceTests.ScenarioDescriptors;
 using NServiceBus.AmazonSQS;
+using System;
 using System.Threading.Tasks;
 
 namespace NServiceBus.AcceptanceTests
@@ -26,6 +27,7 @@ namespace NServiceBus.AcceptanceTests
                 }
             }
 
+            settings.TestExecutionTimeout = TimeSpan.FromSeconds(20);
             return Task.FromResult(0);
         }
 
