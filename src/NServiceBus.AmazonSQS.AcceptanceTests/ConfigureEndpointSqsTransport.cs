@@ -1,7 +1,4 @@
-﻿using Amazon.SQS;
-using NServiceBus.AcceptanceTesting.Support;
-using NServiceBus.AcceptanceTests.ScenarioDescriptors;
-using NServiceBus.AmazonSQS;
+﻿using NServiceBus.AcceptanceTesting.Support;
 using System;
 using System.Threading.Tasks;
 

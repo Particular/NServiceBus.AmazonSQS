@@ -12,7 +12,7 @@
     {
         internal static class Keys
         {
-            const string Prefix = "NServiceBus.AmazonSqs.";
+            const string Prefix = "NServiceBus.AmazonSQS.";
             public const string Region = Prefix + nameof(Region);
             public const string MaxTTLDays = Prefix + nameof(MaxTTLDays);
             public const string S3BucketForLargeMessages = Prefix + nameof(S3BucketForLargeMessages);
