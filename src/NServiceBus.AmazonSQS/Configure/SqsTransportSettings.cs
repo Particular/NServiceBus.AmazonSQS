@@ -22,6 +22,7 @@
             public const string ProxyHost = Prefix + nameof(ProxyHost);
             public const string ProxyPort = Prefix + nameof(ProxyPort);
             public const string NativeDeferral = Prefix + nameof(NativeDeferral);
+            public const string PreTruncateQueueNames = Prefix + nameof(PreTruncateQueueNames);
         }
 
         /// <summary>
@@ -178,9 +179,23 @@
         /// </summary>
         /// <param name="transportExtensions"></param>
         /// <param name="use">Set to true to use SQS message delays for deferring messages; false otherwise.</param>
-        public static void UseSqsDeferral(this TransportExtensions<SqsTransport> transportExtensions, bool use = true)
+        public static TransportExtensions<SqsTransport> NativeDeferral(this TransportExtensions<SqsTransport> transportExtensions, bool use = true)
         {
             transportExtensions.GetSettings().Set(Keys.NativeDeferral, use);
+
+            return transportExtensions;
+        }
+
+        /// <summary>
+        /// Internal use only.
+        /// </summary>
+        /// <param name="transportExtensions"></param>
+        /// <param name="use"></param>
+        internal static TransportExtensions<SqsTransport> PreTruncateQueueNamesForAcceptanceTests(this TransportExtensions<SqsTransport> transportExtensions, bool use = true)
+        {
+            transportExtensions.GetSettings().Set(Keys.PreTruncateQueueNames, use);
+
+            return transportExtensions;
         }
     }
         

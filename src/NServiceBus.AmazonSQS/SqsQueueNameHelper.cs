@@ -1,8 +1,9 @@
 ﻿namespace NServiceBus.AmazonSQS
 {
-	using System;
+    using System;
+    using System.Linq;
 
-	static class SqsQueueNameHelper
+    static class SqsQueueNameHelper
 	{
         public static string GetSqsQueueName(string destination, SqsConnectionConfiguration connectionConfiguration)
         {
@@ -11,10 +12,19 @@
                 throw new ArgumentNullException(nameof(destination));
             }
 
-			// SQS queue names can only have alphanumeric characters, hyphens and underscores.
-			// Any other characters will be replaced with a hyphen.
+			
 			var s = connectionConfiguration.QueueNamePrefix + destination;
-			for (var i = 0; i<s.Length; ++i)
+
+            if (connectionConfiguration.PreTruncateQueueNames && s.Length > 80)
+            {
+                int charsToTake = 80 - connectionConfiguration.QueueNamePrefix.Length;
+                s = connectionConfiguration.QueueNamePrefix + 
+                    new string(s.Reverse().Take(charsToTake).Reverse().ToArray());
+            }
+
+            // SQS queue names can only have alphanumeric characters, hyphens and underscores.
+            // Any other characters will be replaced with a hyphen.
+            for (var i = 0; i<s.Length; ++i)
 			{
 				var c = s[i];
 				if ( !char.IsLetterOrDigit(c)
@@ -24,7 +34,7 @@
 					s = s.Replace(c, '-');
 				}
 			}
-            
+
 			if (s.Length > 80)
 			{
 				throw new InvalidOperationException(

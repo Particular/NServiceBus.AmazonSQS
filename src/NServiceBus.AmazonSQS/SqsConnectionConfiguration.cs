@@ -75,5 +75,21 @@
                 return _settings.GetOrDefault<int>(SqsTransportSettings.Keys.ProxyPort);
             }
         }
+
+        public bool NativeDeferral
+        {
+            get
+            {
+                return _settings.GetOrDefault<bool>(SqsTransportSettings.Keys.NativeDeferral);
+            }
+        }
+
+        public bool PreTruncateQueueNames
+        {
+            get
+            {
+                return _settings.GetOrDefault<bool>(SqsTransportSettings.Keys.PreTruncateQueueNames);
+            }
+        }
     }
 }

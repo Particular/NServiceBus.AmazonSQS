@@ -31,13 +31,8 @@
             var types = endpointConfiguration.GetTypesScopedByTestClass();
 
             typesToInclude.AddRange(types);
-
             
-            // Dodgy hack to shorten endpoint names
-            var endpointName = new string(endpointConfiguration.EndpointName.Reverse().Take(40).Reverse().ToArray());
-            endpointConfiguration.EndpointName = endpointName;
-
-            var configuration = new EndpointConfiguration(endpointName);
+            var configuration = new EndpointConfiguration(endpointConfiguration.EndpointName);
 
             configuration.TypesToIncludeInScan(typesToInclude);
             configuration.CustomConfigurationSource(configSource);
