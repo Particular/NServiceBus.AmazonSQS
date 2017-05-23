@@ -62,7 +62,6 @@
     <Compile Include="Extensions\IncomingMessageExtensions.cs" />
     <Compile Include="SqsQueueNameHelper.cs" />
     <Compile Include="Extensions\AmazonServiceExtensions.cs" />
-    <Compile Include="Extensions\SettingsExtensions.cs" />
     <Compile Include="Extensions\SqsMessageExtensions.cs" />
     <Compile Include="AwsClientFactory.cs" />
     <Compile Include="SqsConnectionConfiguration.cs" />

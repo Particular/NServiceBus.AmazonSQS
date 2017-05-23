@@ -21,6 +21,7 @@
             public const string CredentialSource = Prefix + nameof(CredentialSource);
             public const string ProxyHost = Prefix + nameof(ProxyHost);
             public const string ProxyPort = Prefix + nameof(ProxyPort);
+            public const string NativeDeferral = Prefix + nameof(NativeDeferral);
         }
 
         /// <summary>
@@ -169,6 +170,17 @@
             transportExtensions.GetSettings().Set(Keys.ProxyPort, proxyPort);
 
             return transportExtensions;
+        }
+
+        /// <summary>
+        /// Configures the SQS transport to use SQS message delays for deferring messages.
+        /// If not called, the default is to use a TimeoutManager based deferral.
+        /// </summary>
+        /// <param name="transportExtensions"></param>
+        /// <param name="use">Set to true to use SQS message delays for deferring messages; false otherwise.</param>
+        public static void UseSqsDeferral(this TransportExtensions<SqsTransport> transportExtensions, bool use = true)
+        {
+            transportExtensions.GetSettings().Set(Keys.NativeDeferral, use);
         }
     }
         

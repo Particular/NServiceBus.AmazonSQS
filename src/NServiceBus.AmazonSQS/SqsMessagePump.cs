@@ -111,7 +111,9 @@
                         {
                             sqsTransportMessage = JsonConvert.DeserializeObject<SqsTransportMessage>(message.Body);
 
-                            incomingMessage = await sqsTransportMessage.ToIncomingMessage(S3Client, ConnectionConfiguration).ConfigureAwait(false);
+                            incomingMessage = await sqsTransportMessage.ToIncomingMessage(S3Client, 
+                                ConnectionConfiguration, 
+                                _cancellationTokenSource.Token).ConfigureAwait(false);
                         }
                         catch (Exception ex)
                         {
@@ -128,7 +130,11 @@
 
                         if (isPoisonMessage)
                         {
-                            await DeleteMessage(SqsClient, S3Client, message, sqsTransportMessage, incomingMessage).ConfigureAwait(false);
+                            await DeleteMessage(SqsClient, 
+                                S3Client, 
+                                message, 
+                                sqsTransportMessage, 
+                                incomingMessage).ConfigureAwait(false);
                         }
                         else
                         {
@@ -153,28 +159,40 @@
                                 {
                                     try
                                     {
+                                        var messageContextCancellationTokenSource =
+                                            new CancellationTokenSource();
+
                                         MessageContext messageContext = new MessageContext(
                                         incomingMessage.MessageId,
                                         incomingMessage.Headers,
                                         incomingMessage.Body,
                                         transportTransaction,
-                                        _cancellationTokenSource,
+                                        messageContextCancellationTokenSource,
                                         contextBag);
 
                                         await _onMessage(messageContext)
                                             .ConfigureAwait(false);
 
-                                        messageProcessedOk = true;
+                                        messageProcessedOk = !messageContextCancellationTokenSource.IsCancellationRequested;
                                     }
                                     catch (Exception ex)
                                     {
                                         immediateProcessingAttempts++;
-                                        var errorHandlerResult = await _onError(new ErrorContext(ex,
-                                            incomingMessage.Headers,
-                                            incomingMessage.MessageId,
-                                            incomingMessage.Body,
-                                            transportTransaction,
-                                            immediateProcessingAttempts)).ConfigureAwait(false);
+                                        var errorHandlerResult = ErrorHandleResult.RetryRequired;
+
+                                        try
+                                        {
+                                            errorHandlerResult = await _onError(new ErrorContext(ex,
+                                                incomingMessage.Headers,
+                                                incomingMessage.MessageId,
+                                                incomingMessage.Body,
+                                                transportTransaction,
+                                                immediateProcessingAttempts)).ConfigureAwait(false);
+                                        }
+                                        catch (Exception onErrorEx)
+                                        {
+                                            Logger.Error("Exception thrown from error handler", onErrorEx);
+                                        }
                                         errorHandled = (errorHandlerResult == ErrorHandleResult.Handled);
                                     }
                                 }

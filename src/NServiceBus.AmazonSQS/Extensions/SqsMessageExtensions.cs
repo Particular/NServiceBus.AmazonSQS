@@ -6,12 +6,14 @@
     using Amazon.S3;
     using Transport;
     using System.Threading.Tasks;
+    using System.Threading;
 
     internal static class SqsMessageExtensions
     {
 		public static async Task<IncomingMessage> ToIncomingMessage(this SqsTransportMessage sqsTransportMessage,
             IAmazonS3 amazonS3,
-            SqsConnectionConfiguration connectionConfiguration)
+            SqsConnectionConfiguration connectionConfiguration,
+            CancellationToken cancellationToken)
         {
             var messageId = sqsTransportMessage.Headers[Headers.MessageId];
 
@@ -19,7 +21,10 @@
 
             if (!string.IsNullOrEmpty(sqsTransportMessage.S3BodyKey))
             {
-                var s3GetResponse = await amazonS3.GetObjectAsync(connectionConfiguration.S3BucketForLargeMessages, sqsTransportMessage.S3BodyKey).ConfigureAwait(false);
+                var s3GetResponse = await amazonS3.GetObjectAsync(connectionConfiguration.S3BucketForLargeMessages, 
+                    sqsTransportMessage.S3BodyKey,
+                    cancellationToken).ConfigureAwait(false);
+
                 body = new byte[s3GetResponse.ResponseStream.Length];
                 using (BufferedStream bufferedStream = new BufferedStream(s3GetResponse.ResponseStream))
                 {
@@ -27,7 +32,7 @@
                     int transferred = 0;
                     const int maxChunkSize = 8 * 1024;
                     int bytesToRead = Math.Min(maxChunkSize, body.Length - transferred);
-                    while ((count = await bufferedStream.ReadAsync(body, transferred, bytesToRead).ConfigureAwait(false)) > 0)
+                    while ((count = await bufferedStream.ReadAsync(body, transferred, bytesToRead, cancellationToken).ConfigureAwait(false)) > 0)
                     {
                         transferred += count;
                         bytesToRead = Math.Min(maxChunkSize, body.Length - transferred);
