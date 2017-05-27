@@ -42,7 +42,7 @@
             {
                 EndpointSetup<DefaultPublisher>(b => b.OnEndpointSubscribed<Context>((s, context) =>
                 {
-                    if (s.SubscriberReturnAddress.Contains("myinputqueue"))
+                    if (s.SubscriberReturnAddress.Contains("Subscriber1"))
                     {
                         context.Subscriber1Subscribed = true;
                     }
