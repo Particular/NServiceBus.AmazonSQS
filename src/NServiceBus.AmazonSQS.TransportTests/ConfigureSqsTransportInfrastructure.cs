@@ -16,7 +16,8 @@ public class ConfigureSqsTransportInfrastructure : IConfigureTransportInfrastruc
         var sqsConfig = new TransportExtensions<SqsTransport>(settings);
         sqsConfig.Region("ap-southeast-2")
             .QueueNamePrefix("TransportTest-")
-            .S3BucketForLargeMessages("sqstransportmessages1337", "test");
+            .S3BucketForLargeMessages("sqstransportmessages1337", "test")
+            .NativeDeferral();
 
         return new TransportConfigurationResult
         {

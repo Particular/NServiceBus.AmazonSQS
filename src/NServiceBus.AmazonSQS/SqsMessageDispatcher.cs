@@ -11,6 +11,10 @@
     using Transport;
     using Extensibility;
     using System.Threading.Tasks;
+    using System.Collections.Generic;
+    using DeliveryConstraints;
+    using System.Linq;
+    using DelayedDelivery;
 
     internal class SqsMessageDispatcher : IDispatchMessages
     {
@@ -55,13 +59,17 @@
 
                     try
                     {
-                        await SendMessage(serializedMessage, unicastMessage.Destination).ConfigureAwait(false);
+                        await SendMessage(serializedMessage, 
+                            unicastMessage.Destination, 
+                            unicastMessage.DeliveryConstraints).ConfigureAwait(false);
                     }
                     catch (QueueDoesNotExistException)
                     {
                         await QueueCreator.CreateQueueIfNecessary(unicastMessage.Destination).ConfigureAwait(false);
 
-                        await SendMessage(serializedMessage, unicastMessage.Destination).ConfigureAwait(false);
+                        await SendMessage(serializedMessage, 
+                            unicastMessage.Destination,
+                            unicastMessage.DeliveryConstraints).ConfigureAwait(false);
                     }
                 }
             }
@@ -72,31 +80,31 @@
             }
         }
 
-	    private async Task SendMessage(string message, string destination)
+	    private async Task SendMessage(string message, string destination, IEnumerable<DeliveryConstraint> constraints)
 	    {
-            // NSB6 TODO:
-            /*
+            var delayWithConstraint = constraints.Where(x => x is DelayDeliveryWith).OfType<DelayDeliveryWith>().SingleOrDefault();
+            var deliverAtConstraint = constraints.Where(x => x is DoNotDeliverBefore).OfType<DoNotDeliverBefore>().SingleOrDefault();
+
             var delayDeliveryBy = TimeSpan.MaxValue;
-            if (sendOptions.DelayDeliveryFor.HasValue)
-                delayDeliveryBy = sendOptions.DelayDeliveryWith.Value;
+            if (delayWithConstraint != null)
+                delayDeliveryBy = delayWithConstraint.Delay;
             else
             {
-                if (sendOptions.DeliverAt.HasValue)
+                if (deliverAtConstraint != null)
                 {
-                    delayDeliveryBy = sendOptions.DeliverAt.Value - DateTime.UtcNow;
+                    delayDeliveryBy = deliverAtConstraint.At - DateTime.UtcNow;
                 }
             }
-            */
+            
 			var sendMessageRequest = new SendMessageRequest(
                 SqsQueueUrlCache.GetQueueUrl(
                     SqsQueueNameHelper.GetSqsQueueName(destination, ConnectionConfiguration)),
                 message);
 
-            // NSB6 TODO:
             // There should be no need to check if the delay time is greater than the maximum allowed
             // by SQS (15 minutes); the call to AWS will fail with an appropriate exception if the limit is exceeded.
-            //if ( delayDeliveryBy != TimeSpan.MaxValue)
-            //    sendMessageRequest.DelaySeconds = Math.Max(0, (int)delayDeliveryBy.TotalSeconds);
+            if ( delayDeliveryBy != TimeSpan.MaxValue)
+                sendMessageRequest.DelaySeconds = Math.Max(0, (int)delayDeliveryBy.TotalSeconds);
 
 	        await SqsClient.SendMessageAsync(sendMessageRequest).ConfigureAwait(false);
 	    }

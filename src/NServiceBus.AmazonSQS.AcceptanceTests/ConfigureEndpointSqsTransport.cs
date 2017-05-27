@@ -13,6 +13,7 @@ namespace NServiceBus.AcceptanceTests
                 .Region("ap-southeast-2")
                 .S3BucketForLargeMessages("sqstransportmessages1337", "test")
                 .QueueNamePrefix("AcceptanceTest-")
+                .NativeDeferral()
                 .PreTruncateQueueNamesForAcceptanceTests();
             
             var routingConfig = transportConfig.Routing();
