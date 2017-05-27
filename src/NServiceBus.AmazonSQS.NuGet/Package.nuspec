@@ -11,6 +11,7 @@
     </description>
     <releaseNotes>
       * Initial pre-release for NServiceBus 6.0.
+
       See the project wiki for more details: https://github.com/ahofman/NServiceBus.AmazonSQS/wiki
       As always, the NServiceBus Acceptance Test suite is leveraged to provide the highest possible quality.
     </releaseNotes>
