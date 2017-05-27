@@ -13,7 +13,7 @@ namespace NServiceBus.AmazonSQS.IntegrationTests
 	{
         private SqsTestContext _context;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public void FixtureSetUp()
         {
             _context = new SqsTestContext(this);
@@ -21,7 +21,7 @@ namespace NServiceBus.AmazonSQS.IntegrationTests
 			_context.InitAndStartDequeueing();
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public void FixtureTearDown()
         {
             _context.Dispose();

@@ -10,6 +10,9 @@
     using Transports.SQS;
     using Unicast;
     using System.Diagnostics;
+    using System.Threading.Tasks;
+    using Routing;
+    using Transport;
 
     internal class SqsTestContext : IDisposable
     {
@@ -31,20 +34,21 @@
             get { return _exceptionsThrownByReceiver; } 
         }
 
-        public SqsDequeueStrategy DequeueStrategy { get; private set; }
+        public SqsMessagePump MessagePump { get; private set; }
 
-        public SqsQueueSender Sender { get; private set; }
+        public SqsMessageDispatcher Dispatcher { get; private set; }
 
 		public SqsQueueCreator Creator { get; private set; }
 
-        public Address Address { get; private set; }
+        public EndpointInstance EndpointInstance { get; private set; }
 
         private Subject<TransportMessage> _receivedMessages;
         private Subject<Exception> _exceptionsThrownByReceiver;
-        
+        private Subject<Exception> _criticalErrorsThrownByReceiver;
+
         public SqsTestContext(object fixture)
         {
-            Address = new Address(fixture.GetType().Name, Environment.MachineName);
+            EndpointInstance = new EndpointInstance(fixture.GetType().Name);
 			ConnectionConfiguration = 
 				SqsConnectionStringParser.Parse(ConfigurationManager.AppSettings["TestConnectionString"]);
 
@@ -60,15 +64,15 @@
 	        
             _receivedMessages = new Subject<TransportMessage>();
             _exceptionsThrownByReceiver = new Subject<Exception>();
+            _criticalErrorsThrownByReceiver = new Subject<Exception>();
 
 			QueueUrlCache = new SqsQueueUrlCache
 			{
                 SqsClient = SqsClient,
 				ConnectionConfiguration = ConnectionConfiguration
 			};
-
-
-            Sender = new SqsQueueSender
+            
+            Dispatcher = new SqsMessageDispatcher
             {
 	            ConnectionConfiguration = ConnectionConfiguration,
 	            SqsClient = SqsClient,
@@ -77,18 +81,19 @@
 				QueueCreator = Creator
             };
 
-	        DequeueStrategy = new SqsDequeueStrategy(null)
+	        MessagePump = new SqsMessagePump()
 	        {
 		        ConnectionConfiguration = ConnectionConfiguration,
                 SqsClient = SqsClient,
                 S3Client = S3Client
             };
-	        
         }
 
-	    public void CreateQueue()
+	    public async Task CreateQueue()
 	    {
-			Creator.CreateQueueIfNecessary(Address, "");
+            var queueBindings = new QueueBindings();
+            queueBindings.BindSending(EndpointInstance.Endpoint);
+			await Creator.CreateQueueIfNecessary(queueBindings, "");
 	    }
 
         public void PurgeQueue()
@@ -126,21 +131,26 @@
             } while (approxNumberOfMessages != 0);
         }
 
-		public void InitAndStartDequeueing()
+		public async Task InitAndStartDequeueing()
 		{
-			DequeueStrategy.Init(Address,
-				null,
-				m =>
-				{
-					_receivedMessages.OnNext(m);
-					return true;
-				},
-				(m, e) =>
-				{
-					if (e != null)
-						_exceptionsThrownByReceiver.OnNext(e);
-				});
-			DequeueStrategy.Start(1);	
+            await MessagePump.Init(
+                onMessage: m =>
+                {
+                    _receivedMessages.OnNext(m);
+                    return Task.FromResult(0);
+                },
+                onError: (m, e) =>
+                {
+                    if (e != null)
+                        _exceptionsThrownByReceiver.OnNext(e);
+                },
+                criticalError: new CriticalError(x =>
+                {
+                    _criticalErrorsThrownByReceiver.OnNext(x);
+                    return Task.FromResult(0);
+                }),
+                settings: new Transport.PushSettings());
+			MessagePump.Start(new Transport.PushRuntimeSettings(1));	
 		}
 
         public TransportMessage SendRawAndReceiveMessage(string rawMessageString)
@@ -189,12 +199,12 @@
 
         public TransportMessage SendAndReceiveMessage(TransportMessage messageToSend)
         {
-			return SendAndReceiveCore(() => Sender.Send(messageToSend, new SendOptions(Address)));
+			return SendAndReceiveCore(() => Dispatcher.Send(messageToSend, new SendOptions(Address)));
         }
 
         public void Dispose()
         {
-            DequeueStrategy.Stop();
+            MessagePump.Stop().Wait();
 
             if (S3Client != null)
                 S3Client.Dispose();

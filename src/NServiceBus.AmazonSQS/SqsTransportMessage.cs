@@ -1,4 +1,4 @@
-﻿using NServiceBus.Unicast;
+﻿using NServiceBus.Transport;
 using System;
 using System.Collections.Generic;
 
@@ -10,25 +10,25 @@ namespace NServiceBus.AmazonSQS
         {
         }
 
-        public SqsTransportMessage(TransportMessage transportMessage, SendOptions sendOptions)
+        public SqsTransportMessage(OutgoingMessage outgoingMessage)
         {
-            Headers = transportMessage.Headers;
+            Headers = outgoingMessage.Headers;
 
-            Body = transportMessage.Body != null ? Convert.ToBase64String(transportMessage.Body) : "empty message";
+            var messageId = string.Empty;
+            Headers.TryGetValue(NServiceBus.Headers.MessageId, out messageId);
+            if (string.IsNullOrEmpty(messageId))
+            {
+                messageId = Guid.NewGuid().ToString();
+                Headers[NServiceBus.Headers.MessageId] = messageId;
+            }
 
-            TimeToBeReceived = transportMessage.TimeToBeReceived;
-
-			ReplyToAddress = sendOptions.ReplyToAddress;
+            Body = outgoingMessage.Body != null ? Convert.ToBase64String(outgoingMessage.Body) : "empty message";
         }
 
         public Dictionary<string, string> Headers { get; set; }
 
-        public TimeSpan TimeToBeReceived { get; set; }
-
         public string Body { get; set; }
 
 		public string S3BodyKey { get; set; }
-
-		public Address ReplyToAddress { get; set; }
     }
 }

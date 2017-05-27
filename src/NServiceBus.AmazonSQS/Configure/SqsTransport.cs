@@ -1,36 +1,28 @@
 ﻿namespace NServiceBus
 {
-	using Configuration.AdvanceExtensibility;
-	using Features;
-	using Transports;
+    using Routing;
+    using Settings;
+    using Transport;
+    using Transports.SQS;
 
-    public class SqsTransport : TransportDefinition
+    public class SqsTransport : TransportDefinition, IMessageDrivenSubscriptionTransport
     {
-        public SqsTransport()
+        public override string ExampleConnectionStringForErrorMessage
+            => "";
+
+        public override bool RequiresConnectionString => false;
+
+        public override TransportInfrastructure Initialize(SettingsHolder settings, string connectionString)
         {
-            HasNativePubSubSupport = false;
-            HasSupportForCentralizedPubSub = false;
-			HasSupportForDistributedTransactions = false;
+            settings.SetDefault(SqsTransportSettings.Keys.S3BucketForLargeMessages, string.Empty);
+            settings.SetDefault(SqsTransportSettings.Keys.S3KeyPrefix, string.Empty);
+            settings.SetDefault(SqsTransportSettings.Keys.MaxTTLDays, 4);
+            settings.SetDefault(SqsTransportSettings.Keys.CredentialSource, SqsCredentialSource.EnvironmentVariables);
+            settings.SetDefault(SqsTransportSettings.Keys.ProxyHost, string.Empty);
+            settings.SetDefault(SqsTransportSettings.Keys.ProxyPort, 0);
+            settings.SetDefault(SqsTransportSettings.Keys.QueueNamePrefix, string.Empty);
+
+            return new SqsTransportInfrastructure(settings, connectionString);
         }
-
-		protected override void Configure(BusConfiguration config)
-		{
-			config.EnableFeature<SqsTransportFeature>();
-			config.EnableFeature<MessageDrivenSubscriptions>();
-		
-            if (!config.GetSettings().UseSqsDeferral())
-            {
-                config.EnableFeature<TimeoutManagerBasedDeferral>();
-                config.GetSettings().EnableFeatureByDefault<TimeoutManager>();
-            }
-
-            config.GetSettings().EnableFeatureByDefault<StorageDrivenPublishing>();
-		
-			//enable the outbox unless the users hasn't disabled it
-			if (config.GetSettings().GetOrDefault<bool>(typeof(Features.Outbox).FullName))
-			{
-				config.EnableOutbox();
-			}
-		}
     }
 }
