@@ -270,6 +270,7 @@
     <Compile Include="ConfigureEndpointSqsTransport.cs" />
     <Compile Include="TestSuiteConstraints.cs" />
     <Compile Include="SqsAcceptanceTests\When_sending_messages_larger_than_256kb.cs" />
+    <Compile Include="SqsAcceptanceTests\When_handling_messages_concurrently.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="DeleteQueues.ps1" />
