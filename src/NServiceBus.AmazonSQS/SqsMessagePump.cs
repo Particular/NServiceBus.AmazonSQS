@@ -61,7 +61,7 @@
         {
 			_cancellationTokenSource = new CancellationTokenSource();
             _concurrencyLevel = limitations.MaxConcurrency;
-
+            _maxConcurrencySempahore = new SemaphoreSlim(_concurrencyLevel);
             _consumerTasks = new List<Task>();
 
             for (var i = 0; i < _concurrencyLevel; i++)
@@ -76,7 +76,7 @@
         public Task Stop()
         {
             _cancellationTokenSource?.Cancel();
-
+            
             return Task.WhenAll(_consumerTasks.ToArray());
         }
 
@@ -159,6 +159,10 @@
                                 {
                                     try
                                     {
+                                        await _maxConcurrencySempahore
+                                            .WaitAsync(_cancellationTokenSource.Token)
+                                            .ConfigureAwait(false);
+
                                         var messageContextCancellationTokenSource =
                                             new CancellationTokenSource();
 
@@ -195,6 +199,10 @@
                                         }
                                         errorHandled = (errorHandlerResult == ErrorHandleResult.Handled);
                                     }
+                                    finally
+                                    {
+                                        _maxConcurrencySempahore.Release();
+                                    }
                                 }
                             }
 
@@ -215,7 +223,7 @@
                     });
 
                     await Task.WhenAll(tasks);
-                } // try
+                } 
                 catch (Exception ex)
                 {
                     Logger.Error("Exception thrown when consuming messages", ex);
@@ -269,6 +277,7 @@
         List<Task> _consumerTasks;
         Func<ErrorContext, Task<ErrorHandleResult>> _onError;
         Func<MessageContext, Task> _onMessage;
+        SemaphoreSlim _maxConcurrencySempahore;
         string _queueUrl;
         int _concurrencyLevel;
 		bool _isTransactional;

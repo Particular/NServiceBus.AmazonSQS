@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.AcceptanceTests.DataBus
+﻿namespace NServiceBus.AcceptanceTests.Sqs
 {
     using System.Threading.Tasks;
     using AcceptanceTesting;
@@ -25,7 +25,7 @@
                 .Done(c => c.ReceivedPayload != null)
                 .Run();
 
-            Assert.AreEqual(payloadToSend, context.ReceivedPayload, "The large payload should be marshalled correctly using the databus");
+            Assert.AreEqual(payloadToSend, context.ReceivedPayload, "The large payload should be handled correctly using S3");
         }
 
         [Test]
