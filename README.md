@@ -60,6 +60,6 @@ Add a connection string to your app.config (or web.config):
         <add name="NServiceBus/Transport" connectionString="Region=ap-southeast-2;S3BucketForLargeMessages=myBucketName;S3KeyPrefix=my/key/prefix;" />
     </connectionStrings>
 
-And you should be good to go!
+### Further Reading
 
 For more documentation on what you can pass to the connection string, check out [this page](https://github.com/ahofman/NServiceBus.AmazonSQS/wiki/Configuration-Options).
