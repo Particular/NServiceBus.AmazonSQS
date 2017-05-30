@@ -7,10 +7,10 @@
     {
         private SettingsHolder _settings;
 
-		public SqsConnectionConfiguration(SettingsHolder settingsHolder)
-		{
+        public SqsConnectionConfiguration(SettingsHolder settingsHolder)
+        {
             _settings = settingsHolder;
-		}
+        }
 
         public RegionEndpoint Region
         {
@@ -28,7 +28,7 @@
             }
         }
 
-		public string S3BucketForLargeMessages
+        public string S3BucketForLargeMessages
         {
             get
             {
@@ -36,7 +36,7 @@
             }
         }
 
-		public string S3KeyPrefix
+        public string S3KeyPrefix
         {
             get
             {
@@ -44,7 +44,7 @@
             }
         }
         
-		public string QueueNamePrefix
+        public string QueueNamePrefix
         {
             get
             {

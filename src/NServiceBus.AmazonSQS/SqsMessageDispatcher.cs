@@ -24,7 +24,7 @@
 
         public IAmazonS3 S3Client { get; set; }
 
-		public SqsQueueCreator QueueCreator { get; set; }
+        public SqsQueueCreator QueueCreator { get; set; }
 
         public SqsQueueUrlCache SqsQueueUrlCache { get; set; }
 
@@ -80,8 +80,8 @@
             }
         }
 
-	    private async Task SendMessage(string message, string destination, IEnumerable<DeliveryConstraint> constraints)
-	    {
+        private async Task SendMessage(string message, string destination, IEnumerable<DeliveryConstraint> constraints)
+        {
             var delayWithConstraint = constraints.Where(x => x is DelayDeliveryWith).OfType<DelayDeliveryWith>().SingleOrDefault();
             var deliverAtConstraint = constraints.Where(x => x is DoNotDeliverBefore).OfType<DoNotDeliverBefore>().SingleOrDefault();
 
@@ -96,7 +96,7 @@
                 }
             }
             
-			var sendMessageRequest = new SendMessageRequest(
+            var sendMessageRequest = new SendMessageRequest(
                 SqsQueueUrlCache.GetQueueUrl(
                     SqsQueueNameHelper.GetSqsQueueName(destination, ConnectionConfiguration)),
                 message);
@@ -106,8 +106,8 @@
             if ( delayDeliveryBy != TimeSpan.MaxValue)
                 sendMessageRequest.DelaySeconds = Math.Max(0, (int)delayDeliveryBy.TotalSeconds);
 
-	        await SqsClient.SendMessageAsync(sendMessageRequest).ConfigureAwait(false);
-	    }
+            await SqsClient.SendMessageAsync(sendMessageRequest).ConfigureAwait(false);
+        }
 
         static ILog Logger = LogManager.GetLogger(typeof(SqsMessageDispatcher));
     }

@@ -29,6 +29,6 @@ namespace NServiceBus.AmazonSQS
 
         public string Body { get; set; }
 
-		public string S3BodyKey { get; set; }
+        public string S3BodyKey { get; set; }
     }
 }
