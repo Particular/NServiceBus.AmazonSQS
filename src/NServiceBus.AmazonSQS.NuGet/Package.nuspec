@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>NServiceBus.AmazonSQS</id>
-    <version>2.0.0-pre1</version>
+    <version>2.0.0</version>
     <title>NServiceBus.AmazonSQS</title>
     <authors>Adrian.Hofman</authors>
     <owners>Adrian.Hofman</owners>
@@ -10,7 +10,7 @@
       An Amazon SQS transport implementation for NServiceBus.
     </description>
     <releaseNotes>
-      * Initial pre-release for NServiceBus 6.0.
+      * Initial release for NServiceBus 6.0.
 
       See the project wiki for more details: https://github.com/ahofman/NServiceBus.AmazonSQS/wiki
       As always, the NServiceBus Acceptance Test suite is leveraged to provide the highest possible quality.

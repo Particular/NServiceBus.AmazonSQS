@@ -10,7 +10,7 @@
 
     internal static class SqsMessageExtensions
     {
-		public static async Task<IncomingMessage> ToIncomingMessage(this SqsTransportMessage sqsTransportMessage,
+        public static async Task<IncomingMessage> ToIncomingMessage(this SqsTransportMessage sqsTransportMessage,
             IAmazonS3 amazonS3,
             SqsConnectionConfiguration connectionConfiguration,
             CancellationToken cancellationToken)
@@ -40,17 +40,17 @@
                 }
             }
             else
-			{
+            {
                 body = Convert.FromBase64String(sqsTransportMessage.Body);
-			}
+            }
 
             return new IncomingMessage(messageId, sqsTransportMessage.Headers, body);
         }
 
-		public static DateTime GetSentDateTime(this Message message)
-		{
-			var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-			return epoch.AddMilliseconds(long.Parse(message.Attributes["SentTimestamp"]));
-		}
+        public static DateTime GetSentDateTime(this Message message)
+        {
+            var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            return epoch.AddMilliseconds(long.Parse(message.Attributes["SentTimestamp"]));
+        }
     }
 }

@@ -29,7 +29,7 @@
         {
             _queueUrl = SqsQueueUrlCache.GetQueueUrl(SqsQueueNameHelper.GetSqsQueueName(settings.InputQueue, ConnectionConfiguration));
 
-			if (settings.PurgeOnStartup)
+            if (settings.PurgeOnStartup)
             {
                 // SQS only allows purging a queue once every 60 seconds or so.
                 // If you try to purge a queue twice in relatively quick succession,
@@ -59,7 +59,7 @@
 
         public void Start(PushRuntimeSettings limitations)
         {
-			_cancellationTokenSource = new CancellationTokenSource();
+            _cancellationTokenSource = new CancellationTokenSource();
             _concurrencyLevel = limitations.MaxConcurrency;
             _maxConcurrencySempahore = new SemaphoreSlim(_concurrencyLevel);
             _consumerTasks = new List<Task>();
@@ -231,16 +231,16 @@
             }// while
         }
 
-		async Task DeleteMessage(IAmazonSQS sqs,
-			IAmazonS3 s3,
-			Message message,
-			SqsTransportMessage sqsTransportMessage,
-			IncomingMessage incomingMessage)
-		{
-			await sqs.DeleteMessageAsync(_queueUrl, message.ReceiptHandle, _cancellationTokenSource.Token).ConfigureAwait(false);
+        async Task DeleteMessage(IAmazonSQS sqs,
+            IAmazonS3 s3,
+            Message message,
+            SqsTransportMessage sqsTransportMessage,
+            IncomingMessage incomingMessage)
+        {
+            await sqs.DeleteMessageAsync(_queueUrl, message.ReceiptHandle, _cancellationTokenSource.Token).ConfigureAwait(false);
 
-			if (sqsTransportMessage != null)
-			{
+            if (sqsTransportMessage != null)
+            {
                 if (!String.IsNullOrEmpty(sqsTransportMessage.S3BodyKey))
                 {
                     try
@@ -264,22 +264,22 @@
                         Logger.Warn("Couldn't delete message body from S3. Message body data will be aged out by the S3 lifecycle policy when the TTL expires.", ex);
                     }
                 }
-			}
+            }
             else
             {
                 Logger.Warn("Couldn't delete message body from S3 because the SqsTransportMessage was null. Message body data will be aged out by the S3 lifecycle policy when the TTL expires.");
             }
-		}
+        }
 
         static ILog Logger = LogManager.GetLogger(typeof(SqsMessagePump));
 
-		CancellationTokenSource _cancellationTokenSource;
+        CancellationTokenSource _cancellationTokenSource;
         List<Task> _consumerTasks;
         Func<ErrorContext, Task<ErrorHandleResult>> _onError;
         Func<MessageContext, Task> _onMessage;
         SemaphoreSlim _maxConcurrencySempahore;
         string _queueUrl;
         int _concurrencyLevel;
-		bool _isTransactional;
+        bool _isTransactional;
     }
 }

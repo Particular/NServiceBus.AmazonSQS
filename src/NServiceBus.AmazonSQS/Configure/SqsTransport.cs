@@ -2,8 +2,8 @@
 {
     using Routing;
     using Settings;
+    using System;
     using Transport;
-    using Transports.SQS;
 
     public class SqsTransport : TransportDefinition, IMessageDrivenSubscriptionTransport
     {
@@ -14,6 +14,11 @@
 
         public override TransportInfrastructure Initialize(SettingsHolder settings, string connectionString)
         {
+            if (!string.IsNullOrEmpty(connectionString))
+            {
+                throw new ArgumentException($"{nameof(SqsTransport)} does not require a connection string, but a connection string was provided. Use the code based configuration methods instead.");
+            }
+
             settings.SetDefault(SqsTransportSettings.Keys.S3BucketForLargeMessages, string.Empty);
             settings.SetDefault(SqsTransportSettings.Keys.S3KeyPrefix, string.Empty);
             settings.SetDefault(SqsTransportSettings.Keys.MaxTTLDays, 4);

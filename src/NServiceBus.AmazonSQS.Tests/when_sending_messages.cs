@@ -12,11 +12,11 @@ namespace NServiceBus.AmazonSQS.Tests
     using Settings;
 
     [TestFixture]
-	public class when_sending_messages
-	{
-		[Test]
-		public void throws_when_message_is_large_and_no_s3_bucket_configured()
-		{
+    public class when_sending_messages
+    {
+        [Test]
+        public void throws_when_message_is_large_and_no_s3_bucket_configured()
+        {
             var settings = new SettingsHolder();
             var transportSettings = new TransportExtensions<SqsTransport>(settings);
             transportSettings
@@ -25,7 +25,7 @@ namespace NServiceBus.AmazonSQS.Tests
             var sut = new SqsMessageDispatcher
             {
                 ConnectionConfiguration = new SqsConnectionConfiguration(settings)
-			};
+            };
 
             var stringBuilder = new StringBuilder();
             while (stringBuilder.Length < 256 * 1024)
@@ -45,7 +45,7 @@ namespace NServiceBus.AmazonSQS.Tests
             var transportTransaction = new TransportTransaction();
             var context = new ContextBag();
 
-			Assert.ThrowsAsync<InvalidOperationException>(async () => await sut.Dispatch(transportOperations, transportTransaction, context));
-		}
-	}
+            Assert.ThrowsAsync<InvalidOperationException>(async () => await sut.Dispatch(transportOperations, transportTransaction, context));
+        }
+    }
 }
