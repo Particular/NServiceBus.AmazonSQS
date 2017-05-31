@@ -94,7 +94,7 @@
             }
         }
 
-        [TimeToBeReceived("00:00:10")]
+        [TimeToBeReceived("00:00:03")]
         public class MessageToBeAudited : IMessage
         {
         }
