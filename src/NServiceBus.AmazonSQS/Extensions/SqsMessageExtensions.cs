@@ -7,6 +7,7 @@
     using Transport;
     using System.Threading.Tasks;
     using System.Threading;
+    using Amazon;
 
     internal static class SqsMessageExtensions
     {
@@ -50,7 +51,10 @@
         public static DateTime GetSentDateTime(this Message message)
         {
             var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-            return epoch.AddMilliseconds(long.Parse(message.Attributes["SentTimestamp"]));
+            var result = epoch.AddMilliseconds(long.Parse(message.Attributes["SentTimestamp"]));
+            // Adjust for clock skew between this endpoint and aws.
+            // https://aws.amazon.com/blogs/developer/clock-skew-correction/
+            return result + AWSConfigs.ClockOffset;
         }
     }
 }
