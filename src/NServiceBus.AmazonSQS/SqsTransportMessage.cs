@@ -14,7 +14,7 @@ namespace NServiceBus.AmazonSQS
         {
             Headers = outgoingMessage.Headers;
 
-            var messageId = string.Empty;
+            string messageId;
             Headers.TryGetValue(NServiceBus.Headers.MessageId, out messageId);
             if (string.IsNullOrEmpty(messageId))
             {

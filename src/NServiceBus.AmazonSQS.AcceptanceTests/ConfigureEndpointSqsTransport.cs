@@ -30,8 +30,10 @@ namespace NServiceBus.AcceptanceTests
             return Task.FromResult(0);
         }
 
-        public async Task Cleanup()
-        {/*
+        public Task Cleanup()
+        {
+            return Task.FromResult(0);
+            /*
             var connectionConfig = SqsConnectionStringParser.Parse(_connectionString);
             var sqsClient = AwsClientFactory.CreateSqsClient(connectionConfig);
             var listQueuesResponse = await sqsClient.ListQueuesAsync(connectionConfig.QueueNamePrefix);

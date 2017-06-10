@@ -80,7 +80,7 @@
             }
         }
 
-        private async Task SendMessage(string message, string destination, IEnumerable<DeliveryConstraint> constraints)
+        private async Task SendMessage(string message, string destination, List<DeliveryConstraint> constraints)
         {
             var delayWithConstraint = constraints.Where(x => x is DelayDeliveryWith).OfType<DelayDeliveryWith>().SingleOrDefault();
             var deliverAtConstraint = constraints.Where(x => x is DoNotDeliverBefore).OfType<DoNotDeliverBefore>().SingleOrDefault();

@@ -12,84 +12,24 @@
             _settings = settingsHolder;
         }
 
-        public RegionEndpoint Region
-        {
-            get
-            {
-                return _settings.Get<RegionEndpoint>(SqsTransportSettings.Keys.Region);
-            }
-        }
+        public RegionEndpoint Region => _settings.Get<RegionEndpoint>(SqsTransportSettingsKeys.Region);
 
-        public int MaxTTLDays
-        {
-            get
-            {
-                return _settings.GetOrDefault<int>(SqsTransportSettings.Keys.MaxTTLDays);
-            }
-        }
+        public int MaxTTLDays => _settings.GetOrDefault<int>(SqsTransportSettingsKeys.MaxTTLDays);
 
-        public string S3BucketForLargeMessages
-        {
-            get
-            {
-                return _settings.GetOrDefault<string>(SqsTransportSettings.Keys.S3BucketForLargeMessages);
-            }
-        }
+        public string S3BucketForLargeMessages => _settings.GetOrDefault<string>(SqsTransportSettingsKeys.S3BucketForLargeMessages);
 
-        public string S3KeyPrefix
-        {
-            get
-            {
-                return _settings.GetOrDefault<string>(SqsTransportSettings.Keys.S3KeyPrefix);
-            }
-        }
-        
-        public string QueueNamePrefix
-        {
-            get
-            {
-                return _settings.GetOrDefault<string>(SqsTransportSettings.Keys.QueueNamePrefix);
-            }
-        }
+        public string S3KeyPrefix => _settings.GetOrDefault<string>(SqsTransportSettingsKeys.S3KeyPrefix);
 
-        public SqsCredentialSource CredentialSource
-        {
-            get
-            {
-                return _settings.GetOrDefault<SqsCredentialSource>(SqsTransportSettings.Keys.CredentialSource);
-            }
-        }
-         
-        public string ProxyHost
-        {
-            get
-            {
-                 return _settings.GetOrDefault<string>(SqsTransportSettings.Keys.ProxyHost);
-            }
-        }
+        public string QueueNamePrefix => _settings.GetOrDefault<string>(SqsTransportSettingsKeys.QueueNamePrefix);
 
-        public int ProxyPort
-        {
-            get
-            {
-                return _settings.GetOrDefault<int>(SqsTransportSettings.Keys.ProxyPort);
-            }
-        }
+        public SqsCredentialSource CredentialSource => _settings.GetOrDefault<SqsCredentialSource>(SqsTransportSettingsKeys.CredentialSource);
 
-        public bool NativeDeferral
-        {
-            get
-            {
-                return _settings.GetOrDefault<bool>(SqsTransportSettings.Keys.NativeDeferral);
-            }
-        }
+        public string ProxyHost => _settings.GetOrDefault<string>(SqsTransportSettingsKeys.ProxyHost);
 
-        public bool PreTruncateQueueNames
-        {
-            get
-            {
-                return _settings.GetOrDefault<bool>(SqsTransportSettings.Keys.PreTruncateQueueNames);
-            }
-        }
+        public int ProxyPort => _settings.GetOrDefault<int>(SqsTransportSettingsKeys.ProxyPort);
+
+        public bool NativeDeferral => _settings.GetOrDefault<bool>(SqsTransportSettingsKeys.NativeDeferral);
+
+        public bool PreTruncateQueueNames => _settings.GetOrDefault<bool>(SqsTransportSettingsKeys.PreTruncateQueueNames);
     }
 }

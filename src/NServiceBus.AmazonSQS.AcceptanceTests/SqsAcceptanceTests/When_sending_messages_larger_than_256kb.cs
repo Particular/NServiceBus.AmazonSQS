@@ -5,7 +5,6 @@
     using AcceptanceTesting.Customization;
     using EndpointTemplates;
     using NUnit.Framework;
-    using NServiceBus.AmazonSQS;
     using System;
     using Configuration.AdvanceExtensibility;
 
