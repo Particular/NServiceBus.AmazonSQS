@@ -197,7 +197,7 @@
                                         {
                                             Logger.Error("Exception thrown from error handler", onErrorEx);
                                         }
-                                        errorHandled = (errorHandlerResult == ErrorHandleResult.Handled);
+                                        errorHandled = errorHandlerResult == ErrorHandleResult.Handled;
                                     }
                                     finally
                                     {
@@ -206,7 +206,7 @@
                                 }
                             }
 
-                            var deleteMessage = !_isTransactional || (_isTransactional && (messageProcessedOk || messageExpired || errorHandled));
+                            var deleteMessage = !_isTransactional || _isTransactional && (messageProcessedOk || messageExpired);
 
                             if (deleteMessage)
                             {

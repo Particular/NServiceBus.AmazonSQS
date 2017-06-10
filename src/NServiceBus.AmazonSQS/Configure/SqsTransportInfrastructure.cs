@@ -20,7 +20,7 @@
         readonly SqsQueueUrlCache _sqsQueueUrlCache;
         readonly SqsConnectionConfiguration _connectionConfiguration;
 
-        public SqsTransportInfrastructure(SettingsHolder settings, string connectionString)
+        public SqsTransportInfrastructure(SettingsHolder settings)
         {
             _connectionConfiguration = new SqsConnectionConfiguration(settings);
 
