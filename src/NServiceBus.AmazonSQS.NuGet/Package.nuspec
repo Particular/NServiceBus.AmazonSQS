@@ -24,13 +24,11 @@
     <licenseUrl>http://opensource.org/licenses/Apache-2.0</licenseUrl>
     <copyright>Copyright Adrian Hofman 2017</copyright>
     <dependencies>
-        <group targetFramework="net452">
-          <dependency id="AWSSDK.Core" version="3.3.12"/>
-          <dependency id="AWSSDK.S3" version="3.3.5.12"/>
-          <dependency id="AWSSDK.SQS" version="3.3.1.12"/>
-          <dependency id="Newtonsoft.Json" version="6.0.7"/>
-          <dependency id="NServiceBus" version="[6.0.0, 7.0.0)"/>
-        </group>
+        <dependency id="AWSSDK.Core" version="3.3.12"/>
+        <dependency id="AWSSDK.S3" version="3.3.5.12"/>
+        <dependency id="AWSSDK.SQS" version="3.3.1.12"/>
+        <dependency id="Newtonsoft.Json" version="6.0.7"/>
+        <dependency id="NServiceBus" version="[6.0.0, 7.0.0)"/>
     </dependencies>
     <references></references>
     <tags></tags>
