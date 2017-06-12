@@ -24,7 +24,7 @@
     <licenseUrl>http://opensource.org/licenses/Apache-2.0</licenseUrl>
     <copyright>Copyright Adrian Hofman 2017</copyright>
     <dependencies>
-        <group targetFramework="net45">
+        <group targetFramework="net452">
           <dependency id="AWSSDK.Core" version="3.3.12"/>
           <dependency id="AWSSDK.S3" version="3.3.5.12"/>
           <dependency id="AWSSDK.SQS" version="3.3.1.12"/>
