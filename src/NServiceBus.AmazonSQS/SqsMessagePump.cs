@@ -71,13 +71,24 @@
         }
 
         /// <summary>
-        ///     Stops the dequeuing of messages.
+        /// Stops the dequeuing of messages.
         /// </summary>
-        public Task Stop()
+        public async Task Stop()
         {
             _cancellationTokenSource?.Cancel();
-            
-            return Task.WhenAll(_consumerTasks.ToArray());
+            _cancellationTokenSource?.Dispose();
+            _cancellationTokenSource = null;
+
+            try
+            {
+                await Task.WhenAll(_consumerTasks.ToArray());
+            }
+            catch (OperationCanceledException)
+            {
+                // Silently swallow OperationCanceledException
+                // These are expected to be thrown when _cancellationTokenSource 
+                // is Cancel()ed above.
+            }
         }
 
         async Task ConsumeMessages()
@@ -163,21 +174,22 @@
                                             .WaitAsync(_cancellationTokenSource.Token)
                                             .ConfigureAwait(false);
 
-                                        var messageContextCancellationTokenSource =
-                                            new CancellationTokenSource();
+                                        using (var messageContextCancellationTokenSource =
+                                            new CancellationTokenSource())
+                                        {
+                                            var messageContext = new MessageContext(
+                                                incomingMessage.MessageId,
+                                                incomingMessage.Headers,
+                                                incomingMessage.Body,
+                                                transportTransaction,
+                                                messageContextCancellationTokenSource,
+                                                contextBag);
 
-                                        MessageContext messageContext = new MessageContext(
-                                        incomingMessage.MessageId,
-                                        incomingMessage.Headers,
-                                        incomingMessage.Body,
-                                        transportTransaction,
-                                        messageContextCancellationTokenSource,
-                                        contextBag);
+                                            await _onMessage(messageContext)
+                                                .ConfigureAwait(false);
 
-                                        await _onMessage(messageContext)
-                                            .ConfigureAwait(false);
-
-                                        messageProcessedOk = !messageContextCancellationTokenSource.IsCancellationRequested;
+                                            messageProcessedOk = !messageContextCancellationTokenSource.IsCancellationRequested;
+                                        }
                                     }
                                     catch (Exception ex)
                                     {
