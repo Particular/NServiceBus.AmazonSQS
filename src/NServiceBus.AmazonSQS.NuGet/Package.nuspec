@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>NServiceBus.AmazonSQS</id>
-    <version>2.0.0</version>
+    <version>2.0.1</version>
     <title>NServiceBus.AmazonSQS</title>
     <authors>Adrian.Hofman</authors>
     <owners>Adrian.Hofman</owners>
@@ -10,7 +10,11 @@
       An Amazon SQS transport implementation for NServiceBus.
     </description>
     <releaseNotes>
-      * Initial release for NServiceBus 6.0.
+      * Bug fixes:
+      * Fix incorrect framework targeting - the correct framework is 4.5.2.
+      * Fix for clock skew between endpoints and AWS affecting the handling of messages with a TimeToBeReceived attribute.
+      * Fix a slow memory leak.
+      * Fix error messages appearing the log when an endpoint was shut down.
 
       See the project wiki for more details: https://github.com/ahofman/NServiceBus.AmazonSQS/wiki
       As always, the NServiceBus Acceptance Test suite is leveraged to provide the highest possible quality.

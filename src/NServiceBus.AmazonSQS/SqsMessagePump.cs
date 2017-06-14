@@ -53,8 +53,6 @@
 
             _onMessage = onMessage;
             _onError = onError;
-
-            _isTransactional = settings.RequiredTransactionMode != TransportTransactionMode.None;
         }
 
         public void Start(PushRuntimeSettings limitations)
@@ -76,8 +74,6 @@
         public async Task Stop()
         {
             _cancellationTokenSource?.Cancel();
-            _cancellationTokenSource?.Dispose();
-            _cancellationTokenSource = null;
 
             try
             {
@@ -89,6 +85,9 @@
                 // These are expected to be thrown when _cancellationTokenSource 
                 // is Cancel()ed above.
             }
+            
+            _cancellationTokenSource?.Dispose();
+            _cancellationTokenSource = null;
         }
 
         async Task ConsumeMessages()
@@ -192,6 +191,7 @@
                                         }
                                     }
                                     catch (Exception ex)
+                                        when (!(ex is OperationCanceledException && _cancellationTokenSource.IsCancellationRequested))
                                     {
                                         immediateProcessingAttempts++;
                                         var errorHandlerResult = ErrorHandleResult.RetryRequired;
@@ -218,19 +218,10 @@
                                 }
                             }
 
-                            var deleteMessage = !_isTransactional || _isTransactional && (messageProcessedOk || messageExpired);
-
-                            if (deleteMessage)
-                            {
-                                await DeleteMessage(SqsClient, S3Client, message, sqsTransportMessage, incomingMessage).ConfigureAwait(false);
-                            }
-                            else
-                            {
-                                await SqsClient.ChangeMessageVisibilityAsync(_queueUrl,
-                                    message.ReceiptHandle,
-                                    0,
-                                    _cancellationTokenSource.Token).ConfigureAwait(false);
-                            }
+                            // Always delete the message from the queue.
+                            // If processing failed, the _onError handler will have moved the message 
+                            // to a retry queue.
+                            await DeleteMessage(SqsClient, S3Client, message, sqsTransportMessage, incomingMessage).ConfigureAwait(false);
                         }
                     });
 
@@ -292,6 +283,5 @@
         SemaphoreSlim _maxConcurrencySempahore;
         string _queueUrl;
         int _concurrencyLevel;
-        bool _isTransactional;
     }
 }
