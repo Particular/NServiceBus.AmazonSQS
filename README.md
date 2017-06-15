@@ -3,63 +3,8 @@ NServiceBus.AmazonSQS
 
 [![Build status](https://ci.appveyor.com/api/projects/status/p4yb15sa17kq89gs/branch/master?svg=true)](https://ci.appveyor.com/project/ahofman/nservicebus-amazonsqs/branch/master)
 
-This is an Amazon SQS transport for NServiceBus V5 and V6. It currently in the early stages of development but should be stable enough for serious users. If you'd like to get up and running quickly, follow the below steps!
+This is an Amazon SQS transport for NServiceBus V5 and V6.
 
 Feel free to browse and contribute!
 
-### Set Up An AWS Account
-You will need an [AWS IAM](http://docs.aws.amazon.com/IAM/latest/UserGuide/IAM_Introduction.html) account with a pair of [Access Keys](http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSGettingStartedGuide/AWSCredentials.html) to use NServiceBus.AmazonSQS. 
-The account needs the following permissions:
-* SQS::CreateQueue
-* SQS::DeleteMessage
-* SQS::GetQueueUrl
-* SQS::ReceiveMessage
-* SQS::SendMessage
-* SQS::SetQueueAttributes
-* SQS::ChangeMessageVisibility
-* S3::PutBucket
-* S3::DeleteObject
-* S3::GetObject
-* S3::PutObject
-* S3::PutLifecycleConfiguration
-* S3::ListAllMyBuckets
-
-Once you have a pair of Access Keys (Access Key ID and Secret Access Key), you will need to store them in environment variables of the machine that is running your endpoint:
-* Access Key ID goes in AWS_ACCESS_KEY_ID 
-* Secret Access Key goes in AWS_SECRET_ACCESS_KEY
-
-### Install The NuGet Package
-
-    PM> Install-Package NServiceBus.AmazonSQS
-
-See the [NuGet Gallery](https://www.nuget.org/packages/NServiceBus.AmazonSQS) for details. 
-
-### Configure Your Endpoint (v2.x for NServiceBus v6.x):
-
-    endpointConfig.UseTransport<SqsTransport>()
-                .Region("ap-southeast-2")
-                .S3BucketForLargeMessages("myBucketName", "my/key/prefix");
-                
-### Configure Your Endpoint (v1.x for NServiceBus v5.x):
-
-When self-hosting:
-
-    busConfiguration
-        .UseTransport<NServiceBus.SqsTransport>()
-
-When hosting in the NServiceBus.Host: 
-
-    public class EndpointConfig : 
-        IConfigureThisEndpoint, 
-        AsA_Server, // Or AsA_Client, whatever
-        UsingTransport<NServiceBus.SqsTransport>
-
-Add a connection string to your app.config (or web.config):
-
-    <connectionStrings>
-        <add name="NServiceBus/Transport" connectionString="Region=ap-southeast-2;S3BucketForLargeMessages=myBucketName;S3KeyPrefix=my/key/prefix;" />
-    </connectionStrings>
-
-### Further Reading
-
-For more documentation on what you can pass to the connection string, check out [this page](https://github.com/ahofman/NServiceBus.AmazonSQS/wiki/Configuration-Options).
+For more information, including a guide on getting started quickly, see the project documentation at [docs.particular.net](https://docs.particular.net/nservicebus/sqs/).
