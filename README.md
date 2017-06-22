@@ -8,3 +8,5 @@ This is an Amazon SQS transport for NServiceBus V5 and V6.
 Feel free to browse and contribute!
 
 For more information, including a guide on getting started quickly, see the project documentation at [docs.particular.net](https://docs.particular.net/nservicebus/sqs/).
+
+NuGet icon: Toucan by Creative Stall from the Noun Project
