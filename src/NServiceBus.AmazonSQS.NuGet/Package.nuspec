@@ -15,7 +15,7 @@
       * Fix for clock skew between endpoints and AWS affecting the handling of messages with a TimeToBeReceived attribute.
       * Fix a slow memory leak.
       * Fix error messages appearing the log when an endpoint was shut down.
-
+      * Add a new icon.
       See the project wiki for more details: https://github.com/ahofman/NServiceBus.AmazonSQS/wiki
       As always, the NServiceBus Acceptance Test suite is leveraged to provide the highest possible quality.
     </releaseNotes>
@@ -23,7 +23,7 @@
     </summary>
     <language>en-US</language>
     <projectUrl>https://github.com/ahofman/NServiceBus.AmazonSQS</projectUrl>
-    <iconUrl>https://nuget.org/Content/Images/packageDefaultIcon-50x50.png</iconUrl>
+    <iconUrl>https://raw.githubusercontent.com/ahofman/NServiceBus.AmazonSQS/master/src/NServiceBus.AmazonSQS.NuGet/toucan.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <licenseUrl>http://opensource.org/licenses/Apache-2.0</licenseUrl>
     <copyright>Copyright Adrian Hofman 2017</copyright>
