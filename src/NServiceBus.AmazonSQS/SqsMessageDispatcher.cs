@@ -82,8 +82,8 @@
 
         private async Task SendMessage(string message, string destination, List<DeliveryConstraint> constraints)
         {
-            var delayWithConstraint = constraints.Where(x => x is DelayDeliveryWith).OfType<DelayDeliveryWith>().SingleOrDefault();
-            var deliverAtConstraint = constraints.Where(x => x is DoNotDeliverBefore).OfType<DoNotDeliverBefore>().SingleOrDefault();
+            var delayWithConstraint = constraints.OfType<DelayDeliveryWith>().SingleOrDefault();
+            var deliverAtConstraint = constraints.OfType<DoNotDeliverBefore>().SingleOrDefault();
 
             var delayDeliveryBy = TimeSpan.MaxValue;
             if (delayWithConstraint != null)
