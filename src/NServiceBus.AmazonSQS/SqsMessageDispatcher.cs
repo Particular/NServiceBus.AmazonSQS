@@ -34,7 +34,7 @@
             {
                 foreach( var unicastMessage in outgoingMessages.UnicastTransportOperations)
                 {
-                    var sqsTransportMessage = new SqsTransportMessage(unicastMessage.Message);
+                    var sqsTransportMessage = new SqsTransportMessage(unicastMessage.Message, unicastMessage.DeliveryConstraints);
                     var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
                     if (serializedMessage.Length > 256 * 1024)
                     {
@@ -84,7 +84,7 @@
         {
             var delayWithConstraint = constraints.OfType<DelayDeliveryWith>().SingleOrDefault();
             var deliverAtConstraint = constraints.OfType<DoNotDeliverBefore>().SingleOrDefault();
-
+            
             var delayDeliveryBy = TimeSpan.MaxValue;
             if (delayWithConstraint != null)
                 delayDeliveryBy = delayWithConstraint.Delay;
@@ -95,7 +95,7 @@
                     delayDeliveryBy = deliverAtConstraint.At - DateTime.UtcNow;
                 }
             }
-            
+
             var sendMessageRequest = new SendMessageRequest(
                 SqsQueueUrlCache.GetQueueUrl(
                     SqsQueueNameHelper.GetSqsQueueName(destination, ConnectionConfiguration)),
