@@ -4,8 +4,6 @@ namespace NServiceBus.AcceptanceTests
 {
     public partial class TestSuiteConstraints
     {
-        public IConfigureEndpointTestExecution PersistenceConfiguration => new ConfigureEndpointInMemoryPersistence();
-
         public bool SupportsCrossQueueTransactions => false;
 
         public bool SupportsDtc => false;
@@ -15,10 +13,14 @@ namespace NServiceBus.AcceptanceTests
         public bool SupportsNativePubSub => false;
 
         public bool SupportsOutbox => false;
+        public IConfigureEndpointTestExecution CreateTransportConfiguration()
+        {
+            return new ConfigureEndpointSqsTransport();
+        }
 
-        public IConfigureEndpointTestExecution TransportConfiguration
-            => new ConfigureEndpointSqsTransport();
-           //   => new ConfigureEndpointMsmqTransport();
-
+        public IConfigureEndpointTestExecution CreatePersistenceConfiguration()
+        {
+            return new ConfigureEndpointInMemoryPersistence();
+        }
     }
 }
