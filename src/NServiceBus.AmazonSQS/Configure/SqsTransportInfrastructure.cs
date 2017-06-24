@@ -10,6 +10,7 @@
     using Amazon.S3;
     using Performance.TimeToBeReceived;
     using System.Text;
+    using NServiceBus.DelayedDelivery;
     using Settings;
     using Transports.SQS;
 
@@ -110,7 +111,9 @@
 
         public override IEnumerable<Type> DeliveryConstraints => new List<Type>
         {
-            typeof(DiscardIfNotReceivedBefore)
+            typeof(DiscardIfNotReceivedBefore),
+            typeof(DoNotDeliverBefore),
+            typeof(DelayDeliveryWith)
         };
 
         public override TransportTransactionMode TransactionMode => TransportTransactionMode.ReceiveOnly;
