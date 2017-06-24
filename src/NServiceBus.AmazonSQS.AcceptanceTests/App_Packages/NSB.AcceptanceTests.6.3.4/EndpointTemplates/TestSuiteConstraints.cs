@@ -1,6 +1,5 @@
 ﻿namespace NServiceBus.AcceptanceTests
 {
-    using System;
     using AcceptanceTesting.Support;
 
     public interface ITestSuiteConstraints
