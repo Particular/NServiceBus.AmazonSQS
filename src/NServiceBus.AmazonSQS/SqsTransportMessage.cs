@@ -4,13 +4,18 @@ using System.Collections.Generic;
 
 namespace NServiceBus.AmazonSQS
 {
+    using System.Linq;
+    using NServiceBus.DeliveryConstraints;
+    using NServiceBus.Performance.TimeToBeReceived;
+
     internal class SqsTransportMessage
     {
-        public SqsTransportMessage()
-        {
-        }
-
-        public SqsTransportMessage(OutgoingMessage outgoingMessage)
+        /// <summary>
+        /// Empty constructor. Required for deserialization.
+        /// </summary>
+        public SqsTransportMessage() { }
+   
+        public SqsTransportMessage(OutgoingMessage outgoingMessage, List<DeliveryConstraint> deliveryConstrants)
         {
             Headers = outgoingMessage.Headers;
 
@@ -20,6 +25,12 @@ namespace NServiceBus.AmazonSQS
             {
                 messageId = Guid.NewGuid().ToString();
                 Headers[NServiceBus.Headers.MessageId] = messageId;
+            }
+
+            var discardConstraint = deliveryConstrants.OfType<DiscardIfNotReceivedBefore>().SingleOrDefault();
+            if (discardConstraint != null)
+            {
+                Headers[SqsTransportHeaders.TimeToBeReceived] = discardConstraint.MaxTime.ToString();
             }
 
             Body = outgoingMessage.Body != null ? Convert.ToBase64String(outgoingMessage.Body) : "empty message";

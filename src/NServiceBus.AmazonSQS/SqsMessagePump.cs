@@ -149,17 +149,26 @@
                         else
                         {
                             // Check that the message hasn't expired
-                            var timeToBeReceived = incomingMessage.GetTimeToBeReceived();
-                            if (timeToBeReceived.HasValue && timeToBeReceived.Value != TimeSpan.MaxValue)
+                            string rawTtbr;
+                            if (incomingMessage.Headers.TryGetValue(SqsTransportHeaders.TimeToBeReceived, out rawTtbr))
                             {
-                                var sentDateTime = message.GetSentDateTime();
-                                if (sentDateTime + timeToBeReceived.Value <= DateTime.UtcNow)
+                                incomingMessage.Headers.Remove(SqsTransportHeaders.TimeToBeReceived);
+
+                                var timeToBeReceived = TimeSpan.Parse(rawTtbr);
+
+                                if (timeToBeReceived != TimeSpan.MaxValue)
                                 {
-                                    // Message has expired.
-                                    Logger.Warn($"Discarding expired message with Id {incomingMessage.MessageId}");
-                                    messageExpired = true;
+                                    var sentDateTime = message.GetSentDateTime();
+                                    var utcNow = DateTime.UtcNow;
+                                    if (sentDateTime + timeToBeReceived <= utcNow)
+                                    {
+                                        // Message has expired.
+                                        Logger.Warn($"Discarding expired message with Id {incomingMessage.MessageId}");
+                                        messageExpired = true;
+                                    }
                                 }
                             }
+                            
 
                             if (!messageExpired)
                             {
@@ -228,6 +237,7 @@
                     await Task.WhenAll(tasks).ConfigureAwait(false);
                 } 
                 catch (Exception ex)
+                    when (!(ex is OperationCanceledException && _cancellationTokenSource.IsCancellationRequested))
                 {
                     Logger.Error("Exception thrown when consuming messages", ex);
                 }

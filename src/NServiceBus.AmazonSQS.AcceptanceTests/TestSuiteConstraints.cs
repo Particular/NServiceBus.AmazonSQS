@@ -13,6 +13,7 @@ namespace NServiceBus.AcceptanceTests
         public bool SupportsNativePubSub => false;
 
         public bool SupportsOutbox => false;
+
         public IConfigureEndpointTestExecution CreateTransportConfiguration()
         {
             return new ConfigureEndpointSqsTransport();

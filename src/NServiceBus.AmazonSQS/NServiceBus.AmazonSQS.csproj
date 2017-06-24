@@ -60,7 +60,6 @@
     <Compile Include="Configure\SqsTransportInfrastructure.cs" />
     <Compile Include="Configure\SqsTransportSettings.cs" />
     <Compile Include="Configure\SqsTransportSettingsKeys.cs" />
-    <Compile Include="Extensions\IncomingMessageExtensions.cs" />
     <Compile Include="SqsQueueNameHelper.cs" />
     <Compile Include="Extensions\AmazonServiceExtensions.cs" />
     <Compile Include="Extensions\SqsMessageExtensions.cs" />
@@ -72,6 +71,7 @@
     <Compile Include="SqsQueueCreator.cs" />
     <Compile Include="SqsMessageDispatcher.cs" />
     <Compile Include="SqsQueueUrlCache.cs" />
+    <Compile Include="SqsTransportHeaders.cs" />
     <Compile Include="SqsTransportMessage.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -81,7 +81,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy $(TargetPath) $(ProjectDir)..\$(TargetName).NuGet\lib\net45
-copy $(TargetDir)$(TargetName).pdb $(ProjectDir)..\$(TargetName).NuGet\lib\net45</PostBuildEvent>
+    <PostBuildEvent>copy $(TargetPath) $(ProjectDir)..\$(TargetName).NuGet\lib\net452
+copy $(TargetDir)$(TargetName).pdb $(ProjectDir)..\$(TargetName).NuGet\lib\net452</PostBuildEvent>
   </PropertyGroup>
 </Project>
