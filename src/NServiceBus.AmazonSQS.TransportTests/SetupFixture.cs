@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace NServiceBus.AcceptanceTests
+namespace NServiceBus.TransportTests
 {
     using NServiceBus.AmazonSQS;
     using NServiceBus.Configuration.AdvanceExtensibility;
@@ -29,7 +29,7 @@ namespace NServiceBus.AcceptanceTests
             // This is to work around an SQS limitation that prevents
             // us from deleting then creating a queue with the 
             // same name in a 60 second period.
-            SqsQueueNamePrefix = $"AT{DateTime.Now:yyyyMMddHHmmss}";
+            SqsQueueNamePrefix = $"TT{DateTime.Now:yyyyMMddHHmmss}";
         }
 
         [OneTimeTearDown]
@@ -38,7 +38,7 @@ namespace NServiceBus.AcceptanceTests
             // Once all tests have completed, delete all queues that were created.
             // Use the QueueNamePrefix to determine which queues to delete.
             var transportConfiguration = new TransportExtensions<SqsTransport>(new SettingsHolder());
-            transportConfiguration = ConfigureEndpointSqsTransport.DefaultConfigureSqs(transportConfiguration);
+            transportConfiguration = ConfigureSqsTransportInfrastructure.DefaultConfigureSqs(transportConfiguration);
             var connectionConfiguration = new SqsConnectionConfiguration(transportConfiguration.GetSettings());
             var sqsClient = AwsClientFactory.CreateSqsClient(connectionConfiguration);
             var listQueuesResult = await sqsClient.ListQueuesAsync(connectionConfiguration.QueueNamePrefix).ConfigureAwait(false);
