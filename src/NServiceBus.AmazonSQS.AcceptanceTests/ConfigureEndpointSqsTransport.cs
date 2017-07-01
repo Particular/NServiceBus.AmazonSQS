@@ -6,16 +6,23 @@ namespace NServiceBus.AcceptanceTests
 {
     public class ConfigureEndpointSqsTransport : IConfigureEndpointTestExecution
     {
+        public static TransportExtensions<SqsTransport> DefaultConfigureSqs(TransportExtensions<SqsTransport> transportConfiguration)
+        {
+            transportConfiguration
+                .Region("ap-southeast-2")
+                .S3BucketForLargeMessages("sqstransportmessages1337", "test")
+                .QueueNamePrefix(SetupFixture.SqsQueueNamePrefix)
+                .NativeDeferral()
+                .PreTruncateQueueNamesForAcceptanceTests();
+            return transportConfiguration;
+        }
+
         public Task Configure(string endpointName, EndpointConfiguration configuration, RunSettings settings, PublisherMetadata publisherMetadata)
         {
             var transportConfig = configuration.UseTransport<SqsTransport>();
-            transportConfig
-                .Region("ap-southeast-2")
-                .S3BucketForLargeMessages("sqstransportmessages1337", "test")
-                .QueueNamePrefix("AcceptanceTest-")
-                .NativeDeferral()
-                .PreTruncateQueueNamesForAcceptanceTests();
 
+            DefaultConfigureSqs(transportConfig);
+            
             var routingConfig = transportConfig.Routing();
 
             foreach (var publisher in publisherMetadata.Publishers)
@@ -31,24 +38,8 @@ namespace NServiceBus.AcceptanceTests
         }
 
         public Task Cleanup()
-        {/*
-            var sqsConnectionConfiguration = new SqsConnectionConfiguration(_settings);
-            var sqsClient = AwsClientFactory.CreateSqsClient(sqsConnectionConfiguration);
-            var listQueuesResponse = await sqsClient.ListQueuesAsync(sqsConnectionConfiguration.QueueNamePrefix);
-            foreach( var queue in listQueuesResponse.QueueUrls)
-            {
-                if (queue.Contains(sqsConnectionConfiguration.QueueNamePrefix + "error"))
-                    continue;
-
-                try
-                {
-                    await sqsClient.DeleteQueueAsync(queue);
-                }
-                catch(AmazonSQSException)
-                {
-                    // Probably just trying to delete a queue that was already deleted
-                }
-            }*/
+        {
+            // Queues are cleaned up once, globally, in SetupFixture.
             return Task.FromResult(0);
         }
     }
