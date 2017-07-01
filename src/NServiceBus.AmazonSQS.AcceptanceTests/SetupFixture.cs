@@ -7,7 +7,6 @@ namespace NServiceBus.AcceptanceTests
     using NServiceBus.Settings;
     using NUnit.Framework;
     using System;
-    using System.Linq;
 
     [SetUpFixture]
     public class SetupFixture
@@ -42,10 +41,17 @@ namespace NServiceBus.AcceptanceTests
             var connectionConfiguration = new SqsConnectionConfiguration(transportConfiguration.GetSettings());
             var sqsClient = AwsClientFactory.CreateSqsClient(connectionConfiguration);
             var listQueuesResult = await sqsClient.ListQueuesAsync(connectionConfiguration.QueueNamePrefix).ConfigureAwait(false);
-            var deleteTasks = listQueuesResult.QueueUrls.Select(x => sqsClient.DeleteQueueAsync(x));
-            // Occasionally DeleteQueueAsync fails and throws, leaving orphaned queues.
-            // No need to explicitly handle exceptions here, they do not cause the tests to fail.
-            await Task.WhenAll(deleteTasks).ConfigureAwait(false);
+            foreach (var queueUrl in listQueuesResult.QueueUrls)
+            {
+                try
+                {
+                    await sqsClient.DeleteQueueAsync(queueUrl).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Exception when deleting queue: {ex}");
+                }
+            }
         }
     }
 }
