@@ -268,7 +268,6 @@
     <Compile Include="SqsAcceptanceTests\When_handling_messages_concurrently.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="DeleteQueues.ps1" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
