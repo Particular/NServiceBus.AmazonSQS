@@ -7,10 +7,14 @@ namespace NServiceBus.AcceptanceTests
     using NServiceBus.Settings;
     using NUnit.Framework;
     using System;
+    using System.Linq;
 
     [SetUpFixture]
     public class SetupFixture
     {
+        /// <summary>
+        /// The queue name prefix for the current run of the test suite.
+        /// </summary>
         public static string SqsQueueNamePrefix
         {
             get;
@@ -37,11 +41,9 @@ namespace NServiceBus.AcceptanceTests
             transportConfiguration = ConfigureEndpointSqsTransport.DefaultConfigureSqs(transportConfiguration);
             var connectionConfiguration = new SqsConnectionConfiguration(transportConfiguration.GetSettings());
             var sqsClient = AwsClientFactory.CreateSqsClient(connectionConfiguration);
-            var listQueuesResult = await sqsClient.ListQueuesAsync(connectionConfiguration.QueueNamePrefix);
-            foreach (var queueUrl in listQueuesResult.QueueUrls)
-            {
-                await sqsClient.DeleteQueueAsync(queueUrl);
-            }
+            var listQueuesResult = await sqsClient.ListQueuesAsync(connectionConfiguration.QueueNamePrefix).ConfigureAwait(false);
+            var deleteTasks = listQueuesResult.QueueUrls.Select(x => sqsClient.DeleteQueueAsync(x));
+            await Task.WhenAll(deleteTasks).ConfigureAwait(false);
         }
     }
 }
