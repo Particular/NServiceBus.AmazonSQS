@@ -31,25 +31,8 @@ namespace NServiceBus.AcceptanceTests
         }
 
         public Task Cleanup()
-        {/*
-            var sqsConnectionConfiguration = new SqsConnectionConfiguration(_settings);
-            var sqsClient = AwsClientFactory.CreateSqsClient(sqsConnectionConfiguration);
-            var listQueuesResponse = await sqsClient.ListQueuesAsync(sqsConnectionConfiguration.QueueNamePrefix);
-            foreach( var queue in listQueuesResponse.QueueUrls)
-            {
-                if (queue.Contains(sqsConnectionConfiguration.QueueNamePrefix + "error"))
-                    continue;
-
-                try
-                {
-                    await sqsClient.DeleteQueueAsync(queue);
-                }
-                catch(AmazonSQSException)
-                {
-                    // Probably just trying to delete a queue that was already deleted
-                }
-            }*/
-            return Task.FromResult(0);
+        {
+            return Task.CompletedTask;
         }
     }
 }
