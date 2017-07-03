@@ -4,6 +4,7 @@
     using System.Threading.Tasks;
     using NServiceBus.AcceptanceTests.Infrastructure;
     using NServiceBus.AcceptanceTesting.Support;
+    using NServiceBus.MessageMutator;
 
     public class ConfigureEndpointSqsTransport : IConfigureEndpointTestExecution
     {
@@ -28,7 +29,7 @@
             }
 
             settings.TestExecutionTimeout = TimeSpan.FromSeconds(20);
-
+            
             configuration.RegisterComponents(c => { c.ConfigureComponent<TestIndependenceMutator>(DependencyLifecycle.SingleInstance); });
             configuration.Pipeline.Register("TestIndependenceBehavior", typeof(TestIndependenceSkipBehavior), "Skips messages not created during the current test.");
 

@@ -16,7 +16,7 @@ namespace NServiceBus.AcceptanceTests
 
         public IConfigureEndpointTestExecution CreateTransportConfiguration()
         {
-            return new ConfigureEndpointSqsTransport();
+            return new ConfigureEndpointMsmqTransport();
         }
 
         public IConfigureEndpointTestExecution CreatePersistenceConfiguration()

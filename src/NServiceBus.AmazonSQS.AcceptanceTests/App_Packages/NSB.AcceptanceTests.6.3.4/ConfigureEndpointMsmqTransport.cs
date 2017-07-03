@@ -8,6 +8,8 @@ using NServiceBus.AcceptanceTesting.Support;
 using NServiceBus.AcceptanceTests.ScenarioDescriptors;
 using NServiceBus.Configuration.AdvanceExtensibility;
 using NServiceBus.Transport;
+using NServiceBus.AcceptanceTests.Infrastructure;
+using NServiceBus.MessageMutator;
 
 public class ConfigureEndpointMsmqTransport : IConfigureEndpointTestExecution
 {
@@ -32,6 +34,9 @@ public class ConfigureEndpointMsmqTransport : IConfigureEndpointTestExecution
                 routingConfig.RegisterPublisher(eventType, publisher.PublisherName);
             }
         }
+
+        configuration.RegisterComponents(c => { c.ConfigureComponent<TestIndependenceMutator>(DependencyLifecycle.SingleInstance); });
+        configuration.Pipeline.Register("TestIndependenceBehavior", typeof(TestIndependenceSkipBehavior), "Skips messages not created during the current test.");
 
         return Task.FromResult(0);
     }
