@@ -262,6 +262,8 @@
     <Compile Include="App_Packages\NSB.AcceptanceTests.6.3.4\Tx\When_sending_within_an_ambient_transaction.cs" />
     <Compile Include="App_Packages\NSB.AcceptanceTests.6.3.4\Versioning\When_multiple_versions_of_a_message_is_published.cs" />
     <Compile Include="ConfigureEndpointSqsTransport.cs" />
+    <Compile Include="Infrastructure\TestIndependenceSkipBehavior.cs" />
+    <Compile Include="Infrastructure\TestIndependenceStampBehavior.cs" />
     <Compile Include="TestSuiteConstraints.cs" />
     <Compile Include="SqsAcceptanceTests\When_sending_messages_larger_than_256kb.cs" />
     <Compile Include="SqsAcceptanceTests\When_handling_messages_concurrently.cs" />

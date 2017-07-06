@@ -1,9 +1,10 @@
-﻿using NServiceBus.AcceptanceTesting.Support;
-using System;
-using System.Threading.Tasks;
-
-namespace NServiceBus.AcceptanceTests
+﻿namespace NServiceBus.AcceptanceTests
 {
+    using System;
+    using System.Threading.Tasks;
+    using NServiceBus.AcceptanceTests.Infrastructure;
+    using NServiceBus.AcceptanceTesting.Support;
+
     public class ConfigureEndpointSqsTransport : IConfigureEndpointTestExecution
     {
         public Task Configure(string endpointName, EndpointConfiguration configuration, RunSettings settings, PublisherMetadata publisherMetadata)
@@ -27,29 +28,16 @@ namespace NServiceBus.AcceptanceTests
             }
 
             settings.TestExecutionTimeout = TimeSpan.FromSeconds(20);
+
+            configuration.Pipeline.Register("TestIndependenceBehavior", typeof(TestIndependenceSkipBehavior), "Skips messages not created during the current test.");
+            configuration.Pipeline.Register("TestIndependenceStampBehavior", typeof(TestIndependenceStampBehavior), "Stamps messages with the test run id of the current test.");
+
             return Task.FromResult(0);
         }
 
         public Task Cleanup()
-        {/*
-            var sqsConnectionConfiguration = new SqsConnectionConfiguration(_settings);
-            var sqsClient = AwsClientFactory.CreateSqsClient(sqsConnectionConfiguration);
-            var listQueuesResponse = await sqsClient.ListQueuesAsync(sqsConnectionConfiguration.QueueNamePrefix);
-            foreach( var queue in listQueuesResponse.QueueUrls)
-            {
-                if (queue.Contains(sqsConnectionConfiguration.QueueNamePrefix + "error"))
-                    continue;
-
-                try
-                {
-                    await sqsClient.DeleteQueueAsync(queue);
-                }
-                catch(AmazonSQSException)
-                {
-                    // Probably just trying to delete a queue that was already deleted
-                }
-            }*/
-            return Task.FromResult(0);
+        {
+            return Task.CompletedTask;
         }
     }
 }
