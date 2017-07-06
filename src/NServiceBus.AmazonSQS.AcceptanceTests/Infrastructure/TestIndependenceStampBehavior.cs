@@ -5,7 +5,7 @@ namespace NServiceBus.AcceptanceTests.Infrastructure
     using NServiceBus.AcceptanceTesting;
     using NServiceBus.Pipeline;
 
-    class TestIndependenceStampBehavior : IBehavior<IOutgoingPhysicalMessageContext, IOutgoingPhysicalMessageContext>
+    class TestIndependenceStampBehavior : IBehavior<IDispatchContext, IDispatchContext>
     {
         string testRunId;
 
@@ -14,9 +14,12 @@ namespace NServiceBus.AcceptanceTests.Infrastructure
             testRunId = scenarioContext.TestRunId.ToString();
         }
 
-        public Task Invoke(IOutgoingPhysicalMessageContext context, Func<IOutgoingPhysicalMessageContext, Task> next)
+        public Task Invoke(IDispatchContext context, Func<IDispatchContext, Task> next)
         {
-            context.Headers["$AcceptanceTesting.TestRunId"] = testRunId;
+            foreach (var o in context.Operations)
+            {
+                o.Message.Headers["$AcceptanceTesting.TestRunId"] = testRunId;
+            }
             return next(context);
         }
     }

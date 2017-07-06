@@ -4,6 +4,7 @@
     using System.Threading.Tasks;
     using NServiceBus.AcceptanceTesting;
     using NServiceBus.Pipeline;
+    using NServiceBus.Transport;
 
     class TestIndependenceSkipBehavior : IBehavior<ITransportReceiveContext, ITransportReceiveContext>
     {
@@ -16,10 +17,14 @@
 
         public Task Invoke(ITransportReceiveContext context, Func<ITransportReceiveContext, Task> next)
         {
+            if (context.Message.GetMesssageIntent() == MessageIntentEnum.Subscribe || context.Message.GetMesssageIntent() == MessageIntentEnum.Unsubscribe)
+                return next(context);
+
             string runId;
+            
             if (!context.Message.Headers.TryGetValue("$AcceptanceTesting.TestRunId", out runId) || runId != testRunId)
             {
-                Console.WriteLine($"Skipping message {context.Message.MessageId} from previous test run");
+                Console.WriteLine($"Skipping message {context.Message.MessageId} because its TestRunId {runId} does not match the current TestRunId {testRunId}");
                 return Task.CompletedTask;
             }
 
