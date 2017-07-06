@@ -35,8 +35,8 @@ public class ConfigureEndpointMsmqTransport : IConfigureEndpointTestExecution
             }
         }
 
-        configuration.RegisterComponents(c => { c.ConfigureComponent<TestIndependenceMutator>(DependencyLifecycle.SingleInstance); });
         configuration.Pipeline.Register("TestIndependenceBehavior", typeof(TestIndependenceSkipBehavior), "Skips messages not created during the current test.");
+        configuration.Pipeline.Register("TestIndependenceStampBehavior", typeof(TestIndependenceStampBehavior), "Stamps messages with the test run id of the current test.");
 
         return Task.FromResult(0);
     }
