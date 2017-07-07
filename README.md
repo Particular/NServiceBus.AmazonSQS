@@ -11,4 +11,12 @@ Feel free to browse and contribute!
 
 For more information, including a guide on getting started quickly, see the project documentation at [docs.particular.net](https://docs.particular.net/transports/sqs/).
 
+Running the Acceptance Tests
+===============
+
+The solution contains the [NServiceBus Acceptance Test suite](https://www.nuget.org/packages/NServiceBus.AcceptanceTests.Sources/) and the [NServiceBus Transport Test suite. 
+The solution contains the [NServiceBus Acceptance Test suite](https://www.nuget.org/packages/NServiceBus.AcceptanceTests.Sources/) and the [NServiceBus Transport Test suite]). 
+To run the tests, the Access Key ID and Secret Access Key of an AWS IAM account need to be set in environment variables. Full details on how to set this up can be found [here](https://docs.particular.net/transports/sqs/#getting-started-set-up-an-aws-account).
+
+
 Project icon: Toucan by Creative Stall from the Noun Project
