@@ -7,6 +7,7 @@ namespace NServiceBus.AcceptanceTests
     using NServiceBus.Settings;
     using NUnit.Framework;
     using System;
+    using NServiceBus.AmazonSQS.AcceptanceTests;
 
     [SetUpFixture]
     public class SetupFixture
@@ -37,7 +38,7 @@ namespace NServiceBus.AcceptanceTests
             // Once all tests have completed, delete all queues that were created.
             // Use the QueueNamePrefix to determine which queues to delete.
             var transportConfiguration = new TransportExtensions<SqsTransport>(new SettingsHolder());
-            transportConfiguration = ConfigureEndpointSqsTransport.DefaultConfigureSqs(transportConfiguration);
+            transportConfiguration = transportConfiguration.ConfigureSqsTransport(SqsQueueNamePrefix);
             var connectionConfiguration = new SqsConnectionConfiguration(transportConfiguration.GetSettings());
             var sqsClient = AwsClientFactory.CreateSqsClient(connectionConfiguration);
             var listQueuesResult = await sqsClient.ListQueuesAsync(connectionConfiguration.QueueNamePrefix).ConfigureAwait(false);

@@ -4,24 +4,15 @@ using System.Threading.Tasks;
 
 namespace NServiceBus.AcceptanceTests
 {
+    using NServiceBus.AmazonSQS.AcceptanceTests;
+
     public class ConfigureEndpointSqsTransport : IConfigureEndpointTestExecution
     {
-        public static TransportExtensions<SqsTransport> DefaultConfigureSqs(TransportExtensions<SqsTransport> transportConfiguration)
-        {
-            transportConfiguration
-                .Region("ap-southeast-2")
-                .S3BucketForLargeMessages("sqstransportmessages1337", "test")
-                .QueueNamePrefix(SetupFixture.SqsQueueNamePrefix)
-                .NativeDeferral()
-                .PreTruncateQueueNamesForAcceptanceTests();
-            return transportConfiguration;
-        }
-
         public Task Configure(string endpointName, EndpointConfiguration configuration, RunSettings settings, PublisherMetadata publisherMetadata)
         {
             var transportConfig = configuration.UseTransport<SqsTransport>();
 
-            DefaultConfigureSqs(transportConfig);
+            transportConfig.ConfigureSqsTransport(SetupFixture.SqsQueueNamePrefix);
             
             var routingConfig = transportConfig.Routing();
 
