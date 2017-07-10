@@ -84,6 +84,10 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\NServiceBus.AmazonSQS.AcceptanceTests\NServiceBus.AmazonSQS.AcceptanceTests.csproj">
+      <Project>{e87ba318-68a7-4eee-8817-dfc91296299b}</Project>
+      <Name>NServiceBus.AmazonSQS.AcceptanceTests</Name>
+    </ProjectReference>
     <ProjectReference Include="..\NServiceBus.AmazonSQS\NServiceBus.AmazonSQS.csproj">
       <Project>{A40EBAE3-ADF8-4CD8-87DA-025BCA6BA1C2}</Project>
       <Name>NServiceBus.AmazonSQS</Name>
