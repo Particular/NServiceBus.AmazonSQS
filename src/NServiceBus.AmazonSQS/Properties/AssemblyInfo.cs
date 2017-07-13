@@ -7,8 +7,6 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCopyright("Copyright ©  2017")]
 [assembly: ComVisible(false)]
 [assembly: Guid("79a7efd9-fcdf-4018-a808-3047411ba945")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
 [assembly: InternalsVisibleTo("NServiceBus.AmazonSQS.Tests")]
 [assembly: InternalsVisibleTo("NServiceBus.AmazonSQS.AcceptanceTests")]
 [assembly: InternalsVisibleTo("NServiceBus.AmazonSQS.TransportTests")]
