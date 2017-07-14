@@ -1,5 +1,8 @@
 ﻿namespace NServiceBus
 {
+    /// <summary>
+    /// The credential source
+    /// </summary>
     public enum SqsCredentialSource
     {
         /// <summary>
