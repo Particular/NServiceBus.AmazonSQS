@@ -1,10 +1,9 @@
-﻿using NServiceBus.AcceptanceTesting.Support;
-using System;
-using System.Threading.Tasks;
-
-namespace NServiceBus.AcceptanceTests
+﻿namespace NServiceBus.AcceptanceTests
 {
-    using NServiceBus.AmazonSQS.AcceptanceTests;
+    using System;
+    using System.Threading.Tasks;
+    using AcceptanceTesting.Support;
+    using AmazonSQS.AcceptanceTests;
 
     public class ConfigureEndpointSqsTransport : IConfigureEndpointTestExecution
     {
@@ -13,7 +12,7 @@ namespace NServiceBus.AcceptanceTests
             var transportConfig = configuration.UseTransport<SqsTransport>();
 
             transportConfig.ConfigureSqsTransport(SetupFixture.SqsQueueNamePrefix);
-            
+
             var routingConfig = transportConfig.Routing();
 
             foreach (var publisher in publisherMetadata.Publishers)

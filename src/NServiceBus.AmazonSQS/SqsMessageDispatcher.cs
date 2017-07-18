@@ -1,22 +1,23 @@
 ﻿namespace NServiceBus.Transports.SQS
 {
-    using Amazon.SQS.Model;
-    using Newtonsoft.Json;
-    using NServiceBus.AmazonSQS;
     using System;
-    using System.IO;
-    using Amazon.S3;
-    using Amazon.SQS;
-    using NServiceBus.Logging;
-    using Transport;
-    using Extensibility;
-    using System.Threading.Tasks;
     using System.Collections.Generic;
-    using DeliveryConstraints;
+    using System.IO;
     using System.Linq;
+    using System.Threading.Tasks;
+    using Amazon.S3;
+    using Amazon.S3.Model;
+    using Amazon.SQS;
+    using Amazon.SQS.Model;
+    using AmazonSQS;
     using DelayedDelivery;
+    using DeliveryConstraints;
+    using Extensibility;
+    using Logging;
+    using Newtonsoft.Json;
+    using Transport;
 
-    internal class SqsMessageDispatcher : IDispatchMessages
+    class SqsMessageDispatcher : IDispatchMessages
     {
         public SqsConnectionConfiguration ConnectionConfiguration { get; set; }
 
@@ -32,7 +33,7 @@
         {
             try
             {
-                foreach( var unicastMessage in outgoingMessages.UnicastTransportOperations)
+                foreach (var unicastMessage in outgoingMessages.UnicastTransportOperations)
                 {
                     var sqsTransportMessage = new SqsTransportMessage(unicastMessage.Message, unicastMessage.DeliveryConstraints);
                     var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
@@ -45,7 +46,7 @@
 
                         var key = ConnectionConfiguration.S3KeyPrefix + "/" + unicastMessage.Message.MessageId;
 
-                        await S3Client.PutObjectAsync(new Amazon.S3.Model.PutObjectRequest
+                        await S3Client.PutObjectAsync(new PutObjectRequest
                         {
                             BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
                             InputStream = new MemoryStream(unicastMessage.Message.Body),
@@ -59,15 +60,15 @@
 
                     try
                     {
-                        await SendMessage(serializedMessage, 
-                            unicastMessage.Destination, 
+                        await SendMessage(serializedMessage,
+                            unicastMessage.Destination,
                             unicastMessage.DeliveryConstraints).ConfigureAwait(false);
                     }
                     catch (QueueDoesNotExistException)
                     {
                         await QueueCreator.CreateQueueIfNecessary(unicastMessage.Destination).ConfigureAwait(false);
 
-                        await SendMessage(serializedMessage, 
+                        await SendMessage(serializedMessage,
                             unicastMessage.Destination,
                             unicastMessage.DeliveryConstraints).ConfigureAwait(false);
                     }
@@ -80,14 +81,16 @@
             }
         }
 
-        private async Task SendMessage(string message, string destination, List<DeliveryConstraint> constraints)
+        async Task SendMessage(string message, string destination, List<DeliveryConstraint> constraints)
         {
             var delayWithConstraint = constraints.OfType<DelayDeliveryWith>().SingleOrDefault();
             var deliverAtConstraint = constraints.OfType<DoNotDeliverBefore>().SingleOrDefault();
-            
+
             var delayDeliveryBy = TimeSpan.MaxValue;
             if (delayWithConstraint != null)
+            {
                 delayDeliveryBy = delayWithConstraint.Delay;
+            }
             else
             {
                 if (deliverAtConstraint != null)
@@ -103,8 +106,10 @@
 
             // There should be no need to check if the delay time is greater than the maximum allowed
             // by SQS (15 minutes); the call to AWS will fail with an appropriate exception if the limit is exceeded.
-            if ( delayDeliveryBy != TimeSpan.MaxValue)
+            if (delayDeliveryBy != TimeSpan.MaxValue)
+            {
                 sendMessageRequest.DelaySeconds = Math.Max(0, (int)delayDeliveryBy.TotalSeconds);
+            }
 
             await SqsClient.SendMessageAsync(sendMessageRequest).ConfigureAwait(false);
         }

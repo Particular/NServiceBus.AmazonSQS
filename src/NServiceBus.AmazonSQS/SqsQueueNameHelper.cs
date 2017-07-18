@@ -12,22 +12,22 @@
                 throw new ArgumentNullException(nameof(destination));
             }
 
-            
+
             var s = connectionConfiguration.QueueNamePrefix + destination;
 
             if (connectionConfiguration.PreTruncateQueueNames && s.Length > 80)
             {
-                int charsToTake = 80 - connectionConfiguration.QueueNamePrefix.Length;
-                s = connectionConfiguration.QueueNamePrefix + 
+                var charsToTake = 80 - connectionConfiguration.QueueNamePrefix.Length;
+                s = connectionConfiguration.QueueNamePrefix +
                     new string(s.Reverse().Take(charsToTake).Reverse().ToArray());
             }
 
             // SQS queue names can only have alphanumeric characters, hyphens and underscores.
             // Any other characters will be replaced with a hyphen.
-            for (var i = 0; i<s.Length; ++i)
+            for (var i = 0; i < s.Length; ++i)
             {
                 var c = s[i];
-                if ( !char.IsLetterOrDigit(c)
+                if (!char.IsLetterOrDigit(c)
                     && c != '-'
                     && c != '_')
                 {

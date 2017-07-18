@@ -1,13 +1,12 @@
-﻿using System.Threading.Tasks;
-
-namespace NServiceBus.AcceptanceTests
+﻿namespace NServiceBus.AcceptanceTests
 {
-    using NServiceBus.AmazonSQS;
-    using NServiceBus.Configuration.AdvanceExtensibility;
-    using NServiceBus.Settings;
-    using NUnit.Framework;
     using System;
-    using NServiceBus.AmazonSQS.AcceptanceTests;
+    using System.Threading.Tasks;
+    using AmazonSQS;
+    using AmazonSQS.AcceptanceTests;
+    using Configuration.AdvanceExtensibility;
+    using NUnit.Framework;
+    using Settings;
 
     [SetUpFixture]
     public class SetupFixture
@@ -15,12 +14,8 @@ namespace NServiceBus.AcceptanceTests
         /// <summary>
         /// The queue name prefix for the current run of the test suite.
         /// </summary>
-        public static string SqsQueueNamePrefix
-        {
-            get;
-            private set;
-        }
-     
+        public static string SqsQueueNamePrefix { get; private set; }
+
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {

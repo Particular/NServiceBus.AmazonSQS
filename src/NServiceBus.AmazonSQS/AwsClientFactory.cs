@@ -1,16 +1,13 @@
 ﻿namespace NServiceBus.AmazonSQS
 {
     using System;
+    using System.Net;
     using Amazon.Runtime;
     using Amazon.S3;
     using Amazon.SQS;
-    using System.Net;
 
-    internal static class AwsClientFactory
+    static class AwsClientFactory
     {
-        static string NSERVICEBUS_AMAZONSQS_PROXY_AUTHENTICATION_USERNAME = nameof(NSERVICEBUS_AMAZONSQS_PROXY_AUTHENTICATION_USERNAME);
-        static string NSERVICEBUS_AMAZONSQS_PROXY_AUTHENTICATION_PASSWORD = nameof(NSERVICEBUS_AMAZONSQS_PROXY_AUTHENTICATION_PASSWORD);
-
         static AWSCredentials CreateCredentials(SqsConnectionConfiguration connectionConfiguration)
         {
             switch (connectionConfiguration.CredentialSource)
@@ -52,12 +49,15 @@
         {
             var config = new AmazonS3Config
             {
-                RegionEndpoint = connectionConfiguration.Region,
+                RegionEndpoint = connectionConfiguration.Region
             };
 
             SetProxyConfig(config, connectionConfiguration);
 
             return new AmazonS3Client(CreateCredentials(connectionConfiguration), config);
         }
+
+        static string NSERVICEBUS_AMAZONSQS_PROXY_AUTHENTICATION_USERNAME = nameof(NSERVICEBUS_AMAZONSQS_PROXY_AUTHENTICATION_USERNAME);
+        static string NSERVICEBUS_AMAZONSQS_PROXY_AUTHENTICATION_PASSWORD = nameof(NSERVICEBUS_AMAZONSQS_PROXY_AUTHENTICATION_PASSWORD);
     }
 }
