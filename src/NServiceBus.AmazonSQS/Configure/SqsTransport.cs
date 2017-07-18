@@ -10,20 +10,14 @@
     /// </summary>
     public class SqsTransport : TransportDefinition, IMessageDrivenSubscriptionTransport
     {
-        /// <summary>
-        /// Connection string error message.
-        /// </summary>
+        /// <inheritdoc />
         public override string ExampleConnectionStringForErrorMessage
             => "";
 
-        /// <summary>
-        /// Requires connection string.
-        /// </summary>
+        /// <inheritdoc />
         public override bool RequiresConnectionString => false;
 
-        /// <summary>
-        /// Initializes the transport definition.
-        /// </summary>
+        /// <inheritdoc />
         public override TransportInfrastructure Initialize(SettingsHolder settings, string connectionString)
         {
             if (!string.IsNullOrEmpty(connectionString))
