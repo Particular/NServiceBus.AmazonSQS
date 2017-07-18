@@ -29,6 +29,6 @@
         public bool NativeDeferral => _settings.GetOrDefault<bool>(SqsTransportSettingsKeys.NativeDeferral);
 
         public bool PreTruncateQueueNames => _settings.GetOrDefault<bool>(SqsTransportSettingsKeys.PreTruncateQueueNames);
-        private SettingsHolder _settings;
+        SettingsHolder _settings;
     }
 }
