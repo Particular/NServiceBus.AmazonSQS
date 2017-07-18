@@ -41,7 +41,7 @@
                     {
                         if (string.IsNullOrEmpty(ConnectionConfiguration.S3BucketForLargeMessages))
                         {
-                            throw new InvalidOperationException("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
+                            throw new Exception("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
                         }
 
                         var key = ConnectionConfiguration.S3KeyPrefix + "/" + unicastMessage.Message.MessageId;
