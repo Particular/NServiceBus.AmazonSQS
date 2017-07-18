@@ -47,7 +47,7 @@
                     QueueName = queueName
                 };
 
-                Logger.Info($"Creating SQS Queue with name \"{sqsRequest.QueueName}\" for address \"{address}\".");
+                Logger.Info($"Creating SQS Queue with name '{sqsRequest.QueueName}' for address '{address}'.");
                 var createQueueResponse = await SqsClient.CreateQueueAsync(sqsRequest).ConfigureAwait(false);
 
                 QueueUrlCache.SetQueueUrl(queueName, createQueueResponse.QueueUrl);
