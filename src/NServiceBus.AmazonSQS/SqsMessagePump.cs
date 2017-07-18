@@ -68,9 +68,6 @@
             }
         }
 
-        /// <summary>
-        /// Stops the dequeuing of messages.
-        /// </summary>
         public async Task Stop()
         {
             _cancellationTokenSource?.Cancel();
@@ -82,7 +79,7 @@
             catch (OperationCanceledException)
             {
                 // Silently swallow OperationCanceledException
-                // These are expected to be thrown when _cancellationTokenSource 
+                // These are expected to be thrown when _cancellationTokenSource
                 // is Cancel()ed above.
             }
 
@@ -231,7 +228,7 @@
                             }
 
                             // Always delete the message from the queue.
-                            // If processing failed, the _onError handler will have moved the message 
+                            // If processing failed, the _onError handler will have moved the message
                             // to a retry queue.
                             await DeleteMessage(SqsClient, S3Client, message, sqsTransportMessage, incomingMessage).ConfigureAwait(false);
                         }
