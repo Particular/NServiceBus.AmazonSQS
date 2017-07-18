@@ -44,7 +44,7 @@
             var transportTransaction = new TransportTransaction();
             var context = new ContextBag();
 
-            Assert.ThrowsAsync<InvalidOperationException>(async () => await sut.Dispatch(transportOperations, transportTransaction, context));
+            Assert.ThrowsAsync<Exception>(async () => await sut.Dispatch(transportOperations, transportTransaction, context));
         }
     }
 }
