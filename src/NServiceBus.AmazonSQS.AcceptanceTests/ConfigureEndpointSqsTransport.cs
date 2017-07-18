@@ -3,7 +3,10 @@
     using System;
     using System.Threading.Tasks;
     using AcceptanceTesting.Support;
+    using Conventions = AcceptanceTesting.Customization.Conventions;
     using AmazonSQS.AcceptanceTests;
+    using NUnit.Framework;
+    using Routing.MessageDrivenSubscriptions;
 
     public class ConfigureEndpointSqsTransport : IConfigureEndpointTestExecution
     {
