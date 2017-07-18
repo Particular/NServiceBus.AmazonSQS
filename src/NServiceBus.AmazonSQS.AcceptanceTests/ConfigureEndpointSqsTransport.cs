@@ -9,12 +9,13 @@
     {
         public Task Configure(string endpointName, EndpointConfiguration configuration, RunSettings settings, PublisherMetadata publisherMetadata)
         {
+            PreventInconclusiveTestsFromRunning(endpointName);
+
             var transportConfig = configuration.UseTransport<SqsTransport>();
 
             transportConfig.ConfigureSqsTransport(SetupFixture.SqsQueueNamePrefix);
 
             var routingConfig = transportConfig.Routing();
-
             foreach (var publisher in publisherMetadata.Publishers)
             {
                 foreach (var eventType in publisher.Events)
@@ -27,6 +28,7 @@
 
             var recoverability = configuration.Recoverability();
             recoverability.DisableLegacyRetriesSatellite();
+
             return Task.FromResult(0);
         }
 
@@ -34,6 +36,14 @@
         {
             // Queues are cleaned up once, globally, in SetupFixture.
             return Task.FromResult(0);
+        }
+
+        static void PreventInconclusiveTestsFromRunning(string endpointName)
+        {
+            if (endpointName == Conventions.EndpointNamingConvention(typeof(When_publishing_from_sendonly.SendOnlyPublisher)))
+            {
+                Assert.Inconclusive("Test is not using endpoint naming conventions in hardcoded subscription storage. Should be fixed in core vNext.");
+            }
         }
     }
 }
