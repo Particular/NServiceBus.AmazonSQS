@@ -9,9 +9,7 @@
 
     class SqsTransportMessage
     {
-        /// <summary>
-        /// Empty constructor. Required for deserialization.
-        /// </summary>
+        // Empty constructor required for deserialization.
         public SqsTransportMessage()
         {
         }
@@ -20,8 +18,7 @@
         {
             Headers = outgoingMessage.Headers;
 
-            string messageId;
-            Headers.TryGetValue(NServiceBus.Headers.MessageId, out messageId);
+            Headers.TryGetValue(NServiceBus.Headers.MessageId, out var messageId);
             if (string.IsNullOrEmpty(messageId))
             {
                 messageId = Guid.NewGuid().ToString();
