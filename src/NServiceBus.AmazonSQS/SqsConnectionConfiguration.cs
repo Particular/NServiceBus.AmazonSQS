@@ -3,10 +3,8 @@
     using Amazon;
     using Settings;
 
-    internal class SqsConnectionConfiguration
+    class SqsConnectionConfiguration
     {
-        private SettingsHolder _settings;
-
         public SqsConnectionConfiguration(SettingsHolder settingsHolder)
         {
             _settings = settingsHolder;
@@ -31,5 +29,6 @@
         public bool NativeDeferral => _settings.GetOrDefault<bool>(SqsTransportSettingsKeys.NativeDeferral);
 
         public bool PreTruncateQueueNames => _settings.GetOrDefault<bool>(SqsTransportSettingsKeys.PreTruncateQueueNames);
+        private SettingsHolder _settings;
     }
 }

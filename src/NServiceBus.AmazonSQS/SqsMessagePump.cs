@@ -2,20 +2,20 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.S3;
     using Amazon.S3.Model;
     using Amazon.SQS;
     using Amazon.SQS.Model;
-    using Newtonsoft.Json;
-    using Logging;
-    using NServiceBus.AmazonSQS;
-    using Transport;
+    using AmazonSQS;
     using Extensibility;
-    using System.Linq;
+    using Logging;
+    using Newtonsoft.Json;
+    using Transport;
 
-    internal class SqsMessagePump : IPushMessages
+    class SqsMessagePump : IPushMessages
     {
         public SqsConnectionConfiguration ConnectionConfiguration { get; set; }
 
@@ -85,7 +85,7 @@
                 // These are expected to be thrown when _cancellationTokenSource 
                 // is Cancel()ed above.
             }
-            
+
             _cancellationTokenSource?.Dispose();
             _cancellationTokenSource = null;
         }
@@ -97,20 +97,23 @@
                 try
                 {
                     var receiveResult = await SqsClient.ReceiveMessageAsync(new ReceiveMessageRequest
-                    {
-                        MaxNumberOfMessages = 10,
-                        QueueUrl = _queueUrl,
-                        WaitTimeSeconds = 20,
-                        AttributeNames = new List<String> { "SentTimestamp" }
-                    },
-                    _cancellationTokenSource.Token).ConfigureAwait(false);
+                        {
+                            MaxNumberOfMessages = 10,
+                            QueueUrl = _queueUrl,
+                            WaitTimeSeconds = 20,
+                            AttributeNames = new List<String>
+                            {
+                                "SentTimestamp"
+                            }
+                        },
+                        _cancellationTokenSource.Token).ConfigureAwait(false);
 
                     var tasks = receiveResult.Messages.Select(async message =>
                     {
                         IncomingMessage incomingMessage = null;
                         SqsTransportMessage sqsTransportMessage = null;
-                        TransportTransaction transportTransaction = new TransportTransaction();
-                        ContextBag contextBag = new ContextBag();
+                        var transportTransaction = new TransportTransaction();
+                        var contextBag = new ContextBag();
 
                         var messageProcessedOk = false;
                         var messageExpired = false;
@@ -121,8 +124,8 @@
                         {
                             sqsTransportMessage = JsonConvert.DeserializeObject<SqsTransportMessage>(message.Body);
 
-                            incomingMessage = await sqsTransportMessage.ToIncomingMessage(S3Client, 
-                                ConnectionConfiguration, 
+                            incomingMessage = await sqsTransportMessage.ToIncomingMessage(S3Client,
+                                ConnectionConfiguration,
                                 _cancellationTokenSource.Token).ConfigureAwait(false);
                         }
                         catch (Exception ex)
@@ -140,10 +143,10 @@
 
                         if (isPoisonMessage)
                         {
-                            await DeleteMessage(SqsClient, 
-                                S3Client, 
-                                message, 
-                                sqsTransportMessage, 
+                            await DeleteMessage(SqsClient,
+                                S3Client,
+                                message,
+                                sqsTransportMessage,
                                 incomingMessage).ConfigureAwait(false);
                         }
                         else
@@ -168,11 +171,11 @@
                                     }
                                 }
                             }
-                            
+
 
                             if (!messageExpired)
                             {
-                                int immediateProcessingAttempts = 0;
+                                var immediateProcessingAttempts = 0;
 
                                 while (!errorHandled && !messageProcessedOk)
                                 {
@@ -235,13 +238,13 @@
                     });
 
                     await Task.WhenAll(tasks).ConfigureAwait(false);
-                } 
+                }
                 catch (Exception ex)
                     when (!(ex is OperationCanceledException && _cancellationTokenSource.IsCancellationRequested))
                 {
                     Logger.Error("Exception thrown when consuming messages", ex);
                 }
-            }// while
+            } // while
         }
 
         async Task DeleteMessage(IAmazonSQS sqs,
@@ -284,8 +287,6 @@
             }
         }
 
-        static ILog Logger = LogManager.GetLogger(typeof(SqsMessagePump));
-
         CancellationTokenSource _cancellationTokenSource;
         List<Task> _consumerTasks;
         Func<ErrorContext, Task<ErrorHandleResult>> _onError;
@@ -293,5 +294,7 @@
         SemaphoreSlim _maxConcurrencySempahore;
         string _queueUrl;
         int _concurrencyLevel;
+
+        static ILog Logger = LogManager.GetLogger(typeof(SqsMessagePump));
     }
 }

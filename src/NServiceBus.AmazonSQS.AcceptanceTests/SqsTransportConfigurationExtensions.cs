@@ -21,7 +21,9 @@
             var s3BucketName = EnvironmentHelper.GetEnvironmentVariable(S3BucketEnvironmentVariableName);
 
             if (!string.IsNullOrEmpty(s3BucketName))
+            {
                 transportConfiguration.S3BucketForLargeMessages(s3BucketName, "test");
+            }
 
             var nativeDeferralRaw = EnvironmentHelper.GetEnvironmentVariable(NativeDeferralEnvironmentVariableName);        
             var validValue = bool.TryParse(nativeDeferralRaw, out var nativeDeferral);

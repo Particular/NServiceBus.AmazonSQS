@@ -1,20 +1,21 @@
-﻿using NServiceBus.Transport;
-using System;
-using System.Collections.Generic;
-
-namespace NServiceBus.AmazonSQS
+﻿namespace NServiceBus.AmazonSQS
 {
+    using System;
+    using System.Collections.Generic;
     using System.Linq;
-    using NServiceBus.DeliveryConstraints;
-    using NServiceBus.Performance.TimeToBeReceived;
+    using DeliveryConstraints;
+    using Performance.TimeToBeReceived;
+    using Transport;
 
-    internal class SqsTransportMessage
+    class SqsTransportMessage
     {
         /// <summary>
         /// Empty constructor. Required for deserialization.
         /// </summary>
-        public SqsTransportMessage() { }
-   
+        public SqsTransportMessage()
+        {
+        }
+
         public SqsTransportMessage(OutgoingMessage outgoingMessage, List<DeliveryConstraint> deliveryConstrants)
         {
             Headers = outgoingMessage.Headers;

@@ -1,15 +1,14 @@
-﻿using NServiceBus.Extensibility;
-using NServiceBus.Transport;
-using NServiceBus.Transports.SQS;
-using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace NServiceBus.AmazonSQS.Tests
+﻿namespace NServiceBus.AmazonSQS.Tests
 {
-    using NServiceBus.Routing;
+    using System;
+    using System.Collections.Generic;
+    using System.Text;
+    using Extensibility;
+    using NUnit.Framework;
+    using Routing;
     using Settings;
+    using Transport;
+    using Transports.SQS;
 
     [TestFixture]
     public class when_sending_messages

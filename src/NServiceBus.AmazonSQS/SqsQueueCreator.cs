@@ -1,16 +1,16 @@
 ﻿namespace NServiceBus.Transports.SQS
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading.Tasks;
     using Amazon.S3;
     using Amazon.S3.Model;
     using Amazon.SQS;
     using Amazon.SQS.Model;
-    using NServiceBus.AmazonSQS;
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using NServiceBus.Logging;
+    using AmazonSQS;
+    using Logging;
     using Transport;
-    using System.Threading.Tasks;
 
     class SqsQueueCreator : ICreateQueues
     {
@@ -20,17 +20,17 @@
 
         public IAmazonSQS SqsClient { get; set; }
 
-        public SqsQueueUrlCache QueueUrlCache{ get; set; }
+        public SqsQueueUrlCache QueueUrlCache { get; set; }
 
         public Task CreateQueueIfNecessary(QueueBindings queueBindings, string identity)
         {
             var tasks = new List<Task>();
 
-            foreach(var address in queueBindings.SendingAddresses)
+            foreach (var address in queueBindings.SendingAddresses)
             {
                 tasks.Add(CreateQueueIfNecessary(address));
             }
-            foreach(var address in queueBindings.ReceivingAddresses)
+            foreach (var address in queueBindings.ReceivingAddresses)
             {
                 tasks.Add(CreateQueueIfNecessary(address));
             }
@@ -44,7 +44,7 @@
                 var queueName = SqsQueueNameHelper.GetSqsQueueName(address, ConnectionConfiguration);
                 var sqsRequest = new CreateQueueRequest
                 {
-                    QueueName = queueName,
+                    QueueName = queueName
                 };
 
                 Logger.Info($"Creating SQS Queue with name \"{sqsRequest.QueueName}\" for address \"{address}\".");
@@ -61,7 +61,7 @@
                     QueueUrl = createQueueResponse.QueueUrl
                 };
                 sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod,
-                    ((int) (TimeSpan.FromDays(ConnectionConfiguration.MaxTTLDays).TotalSeconds)).ToString());
+                    ((int)(TimeSpan.FromDays(ConnectionConfiguration.MaxTTLDays).TotalSeconds)).ToString());
 
                 await SqsClient.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
 
@@ -73,23 +73,20 @@
                     if (!bucketExists)
                     {
                         await S3Client.RetryConflictsAsync(async () =>
-                            await S3Client.PutBucketAsync(new PutBucketRequest
-                            {
-                                BucketName = ConnectionConfiguration.S3BucketForLargeMessages
-                            }).ConfigureAwait(false),
-                        onRetry: x =>
-                        {
-                            Logger.Warn($"Conflict when creating S3 bucket, retrying after {x}ms.");
-                        }).ConfigureAwait(false);
+                                await S3Client.PutBucketAsync(new PutBucketRequest
+                                {
+                                    BucketName = ConnectionConfiguration.S3BucketForLargeMessages
+                                }).ConfigureAwait(false),
+                            onRetry: x => { Logger.Warn($"Conflict when creating S3 bucket, retrying after {x}ms."); }).ConfigureAwait(false);
                     }
 
                     var lifecycleConfig = await S3Client.GetLifecycleConfigurationAsync(ConnectionConfiguration.S3BucketForLargeMessages).ConfigureAwait(false);
-                    bool setLifecycleConfig = lifecycleConfig.Configuration.Rules.All(x => x.Id != "NServiceBus.SQS.DeleteMessageBodies");
+                    var setLifecycleConfig = lifecycleConfig.Configuration.Rules.All(x => x.Id != "NServiceBus.SQS.DeleteMessageBodies");
 
                     if (setLifecycleConfig)
                     {
                         await S3Client.RetryConflictsAsync(async () =>
-                            await S3Client.PutLifecycleConfigurationAsync(new PutLifecycleConfigurationRequest
+                                await S3Client.PutLifecycleConfigurationAsync(new PutLifecycleConfigurationRequest
                                 {
                                     BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
                                     Configuration = new LifecycleConfiguration
@@ -115,10 +112,7 @@
                                         }
                                     }
                                 }).ConfigureAwait(false),
-                            onRetry: x =>
-                            {
-                                Logger.Warn($"Conflict when setting S3 lifecycle configuration, retrying after {x}ms.");
-                            }).ConfigureAwait(false);
+                            onRetry: x => { Logger.Warn($"Conflict when setting S3 lifecycle configuration, retrying after {x}ms."); }).ConfigureAwait(false);
                     }
                 }
             }

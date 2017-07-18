@@ -1,8 +1,8 @@
 ﻿namespace NServiceBus
 {
+    using System;
     using Routing;
     using Settings;
-    using System;
     using Transport;
 
     /// <summary>
