@@ -16,8 +16,6 @@
         /// <example>
         /// For the Sydney region: Region("ap-southeast-2");
         /// </example>
-        /// <param name="transportExtensions"></param>
-        /// <param name="region"></param>
         public static TransportExtensions<SqsTransport> Region(this TransportExtensions<SqsTransport> transportExtensions, string region)
         {
             var awsRegion = RegionEndpoint.EnumerableAllRegions
@@ -124,8 +122,6 @@
         /// same application in the same AWS region (say, a development environment, a QA environment
         /// and a production environment), and you need to differentiate the queue names per environment.
         /// </summary>
-        /// <param name="transportExtensions"></param>
-        /// <param name="queueNamePrefix">The queue name prefix.</param>
         public static TransportExtensions<SqsTransport> QueueNamePrefix(this TransportExtensions<SqsTransport> transportExtensions, string queueNamePrefix)
         {
             transportExtensions.GetSettings().Set(SqsTransportSettingsKeys.QueueNamePrefix, queueNamePrefix);
@@ -137,8 +133,6 @@
         /// This tells the endpoint where to look for AWS credentials.
         /// If not specified, the endpoint defaults to EnvironmentVariables.
         /// </summary>
-        /// <param name="transportExtensions"></param>
-        /// <param name="credentialSource"></param>
         public static TransportExtensions<SqsTransport> CredentialSource(this TransportExtensions<SqsTransport> transportExtensions, SqsCredentialSource credentialSource)
         {
             transportExtensions.GetSettings().Set(SqsTransportSettingsKeys.CredentialSource, credentialSource);
@@ -154,9 +148,6 @@
         /// The username must be set in NSERVICEBUS_AMAZONSQS_PROXY_AUTHENTICATION_USERNAME
         /// and the password must be set in NSERVICEBUS_AMAZONSQS_PROXY_AUTHENTICATION_PASSWORD.
         /// </summary>
-        /// <param name="transportExtensions"></param>
-        /// <param name="proxyHost"></param>
-        /// <param name="proxyPort"></param>
         public static TransportExtensions<SqsTransport> Proxy(this TransportExtensions<SqsTransport> transportExtensions, string proxyHost, int proxyPort)
         {
             transportExtensions.GetSettings().Set(SqsTransportSettingsKeys.ProxyHost, proxyHost);
@@ -190,8 +181,6 @@
         /// This gives us the ability to locate all queues by the given prefix, and we do not interfere with the
         /// discriminator or qualifier at the end of the queue name.
         /// </summary>
-        /// <param name="transportExtensions"></param>
-        /// <param name="use"></param>
         internal static TransportExtensions<SqsTransport> PreTruncateQueueNamesForAcceptanceTests(this TransportExtensions<SqsTransport> transportExtensions, bool use = true)
         {
             transportExtensions.GetSettings().Set(SqsTransportSettingsKeys.PreTruncateQueueNames, use);

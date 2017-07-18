@@ -47,7 +47,7 @@
                     QueueName = queueName
                 };
 
-                Logger.Info($"Creating SQS Queue with name \"{sqsRequest.QueueName}\" for address \"{address}\".");
+                Logger.Info($"Creating SQS Queue with name '{sqsRequest.QueueName}' for address '{address}'.");
                 var createQueueResponse = await SqsClient.CreateQueueAsync(sqsRequest).ConfigureAwait(false);
 
                 QueueUrlCache.SetQueueUrl(queueName, createQueueResponse.QueueUrl);
@@ -61,7 +61,7 @@
                     QueueUrl = createQueueResponse.QueueUrl
                 };
                 sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod,
-                    ((int)(TimeSpan.FromDays(ConnectionConfiguration.MaxTTLDays).TotalSeconds)).ToString());
+                    ((int)TimeSpan.FromDays(ConnectionConfiguration.MaxTTLDays).TotalSeconds).ToString());
 
                 await SqsClient.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
 

@@ -20,7 +20,11 @@
 
             byte[] body;
 
-            if (!string.IsNullOrEmpty(sqsTransportMessage.S3BodyKey))
+            if (string.IsNullOrEmpty(sqsTransportMessage.S3BodyKey))
+            {
+                body = Convert.FromBase64String(sqsTransportMessage.Body);
+            }
+            else
             {
                 var s3GetResponse = await amazonS3.GetObjectAsync(connectionConfiguration.S3BucketForLargeMessages,
                     sqsTransportMessage.S3BodyKey,
@@ -39,10 +43,6 @@
                         bytesToRead = Math.Min(maxChunkSize, body.Length - transferred);
                     }
                 }
-            }
-            else
-            {
-                body = Convert.FromBase64String(sqsTransportMessage.Body);
             }
 
             return new IncomingMessage(messageId, sqsTransportMessage.Headers, body);
