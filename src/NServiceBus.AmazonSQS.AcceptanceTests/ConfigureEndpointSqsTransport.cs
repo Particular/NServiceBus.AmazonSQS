@@ -24,6 +24,9 @@
             }
 
             settings.TestExecutionTimeout = TimeSpan.FromSeconds(20);
+
+            var recoverability = configuration.Recoverability();
+            recoverability.DisableLegacyRetriesSatellite();
             return Task.FromResult(0);
         }
 
