@@ -61,7 +61,7 @@
                     QueueUrl = createQueueResponse.QueueUrl
                 };
                 sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod,
-                    ((int)(TimeSpan.FromDays(ConnectionConfiguration.MaxTTLDays).TotalSeconds)).ToString());
+                    ((int)TimeSpan.FromDays(ConnectionConfiguration.MaxTTLDays).TotalSeconds).ToString());
 
                 await SqsClient.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
 
