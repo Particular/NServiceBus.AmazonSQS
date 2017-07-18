@@ -5,13 +5,25 @@
     using System;
     using Transport;
 
+    /// <summary>
+    /// Sqs transport definition.
+    /// </summary>
     public class SqsTransport : TransportDefinition, IMessageDrivenSubscriptionTransport
     {
+        /// <summary>
+        /// Connection string error message.
+        /// </summary>
         public override string ExampleConnectionStringForErrorMessage
             => "";
 
+        /// <summary>
+        /// Requires connection string.
+        /// </summary>
         public override bool RequiresConnectionString => false;
 
+        /// <summary>
+        /// Initializes the transport definition.
+        /// </summary>
         public override TransportInfrastructure Initialize(SettingsHolder settings, string connectionString)
         {
             if (!string.IsNullOrEmpty(connectionString))

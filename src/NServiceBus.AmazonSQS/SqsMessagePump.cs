@@ -77,7 +77,7 @@
 
             try
             {
-                await Task.WhenAll(_consumerTasks.ToArray());
+                await Task.WhenAll(_consumerTasks.ToArray()).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
