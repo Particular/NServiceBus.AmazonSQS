@@ -22,8 +22,7 @@
             return _cache.GetOrAdd(queueName, x =>
             {
                 var getQueueUrlResponse = SqsClient.GetQueueUrl(queueName);
-                var result = getQueueUrlResponse.QueueUrl;
-                return result;
+                return getQueueUrlResponse.QueueUrl;
             });
         }
 
