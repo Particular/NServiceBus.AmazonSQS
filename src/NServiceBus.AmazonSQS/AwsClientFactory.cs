@@ -16,8 +16,9 @@
                     return new EnvironmentVariablesAWSCredentials();
                 case SqsCredentialSource.InstanceProfile:
                     return new InstanceProfileAWSCredentials();
+                default:
+                    throw new NotImplementedException($"No implementation for credential type {connectionConfiguration.CredentialSource}");
             }
-            throw new NotImplementedException($"No implementation for credential type {connectionConfiguration.CredentialSource}");
         }
 
         static void SetProxyConfig(ClientConfig clientConfig, SqsConnectionConfiguration connectionConfig)
