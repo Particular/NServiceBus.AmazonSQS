@@ -31,37 +31,13 @@
         {
             try
             {
-                foreach (var unicastMessage in outgoingMessages.UnicastTransportOperations)
+                var operations = outgoingMessages.UnicastTransportOperations;
+                var tasks = new Task[operations.Count];
+                for (var i = 0; i < operations.Count; i++)
                 {
-                    var sqsTransportMessage = new SqsTransportMessage(unicastMessage.Message, unicastMessage.DeliveryConstraints);
-                    var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
-                    if (serializedMessage.Length > 256 * 1024)
-                    {
-                        if (string.IsNullOrEmpty(ConnectionConfiguration.S3BucketForLargeMessages))
-                        {
-                            throw new Exception("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
-                        }
-
-                        var key = $"{ConnectionConfiguration.S3KeyPrefix}/{unicastMessage.Message.MessageId}";
-
-                        using (var bodyStream = new MemoryStream(unicastMessage.Message.Body))
-                        {
-                            await S3Client.PutObjectAsync(new PutObjectRequest
-                            {
-                                BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
-                                InputStream = bodyStream,
-                                Key = key
-                            }).ConfigureAwait(false);
-                        }
- 
-                        sqsTransportMessage.S3BodyKey = key;
-                        sqsTransportMessage.Body = string.Empty;
-                        serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
-                    }
-
-                    await SendMessage(serializedMessage, unicastMessage.Destination, unicastMessage.DeliveryConstraints)
-                        .ConfigureAwait(false);
+                    tasks[i] = Dispatch(operations[i]);
                 }
+                await Task.WhenAll(tasks).ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -70,22 +46,54 @@
             }
         }
 
+        async Task Dispatch(UnicastTransportOperation unicastMessage)
+        {
+            var sqsTransportMessage = new SqsTransportMessage(unicastMessage.Message, unicastMessage.DeliveryConstraints);
+            var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
+            if (serializedMessage.Length > 256 * 1024)
+            {
+                if (string.IsNullOrEmpty(ConnectionConfiguration.S3BucketForLargeMessages))
+                {
+                    throw new Exception("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
+                }
+
+                var key = $"{ConnectionConfiguration.S3KeyPrefix}/{unicastMessage.Message.MessageId}";
+
+                using (var bodyStream = new MemoryStream(unicastMessage.Message.Body))
+                {
+                    await S3Client.PutObjectAsync(new PutObjectRequest
+                    {
+                        BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
+                        InputStream = bodyStream,
+                        Key = key
+                    }).ConfigureAwait(false);
+                }
+
+                sqsTransportMessage.S3BodyKey = key;
+                sqsTransportMessage.Body = string.Empty;
+                serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
+            }
+
+            await SendMessage(serializedMessage, unicastMessage.Destination, unicastMessage.DeliveryConstraints)
+                .ConfigureAwait(false);
+        }
+
         Task SendMessage(string message, string destination, List<DeliveryConstraint> constraints)
         {
             var delayWithConstraint = constraints.OfType<DelayDeliveryWith>().SingleOrDefault();
             var deliverAtConstraint = constraints.OfType<DoNotDeliverBefore>().SingleOrDefault();
 
             var delayDeliveryBy = TimeSpan.MaxValue;
-            if (delayWithConstraint != null)
-            {
-                delayDeliveryBy = delayWithConstraint.Delay;
-            }
-            else
+            if (delayWithConstraint == null)
             {
                 if (deliverAtConstraint != null)
                 {
                     delayDeliveryBy = deliverAtConstraint.At - DateTime.UtcNow;
                 }
+            }
+            else
+            {
+                delayDeliveryBy = delayWithConstraint.Delay;
             }
 
             var sendMessageRequest = new SendMessageRequest(
