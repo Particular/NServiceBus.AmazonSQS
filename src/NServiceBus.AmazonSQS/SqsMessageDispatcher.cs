@@ -76,16 +76,16 @@
             var deliverAtConstraint = constraints.OfType<DoNotDeliverBefore>().SingleOrDefault();
 
             var delayDeliveryBy = TimeSpan.MaxValue;
-            if (delayWithConstraint != null)
-            {
-                delayDeliveryBy = delayWithConstraint.Delay;
-            }
-            else
+            if (delayWithConstraint == null)
             {
                 if (deliverAtConstraint != null)
                 {
                     delayDeliveryBy = deliverAtConstraint.At - DateTime.UtcNow;
                 }
+            }
+            else
+            {
+                delayDeliveryBy = delayWithConstraint.Delay;
             }
 
             var sendMessageRequest = new SendMessageRequest(
