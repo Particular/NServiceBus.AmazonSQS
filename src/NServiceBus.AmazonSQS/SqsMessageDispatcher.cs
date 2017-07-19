@@ -13,7 +13,6 @@
     using DelayedDelivery;
     using DeliveryConstraints;
     using Extensibility;
-    using Logging;
     using Newtonsoft.Json;
     using Transport;
 
@@ -27,23 +26,15 @@
 
         public SqsQueueUrlCache SqsQueueUrlCache { get; set; }
 
-        public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
+        public Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
         {
-            try
+            var operations = outgoingMessages.UnicastTransportOperations;
+            var tasks = new Task[operations.Count];
+            for (var i = 0; i < operations.Count; i++)
             {
-                var operations = outgoingMessages.UnicastTransportOperations;
-                var tasks = new Task[operations.Count];
-                for (var i = 0; i < operations.Count; i++)
-                {
-                    tasks[i] = Dispatch(operations[i]);
-                }
-                await Task.WhenAll(tasks).ConfigureAwait(false);
+                tasks[i] = Dispatch(operations[i]);
             }
-            catch (Exception e)
-            {
-                Logger.Error("Exception from Send.", e);
-                throw;
-            }
+            return Task.WhenAll(tasks);
         }
 
         async Task Dispatch(UnicastTransportOperation unicastMessage)
@@ -110,7 +101,5 @@
 
             return SqsClient.SendMessageAsync(sendMessageRequest);
         }
-
-        static ILog Logger = LogManager.GetLogger(typeof(SqsMessageDispatcher));
     }
 }
