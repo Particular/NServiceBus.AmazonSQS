@@ -67,7 +67,7 @@
             }
         }
 
-        async Task SendMessage(string message, string destination, List<DeliveryConstraint> constraints)
+        Task SendMessage(string message, string destination, List<DeliveryConstraint> constraints)
         {
             var delayWithConstraint = constraints.OfType<DelayDeliveryWith>().SingleOrDefault();
             var deliverAtConstraint = constraints.OfType<DoNotDeliverBefore>().SingleOrDefault();
@@ -97,7 +97,7 @@
                 sendMessageRequest.DelaySeconds = Math.Max(0, (int)delayDeliveryBy.TotalSeconds);
             }
 
-            await SqsClient.SendMessageAsync(sendMessageRequest).ConfigureAwait(false);
+            return SqsClient.SendMessageAsync(sendMessageRequest);
         }
 
         static ILog Logger = LogManager.GetLogger(typeof(SqsMessageDispatcher));
