@@ -16,6 +16,7 @@
     using Logging;
     using Newtonsoft.Json;
     using Transport;
+    using static System.Text.Encoding;
 
     class SqsMessageDispatcher : IDispatchMessages
     {
@@ -35,7 +36,7 @@
                 {
                     var sqsTransportMessage = new SqsTransportMessage(unicastMessage.Message, unicastMessage.DeliveryConstraints);
                     var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
-                    if (serializedMessage.Length > 256 * 1024)
+                    if (Unicode.GetByteCount(serializedMessage) > MaximumPayloadSize)
                     {
                         if (string.IsNullOrEmpty(ConnectionConfiguration.S3BucketForLargeMessages))
                         {
@@ -102,6 +103,8 @@
 
             return SqsClient.SendMessageAsync(sendMessageRequest);
         }
+
+        const int MaximumPayloadSize = 262144; //256 KB
 
         static ILog Logger = LogManager.GetLogger(typeof(SqsMessageDispatcher));
     }
