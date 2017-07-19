@@ -71,7 +71,6 @@
             return new SqsMessageDispatcher
             {
                 ConnectionConfiguration = _connectionConfiguration,
-                QueueCreator = CreateQueueCreator(),
                 S3Client = _s3Client,
                 SqsClient = _sqsClient,
                 SqsQueueUrlCache = _sqsQueueUrlCache

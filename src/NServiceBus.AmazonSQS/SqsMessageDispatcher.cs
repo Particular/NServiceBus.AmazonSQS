@@ -25,8 +25,6 @@
 
         public IAmazonS3 S3Client { get; set; }
 
-        public SqsQueueCreator QueueCreator { get; set; }
-
         public SqsQueueUrlCache SqsQueueUrlCache { get; set; }
 
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
@@ -58,20 +56,8 @@
                         serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
                     }
 
-                    try
-                    {
-                        await SendMessage(serializedMessage,
-                            unicastMessage.Destination,
-                            unicastMessage.DeliveryConstraints).ConfigureAwait(false);
-                    }
-                    catch (QueueDoesNotExistException)
-                    {
-                        await QueueCreator.CreateQueueIfNecessary(unicastMessage.Destination).ConfigureAwait(false);
-
-                        await SendMessage(serializedMessage,
-                            unicastMessage.Destination,
-                            unicastMessage.DeliveryConstraints).ConfigureAwait(false);
-                    }
+                    await SendMessage(serializedMessage, unicastMessage.Destination, unicastMessage.DeliveryConstraints)
+                        .ConfigureAwait(false);
                 }
             }
             catch (Exception e)
