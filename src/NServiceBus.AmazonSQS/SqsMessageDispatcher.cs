@@ -44,15 +44,18 @@
 
                         var key = $"{ConnectionConfiguration.S3KeyPrefix}/{unicastMessage.Message.MessageId}";
 
-                        await S3Client.PutObjectAsync(new PutObjectRequest
+                        using (var bodyStream = new MemoryStream(unicastMessage.Message.Body))
                         {
-                            BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
-                            InputStream = new MemoryStream(unicastMessage.Message.Body),
-                            Key = key
-                        }).ConfigureAwait(false);
-
+                            await S3Client.PutObjectAsync(new PutObjectRequest
+                            {
+                                BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
+                                InputStream = bodyStream,
+                                Key = key
+                            }).ConfigureAwait(false);
+                        }
+ 
                         sqsTransportMessage.S3BodyKey = key;
-                        sqsTransportMessage.Body = String.Empty;
+                        sqsTransportMessage.Body = string.Empty;
                         serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
                     }
 
