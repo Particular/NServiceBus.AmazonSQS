@@ -8,7 +8,7 @@
 
     static class AwsClientFactory
     {
-        static AWSCredentials CreateCredentials(SqsConnectionConfiguration connectionConfiguration)
+        static AWSCredentials CreateCredentials(ConnectionConfiguration connectionConfiguration)
         {
             switch (connectionConfiguration.CredentialSource)
             {
@@ -21,7 +21,7 @@
             }
         }
 
-        static void SetProxyConfig(ClientConfig clientConfig, SqsConnectionConfiguration connectionConfig)
+        static void SetProxyConfig(ClientConfig clientConfig, ConnectionConfiguration connectionConfig)
         {
             if (!string.IsNullOrEmpty(connectionConfig.ProxyHost))
             {
@@ -34,7 +34,7 @@
             }
         }
 
-        public static IAmazonSQS CreateSqsClient(SqsConnectionConfiguration connectionConfiguration)
+        public static IAmazonSQS CreateSqsClient(ConnectionConfiguration connectionConfiguration)
         {
             var config = new AmazonSQSConfig
             {
@@ -46,7 +46,7 @@
             return new AmazonSQSClient(CreateCredentials(connectionConfiguration), config);
         }
 
-        public static IAmazonS3 CreateS3Client(SqsConnectionConfiguration connectionConfiguration)
+        public static IAmazonS3 CreateS3Client(ConnectionConfiguration connectionConfiguration)
         {
             var config = new AmazonS3Config
             {

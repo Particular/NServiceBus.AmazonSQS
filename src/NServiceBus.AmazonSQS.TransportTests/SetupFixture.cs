@@ -34,7 +34,7 @@
             // Use the QueueNamePrefix to determine which queues to delete.
             var transportConfiguration = new TransportExtensions<SqsTransport>(new SettingsHolder());
             transportConfiguration = transportConfiguration.ConfigureSqsTransport(SqsQueueNamePrefix);
-            var connectionConfiguration = new SqsConnectionConfiguration(transportConfiguration.GetSettings());
+            var connectionConfiguration = new ConnectionConfiguration(transportConfiguration.GetSettings());
             var sqsClient = AwsClientFactory.CreateSqsClient(connectionConfiguration);
             var listQueuesResult = await sqsClient.ListQueuesAsync(connectionConfiguration.QueueNamePrefix).ConfigureAwait(false);
             foreach (var queueUrl in listQueuesResult.QueueUrls)
