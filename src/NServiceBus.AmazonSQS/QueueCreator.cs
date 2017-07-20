@@ -14,13 +14,13 @@
 
     class QueueCreator : ICreateQueues
     {
-        public ConnectionConfiguration ConnectionConfiguration { get; set; }
-
-        public IAmazonS3 S3Client { get; set; }
-
-        public IAmazonSQS SqsClient { get; set; }
-
-        public QueueUrlCache QueueUrlCache { get; set; }
+        public QueueCreator(ConnectionConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
+        {
+            this.configuration = configuration;
+            this.s3Client = s3Client;
+            this.sqsClient = sqsClient;
+            this.queueUrlCache = queueUrlCache;
+        }
 
         public Task CreateQueueIfNecessary(QueueBindings queueBindings, string identity)
         {
@@ -41,16 +41,16 @@
         {
             try
             {
-                var queueName = QueueNameHelper.GetSqsQueueName(address, ConnectionConfiguration);
+                var queueName = QueueNameHelper.GetSqsQueueName(address, configuration);
                 var sqsRequest = new CreateQueueRequest
                 {
                     QueueName = queueName
                 };
 
                 Logger.Info($"Creating SQS Queue with name '{sqsRequest.QueueName}' for address '{address}'.");
-                var createQueueResponse = await SqsClient.CreateQueueAsync(sqsRequest).ConfigureAwait(false);
+                var createQueueResponse = await sqsClient.CreateQueueAsync(sqsRequest).ConfigureAwait(false);
 
-                QueueUrlCache.SetQueueUrl(queueName, createQueueResponse.QueueUrl);
+                queueUrlCache.SetQueueUrl(queueName, createQueueResponse.QueueUrl);
 
                 // Set the queue attributes in a separate call.
                 // If you call CreateQueue with a queue name that already exists, and with a different
@@ -61,34 +61,34 @@
                     QueueUrl = createQueueResponse.QueueUrl
                 };
                 sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod,
-                    ((int)TimeSpan.FromDays(ConnectionConfiguration.MaxTTLDays).TotalSeconds).ToString());
+                    ((int)TimeSpan.FromDays(configuration.MaxTTLDays).TotalSeconds).ToString());
 
-                await SqsClient.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
+                await sqsClient.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
 
-                if (!string.IsNullOrEmpty(ConnectionConfiguration.S3BucketForLargeMessages))
+                if (!string.IsNullOrEmpty(configuration.S3BucketForLargeMessages))
                 {
                     // determine if the configured bucket exists; create it if it doesn't
-                    var listBucketsResponse = await S3Client.ListBucketsAsync(new ListBucketsRequest()).ConfigureAwait(false);
-                    var bucketExists = listBucketsResponse.Buckets.Any(x => string.Equals(x.BucketName, ConnectionConfiguration.S3BucketForLargeMessages, StringComparison.InvariantCultureIgnoreCase));
+                    var listBucketsResponse = await s3Client.ListBucketsAsync(new ListBucketsRequest()).ConfigureAwait(false);
+                    var bucketExists = listBucketsResponse.Buckets.Any(x => string.Equals(x.BucketName, configuration.S3BucketForLargeMessages, StringComparison.InvariantCultureIgnoreCase));
                     if (!bucketExists)
                     {
-                        await S3Client.RetryConflictsAsync(async () =>
-                                await S3Client.PutBucketAsync(new PutBucketRequest
+                        await s3Client.RetryConflictsAsync(async () =>
+                                await s3Client.PutBucketAsync(new PutBucketRequest
                                 {
-                                    BucketName = ConnectionConfiguration.S3BucketForLargeMessages
+                                    BucketName = configuration.S3BucketForLargeMessages
                                 }).ConfigureAwait(false),
                             onRetry: x => { Logger.Warn($"Conflict when creating S3 bucket, retrying after {x}ms."); }).ConfigureAwait(false);
                     }
 
-                    var lifecycleConfig = await S3Client.GetLifecycleConfigurationAsync(ConnectionConfiguration.S3BucketForLargeMessages).ConfigureAwait(false);
+                    var lifecycleConfig = await s3Client.GetLifecycleConfigurationAsync(configuration.S3BucketForLargeMessages).ConfigureAwait(false);
                     var setLifecycleConfig = lifecycleConfig.Configuration.Rules.All(x => x.Id != "NServiceBus.SQS.DeleteMessageBodies");
 
                     if (setLifecycleConfig)
                     {
-                        await S3Client.RetryConflictsAsync(async () =>
-                                await S3Client.PutLifecycleConfigurationAsync(new PutLifecycleConfigurationRequest
+                        await s3Client.RetryConflictsAsync(async () =>
+                                await s3Client.PutLifecycleConfigurationAsync(new PutLifecycleConfigurationRequest
                                 {
-                                    BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
+                                    BucketName = configuration.S3BucketForLargeMessages,
                                     Configuration = new LifecycleConfiguration
                                     {
                                         Rules = new List<LifecycleRule>
@@ -100,13 +100,13 @@
                                                 {
                                                     LifecycleFilterPredicate = new LifecyclePrefixPredicate
                                                     {
-                                                        Prefix = ConnectionConfiguration.S3KeyPrefix
+                                                        Prefix = configuration.S3KeyPrefix
                                                     }
                                                 },
                                                 Status = LifecycleRuleStatus.Enabled,
                                                 Expiration = new LifecycleRuleExpiration
                                                 {
-                                                    Days = ConnectionConfiguration.MaxTTLDays
+                                                    Days = configuration.MaxTTLDays
                                                 }
                                             }
                                         }
@@ -124,5 +124,9 @@
         }
 
         static ILog Logger = LogManager.GetLogger(typeof(QueueCreator));
+        ConnectionConfiguration configuration;
+        IAmazonS3 s3Client;
+        IAmazonSQS sqsClient;
+        QueueUrlCache queueUrlCache;
     }
 }

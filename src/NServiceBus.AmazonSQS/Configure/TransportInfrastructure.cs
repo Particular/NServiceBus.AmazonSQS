@@ -18,15 +18,12 @@
     {
         public TransportInfrastructure(SettingsHolder settings)
         {
-            _connectionConfiguration = new ConnectionConfiguration(settings);
+            configuration = new ConnectionConfiguration(settings);
 
-            _sqsClient = AwsClientFactory.CreateSqsClient(_connectionConfiguration);
-            _s3Client = AwsClientFactory.CreateS3Client(_connectionConfiguration);
+            sqsClient = AwsClientFactory.CreateSqsClient(configuration);
+            s3Client = AwsClientFactory.CreateS3Client(configuration);
 
-            queueUrlCache = new QueueUrlCache
-            {
-                SqsClient = _sqsClient
-            };
+            queueUrlCache = new QueueUrlCache(sqsClient);
         }
 
 
@@ -46,35 +43,17 @@
 
         MessagePump CreateMessagePump()
         {
-            return new MessagePump
-            {
-                ConnectionConfiguration = _connectionConfiguration,
-                S3Client = _s3Client,
-                SqsClient = _sqsClient,
-                QueueUrlCache = queueUrlCache
-            };
+            return new MessagePump(configuration, s3Client, sqsClient, queueUrlCache);
         }
 
         QueueCreator CreateQueueCreator()
         {
-            return new QueueCreator
-            {
-                ConnectionConfiguration = _connectionConfiguration,
-                S3Client = _s3Client,
-                SqsClient = _sqsClient,
-                QueueUrlCache = queueUrlCache
-            };
+            return new QueueCreator(configuration, s3Client, sqsClient, queueUrlCache);
         }
 
         MessageDispatcher CreateMessageDispatcher()
         {
-            return new MessageDispatcher
-            {
-                ConnectionConfiguration = _connectionConfiguration,
-                S3Client = _s3Client,
-                SqsClient = _sqsClient,
-                QueueUrlCache = queueUrlCache
-            };
+            return new MessageDispatcher(configuration, s3Client, sqsClient, queueUrlCache);
         }
 
         public override TransportReceiveInfrastructure ConfigureReceiveInfrastructure()
@@ -117,9 +96,9 @@
             return queue.ToString();
         }
 
-        readonly IAmazonSQS _sqsClient;
-        readonly IAmazonS3 _s3Client;
+        readonly IAmazonSQS sqsClient;
+        readonly IAmazonS3 s3Client;
         readonly QueueUrlCache queueUrlCache;
-        readonly ConnectionConfiguration _connectionConfiguration;
+        readonly ConnectionConfiguration configuration;
     }
 }

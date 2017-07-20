@@ -19,13 +19,13 @@
 
     class MessageDispatcher : IDispatchMessages
     {
-        public ConnectionConfiguration ConnectionConfiguration { get; set; }
-
-        public IAmazonSQS SqsClient { get; set; }
-
-        public IAmazonS3 S3Client { get; set; }
-
-        public QueueUrlCache QueueUrlCache { get; set; }
+        public MessageDispatcher(ConnectionConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
+        {
+            this.configuration = configuration;
+            this.s3Client = s3Client;
+            this.sqsClient = sqsClient;
+            this.queueUrlCache = queueUrlCache;
+        }
 
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
         {
@@ -52,18 +52,18 @@
             var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
             if (serializedMessage.Length > 256 * 1024)
             {
-                if (string.IsNullOrEmpty(ConnectionConfiguration.S3BucketForLargeMessages))
+                if (string.IsNullOrEmpty(configuration.S3BucketForLargeMessages))
                 {
                     throw new Exception("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
                 }
 
-                var key = $"{ConnectionConfiguration.S3KeyPrefix}/{unicastMessage.Message.MessageId}";
+                var key = $"{configuration.S3KeyPrefix}/{unicastMessage.Message.MessageId}";
 
                 using (var bodyStream = new MemoryStream(unicastMessage.Message.Body))
                 {
-                    await S3Client.PutObjectAsync(new PutObjectRequest
+                    await s3Client.PutObjectAsync(new PutObjectRequest
                     {
-                        BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
+                        BucketName = configuration.S3BucketForLargeMessages,
                         InputStream = bodyStream,
                         Key = key
                     }).ConfigureAwait(false);
@@ -97,8 +97,8 @@
             }
 
             var sendMessageRequest = new SendMessageRequest(
-                QueueUrlCache.GetQueueUrl(
-                    QueueNameHelper.GetSqsQueueName(destination, ConnectionConfiguration)),
+                queueUrlCache.GetQueueUrl(
+                    QueueNameHelper.GetSqsQueueName(destination, configuration)),
                 message);
 
             // There should be no need to check if the delay time is greater than the maximum allowed
@@ -108,8 +108,13 @@
                 sendMessageRequest.DelaySeconds = Math.Max(0, (int)delayDeliveryBy.TotalSeconds);
             }
 
-            return SqsClient.SendMessageAsync(sendMessageRequest);
+            return sqsClient.SendMessageAsync(sendMessageRequest);
         }
+
+        ConnectionConfiguration configuration;
+        IAmazonSQS sqsClient;
+        IAmazonS3 s3Client;
+        QueueUrlCache queueUrlCache;
 
         static ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
     }

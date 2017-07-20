@@ -5,27 +5,23 @@
 
     class QueueUrlCache
     {
-        public QueueUrlCache()
+        public QueueUrlCache(IAmazonSQS sqsClient)
         {
-            _cache = new ConcurrentDictionary<string, string>();
+            cache = new ConcurrentDictionary<string, string>();
+            this.sqsClient = sqsClient;
         }
-
-        public IAmazonSQS SqsClient { get; set; }
 
         public void SetQueueUrl(string queueName, string queueUrl)
         {
-            _cache.TryAdd(queueName, queueUrl);
+            cache.TryAdd(queueName, queueUrl);
         }
 
         public string GetQueueUrl(string queueName)
         {
-            return _cache.GetOrAdd(queueName, x =>
-            {
-                var getQueueUrlResponse = SqsClient.GetQueueUrl(queueName);
-                return getQueueUrlResponse.QueueUrl;
-            });
+            return cache.GetOrAdd(queueName, name => sqsClient.GetQueueUrl(name).QueueUrl);
         }
 
-        ConcurrentDictionary<string, string> _cache;
+        ConcurrentDictionary<string, string> cache;
+        IAmazonSQS sqsClient;
     }
 }
