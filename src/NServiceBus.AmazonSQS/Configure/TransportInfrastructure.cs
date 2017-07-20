@@ -14,16 +14,16 @@
     using Transport;
     using Transports.SQS;
 
-    class SqsTransportInfrastructure : TransportInfrastructure
+    class TransportInfrastructure : Transport.TransportInfrastructure
     {
-        public SqsTransportInfrastructure(SettingsHolder settings)
+        public TransportInfrastructure(SettingsHolder settings)
         {
-            _connectionConfiguration = new SqsConnectionConfiguration(settings);
+            _connectionConfiguration = new ConnectionConfiguration(settings);
 
             _sqsClient = AwsClientFactory.CreateSqsClient(_connectionConfiguration);
             _s3Client = AwsClientFactory.CreateS3Client(_connectionConfiguration);
 
-            _sqsQueueUrlCache = new SqsQueueUrlCache
+            queueUrlCache = new QueueUrlCache
             {
                 SqsClient = _sqsClient
             };
@@ -44,36 +44,36 @@
                 OutboundRoutingType.Unicast,
                 OutboundRoutingType.Unicast);
 
-        SqsMessagePump CreateMessagePump()
+        MessagePump CreateMessagePump()
         {
-            return new SqsMessagePump
+            return new MessagePump
             {
                 ConnectionConfiguration = _connectionConfiguration,
                 S3Client = _s3Client,
                 SqsClient = _sqsClient,
-                SqsQueueUrlCache = _sqsQueueUrlCache
+                QueueUrlCache = queueUrlCache
             };
         }
 
-        SqsQueueCreator CreateQueueCreator()
+        QueueCreator CreateQueueCreator()
         {
-            return new SqsQueueCreator
+            return new QueueCreator
             {
                 ConnectionConfiguration = _connectionConfiguration,
                 S3Client = _s3Client,
                 SqsClient = _sqsClient,
-                QueueUrlCache = _sqsQueueUrlCache
+                QueueUrlCache = queueUrlCache
             };
         }
 
-        SqsMessageDispatcher CreateMessageDispatcher()
+        MessageDispatcher CreateMessageDispatcher()
         {
-            return new SqsMessageDispatcher
+            return new MessageDispatcher
             {
                 ConnectionConfiguration = _connectionConfiguration,
                 S3Client = _s3Client,
                 SqsClient = _sqsClient,
-                SqsQueueUrlCache = _sqsQueueUrlCache
+                QueueUrlCache = queueUrlCache
             };
         }
 
@@ -119,7 +119,7 @@
 
         readonly IAmazonSQS _sqsClient;
         readonly IAmazonS3 _s3Client;
-        readonly SqsQueueUrlCache _sqsQueueUrlCache;
-        readonly SqsConnectionConfiguration _connectionConfiguration;
+        readonly QueueUrlCache queueUrlCache;
+        readonly ConnectionConfiguration _connectionConfiguration;
     }
 }

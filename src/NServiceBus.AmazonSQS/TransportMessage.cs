@@ -7,14 +7,14 @@
     using Performance.TimeToBeReceived;
     using Transport;
 
-    class SqsTransportMessage
+    class TransportMessage
     {
         // Empty constructor required for deserialization.
-        public SqsTransportMessage()
+        public TransportMessage()
         {
         }
 
-        public SqsTransportMessage(OutgoingMessage outgoingMessage, List<DeliveryConstraint> deliveryConstrants)
+        public TransportMessage(OutgoingMessage outgoingMessage, List<DeliveryConstraint> deliveryConstrants)
         {
             Headers = outgoingMessage.Headers;
 
@@ -28,7 +28,7 @@
             var discardConstraint = deliveryConstrants.OfType<DiscardIfNotReceivedBefore>().SingleOrDefault();
             if (discardConstraint != null)
             {
-                Headers[SqsTransportHeaders.TimeToBeReceived] = discardConstraint.MaxTime.ToString();
+                Headers[TransportHeaders.TimeToBeReceived] = discardConstraint.MaxTime.ToString();
             }
 
             Body = outgoingMessage.Body != null ? Convert.ToBase64String(outgoingMessage.Body) : "empty message";

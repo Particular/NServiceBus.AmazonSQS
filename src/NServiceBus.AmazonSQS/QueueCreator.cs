@@ -12,15 +12,15 @@
     using Logging;
     using Transport;
 
-    class SqsQueueCreator : ICreateQueues
+    class QueueCreator : ICreateQueues
     {
-        public SqsConnectionConfiguration ConnectionConfiguration { get; set; }
+        public ConnectionConfiguration ConnectionConfiguration { get; set; }
 
         public IAmazonS3 S3Client { get; set; }
 
         public IAmazonSQS SqsClient { get; set; }
 
-        public SqsQueueUrlCache QueueUrlCache { get; set; }
+        public QueueUrlCache QueueUrlCache { get; set; }
 
         public Task CreateQueueIfNecessary(QueueBindings queueBindings, string identity)
         {
@@ -41,7 +41,7 @@
         {
             try
             {
-                var queueName = SqsQueueNameHelper.GetSqsQueueName(address, ConnectionConfiguration);
+                var queueName = QueueNameHelper.GetSqsQueueName(address, ConnectionConfiguration);
                 var sqsRequest = new CreateQueueRequest
                 {
                     QueueName = queueName
@@ -123,6 +123,6 @@
             }
         }
 
-        static ILog Logger = LogManager.GetLogger(typeof(SqsQueueCreator));
+        static ILog Logger = LogManager.GetLogger(typeof(QueueCreator));
     }
 }

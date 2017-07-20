@@ -1,6 +1,6 @@
 ﻿namespace NServiceBus
 {
-    static class SqsTransportSettingsKeys
+    static class SettingsKeys
     {
         const string Prefix = "NServiceBus.AmazonSQS.";
         public const string Region = Prefix + nameof(Region);

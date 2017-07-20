@@ -21,9 +21,9 @@
             transportSettings
                 .Region("ap-southeast-2");
 
-            var sut = new SqsMessageDispatcher
+            var sut = new MessageDispatcher
             {
-                ConnectionConfiguration = new SqsConnectionConfiguration(settings)
+                ConnectionConfiguration = new ConnectionConfiguration(settings)
             };
 
             var stringBuilder = new StringBuilder();

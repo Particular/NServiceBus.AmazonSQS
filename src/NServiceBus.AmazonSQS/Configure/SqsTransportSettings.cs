@@ -26,7 +26,7 @@
                 throw new ArgumentException($"Unknown region: \"{region}\"");
             }
 
-            transportExtensions.GetSettings().Set(SqsTransportSettingsKeys.Region, awsRegion);
+            transportExtensions.GetSettings().Set(SettingsKeys.Region, awsRegion);
             return transportExtensions;
         }
 
@@ -47,7 +47,7 @@
             {
                 throw new ArgumentException("Max TTL needs to be greater than 0 and less than 15.");
             }
-            transportExtensions.GetSettings().Set(SqsTransportSettingsKeys.MaxTTLDays, maxTtlDays);
+            transportExtensions.GetSettings().Set(SettingsKeys.MaxTTLDays, maxTtlDays);
             return transportExtensions;
         }
 
@@ -110,8 +110,8 @@
                 throw new ArgumentException("S3 Bucket names must not contain hyphens adjacent to periods.");
             }
 
-            transportExtensions.GetSettings().Set(SqsTransportSettingsKeys.S3BucketForLargeMessages, s3BucketForLargeMessages);
-            transportExtensions.GetSettings().Set(SqsTransportSettingsKeys.S3KeyPrefix, s3KeyPrefix);
+            transportExtensions.GetSettings().Set(SettingsKeys.S3BucketForLargeMessages, s3BucketForLargeMessages);
+            transportExtensions.GetSettings().Set(SettingsKeys.S3KeyPrefix, s3KeyPrefix);
 
             return transportExtensions;
         }
@@ -124,7 +124,7 @@
         /// </summary>
         public static TransportExtensions<SqsTransport> QueueNamePrefix(this TransportExtensions<SqsTransport> transportExtensions, string queueNamePrefix)
         {
-            transportExtensions.GetSettings().Set(SqsTransportSettingsKeys.QueueNamePrefix, queueNamePrefix);
+            transportExtensions.GetSettings().Set(SettingsKeys.QueueNamePrefix, queueNamePrefix);
 
             return transportExtensions;
         }
@@ -135,7 +135,7 @@
         /// </summary>
         public static TransportExtensions<SqsTransport> CredentialSource(this TransportExtensions<SqsTransport> transportExtensions, SqsCredentialSource credentialSource)
         {
-            transportExtensions.GetSettings().Set(SqsTransportSettingsKeys.CredentialSource, credentialSource);
+            transportExtensions.GetSettings().Set(SettingsKeys.CredentialSource, credentialSource);
 
             return transportExtensions;
         }
@@ -150,8 +150,8 @@
         /// </summary>
         public static TransportExtensions<SqsTransport> Proxy(this TransportExtensions<SqsTransport> transportExtensions, string proxyHost, int proxyPort)
         {
-            transportExtensions.GetSettings().Set(SqsTransportSettingsKeys.ProxyHost, proxyHost);
-            transportExtensions.GetSettings().Set(SqsTransportSettingsKeys.ProxyPort, proxyPort);
+            transportExtensions.GetSettings().Set(SettingsKeys.ProxyHost, proxyHost);
+            transportExtensions.GetSettings().Set(SettingsKeys.ProxyPort, proxyPort);
 
             return transportExtensions;
         }
@@ -165,7 +165,7 @@
         /// <param name="use">Set to true to use SQS message delays for deferring messages; false otherwise.</param>
         public static TransportExtensions<SqsTransport> NativeDeferral(this TransportExtensions<SqsTransport> transportExtensions, bool use = true)
         {
-            transportExtensions.GetSettings().Set(SqsTransportSettingsKeys.NativeDeferral, use);
+            transportExtensions.GetSettings().Set(SettingsKeys.NativeDeferral, use);
 
             return transportExtensions;
         }
@@ -183,7 +183,7 @@
         /// </summary>
         internal static TransportExtensions<SqsTransport> PreTruncateQueueNamesForAcceptanceTests(this TransportExtensions<SqsTransport> transportExtensions, bool use = true)
         {
-            transportExtensions.GetSettings().Set(SqsTransportSettingsKeys.PreTruncateQueueNames, use);
+            transportExtensions.GetSettings().Set(SettingsKeys.PreTruncateQueueNames, use);
 
             return transportExtensions;
         }

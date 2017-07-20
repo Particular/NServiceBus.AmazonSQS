@@ -15,19 +15,19 @@
     using Newtonsoft.Json;
     using Transport;
 
-    class SqsMessagePump : IPushMessages
+    class MessagePump : IPushMessages
     {
-        public SqsConnectionConfiguration ConnectionConfiguration { get; set; }
+        public ConnectionConfiguration ConnectionConfiguration { get; set; }
 
         public IAmazonS3 S3Client { get; set; }
 
         public IAmazonSQS SqsClient { get; set; }
 
-        public SqsQueueUrlCache SqsQueueUrlCache { get; set; }
+        public QueueUrlCache QueueUrlCache { get; set; }
 
         public async Task Init(Func<MessageContext, Task> onMessage, Func<ErrorContext, Task<ErrorHandleResult>> onError, CriticalError criticalError, PushSettings settings)
         {
-            _queueUrl = SqsQueueUrlCache.GetQueueUrl(SqsQueueNameHelper.GetSqsQueueName(settings.InputQueue, ConnectionConfiguration));
+            _queueUrl = QueueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.InputQueue, ConnectionConfiguration));
 
             if (settings.PurgeOnStartup)
             {
@@ -108,7 +108,7 @@
                     var tasks = receiveResult.Messages.Select(async message =>
                     {
                         IncomingMessage incomingMessage = null;
-                        SqsTransportMessage sqsTransportMessage = null;
+                        TransportMessage transportMessage = null;
                         var transportTransaction = new TransportTransaction();
                         var contextBag = new ContextBag();
 
@@ -119,9 +119,9 @@
 
                         try
                         {
-                            sqsTransportMessage = JsonConvert.DeserializeObject<SqsTransportMessage>(message.Body);
+                            transportMessage = JsonConvert.DeserializeObject<TransportMessage>(message.Body);
 
-                            incomingMessage = await sqsTransportMessage.ToIncomingMessage(S3Client,
+                            incomingMessage = await transportMessage.ToIncomingMessage(S3Client,
                                 ConnectionConfiguration,
                                 _cancellationTokenSource.Token).ConfigureAwait(false);
                         }
@@ -132,7 +132,7 @@
                             isPoisonMessage = true;
                         }
 
-                        if (incomingMessage == null || sqsTransportMessage == null)
+                        if (incomingMessage == null || transportMessage == null)
                         {
                             Logger.Warn($"Deleting poison message with SQS Message Id {message.MessageId}");
                             isPoisonMessage = true;
@@ -143,16 +143,16 @@
                             await DeleteMessage(SqsClient,
                                 S3Client,
                                 message,
-                                sqsTransportMessage,
+                                transportMessage,
                                 incomingMessage).ConfigureAwait(false);
                         }
                         else
                         {
                             // Check that the message hasn't expired
                             string rawTtbr;
-                            if (incomingMessage.Headers.TryGetValue(SqsTransportHeaders.TimeToBeReceived, out rawTtbr))
+                            if (incomingMessage.Headers.TryGetValue(TransportHeaders.TimeToBeReceived, out rawTtbr))
                             {
-                                incomingMessage.Headers.Remove(SqsTransportHeaders.TimeToBeReceived);
+                                incomingMessage.Headers.Remove(TransportHeaders.TimeToBeReceived);
 
                                 var timeToBeReceived = TimeSpan.Parse(rawTtbr);
 
@@ -230,7 +230,7 @@
                             // Always delete the message from the queue.
                             // If processing failed, the _onError handler will have moved the message
                             // to a retry queue.
-                            await DeleteMessage(SqsClient, S3Client, message, sqsTransportMessage, incomingMessage).ConfigureAwait(false);
+                            await DeleteMessage(SqsClient, S3Client, message, transportMessage, incomingMessage).ConfigureAwait(false);
                         }
                     });
 
@@ -247,14 +247,14 @@
         async Task DeleteMessage(IAmazonSQS sqs,
             IAmazonS3 s3,
             Message message,
-            SqsTransportMessage sqsTransportMessage,
+            TransportMessage transportMessage,
             IncomingMessage incomingMessage)
         {
             await sqs.DeleteMessageAsync(_queueUrl, message.ReceiptHandle, _cancellationTokenSource.Token).ConfigureAwait(false);
 
-            if (sqsTransportMessage != null)
+            if (transportMessage != null)
             {
-                if (!String.IsNullOrEmpty(sqsTransportMessage.S3BodyKey))
+                if (!String.IsNullOrEmpty(transportMessage.S3BodyKey))
                 {
                     try
                     {
@@ -280,7 +280,7 @@
             }
             else
             {
-                Logger.Warn("Couldn't delete message body from S3 because the SqsTransportMessage was null. Message body data will be aged out by the S3 lifecycle policy when the TTL expires.");
+                Logger.Warn("Couldn't delete message body from S3 because the TransportMessage was null. Message body data will be aged out by the S3 lifecycle policy when the TTL expires.");
             }
         }
 
@@ -292,6 +292,6 @@
         string _queueUrl;
         int _concurrencyLevel;
 
-        static ILog Logger = LogManager.GetLogger(typeof(SqsMessagePump));
+        static ILog Logger = LogManager.GetLogger(typeof(MessagePump));
     }
 }

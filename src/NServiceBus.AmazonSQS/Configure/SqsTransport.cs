@@ -18,22 +18,22 @@
         public override bool RequiresConnectionString => false;
 
         /// <inheritdoc />
-        public override TransportInfrastructure Initialize(SettingsHolder settings, string connectionString)
+        public override Transport.TransportInfrastructure Initialize(SettingsHolder settings, string connectionString)
         {
             if (!string.IsNullOrEmpty(connectionString))
             {
                 throw new ArgumentException($"{nameof(SqsTransport)} does not require a connection string, but a connection string was provided. Use the code based configuration methods instead.");
             }
 
-            settings.SetDefault(SqsTransportSettingsKeys.S3BucketForLargeMessages, string.Empty);
-            settings.SetDefault(SqsTransportSettingsKeys.S3KeyPrefix, string.Empty);
-            settings.SetDefault(SqsTransportSettingsKeys.MaxTTLDays, 4);
-            settings.SetDefault(SqsTransportSettingsKeys.CredentialSource, SqsCredentialSource.EnvironmentVariables);
-            settings.SetDefault(SqsTransportSettingsKeys.ProxyHost, string.Empty);
-            settings.SetDefault(SqsTransportSettingsKeys.ProxyPort, 0);
-            settings.SetDefault(SqsTransportSettingsKeys.QueueNamePrefix, string.Empty);
+            settings.SetDefault(SettingsKeys.S3BucketForLargeMessages, string.Empty);
+            settings.SetDefault(SettingsKeys.S3KeyPrefix, string.Empty);
+            settings.SetDefault(SettingsKeys.MaxTTLDays, 4);
+            settings.SetDefault(SettingsKeys.CredentialSource, SqsCredentialSource.EnvironmentVariables);
+            settings.SetDefault(SettingsKeys.ProxyHost, string.Empty);
+            settings.SetDefault(SettingsKeys.ProxyPort, 0);
+            settings.SetDefault(SettingsKeys.QueueNamePrefix, string.Empty);
 
-            return new SqsTransportInfrastructure(settings);
+            return new TransportInfrastructure(settings);
         }
     }
 }

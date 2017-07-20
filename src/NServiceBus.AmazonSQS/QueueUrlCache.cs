@@ -3,9 +3,9 @@
     using System.Collections.Concurrent;
     using Amazon.SQS;
 
-    class SqsQueueUrlCache
+    class QueueUrlCache
     {
-        public SqsQueueUrlCache()
+        public QueueUrlCache()
         {
             _cache = new ConcurrentDictionary<string, string>();
         }

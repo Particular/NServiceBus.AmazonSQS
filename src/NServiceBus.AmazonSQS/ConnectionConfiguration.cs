@@ -3,9 +3,9 @@
     using Amazon;
     using Settings;
 
-    class SqsConnectionConfiguration
+    class ConnectionConfiguration
     {
-        public SqsConnectionConfiguration(ReadOnlySettings settings)
+        public ConnectionConfiguration(ReadOnlySettings settings)
         {
             // Accessing the settings bag during runtime means a lot of boxing and unboxing, 
             // all properties of this class are lazy initialized once they are accessed
@@ -18,7 +18,7 @@
             {
                 if (region == null)
                 {
-                    region = settings.Get<RegionEndpoint>(SqsTransportSettingsKeys.Region);
+                    region = settings.Get<RegionEndpoint>(SettingsKeys.Region);
                 }
                 return region;
             }
@@ -30,7 +30,7 @@
             {
                 if (!maxTtlDays.HasValue)
                 {
-                    maxTtlDays = settings.GetOrDefault<int>(SqsTransportSettingsKeys.MaxTTLDays);
+                    maxTtlDays = settings.GetOrDefault<int>(SettingsKeys.MaxTTLDays);
                 }
                 return maxTtlDays.Value;
             }
@@ -42,7 +42,7 @@
             {
                 if (s3BucketForLargeMessages == null)
                 {
-                    s3BucketForLargeMessages = settings.GetOrDefault<string>(SqsTransportSettingsKeys.S3BucketForLargeMessages);
+                    s3BucketForLargeMessages = settings.GetOrDefault<string>(SettingsKeys.S3BucketForLargeMessages);
                 }
                 return s3BucketForLargeMessages;
             }
@@ -54,7 +54,7 @@
             {
                 if (s3KeyPrefix == null)
                 {
-                    s3KeyPrefix = settings.GetOrDefault<string>(SqsTransportSettingsKeys.S3KeyPrefix);
+                    s3KeyPrefix = settings.GetOrDefault<string>(SettingsKeys.S3KeyPrefix);
                 }
                 return s3KeyPrefix;
             }
@@ -66,7 +66,7 @@
             {
                 if (queueNamePrefix == null)
                 {
-                    queueNamePrefix = settings.GetOrDefault<string>(SqsTransportSettingsKeys.QueueNamePrefix);
+                    queueNamePrefix = settings.GetOrDefault<string>(SettingsKeys.QueueNamePrefix);
                 }
                 return queueNamePrefix;
             }
@@ -78,7 +78,7 @@
             {
                 if (!credentialSource.HasValue)
                 {
-                    credentialSource = settings.GetOrDefault<SqsCredentialSource>(SqsTransportSettingsKeys.CredentialSource);
+                    credentialSource = settings.GetOrDefault<SqsCredentialSource>(SettingsKeys.CredentialSource);
                 }
                 return credentialSource.Value;
             }
@@ -90,7 +90,7 @@
             {
                 if (proxyHost == null)
                 {
-                    proxyHost = settings.GetOrDefault<string>(SqsTransportSettingsKeys.ProxyHost);
+                    proxyHost = settings.GetOrDefault<string>(SettingsKeys.ProxyHost);
                 }
                 return proxyHost;
             }
@@ -102,7 +102,7 @@
             {
                 if (!proxyPort.HasValue)
                 {
-                    proxyPort = settings.GetOrDefault<int>(SqsTransportSettingsKeys.ProxyPort);
+                    proxyPort = settings.GetOrDefault<int>(SettingsKeys.ProxyPort);
                 }
                 return proxyPort.Value;
             }
@@ -114,7 +114,7 @@
             {
                 if (!nativeDeferral.HasValue)
                 {
-                    nativeDeferral = settings.GetOrDefault<bool>(SqsTransportSettingsKeys.NativeDeferral);
+                    nativeDeferral = settings.GetOrDefault<bool>(SettingsKeys.NativeDeferral);
                 }
                 return nativeDeferral.Value;
             }
@@ -126,7 +126,7 @@
             {
                 if (!preTruncateQueueNames.HasValue)
                 {
-                    preTruncateQueueNames = settings.GetOrDefault<bool>(SqsTransportSettingsKeys.PreTruncateQueueNames);
+                    preTruncateQueueNames = settings.GetOrDefault<bool>(SettingsKeys.PreTruncateQueueNames);
                 }
                 return preTruncateQueueNames.Value;
             }

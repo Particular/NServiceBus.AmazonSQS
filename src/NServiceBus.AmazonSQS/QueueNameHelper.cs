@@ -3,9 +3,9 @@
     using System;
     using System.Linq;
 
-    static class SqsQueueNameHelper
+    static class QueueNameHelper
     {
-        public static string GetSqsQueueName(string destination, SqsConnectionConfiguration connectionConfiguration)
+        public static string GetSqsQueueName(string destination, ConnectionConfiguration connectionConfiguration)
         {
             if (string.IsNullOrWhiteSpace(destination))
             {

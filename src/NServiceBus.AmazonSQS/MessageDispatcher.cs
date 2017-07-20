@@ -17,15 +17,15 @@
     using Newtonsoft.Json;
     using Transport;
 
-    class SqsMessageDispatcher : IDispatchMessages
+    class MessageDispatcher : IDispatchMessages
     {
-        public SqsConnectionConfiguration ConnectionConfiguration { get; set; }
+        public ConnectionConfiguration ConnectionConfiguration { get; set; }
 
         public IAmazonSQS SqsClient { get; set; }
 
         public IAmazonS3 S3Client { get; set; }
 
-        public SqsQueueUrlCache SqsQueueUrlCache { get; set; }
+        public QueueUrlCache QueueUrlCache { get; set; }
 
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
         {
@@ -48,7 +48,7 @@
 
         async Task Dispatch(UnicastTransportOperation unicastMessage)
         {
-            var sqsTransportMessage = new SqsTransportMessage(unicastMessage.Message, unicastMessage.DeliveryConstraints);
+            var sqsTransportMessage = new TransportMessage(unicastMessage.Message, unicastMessage.DeliveryConstraints);
             var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
             if (serializedMessage.Length > 256 * 1024)
             {
@@ -97,8 +97,8 @@
             }
 
             var sendMessageRequest = new SendMessageRequest(
-                SqsQueueUrlCache.GetQueueUrl(
-                    SqsQueueNameHelper.GetSqsQueueName(destination, ConnectionConfiguration)),
+                QueueUrlCache.GetQueueUrl(
+                    QueueNameHelper.GetSqsQueueName(destination, ConnectionConfiguration)),
                 message);
 
             // There should be no need to check if the delay time is greater than the maximum allowed
@@ -111,6 +111,6 @@
             return SqsClient.SendMessageAsync(sendMessageRequest);
         }
 
-        static ILog Logger = LogManager.GetLogger(typeof(SqsMessageDispatcher));
+        static ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
     }
 }
