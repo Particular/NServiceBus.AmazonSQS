@@ -7,17 +7,14 @@
     using Amazon;
     using Amazon.S3;
     using Amazon.SQS.Model;
-    using Transport;
 
     static class MessageExtensions
     {
-        public static async Task<IncomingMessage> ToIncomingMessage(this TransportMessage transportMessage,
+        public static async Task<TransportMessage> Materialize(this TransportMessage transportMessage,
             IAmazonS3 amazonS3,
             ConnectionConfiguration connectionConfiguration,
             CancellationToken cancellationToken)
         {
-            var messageId = transportMessage.Headers[Headers.MessageId];
-
             byte[] body;
 
             if (string.IsNullOrEmpty(transportMessage.S3BodyKey))
@@ -45,7 +42,8 @@
                 }
             }
 
-            return new IncomingMessage(messageId, transportMessage.Headers, body);
+            transportMessage.ByteBody = body;
+            return transportMessage;
         }
 
         public static DateTime GetSentDateTime(this Message message)
