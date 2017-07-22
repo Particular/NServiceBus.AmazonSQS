@@ -21,10 +21,7 @@
             transportSettings
                 .Region("ap-southeast-2");
 
-            var sut = new MessageDispatcher
-            {
-                ConnectionConfiguration = new ConnectionConfiguration(settings)
-            };
+            var sut = new MessageDispatcher(new ConnectionConfiguration(settings), null, null, null);
 
             var stringBuilder = new StringBuilder();
             while (stringBuilder.Length < 256 * 1024)

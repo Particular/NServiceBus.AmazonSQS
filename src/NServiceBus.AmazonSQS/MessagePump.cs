@@ -17,17 +17,17 @@
 
     class MessagePump : IPushMessages
     {
-        public ConnectionConfiguration ConnectionConfiguration { get; set; }
-
-        public IAmazonS3 S3Client { get; set; }
-
-        public IAmazonSQS SqsClient { get; set; }
-
-        public QueueUrlCache QueueUrlCache { get; set; }
+        public MessagePump(ConnectionConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
+        {
+            this.configuration = configuration;
+            this.s3Client = s3Client;
+            this.sqsClient = sqsClient;
+            this.queueUrlCache = queueUrlCache;
+        }
 
         public async Task Init(Func<MessageContext, Task> onMessage, Func<ErrorContext, Task<ErrorHandleResult>> onError, CriticalError criticalError, PushSettings settings)
         {
-            _queueUrl = QueueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.InputQueue, ConnectionConfiguration));
+            queueUrl = queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.InputQueue, configuration));
 
             if (settings.PurgeOnStartup)
             {
@@ -38,7 +38,7 @@
                 // in that time.
                 try
                 {
-                    await SqsClient.PurgeQueueAsync(_queueUrl).ConfigureAwait(false);
+                    await sqsClient.PurgeQueueAsync(queueUrl).ConfigureAwait(false);
                 }
                 catch (PurgeQueueInProgressException ex)
                 {
@@ -51,30 +51,30 @@
                 }
             }
 
-            _onMessage = onMessage;
-            _onError = onError;
+            this.onMessage = onMessage;
+            this.onError = onError;
         }
 
         public void Start(PushRuntimeSettings limitations)
         {
-            _cancellationTokenSource = new CancellationTokenSource();
-            _concurrencyLevel = limitations.MaxConcurrency;
-            _maxConcurrencySempahore = new SemaphoreSlim(_concurrencyLevel);
-            _consumerTasks = new List<Task>();
+            cancellationTokenSource = new CancellationTokenSource();
+            concurrencyLevel = limitations.MaxConcurrency;
+            maxConcurrencySempahore = new SemaphoreSlim(concurrencyLevel);
+            consumerTasks = new List<Task>();
 
-            for (var i = 0; i < _concurrencyLevel; i++)
+            for (var i = 0; i < concurrencyLevel; i++)
             {
-                _consumerTasks.Add(ConsumeMessages());
+                consumerTasks.Add(ConsumeMessages());
             }
         }
 
         public async Task Stop()
         {
-            _cancellationTokenSource?.Cancel();
+            cancellationTokenSource?.Cancel();
 
             try
             {
-                await Task.WhenAll(_consumerTasks.ToArray()).ConfigureAwait(false);
+                await Task.WhenAll(consumerTasks.ToArray()).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -83,27 +83,27 @@
                 // is Cancel()ed above.
             }
 
-            _cancellationTokenSource?.Dispose();
-            _cancellationTokenSource = null;
+            cancellationTokenSource?.Dispose();
+            cancellationTokenSource = null;
         }
 
         async Task ConsumeMessages()
         {
-            while (!_cancellationTokenSource.IsCancellationRequested)
+            while (!cancellationTokenSource.IsCancellationRequested)
             {
                 try
                 {
-                    var receiveResult = await SqsClient.ReceiveMessageAsync(new ReceiveMessageRequest
+                    var receiveResult = await sqsClient.ReceiveMessageAsync(new ReceiveMessageRequest
                         {
                             MaxNumberOfMessages = 10,
-                            QueueUrl = _queueUrl,
+                            QueueUrl = queueUrl,
                             WaitTimeSeconds = 20,
                             AttributeNames = new List<String>
                             {
                                 "SentTimestamp"
                             }
                         },
-                        _cancellationTokenSource.Token).ConfigureAwait(false);
+                        cancellationTokenSource.Token).ConfigureAwait(false);
 
                     var tasks = receiveResult.Messages.Select(async message =>
                     {
@@ -121,9 +121,10 @@
                         {
                             transportMessage = JsonConvert.DeserializeObject<TransportMessage>(message.Body);
 
-                            incomingMessage = await transportMessage.ToIncomingMessage(S3Client,
-                                ConnectionConfiguration,
-                                _cancellationTokenSource.Token).ConfigureAwait(false);
+                            incomingMessage = await transportMessage.ToIncomingMessage(
+                                s3Client,
+                                configuration,
+                                cancellationTokenSource.Token).ConfigureAwait(false);
                         }
                         catch (Exception ex)
                         {
@@ -140,8 +141,8 @@
 
                         if (isPoisonMessage)
                         {
-                            await DeleteMessage(SqsClient,
-                                S3Client,
+                            await DeleteMessage(sqsClient,
+                                s3Client,
                                 message,
                                 transportMessage,
                                 incomingMessage).ConfigureAwait(false);
@@ -178,8 +179,8 @@
                                 {
                                     try
                                     {
-                                        await _maxConcurrencySempahore
-                                            .WaitAsync(_cancellationTokenSource.Token)
+                                        await maxConcurrencySempahore
+                                            .WaitAsync(cancellationTokenSource.Token)
                                             .ConfigureAwait(false);
 
                                         using (var messageContextCancellationTokenSource =
@@ -193,21 +194,21 @@
                                                 messageContextCancellationTokenSource,
                                                 contextBag);
 
-                                            await _onMessage(messageContext)
+                                            await onMessage(messageContext)
                                                 .ConfigureAwait(false);
 
                                             messageProcessedOk = !messageContextCancellationTokenSource.IsCancellationRequested;
                                         }
                                     }
                                     catch (Exception ex)
-                                        when (!(ex is OperationCanceledException && _cancellationTokenSource.IsCancellationRequested))
+                                        when (!(ex is OperationCanceledException && cancellationTokenSource.IsCancellationRequested))
                                     {
                                         immediateProcessingAttempts++;
                                         var errorHandlerResult = ErrorHandleResult.RetryRequired;
 
                                         try
                                         {
-                                            errorHandlerResult = await _onError(new ErrorContext(ex,
+                                            errorHandlerResult = await onError(new ErrorContext(ex,
                                                 incomingMessage.Headers,
                                                 incomingMessage.MessageId,
                                                 incomingMessage.Body,
@@ -222,22 +223,22 @@
                                     }
                                     finally
                                     {
-                                        _maxConcurrencySempahore.Release();
+                                        maxConcurrencySempahore.Release();
                                     }
                                 }
                             }
 
                             // Always delete the message from the queue.
-                            // If processing failed, the _onError handler will have moved the message
+                            // If processing failed, the onError handler will have moved the message
                             // to a retry queue.
-                            await DeleteMessage(SqsClient, S3Client, message, transportMessage, incomingMessage).ConfigureAwait(false);
+                            await DeleteMessage(sqsClient, s3Client, message, transportMessage, incomingMessage).ConfigureAwait(false);
                         }
                     });
 
                     await Task.WhenAll(tasks).ConfigureAwait(false);
                 }
                 catch (Exception ex)
-                    when (!(ex is OperationCanceledException && _cancellationTokenSource.IsCancellationRequested))
+                    when (!(ex is OperationCanceledException && cancellationTokenSource.IsCancellationRequested))
                 {
                     Logger.Error("Exception thrown when consuming messages", ex);
                 }
@@ -250,7 +251,7 @@
             TransportMessage transportMessage,
             IncomingMessage incomingMessage)
         {
-            await sqs.DeleteMessageAsync(_queueUrl, message.ReceiptHandle, _cancellationTokenSource.Token).ConfigureAwait(false);
+            await sqs.DeleteMessageAsync(queueUrl, message.ReceiptHandle, cancellationTokenSource.Token).ConfigureAwait(false);
 
             if (transportMessage != null)
             {
@@ -261,10 +262,10 @@
                         await s3.DeleteObjectAsync(
                             new DeleteObjectRequest
                             {
-                                BucketName = ConnectionConfiguration.S3BucketForLargeMessages,
-                                Key = ConnectionConfiguration.S3KeyPrefix + incomingMessage.MessageId
+                                BucketName = configuration.S3BucketForLargeMessages,
+                                Key = configuration.S3KeyPrefix + incomingMessage.MessageId
                             },
-                            _cancellationTokenSource.Token).ConfigureAwait(false);
+                            cancellationTokenSource.Token).ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
@@ -284,13 +285,17 @@
             }
         }
 
-        CancellationTokenSource _cancellationTokenSource;
-        List<Task> _consumerTasks;
-        Func<ErrorContext, Task<ErrorHandleResult>> _onError;
-        Func<MessageContext, Task> _onMessage;
-        SemaphoreSlim _maxConcurrencySempahore;
-        string _queueUrl;
-        int _concurrencyLevel;
+        CancellationTokenSource cancellationTokenSource;
+        List<Task> consumerTasks;
+        Func<ErrorContext, Task<ErrorHandleResult>> onError;
+        Func<MessageContext, Task> onMessage;
+        SemaphoreSlim maxConcurrencySempahore;
+        string queueUrl;
+        int concurrencyLevel;
+        ConnectionConfiguration configuration;
+        IAmazonS3 s3Client;
+        IAmazonSQS sqsClient;
+        QueueUrlCache queueUrlCache;
 
         static ILog Logger = LogManager.GetLogger(typeof(MessagePump));
     }
