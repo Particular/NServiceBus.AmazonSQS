@@ -28,6 +28,7 @@
         public async Task Init(Func<MessageContext, Task> onMessage, Func<ErrorContext, Task<ErrorHandleResult>> onError, CriticalError criticalError, PushSettings settings)
         {
             queueUrl = queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.InputQueue, configuration));
+            errorQueueUrl = queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.ErrorQueue, configuration));
 
             if (settings.PurgeOnStartup)
             {
@@ -129,23 +130,19 @@
                         catch (Exception ex)
                         {
                             // Can't deserialize. This is a poison message
-                            Logger.Warn($"Deleting poison message with SQS Message Id {message.MessageId} due to exception {ex}");
+                            Logger.Warn($"Treating message with SQS Message Id {message.MessageId} as a poison message due to exception {ex}. Moving to error queue.");
                             isPoisonMessage = true;
                         }
 
                         if (incomingMessage == null || transportMessage == null)
                         {
-                            Logger.Warn($"Deleting poison message with SQS Message Id {message.MessageId}");
+                            Logger.Warn($"Treating message with SQS Message Id {message.MessageId} as a poison message because it could not be converted to an IncomingMessage. Moving to error queue.");
                             isPoisonMessage = true;
                         }
 
                         if (isPoisonMessage)
                         {
-                            await DeleteMessage(sqsClient,
-                                s3Client,
-                                message,
-                                transportMessage,
-                                incomingMessage).ConfigureAwait(false);
+                            await MoveToErrorQueue(message).ConfigureAwait(false);
                         }
                         else
                         {
@@ -285,12 +282,33 @@
             }
         }
 
+        async Task MoveToErrorQueue(Message message)
+        {
+            await sqsClient.SendMessageAsync(new SendMessageRequest
+            {
+                QueueUrl = errorQueueUrl,
+                MessageBody = message.Body
+            }).ConfigureAwait(false);
+            // The MessageAttributes on message are read-only attributes provided by SQS
+            // and can't be re-sent. Unfortunately all the SQS metadata 
+            // such as SentTimestamp is reset with this send.
+
+            await sqsClient.DeleteMessageAsync(new DeleteMessageRequest
+            {
+                QueueUrl = queueUrl,
+                ReceiptHandle = message.ReceiptHandle
+            }).ConfigureAwait(false);
+
+            // If there is a message body in S3, simply leave it there
+        }
+
         CancellationTokenSource cancellationTokenSource;
         List<Task> consumerTasks;
         Func<ErrorContext, Task<ErrorHandleResult>> onError;
         Func<MessageContext, Task> onMessage;
         SemaphoreSlim maxConcurrencySempahore;
         string queueUrl;
+        string errorQueueUrl;
         int concurrencyLevel;
         ConnectionConfiguration configuration;
         IAmazonS3 s3Client;
