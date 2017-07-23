@@ -25,7 +25,7 @@
             this.queueUrlCache = queueUrlCache;
         }
 
-        public async Task Init(Func<MessageContext, Task> onMessage, Func<ErrorContext, Task<ErrorHandleResult>> onError, CriticalError criticalError, PushSettings settings)
+        public async Task Init(Func<MessageContext, Task> onMessageFunc, Func<ErrorContext, Task<ErrorHandleResult>> onErrorFunc, CriticalError criticalError, PushSettings settings)
         {
             queueUrl = queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.InputQueue, configuration));
             errorQueueUrl = queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.ErrorQueue, configuration));
@@ -52,8 +52,8 @@
                 }
             }
 
-            this.onMessage = onMessage;
-            this.onError = onError;
+            onMessage = onMessageFunc;
+            onError = onErrorFunc;
         }
 
         public void Start(PushRuntimeSettings limitations)
@@ -142,7 +142,7 @@
 
                         if (isPoisonMessage)
                         {
-                            await MoveToErrorQueue(message).ConfigureAwait(false);
+                            await MovePoisonMessageToErrorQueue(message).ConfigureAwait(false);
                         }
                         else
                         {
@@ -282,23 +282,50 @@
             }
         }
 
-        async Task MoveToErrorQueue(Message message)
+        async Task MovePoisonMessageToErrorQueue(Message message)
         {
-            await sqsClient.SendMessageAsync(new SendMessageRequest
+            try
             {
-                QueueUrl = errorQueueUrl,
-                MessageBody = message.Body
-            }).ConfigureAwait(false);
-            // The MessageAttributes on message are read-only attributes provided by SQS
-            // and can't be re-sent. Unfortunately all the SQS metadata 
-            // such as SentTimestamp is reset with this send.
-
-            await sqsClient.DeleteMessageAsync(new DeleteMessageRequest
+                await sqsClient.SendMessageAsync(new SendMessageRequest
+                {
+                    QueueUrl = errorQueueUrl,
+                    MessageBody = message.Body
+                }).ConfigureAwait(false);
+                // The MessageAttributes on message are read-only attributes provided by SQS
+                // and can't be re-sent. Unfortunately all the SQS metadata 
+                // such as SentTimestamp is reset with this send.    
+            }
+            catch (Exception ex)
             {
-                QueueUrl = queueUrl,
-                ReceiptHandle = message.ReceiptHandle
-            }).ConfigureAwait(false);
+                Logger.Error($"Error moving poison message to error queue at url {errorQueueUrl}. Moving back to input queue.", ex);
+                try
+                {
+                    await sqsClient.ChangeMessageVisibilityAsync(new ChangeMessageVisibilityRequest
+                    {
+                        QueueUrl = queueUrl,
+                        ReceiptHandle = message.ReceiptHandle,
+                        VisibilityTimeout = 0
+                    }).ConfigureAwait(false);
+                }
+                catch (Exception changeMessageVisibilityEx)
+                {
+                    Logger.Warn($"Error returning poison message back to input queue at url {queueUrl}. Poison message will become available at the input queue again after the visibility timeout expires.", changeMessageVisibilityEx);
+                }
+                return;
+            }
 
+            try
+            {
+                await sqsClient.DeleteMessageAsync(new DeleteMessageRequest
+                {
+                    QueueUrl = queueUrl,
+                    ReceiptHandle = message.ReceiptHandle
+                }).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"Error removing poison message from input queue {queueUrl}. This may cause duplicate poison messages in the error queue for this endpoint.", ex);
+            }
             // If there is a message body in S3, simply leave it there
         }
 
