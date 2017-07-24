@@ -3,8 +3,6 @@
   <PropertyGroup>
     <TargetFramework>net452</TargetFramework>
     <DebugSymbols>True</DebugSymbols>
-    <!-- Workaround for https://github.com/nunit/nunit3-vs-adapter/issues/296 -->
-    <DebugType>Full</DebugType>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>PCR0001</NoWarn>
     <SignAssembly>true</SignAssembly>
