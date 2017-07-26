@@ -15,7 +15,7 @@
 
 		protected override void Configure(BusConfiguration config)
 		{
-            Address.IgnoreMachineName();
+			Address.IgnoreMachineName();
 
 			config.EnableFeature<SqsTransportFeature>();
 			config.EnableFeature<MessageDrivenSubscriptions>();
