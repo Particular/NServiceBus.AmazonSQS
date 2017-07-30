@@ -118,7 +118,11 @@ namespace NServiceBus.AmazonSQS.IntegrationTests
 			var receivedBodyAsString = Encoding.ASCII.GetString(received.Body, 0, received.Body.Length);
 
 			Assert.IsTrue(receivedBodyAsString.Length > 256 * 1024);
-			Assert.IsTrue(receivedBodyAsString.Contains("a"));
+
+            foreach (var c in receivedBodyAsString)
+            {
+                Assert.AreEqual('a', c);
+            }
 		}
 
         [Ignore("The purge operation in this test appears to interfere with subsequent tests - run manually!")]
