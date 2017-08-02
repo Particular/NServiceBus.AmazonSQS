@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Linq;
     using DeliveryConstraints;
+    using Newtonsoft.Json;
     using Performance.TimeToBeReceived;
     using Transport;
 
@@ -39,5 +40,11 @@
         public string Body { get; set; }
 
         public string S3BodyKey { get; set; }
+
+        [JsonIgnore]
+        public string MessageId => Headers[NServiceBus.Headers.MessageId];
+
+        [JsonIgnore]
+        public byte[] ByteBody { get; set; }
     }
 }
