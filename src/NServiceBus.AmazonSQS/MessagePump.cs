@@ -25,7 +25,7 @@
             this.queueUrlCache = queueUrlCache;
         }
 
-        public async Task Init(Func<MessageContext, Task> onMessageFunc, Func<ErrorContext, Task<ErrorHandleResult>> onErrorFunc, CriticalError criticalError, PushSettings settings)
+        public async Task Init(Func<MessageContext, Task> onMessage, Func<ErrorContext, Task<ErrorHandleResult>> onError, CriticalError criticalError, PushSettings settings)
         {
             queueUrl = queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.InputQueue, configuration));
             errorQueueUrl = queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.ErrorQueue, configuration));
@@ -52,8 +52,8 @@
                 }
             }
 
-            onMessage = onMessageFunc;
-            onError = onErrorFunc;
+            this.onMessage = onMessage;
+            this.onError = onError;
         }
 
         public void Start(PushRuntimeSettings limitations)
