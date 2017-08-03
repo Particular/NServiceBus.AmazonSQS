@@ -28,6 +28,7 @@
         public async Task Init(Func<MessageContext, Task> onMessage, Func<ErrorContext, Task<ErrorHandleResult>> onError, CriticalError criticalError, PushSettings settings)
         {
             queueUrl = queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.InputQueue, configuration));
+            errorQueueUrl = queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.ErrorQueue, configuration));
 
             if (settings.PurgeOnStartup)
             {
@@ -129,23 +130,19 @@
                         catch (Exception ex)
                         {
                             // Can't deserialize. This is a poison message
-                            Logger.Warn($"Deleting poison message with SQS Message Id {message.MessageId} due to exception {ex}");
+                            Logger.Warn($"Treating message with SQS Message Id {message.MessageId} as a poison message due to exception {ex}. Moving to error queue.");
                             isPoisonMessage = true;
                         }
 
                         if (incomingMessage == null || transportMessage == null)
                         {
-                            Logger.Warn($"Deleting poison message with SQS Message Id {message.MessageId}");
+                            Logger.Warn($"Treating message with SQS Message Id {message.MessageId} as a poison message because it could not be converted to an IncomingMessage. Moving to error queue.");
                             isPoisonMessage = true;
                         }
 
                         if (isPoisonMessage)
                         {
-                            await DeleteMessage(sqsClient,
-                                s3Client,
-                                message,
-                                transportMessage,
-                                incomingMessage).ConfigureAwait(false);
+                            await MovePoisonMessageToErrorQueue(message).ConfigureAwait(false);
                         }
                         else
                         {
@@ -285,12 +282,60 @@
             }
         }
 
+        async Task MovePoisonMessageToErrorQueue(Message message)
+        {
+            try
+            {
+                await sqsClient.SendMessageAsync(new SendMessageRequest
+                {
+                    QueueUrl = errorQueueUrl,
+                    MessageBody = message.Body
+                }).ConfigureAwait(false);
+                // The MessageAttributes on message are read-only attributes provided by SQS
+                // and can't be re-sent. Unfortunately all the SQS metadata 
+                // such as SentTimestamp is reset with this send.    
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error moving poison message to error queue at url {errorQueueUrl}. Moving back to input queue.", ex);
+                try
+                {
+                    await sqsClient.ChangeMessageVisibilityAsync(new ChangeMessageVisibilityRequest
+                    {
+                        QueueUrl = queueUrl,
+                        ReceiptHandle = message.ReceiptHandle,
+                        VisibilityTimeout = 0
+                    }).ConfigureAwait(false);
+                }
+                catch (Exception changeMessageVisibilityEx)
+                {
+                    Logger.Warn($"Error returning poison message back to input queue at url {queueUrl}. Poison message will become available at the input queue again after the visibility timeout expires.", changeMessageVisibilityEx);
+                }
+                return;
+            }
+
+            try
+            {
+                await sqsClient.DeleteMessageAsync(new DeleteMessageRequest
+                {
+                    QueueUrl = queueUrl,
+                    ReceiptHandle = message.ReceiptHandle
+                }).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"Error removing poison message from input queue {queueUrl}. This may cause duplicate poison messages in the error queue for this endpoint.", ex);
+            }
+            // If there is a message body in S3, simply leave it there
+        }
+
         CancellationTokenSource cancellationTokenSource;
         List<Task> consumerTasks;
         Func<ErrorContext, Task<ErrorHandleResult>> onError;
         Func<MessageContext, Task> onMessage;
         SemaphoreSlim maxConcurrencySempahore;
         string queueUrl;
+        string errorQueueUrl;
         int concurrencyLevel;
         ConnectionConfiguration configuration;
         IAmazonS3 s3Client;
