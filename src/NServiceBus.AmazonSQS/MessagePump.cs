@@ -85,7 +85,7 @@
             }
 
             cancellationTokenSource?.Dispose();
-            cancellationTokenSource = null;
+            maxConcurrencySempahore?.Dispose();
         }
 
         async Task ConsumeMessages()
@@ -292,8 +292,8 @@
                     MessageBody = message.Body
                 }).ConfigureAwait(false);
                 // The MessageAttributes on message are read-only attributes provided by SQS
-                // and can't be re-sent. Unfortunately all the SQS metadata 
-                // such as SentTimestamp is reset with this send.    
+                // and can't be re-sent. Unfortunately all the SQS metadata
+                // such as SentTimestamp is reset with this send.
             }
             catch (Exception ex)
             {
