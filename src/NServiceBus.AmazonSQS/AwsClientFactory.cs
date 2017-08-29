@@ -1,17 +1,14 @@
 ﻿namespace NServiceBus.AmazonSQS
 {
     using System;
+    using System.Net;
     using Amazon.Runtime;
     using Amazon.S3;
     using Amazon.SQS;
-    using System.Net;
 
-    internal static class AwsClientFactory
+    static class AwsClientFactory
     {
-        static string NSERVICEBUS_AMAZONSQS_PROXY_AUTHENTICATION_USERNAME = nameof(NSERVICEBUS_AMAZONSQS_PROXY_AUTHENTICATION_USERNAME);
-        static string NSERVICEBUS_AMAZONSQS_PROXY_AUTHENTICATION_PASSWORD = nameof(NSERVICEBUS_AMAZONSQS_PROXY_AUTHENTICATION_PASSWORD);
-
-        static AWSCredentials CreateCredentials(SqsConnectionConfiguration connectionConfiguration)
+        static AWSCredentials CreateCredentials(ConnectionConfiguration connectionConfiguration)
         {
             switch (connectionConfiguration.CredentialSource)
             {
@@ -19,11 +16,12 @@
                     return new EnvironmentVariablesAWSCredentials();
                 case SqsCredentialSource.InstanceProfile:
                     return new InstanceProfileAWSCredentials();
+                default:
+                    throw new NotImplementedException($"No implementation for credential type {connectionConfiguration.CredentialSource}");
             }
-            throw new NotImplementedException($"No implementation for credential type {connectionConfiguration.CredentialSource}");
         }
 
-        static void SetProxyConfig(ClientConfig clientConfig, SqsConnectionConfiguration connectionConfig)
+        static void SetProxyConfig(ClientConfig clientConfig, ConnectionConfiguration connectionConfig)
         {
             if (!string.IsNullOrEmpty(connectionConfig.ProxyHost))
             {
@@ -36,7 +34,7 @@
             }
         }
 
-        public static IAmazonSQS CreateSqsClient(SqsConnectionConfiguration connectionConfiguration)
+        public static IAmazonSQS CreateSqsClient(ConnectionConfiguration connectionConfiguration)
         {
             var config = new AmazonSQSConfig
             {
@@ -48,16 +46,19 @@
             return new AmazonSQSClient(CreateCredentials(connectionConfiguration), config);
         }
 
-        public static IAmazonS3 CreateS3Client(SqsConnectionConfiguration connectionConfiguration)
+        public static IAmazonS3 CreateS3Client(ConnectionConfiguration connectionConfiguration)
         {
             var config = new AmazonS3Config
             {
-                RegionEndpoint = connectionConfiguration.Region,
+                RegionEndpoint = connectionConfiguration.Region
             };
 
             SetProxyConfig(config, connectionConfiguration);
 
             return new AmazonS3Client(CreateCredentials(connectionConfiguration), config);
         }
+
+        static string NSERVICEBUS_AMAZONSQS_PROXY_AUTHENTICATION_USERNAME = nameof(NSERVICEBUS_AMAZONSQS_PROXY_AUTHENTICATION_USERNAME);
+        static string NSERVICEBUS_AMAZONSQS_PROXY_AUTHENTICATION_PASSWORD = nameof(NSERVICEBUS_AMAZONSQS_PROXY_AUTHENTICATION_PASSWORD);
     }
 }

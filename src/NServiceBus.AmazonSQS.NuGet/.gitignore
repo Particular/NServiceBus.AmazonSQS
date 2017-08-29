@@ -1,5 +1,0 @@
-lib/*.dll
-lib/*.pdb
-*.nupkg
-*.nupkg.bak
-*.log

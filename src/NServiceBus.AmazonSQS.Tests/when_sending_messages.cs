@@ -1,15 +1,14 @@
-﻿using NServiceBus.Extensibility;
-using NServiceBus.Transport;
-using NServiceBus.Transports.SQS;
-using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace NServiceBus.AmazonSQS.Tests
+﻿namespace NServiceBus.AmazonSQS.Tests
 {
-    using NServiceBus.Routing;
+    using System;
+    using System.Collections.Generic;
+    using System.Text;
+    using Extensibility;
+    using NUnit.Framework;
+    using Routing;
     using Settings;
+    using Transport;
+    using Transports.SQS;
 
     [TestFixture]
     public class when_sending_messages
@@ -22,10 +21,7 @@ namespace NServiceBus.AmazonSQS.Tests
             transportSettings
                 .Region("ap-southeast-2");
 
-            var sut = new SqsMessageDispatcher
-            {
-                ConnectionConfiguration = new SqsConnectionConfiguration(settings)
-            };
+            var sut = new MessageDispatcher(new ConnectionConfiguration(settings), null, null, null);
 
             var stringBuilder = new StringBuilder();
             while (stringBuilder.Length < 256 * 1024)
@@ -45,7 +41,7 @@ namespace NServiceBus.AmazonSQS.Tests
             var transportTransaction = new TransportTransaction();
             var context = new ContextBag();
 
-            Assert.ThrowsAsync<InvalidOperationException>(async () => await sut.Dispatch(transportOperations, transportTransaction, context));
+            Assert.ThrowsAsync<Exception>(async () => await sut.Dispatch(transportOperations, transportTransaction, context));
         }
     }
 }
