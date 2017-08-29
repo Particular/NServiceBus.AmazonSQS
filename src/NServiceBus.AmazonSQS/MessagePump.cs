@@ -108,6 +108,11 @@
 
                     var tasks = receiveResult.Messages.Select(async message =>
                     {
+                        if (cancellationTokenSource.Token.IsCancellationRequested)
+                        {
+                            return;
+                        }
+
                         IncomingMessage incomingMessage = null;
                         TransportMessage transportMessage = null;
                         var transportTransaction = new TransportTransaction();
@@ -126,6 +131,11 @@
                                 s3Client,
                                 configuration,
                                 cancellationTokenSource.Token).ConfigureAwait(false);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            // shutting down
+                            return;
                         }
                         catch (Exception ex)
                         {
