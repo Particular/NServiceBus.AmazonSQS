@@ -6,7 +6,7 @@
     using EndpointTemplates;
     using NUnit.Framework;
     using System;
-    using Configuration.AdvanceExtensibility;
+    using Configuration.AdvancedExtensibility;
 
     public class When_sending_messages_larger_than_256kb : NServiceBusAcceptanceTest
     {

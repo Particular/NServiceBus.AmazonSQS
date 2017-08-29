@@ -4,7 +4,7 @@
     using System.Threading.Tasks;
     using AmazonSQS;
     using AmazonSQS.AcceptanceTests;
-    using Configuration.AdvanceExtensibility;
+    using Configuration.AdvancedExtensibility;
     using NUnit.Framework;
     using Settings;
 

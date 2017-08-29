@@ -8,8 +8,8 @@
     using AmazonSQS;
     using Settings;
     using AmazonSQS.AcceptanceTests;
-    using Configuration.AdvanceExtensibility;
     using Amazon.SQS.Model;
+    using Configuration.AdvancedExtensibility;
 
     public class When_sending_poison_messages : NServiceBusTransportTest
     {
