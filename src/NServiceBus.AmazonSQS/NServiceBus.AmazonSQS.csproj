@@ -6,24 +6,17 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>$(SolutionDir)NServiceBus.snk</AssemblyOriginatorKeyFile>
-    <DebugType>full</DebugType>
-    <DebugSymbols>True</DebugSymbols>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <OutputPath>..\..\binaries\</OutputPath>
     <NoWarn>CS0419</NoWarn>
-    <UpdateAssemblyInfo>true</UpdateAssemblyInfo>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="NServiceBus" Version="6.0.0" />
-    <PackageReference Include="Particular.CodeRules" Version="0.2.0" />
-    <PackageReference Include="NuGetPackager" Version="0.6.5" />
-    <PackageReference Include="GitVersionTask" Version="4.0.0-beta0012" />
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
-    <PackageReference Include="AWSSDK.Core" version="3.3.17.5" />
-    <PackageReference Include="AWSSDK.S3" Version="3.3.9" />
-    <PackageReference Include="AWSSDK.SQS" Version="3.3.2.7" />
-    <None Include="..\..\GitVersion.yml" Link="GitVersion.yml" />
-    <None Include="..\..\packaging\nuget\NServiceBus.AmazonSQS.nuspec" Link="NServiceBus.AmazonSQS.nuspec" />
+    <PackageReference Include="NServiceBus" Version="[6.0.0, 7.0.0)" />
+    <PackageReference Include="Newtonsoft.Json" Version="[10.0.1, 11.0.0)" />
+    <PackageReference Include="AWSSDK.Core" version="[3.3.17.5, 3.4)" />
+    <PackageReference Include="AWSSDK.S3" Version="[3.3.9, 3.4)" />
+    <PackageReference Include="AWSSDK.SQS" Version="[3.3.2.7, 3.4)" />
   </ItemGroup>
 </Project>

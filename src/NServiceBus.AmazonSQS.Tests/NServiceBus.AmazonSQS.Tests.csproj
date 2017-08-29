@@ -3,24 +3,22 @@
   <PropertyGroup>
     <TargetFramework>net452</TargetFramework>
     <DebugSymbols>True</DebugSymbols>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <NoWarn>PCR0001</NoWarn>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>$(SolutionDir)Test.snk</AssemblyOriginatorKeyFile>    
-  </PropertyGroup>
-  <PropertyGroup>
     <!-- Workaround for https://github.com/nunit/nunit3-vs-adapter/issues/296 -->
     <DebugType>Full</DebugType>
+    <NoWarn>PCR0001</NoWarn>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(SolutionDir)Test.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="ApprovalTests" Version="3.0.13" />
-    <PackageReference Include="NServiceBus" Version="6.3.4" />
-    <PackageReference Include="NUnit" Version="3.6.1" />
-    <PackageReference Include="AWSSDK.Core" version="3.3.17.5" />
-    <PackageReference Include="AWSSDK.S3" Version="3.3.9" />
-    <PackageReference Include="AWSSDK.SQS" Version="3.3.2.7" />
-    <PackageReference Include="NUnit3TestAdapter" Version="3.6.0" />
-    <PackageReference Include="PublicApiGenerator" Version="6.1.0-beta2" />    
+    <PackageReference Include="ApprovalTests" Version="3.*" />
+    <PackageReference Include="ApprovalUtilities" Version="3.*" />
+    <PackageReference Include="NServiceBus" Version="6.*" />
+    <PackageReference Include="NUnit" Version="3.*" />
+    <PackageReference Include="AWSSDK.Core" version="3.*" />
+    <PackageReference Include="AWSSDK.S3" Version="3.*" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.*" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.*" />
+    <PackageReference Include="PublicApiGenerator" Version="6.1.0-*" />
     <ProjectReference Include="..\NServiceBus.AmazonSQS\NServiceBus.AmazonSQS.csproj" />
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
