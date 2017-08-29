@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26430.12
-MinimumVisualStudioVersion = 10.0.40219.1
+MinimumVisualStudioVersion = 15.0.26430.12
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NServiceBus.AmazonSQS", "NServiceBus.AmazonSQS\NServiceBus.AmazonSQS.csproj", "{A40EBAE3-ADF8-4CD8-87DA-025BCA6BA1C2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NServiceBus.AmazonSQS.Tests", "NServiceBus.AmazonSQS.Tests\NServiceBus.AmazonSQS.Tests.csproj", "{7E15376E-8902-49AA-8AB9-3916A012D588}"
