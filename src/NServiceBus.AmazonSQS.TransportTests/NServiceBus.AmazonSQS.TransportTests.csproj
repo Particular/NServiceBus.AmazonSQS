@@ -1,25 +1,22 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net452</TargetFramework>
+    <TargetFrameworks>net452</TargetFrameworks>
     <DebugSymbols>True</DebugSymbols>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <NoWarn>PCR0001</NoWarn>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>$(SolutionDir)Test.snk</AssemblyOriginatorKeyFile>    
-  </PropertyGroup>
-  <PropertyGroup>
     <!-- Workaround for https://github.com/nunit/nunit3-vs-adapter/issues/296 -->
     <DebugType>Full</DebugType>
+    <NoWarn>PCR0001</NoWarn>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(SolutionDir)Test.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="NServiceBus" Version="6.3.4" />
-    <PackageReference Include="NServiceBus.TransportTests.Sources" Version="6.3.4" />
-    <PackageReference Include="NUnit" Version="3.6.1" />
-    <PackageReference Include="AWSSDK.Core" version="3.3.17.5" />
-    <PackageReference Include="AWSSDK.S3" Version="3.3.9" />
-    <PackageReference Include="AWSSDK.SQS" Version="3.3.2.7" />
-    <PackageReference Include="NUnit3TestAdapter" Version="3.6.0" />
+    <PackageReference Include="NServiceBus" Version="6.*" />
+    <PackageReference Include="NServiceBus.TransportTests.Sources" Version="6.*" />
+    <PackageReference Include="NUnit" Version="3.*" />
+    <PackageReference Include="AWSSDK.Core" version="3.*" />
+    <PackageReference Include="AWSSDK.S3" Version="3.*" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.*" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.*" />
     <ProjectReference Include="..\NServiceBus.AmazonSQS.AcceptanceTests\NServiceBus.AmazonSQS.AcceptanceTests.csproj" />    
     <ProjectReference Include="..\NServiceBus.AmazonSQS\NServiceBus.AmazonSQS.csproj" />
     <Reference Include="Microsoft.CSharp" />
