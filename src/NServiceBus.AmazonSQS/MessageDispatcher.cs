@@ -78,7 +78,7 @@
                 .ConfigureAwait(false);
         }
 
-        Task SendMessage(string message, string destination, List<DeliveryConstraint> constraints)
+        async Task SendMessage(string message, string destination, List<DeliveryConstraint> constraints)
         {
             var delayWithConstraint = constraints.OfType<DelayDeliveryWith>().SingleOrDefault();
             var deliverAtConstraint = constraints.OfType<DoNotDeliverBefore>().SingleOrDefault();
@@ -96,10 +96,9 @@
                 delayDeliveryBy = delayWithConstraint.Delay;
             }
 
-            var sendMessageRequest = new SendMessageRequest(
-                queueUrlCache.GetQueueUrl(
-                    QueueNameHelper.GetSqsQueueName(destination, configuration)),
-                message);
+            var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination, configuration))
+                .ConfigureAwait(false);
+            var sendMessageRequest = new SendMessageRequest(queueUrl, message);
 
             // There should be no need to check if the delay time is greater than the maximum allowed
             // by SQS (15 minutes); the call to AWS will fail with an appropriate exception if the limit is exceeded.
@@ -108,7 +107,8 @@
                 sendMessageRequest.DelaySeconds = Math.Max(0, (int)delayDeliveryBy.TotalSeconds);
             }
 
-            return sqsClient.SendMessageAsync(sendMessageRequest);
+            await sqsClient.SendMessageAsync(sendMessageRequest)
+                .ConfigureAwait(false);
         }
 
         ConnectionConfiguration configuration;

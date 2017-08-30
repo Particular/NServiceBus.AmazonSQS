@@ -7,7 +7,7 @@
     {
         public ConnectionConfiguration(ReadOnlySettings settings)
         {
-            // Accessing the settings bag during runtime means a lot of boxing and unboxing, 
+            // Accessing the settings bag during runtime means a lot of boxing and unboxing,
             // all properties of this class are lazy initialized once they are accessed
             this.settings = settings;
         }

@@ -12,7 +12,6 @@
                 throw new ArgumentNullException(nameof(destination));
             }
 
-
             var s = connectionConfiguration.QueueNamePrefix + destination;
 
             if (connectionConfiguration.PreTruncateQueueNames && s.Length > 80)
