@@ -9,6 +9,7 @@
     <PackageReference Include="NServiceBus" Version="7.0.0-*" />
     <PackageReference Include="NServiceBus.TransportTests.Sources" Version="7.0.0-*" />
     <PackageReference Include="NUnit" Version="3.7.*" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.8.0-alpha1" />
     <PackageReference Include="AWSSDK.Core" version="3.3.17.5" />
     <PackageReference Include="AWSSDK.S3" Version="3.3.9" />
     <PackageReference Include="AWSSDK.SQS" Version="3.3.2.7" />
