@@ -18,6 +18,5 @@
     <PackageReference Include="PublicApiGenerator" Version="6.1.0-*" />
     <PackageReference Include="Mono.Cecil" Version="0.10.0-*" />
     <ProjectReference Include="..\NServiceBus.AmazonSQS\NServiceBus.AmazonSQS.csproj" />
-    <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
 </Project>

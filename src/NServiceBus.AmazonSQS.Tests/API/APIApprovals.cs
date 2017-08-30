@@ -1,22 +1,20 @@
-﻿namespace NServiceBus.AmazonSQS.Tests.API
+﻿using System.IO;
+using System.Reflection;
+using ApprovalTests;
+using NUnit.Framework;
+using PublicApiGenerator;
+using System.Runtime.CompilerServices;
+
+[TestFixture]
+class APIApprovals
 {
-    using ApprovalTests;
-    using ApprovalTests.Reporters;
-    using NUnit.Framework;
-    using PublicApiGenerator;
-    using System.Runtime.CompilerServices;
-
-    [TestFixture]
-    class APIApprovals
+    [Test]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public void ApproveSqsTransport()
     {
-        [Test]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        [UseReporter(typeof(DiffReporter))]
-        public void ApproveSqsTransport()
-        {
-            var publicApi = ApiGenerator.GeneratePublicApi(typeof(SqsTransport).Assembly);
-
-            Approvals.Verify(publicApi);
-        }
+        var combine = Path.Combine(TestContext.CurrentContext.TestDirectory, "NServiceBus.AmazonSQS.dll");
+        var assembly = Assembly.LoadFile(combine);
+        var publicApi = ApiGenerator.GeneratePublicApi(assembly);
+        Approvals.Verify(publicApi);
     }
 }
