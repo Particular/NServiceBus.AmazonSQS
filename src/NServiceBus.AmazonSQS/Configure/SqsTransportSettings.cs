@@ -3,7 +3,7 @@
     using System;
     using System.Linq;
     using Amazon;
-    using Configuration.AdvanceExtensibility;
+    using Configuration.AdvancedExtensibility;
 
     /// <summary>
     /// Adds access to the SQS transport config to the global Transports object.
