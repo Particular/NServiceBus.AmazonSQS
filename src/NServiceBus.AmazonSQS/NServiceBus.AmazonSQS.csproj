@@ -8,6 +8,7 @@
     <NoWarn>CS0419</NoWarn>
   </PropertyGroup>
   <PropertyGroup>
+    <Description>An Amazon SQS transport implementation for NServiceBus</Description>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
   <ItemGroup>
