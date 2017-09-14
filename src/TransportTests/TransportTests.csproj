@@ -13,7 +13,7 @@
     <PackageReference Include="AWSSDK.Core" version="3.3.17.5" />
     <PackageReference Include="AWSSDK.S3" Version="3.3.9" />
     <PackageReference Include="AWSSDK.SQS" Version="3.3.2.7" />
-    <ProjectReference Include="..\NServiceBus.AmazonSQS.AcceptanceTests\NServiceBus.AmazonSQS.AcceptanceTests.csproj" />
+    <ProjectReference Include="..\AcceptanceTests\AcceptanceTests.csproj" />
     <ProjectReference Include="..\NServiceBus.AmazonSQS\NServiceBus.AmazonSQS.csproj" />
   </ItemGroup>
 </Project>

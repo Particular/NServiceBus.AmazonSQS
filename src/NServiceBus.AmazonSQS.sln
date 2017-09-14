@@ -1,15 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.12
+VisualStudioVersion = 15.0.26730.15
 MinimumVisualStudioVersion = 15.0.26430.12
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NServiceBus.AmazonSQS", "NServiceBus.AmazonSQS\NServiceBus.AmazonSQS.csproj", "{A40EBAE3-ADF8-4CD8-87DA-025BCA6BA1C2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NServiceBus.AmazonSQS", "NServiceBus.AmazonSQS\NServiceBus.AmazonSQS.csproj", "{A40EBAE3-ADF8-4CD8-87DA-025BCA6BA1C2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NServiceBus.AmazonSQS.Tests", "NServiceBus.AmazonSQS.Tests\NServiceBus.AmazonSQS.Tests.csproj", "{7E15376E-8902-49AA-8AB9-3916A012D588}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests\Tests.csproj", "{7E15376E-8902-49AA-8AB9-3916A012D588}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NServiceBus.AmazonSQS.AcceptanceTests", "NServiceBus.AmazonSQS.AcceptanceTests\NServiceBus.AmazonSQS.AcceptanceTests.csproj", "{E87BA318-68A7-4EEE-8817-DFC91296299B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AcceptanceTests", "AcceptanceTests\AcceptanceTests.csproj", "{E87BA318-68A7-4EEE-8817-DFC91296299B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NServiceBus.AmazonSQS.TransportTests", "NServiceBus.AmazonSQS.TransportTests\NServiceBus.AmazonSQS.TransportTests.csproj", "{E1E492D1-F5B2-480F-86D4-3D94E49A162D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TransportTests", "TransportTests\TransportTests.csproj", "{E1E492D1-F5B2-480F-86D4-3D94E49A162D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -36,5 +36,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B472FD0A-5A19-4666-89C6-B551C9D07E8E}
 	EndGlobalSection
 EndGlobal
