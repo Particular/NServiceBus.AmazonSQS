@@ -101,7 +101,7 @@
                             MaxNumberOfMessages = 10,
                             QueueUrl = queueUrl,
                             WaitTimeSeconds = 20,
-                            AttributeNames = new List<String>
+                            AttributeNames = new List<string>
                             {
                                 "SentTimestamp"
                             }
@@ -159,8 +159,7 @@
                         else
                         {
                             // Check that the message hasn't expired
-                            string rawTtbr;
-                            if (incomingMessage.Headers.TryGetValue(TransportHeaders.TimeToBeReceived, out rawTtbr))
+                            if (incomingMessage.Headers.TryGetValue(TransportHeaders.TimeToBeReceived, out var rawTtbr))
                             {
                                 incomingMessage.Headers.Remove(TransportHeaders.TimeToBeReceived);
 
@@ -264,7 +263,7 @@
 
             if (transportMessage != null)
             {
-                if (!String.IsNullOrEmpty(transportMessage.S3BodyKey))
+                if (!string.IsNullOrEmpty(transportMessage.S3BodyKey))
                 {
                     try
                     {

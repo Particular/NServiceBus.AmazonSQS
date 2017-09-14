@@ -2,8 +2,9 @@
 
   <PropertyGroup>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
-  
+
   <!-- Workaround for GitVersion 4.0 not creating GitVersionInformation by default -->
   <PropertyGroup>
     <UpdateAssemblyInfo>true</UpdateAssemblyInfo>
