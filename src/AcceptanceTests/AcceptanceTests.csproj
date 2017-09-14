@@ -6,15 +6,15 @@
     <AssemblyOriginatorKeyFile>$(SolutionDir)Test.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.*" />
     <PackageReference Include="NServiceBus.AcceptanceTesting" Version="7.0.0-*" />
     <PackageReference Include="NServiceBus" Version="7.0.0-*" />
     <PackageReference Include="NServiceBus.AcceptanceTests.Sources" Version="7.0.0-*" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.*" />
     <PackageReference Include="NUnit" Version="3.7.*" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.8.0-alpha1" />
-    <PackageReference Include="AWSSDK.Core" version="3.3.17.5" />
-    <PackageReference Include="AWSSDK.S3" Version="3.3.9" />
-    <PackageReference Include="AWSSDK.SQS" Version="3.3.2.7" />
+    <PackageReference Include="AWSSDK.Core" version="3.*" />
+    <PackageReference Include="AWSSDK.S3" Version="3.*" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.*" />
     <ProjectReference Include="..\NServiceBus.AmazonSQS\NServiceBus.AmazonSQS.csproj" />
   </ItemGroup>
 </Project>

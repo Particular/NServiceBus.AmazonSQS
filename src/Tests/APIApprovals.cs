@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿#if (net452)
+using System.IO;
 using System.Reflection;
 using ApprovalTests;
 using NUnit.Framework;
@@ -18,3 +19,4 @@ class APIApprovals
         Approvals.Verify(publicApi);
     }
 }
+#endif
