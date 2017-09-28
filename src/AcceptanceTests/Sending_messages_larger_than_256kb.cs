@@ -11,7 +11,7 @@ using NServiceBus.Configuration.AdvancedExtensibility;
 public class Sending_messages_larger_than_256kb : NServiceBusAcceptanceTest
 {
     [Test]
-    public async Task Should_receive_messages_with_largepayload_correctly()
+    public async Task Should_receive_messages_with_large_payload_correctly()
     {
         var payloadToSend = new byte[PayloadSize];
 
