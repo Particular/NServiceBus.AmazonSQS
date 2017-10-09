@@ -1,5 +1,6 @@
 ﻿namespace NServiceBus.AmazonSQS
 {
+    using System;
     using Amazon;
     using Settings;
 
@@ -24,15 +25,15 @@
             }
         }
 
-        public int MaxTTLDays
+        public TimeSpan MaxTtl
         {
             get
             {
-                if (!maxTtlDays.HasValue)
+                if (!maxTtl.HasValue)
                 {
-                    maxTtlDays = settings.GetOrDefault<int>(SettingsKeys.MaxTTLDays);
+                    maxTtl = settings.GetOrDefault<TimeSpan>(SettingsKeys.MaxTtl);
                 }
-                return maxTtlDays.Value;
+                return maxTtl.Value;
             }
         }
 
@@ -134,7 +135,7 @@
 
         RegionEndpoint region;
         ReadOnlySettings settings;
-        int? maxTtlDays;
+        TimeSpan? maxTtl;
         string s3BucketForLargeMessages;
         string s3KeyPrefix;
         string queueNamePrefix;
