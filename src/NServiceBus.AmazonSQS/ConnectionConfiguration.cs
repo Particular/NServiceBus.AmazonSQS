@@ -1,7 +1,8 @@
 ﻿namespace NServiceBus.AmazonSQS
 {
     using System;
-    using Amazon;
+    using Amazon.S3;
+    using Amazon.SQS;
     using Settings;
 
     class ConnectionConfiguration
@@ -13,15 +14,15 @@
             this.settings = settings;
         }
 
-        public RegionEndpoint Region
+        public Func<IAmazonSQS> SqsClientFactory
         {
             get
             {
-                if (region == null)
+                if (sqsClientFactory == null)
                 {
-                    region = settings.Get<RegionEndpoint>(SettingsKeys.Region);
+                    sqsClientFactory = settings.GetOrDefault<Func<IAmazonSQS>>(SettingsKeys.SqsClientFactory) ?? (() => new AmazonSQSClient());
                 }
-                return region;
+                return sqsClientFactory;
             }
         }
 
@@ -34,6 +35,18 @@
                     maxTTL = settings.GetOrDefault<TimeSpan>(SettingsKeys.MaxTimeToLive);
                 }
                 return maxTTL.Value;
+            }
+        }
+
+        public Func<IAmazonS3> S3ClientFactory
+        {
+            get
+            {
+                if (s3ClientFactory == null)
+                {
+                    s3ClientFactory = settings.GetOrDefault<Func<IAmazonS3>>(SettingsKeys.S3ClientFactory) ?? (() => new AmazonS3Client());
+                }
+                return s3ClientFactory;
             }
         }
 
@@ -73,42 +86,6 @@
             }
         }
 
-        public SqsCredentialSource CredentialSource
-        {
-            get
-            {
-                if (!credentialSource.HasValue)
-                {
-                    credentialSource = settings.GetOrDefault<SqsCredentialSource>(SettingsKeys.CredentialSource);
-                }
-                return credentialSource.Value;
-            }
-        }
-
-        public string ProxyHost
-        {
-            get
-            {
-                if (proxyHost == null)
-                {
-                    proxyHost = settings.GetOrDefault<string>(SettingsKeys.ProxyHost);
-                }
-                return proxyHost;
-            }
-        }
-
-        public int ProxyPort
-        {
-            get
-            {
-                if (!proxyPort.HasValue)
-                {
-                    proxyPort = settings.GetOrDefault<int>(SettingsKeys.ProxyPort);
-                }
-                return proxyPort.Value;
-            }
-        }
-
         public bool NativeDeferral
         {
             get
@@ -133,16 +110,14 @@
             }
         }
 
-        RegionEndpoint region;
         ReadOnlySettings settings;
         TimeSpan? maxTTL;
         string s3BucketForLargeMessages;
         string s3KeyPrefix;
         string queueNamePrefix;
-        SqsCredentialSource? credentialSource;
-        string proxyHost;
-        int? proxyPort;
         bool? nativeDeferral;
         bool? preTruncateQueueNames;
+        Func<IAmazonS3> s3ClientFactory;
+        Func<IAmazonSQS> sqsClientFactory;
     }
 }

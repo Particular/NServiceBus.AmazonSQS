@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Amazon.SQS;
 using NServiceBus;
 using NServiceBus.AmazonSQS;
 using NServiceBus.Extensibility;
@@ -18,8 +19,7 @@ public class Sending_messages
     {
         var settings = new SettingsHolder();
         var transportSettings = new TransportExtensions<SqsTransport>(settings);
-        transportSettings
-            .Region("ap-southeast-2");
+        transportSettings.ClientFactory(() => new AmazonSQSClient());
 
         var sut = new MessageDispatcher(new ConnectionConfiguration(settings), null, null, null);
 
