@@ -8,7 +8,7 @@
     /// <summary>
     /// Adds access to the SQS transport config to the global Transports object.
     /// </summary>
-    public static class SqsTransportSettings
+    public static partial class SqsTransportSettings
     {
         /// <summary>
         /// The Amazon Web Services Region in which to access the SQS service.
@@ -31,23 +31,28 @@
         }
 
         /// <summary>
-        /// This is the maximum number of days that a message will be retained within SQS
+        /// This is the maximum time that a message will be retained within SQS
         /// and S3. If you send a message, and that message is not received and successfully
         /// processed within the specified time, the message will be lost. This value applies
         /// to both SQS and S3 - messages in SQS will be deleted after this amount of time
         /// expires, and large message bodies stored in S3 will automatically be deleted
         /// after this amount of time expires.
-        /// If not specified, the endpoint uses a max TTL of 4 days.
         /// </summary>
+        /// <remarks>
+        /// If not specified, the endpoint uses a max TTL of 4 days.
+        /// </remarks>
         /// <param name="transportExtensions"></param>
-        /// <param name="maxTtlDays">The max TTL in days. Must be a value between 1 and 14.</param>
-        public static TransportExtensions<SqsTransport> MaxTTLDays(this TransportExtensions<SqsTransport> transportExtensions, int maxTtlDays)
+        /// <param name="maxTimeToLive">The max time to live. Must be a value between 60 seconds and not greater than 14 days.</param>
+        public static TransportExtensions<SqsTransport> MaxTimeToLive(this TransportExtensions<SqsTransport> transportExtensions, TimeSpan maxTimeToLive)
         {
-            if (maxTtlDays <= 0 || maxTtlDays > 14)
+            var maxDays = TimeSpan.FromDays(14);
+            var minSeconds = TimeSpan.FromSeconds(60);
+
+            if (maxTimeToLive <= minSeconds || maxTimeToLive > maxDays)
             {
-                throw new ArgumentException("Max TTL needs to be greater than 0 and less than 15.");
+                throw new ArgumentException("Max TTL needs to be greater or equal 60 seconds and not greater than 14 days.");
             }
-            transportExtensions.GetSettings().Set(SettingsKeys.MaxTTLDays, maxTtlDays);
+            transportExtensions.GetSettings().Set(SettingsKeys.MaxTimeToLive, maxTimeToLive);
             return transportExtensions;
         }
 

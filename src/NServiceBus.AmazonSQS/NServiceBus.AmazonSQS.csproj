@@ -17,6 +17,8 @@
     <PackageReference Include="AWSSDK.Core" version="[3.3.17.5, 3.4)" />
     <PackageReference Include="AWSSDK.S3" Version="[3.3.9, 3.4)" />
     <PackageReference Include="AWSSDK.SQS" Version="[3.3.2.7, 3.4)" />
+    <PackageReference Include="Fody" Version="2.*" PrivateAssets="All" />
+    <PackageReference Include="Obsolete.Fody" Version="4.*" PrivateAssets="All" />
     <None Include="..\..\GitVersion.yml" Link="GitVersion.yml" />
   </ItemGroup>
 </Project>

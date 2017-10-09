@@ -1,4 +1,4 @@
-﻿#if (net452)
+﻿#if (NET452)
 using System.IO;
 using System.Reflection;
 using ApprovalTests;
