@@ -25,13 +25,13 @@
             }
         }
 
-        public TimeSpan MaxTTL
+        public TimeSpan MaxTimeToLive
         {
             get
             {
                 if (!maxTTL.HasValue)
                 {
-                    maxTTL = settings.GetOrDefault<TimeSpan>(SettingsKeys.MaxTTL);
+                    maxTTL = settings.GetOrDefault<TimeSpan>(SettingsKeys.MaxTimeToLive);
                 }
                 return maxTTL.Value;
             }

@@ -61,7 +61,7 @@
                     QueueUrl = createQueueResponse.QueueUrl
                 };
                 sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod,
-                    configuration.MaxTTL.TotalSeconds.ToString());
+                    configuration.MaxTimeToLive.TotalSeconds.ToString());
 
                 await sqsClient.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
 
@@ -106,7 +106,7 @@
                                                 Status = LifecycleRuleStatus.Enabled,
                                                 Expiration = new LifecycleRuleExpiration
                                                 {
-                                                    Days = (int)Math.Ceiling(configuration.MaxTTL.TotalDays)
+                                                    Days = (int)Math.Ceiling(configuration.MaxTimeToLive.TotalDays)
                                                 }
                                             }
                                         }

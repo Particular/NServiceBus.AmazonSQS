@@ -42,17 +42,17 @@
         /// If not specified, the endpoint uses a max TTL of 4 days.
         /// </remarks>
         /// <param name="transportExtensions"></param>
-        /// <param name="maxTTL">The max TTL in days. Must be a value between 60 seconds and not greater than 14 days.</param>
-        public static TransportExtensions<SqsTransport> MaxTTL(this TransportExtensions<SqsTransport> transportExtensions, TimeSpan maxTTL)
+        /// <param name="maxTimeToLive">The max time to live. Must be a value between 60 seconds and not greater than 14 days.</param>
+        public static TransportExtensions<SqsTransport> MaxTimeToLive(this TransportExtensions<SqsTransport> transportExtensions, TimeSpan maxTimeToLive)
         {
             var maxDays = TimeSpan.FromDays(14);
             var minSeconds = TimeSpan.FromSeconds(60);
 
-            if (maxTTL <= minSeconds || maxTTL > maxDays)
+            if (maxTimeToLive <= minSeconds || maxTimeToLive > maxDays)
             {
                 throw new ArgumentException("Max TTL needs to be greater or equal 60 seconds and not greater than 14 days.");
             }
-            transportExtensions.GetSettings().Set(SettingsKeys.MaxTTL, maxTTL);
+            transportExtensions.GetSettings().Set(SettingsKeys.MaxTimeToLive, maxTimeToLive);
             return transportExtensions;
         }
 

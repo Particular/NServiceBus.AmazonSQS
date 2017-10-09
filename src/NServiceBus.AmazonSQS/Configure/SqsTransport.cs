@@ -27,7 +27,7 @@
 
             settings.SetDefault(SettingsKeys.S3BucketForLargeMessages, string.Empty);
             settings.SetDefault(SettingsKeys.S3KeyPrefix, string.Empty);
-            settings.SetDefault(SettingsKeys.MaxTTL, TimeSpan.FromDays(4));
+            settings.SetDefault(SettingsKeys.MaxTimeToLive, TimeSpan.FromDays(4));
             settings.SetDefault(SettingsKeys.CredentialSource, SqsCredentialSource.EnvironmentVariables);
             settings.SetDefault(SettingsKeys.ProxyHost, string.Empty);
             settings.SetDefault(SettingsKeys.ProxyPort, 0);

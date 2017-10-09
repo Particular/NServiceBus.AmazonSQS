@@ -48,9 +48,9 @@ public class Configuring_transport
     {
         var extensions = new TransportExtensions<SqsTransport>(new SettingsHolder());
 
-        var result = extensions.MaxTTL(TimeSpan.FromDays(1));
+        var result = extensions.MaxTimeToLive(TimeSpan.FromDays(1));
 
-        Assert.AreEqual(TimeSpan.FromDays(1), result.GetSettings().Get(SettingsKeys.MaxTTL));
+        Assert.AreEqual(TimeSpan.FromDays(1), result.GetSettings().Get(SettingsKeys.MaxTimeToLive));
     }
 
     [Test]
@@ -58,7 +58,7 @@ public class Configuring_transport
     {
         var extensions = new TransportExtensions<SqsTransport>(new SettingsHolder());
 
-        Assert.Throws<ArgumentException>(() => extensions.MaxTTL(TimeSpan.FromDays(100)));
+        Assert.Throws<ArgumentException>(() => extensions.MaxTimeToLive(TimeSpan.FromDays(100)));
     }
 
     [Test]
