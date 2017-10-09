@@ -50,7 +50,7 @@ public class Configuring_transport
 
         var result = extensions.MaxTtl(TimeSpan.FromDays(1));
 
-        Assert.AreEqual(TimeSpan.FromDays(1), result.GetSettings().Get("NServiceBus.AmazonSQS.MaxTTLDays"));
+        Assert.AreEqual(TimeSpan.FromDays(1), result.GetSettings().Get(SettingsKeys.MaxTtl));
     }
 
     [Test]
