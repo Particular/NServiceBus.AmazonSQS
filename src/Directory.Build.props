@@ -33,4 +33,9 @@
     DependsOnTargets="GetVersion"
     Condition="'$(GitVersion_Task_targets_Imported)' == 'True'" />
 
+  <Target Name="DisableAnalyzers" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)"/>
+    </ItemGroup>
+  </Target>
 </Project>
