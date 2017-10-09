@@ -8,7 +8,7 @@ namespace NServiceBus
     public static partial class SqsTransportSettings
     {
         [ObsoleteEx(
-            ReplacementTypeOrMember = nameof(MaxTtl),
+            ReplacementTypeOrMember = nameof(MaxTTL),
             RemoveInVersion = "5.0",
             TreatAsErrorFromVersion = "4.0")]
         public static TransportExtensions<SqsTransport> MaxTTLDays(this TransportExtensions<SqsTransport> transportExtensions, int maxTtlDays)

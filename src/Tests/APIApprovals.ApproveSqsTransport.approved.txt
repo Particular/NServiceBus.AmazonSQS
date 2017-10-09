@@ -21,8 +21,8 @@ namespace NServiceBus
     public class static SqsTransportSettings
     {
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> CredentialSource(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, NServiceBus.SqsCredentialSource credentialSource) { }
-        public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> MaxTtl(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.TimeSpan maxTtl) { }
-        [System.ObsoleteAttribute("Use `MaxTtl` instead. The member currently throws a NotImplementedException. Will" +
+        public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> MaxTTL(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.TimeSpan maxTTL) { }
+        [System.ObsoleteAttribute("Use `MaxTTL` instead. The member currently throws a NotImplementedException. Will" +
             " be removed in version 5.0.0.", true)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> MaxTTLDays(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, int maxTtlDays) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> NativeDeferral(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, bool use = True) { }

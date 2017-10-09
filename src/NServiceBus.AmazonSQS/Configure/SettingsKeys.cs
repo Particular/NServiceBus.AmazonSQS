@@ -4,7 +4,7 @@
     {
         const string Prefix = "NServiceBus.AmazonSQS.";
         public const string Region = Prefix + nameof(Region);
-        public const string MaxTtl = Prefix + nameof(MaxTtl);
+        public const string MaxTTL = Prefix + nameof(MaxTTL);
         public const string S3BucketForLargeMessages = Prefix + nameof(S3BucketForLargeMessages);
         public const string S3KeyPrefix = Prefix + nameof(S3KeyPrefix);
         public const string QueueNamePrefix = Prefix + nameof(QueueNamePrefix);

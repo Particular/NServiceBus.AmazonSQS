@@ -25,15 +25,15 @@
             }
         }
 
-        public TimeSpan MaxTtl
+        public TimeSpan MaxTTL
         {
             get
             {
-                if (!maxTtl.HasValue)
+                if (!maxTTL.HasValue)
                 {
-                    maxTtl = settings.GetOrDefault<TimeSpan>(SettingsKeys.MaxTtl);
+                    maxTTL = settings.GetOrDefault<TimeSpan>(SettingsKeys.MaxTTL);
                 }
-                return maxTtl.Value;
+                return maxTTL.Value;
             }
         }
 
@@ -135,7 +135,7 @@
 
         RegionEndpoint region;
         ReadOnlySettings settings;
-        TimeSpan? maxTtl;
+        TimeSpan? maxTTL;
         string s3BucketForLargeMessages;
         string s3KeyPrefix;
         string queueNamePrefix;
