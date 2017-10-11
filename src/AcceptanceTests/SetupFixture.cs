@@ -11,21 +11,13 @@
     [SetUpFixture]
     public class SetupFixture
     {
-        /// <summary>
-        /// The queue name prefix for the current run of the test suite.
-        /// </summary>
-        public static string SqsQueueNamePrefix { get; private set; }
-
-        [OneTimeSetUp]
-        public void OneTimeSetUp()
-        {
-            // Generate a new queue name prefix for acceptance tests
-            // every time the tests are run. 
-            // This is to work around an SQS limitation that prevents
-            // us from deleting then creating a queue with the 
-            // same name in a 60 second period.
-            SqsQueueNamePrefix = $"AT{DateTime.Now:yyyyMMddHHmmss}";
-        }
+        // The queue name prefix for the current run of the test suite.
+        // Generate a new queue name prefix for acceptance tests
+        // every time the tests are run.
+        // This is to work around an SQS limitation that prevents
+        // us from deleting then creating a queue with the
+        // same name in a 60 second period.
+        public static string SqsQueueNamePrefix = $"AT{DateTime.Now:yyyyMMddHHmmss}";
 
         [OneTimeTearDown]
         public async Task OneTimeTearDown()
