@@ -10,11 +10,8 @@
     public static partial class SqsTransportSettings
     {
         /// <summary>
-        /// 
+        /// Configures a client factory for the SQS client. The default client factory creates a SQS client with the default constructor.
         /// </summary>
-        /// <param name="transportExtensions"></param>
-        /// <param name="factory"></param>
-        /// <returns></returns>
         public static TransportExtensions<SqsTransport> ClientFactory(this TransportExtensions<SqsTransport> transportExtensions, Func<IAmazonSQS> factory)
         {
             transportExtensions.GetSettings().Set(SettingsKeys.SqsClientFactory, factory);

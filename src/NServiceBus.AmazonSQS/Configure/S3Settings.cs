@@ -7,7 +7,7 @@ namespace NServiceBus
     using Settings;
 
     /// <summary>
-    /// 
+    /// Exposes settings to configure S3 bucket and client factory.
     /// </summary>
     public class S3Settings : ExposeSettings
     {
@@ -16,10 +16,8 @@ namespace NServiceBus
         }
 
         /// <summary>
-        /// 
+        /// Configures the S3 client factory. The default client factory creates a new S3 client with the standard constructor.
         /// </summary>
-        /// <param name="factory"></param>
-        /// <returns></returns>
         public S3Settings ClientFactory(Func<IAmazonS3> factory)
         {
             AdvancedExtensibilityExtensions.GetSettings(this).Set(SettingsKeys.S3ClientFactory, factory);
