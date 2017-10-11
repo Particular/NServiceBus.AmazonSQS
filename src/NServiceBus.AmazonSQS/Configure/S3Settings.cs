@@ -20,7 +20,8 @@ namespace NServiceBus
         /// </summary>
         public S3Settings ClientFactory(Func<IAmazonS3> factory)
         {
-            AdvancedExtensibilityExtensions.GetSettings(this).Set(SettingsKeys.S3ClientFactory, factory);
+            Guard.AgainstNull(nameof(factory), factory);
+            this.GetSettings().Set(SettingsKeys.S3ClientFactory, factory);
             return this;
         }
 
@@ -35,15 +36,8 @@ namespace NServiceBus
         /// <param name="s3KeyPrefix">The path within the specified S3 Bucket to store large message bodies.</param>
         public S3Settings BucketForLargeMessages(string s3BucketForLargeMessages, string s3KeyPrefix)
         {
-            if (string.IsNullOrWhiteSpace(s3BucketForLargeMessages))
-            {
-                throw new ArgumentNullException(nameof(s3BucketForLargeMessages));
-            }
-
-            if (string.IsNullOrWhiteSpace(s3KeyPrefix))
-            {
-                throw new ArgumentNullException(s3KeyPrefix);
-            }
+            Guard.AgainstNull(nameof(s3BucketForLargeMessages), s3BucketForLargeMessages);
+            Guard.AgainstNullAndEmpty(nameof(s3KeyPrefix), s3KeyPrefix);
 
             // https://forums.aws.amazon.com/message.jspa?messageID=315883
             // S3 bucket names have the following restrictions:

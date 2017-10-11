@@ -11,8 +11,7 @@
     public class SqsTransport : TransportDefinition, IMessageDrivenSubscriptionTransport
     {
         /// <inheritdoc />
-        public override string ExampleConnectionStringForErrorMessage
-            => "";
+        public override string ExampleConnectionStringForErrorMessage => "";
 
         /// <inheritdoc />
         public override bool RequiresConnectionString => false;

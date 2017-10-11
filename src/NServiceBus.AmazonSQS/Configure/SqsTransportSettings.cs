@@ -14,6 +14,8 @@
         /// </summary>
         public static TransportExtensions<SqsTransport> ClientFactory(this TransportExtensions<SqsTransport> transportExtensions, Func<IAmazonSQS> factory)
         {
+            Guard.AgainstNull(nameof(transportExtensions), transportExtensions);
+            Guard.AgainstNull(nameof(factory), factory);
             transportExtensions.GetSettings().Set(SettingsKeys.SqsClientFactory, factory);
             return transportExtensions;
         }
@@ -33,6 +35,7 @@
         /// <param name="maxTimeToLive">The max time to live. Must be a value between 60 seconds and not greater than 14 days.</param>
         public static TransportExtensions<SqsTransport> MaxTimeToLive(this TransportExtensions<SqsTransport> transportExtensions, TimeSpan maxTimeToLive)
         {
+            Guard.AgainstNull(nameof(transportExtensions), transportExtensions);
             var maxDays = TimeSpan.FromDays(14);
             var minSeconds = TimeSpan.FromSeconds(60);
 
@@ -45,12 +48,11 @@
         }
 
         /// <summary>
-        /// 
+        /// Used to configure S3.
         /// </summary>
-        /// <param name="transportExtensions"></param>
-        /// <returns></returns>
         public static S3Settings S3(this TransportExtensions<SqsTransport> transportExtensions)
         {
+            Guard.AgainstNull(nameof(transportExtensions), transportExtensions);
             return new S3Settings(transportExtensions.GetSettings());
         }
 
@@ -62,6 +64,8 @@
         /// </summary>
         public static TransportExtensions<SqsTransport> QueueNamePrefix(this TransportExtensions<SqsTransport> transportExtensions, string queueNamePrefix)
         {
+            Guard.AgainstNull(nameof(transportExtensions), transportExtensions);
+            Guard.AgainstNullAndEmpty(nameof(queueNamePrefix), queueNamePrefix);
             transportExtensions.GetSettings().Set(SettingsKeys.QueueNamePrefix, queueNamePrefix);
 
             return transportExtensions;
@@ -72,10 +76,10 @@
         /// The maximum deferral time permitted by SQS is 15 minutes.
         /// If not specified, the default is to use a TimeoutManager based deferral.
         /// </summary>
-        /// <param name="transportExtensions"></param>
-        /// <param name="use">Set to true to use SQS message delays for deferring messages; false otherwise.</param>
+        /// <remarks>Set to true to use SQS message delays for deferring messages; false otherwise.</remarks>
         public static TransportExtensions<SqsTransport> NativeDeferral(this TransportExtensions<SqsTransport> transportExtensions, bool use = true)
         {
+            Guard.AgainstNull(nameof(transportExtensions), transportExtensions);
             transportExtensions.GetSettings().Set(SettingsKeys.NativeDeferral, use);
 
             return transportExtensions;
@@ -94,6 +98,7 @@
         /// </summary>
         internal static TransportExtensions<SqsTransport> PreTruncateQueueNamesForAcceptanceTests(this TransportExtensions<SqsTransport> transportExtensions, bool use = true)
         {
+            Guard.AgainstNull(nameof(transportExtensions), transportExtensions);
             transportExtensions.GetSettings().Set(SettingsKeys.PreTruncateQueueNames, use);
 
             return transportExtensions;
