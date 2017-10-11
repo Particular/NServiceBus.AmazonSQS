@@ -16,7 +16,7 @@
 
             var transportConfig = configuration.UseTransport<SqsTransport>();
 
-            transportConfig.ConfigureSqsTransport(SetupFixture.SqsQueueNamePrefix);
+            transportConfig.ConfigureSqsTransport(NServiceBusAcceptanceTest.SqsQueueNamePrefix);
 
             var routingConfig = transportConfig.Routing();
             foreach (var publisher in publisherMetadata.Publishers)

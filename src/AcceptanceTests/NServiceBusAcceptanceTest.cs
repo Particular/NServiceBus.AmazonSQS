@@ -9,7 +9,7 @@
     using Settings;
 
     [SetUpFixture]
-    public class SetupFixture
+    public abstract partial class NServiceBusAcceptanceTest
     {
         // The queue name prefix for the current run of the test suite.
         // Generate a new queue name prefix for acceptance tests
