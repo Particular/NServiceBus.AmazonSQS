@@ -1,20 +1,20 @@
 ﻿namespace NServiceBus.AmazonSQS.AcceptanceTests
 {
+    using Amazon;
+    using Amazon.S3;
+    using Amazon.SQS;
     using NServiceBus.AcceptanceTests.ScenarioDescriptors;
 
-    public static class SqsTransportConfigurationExtensions
+    public static class SqsTransportExtensions
     {
-
         const string RegionEnvironmentVariableName = "NServiceBus.AmazonSQS.Region";
         const string S3BucketEnvironmentVariableName = "NServiceBus.AmazonSQS.S3Bucket";
         const string NativeDeferralEnvironmentVariableName = "NServiceBus.AmazonSQS.NativeDeferral";
 
         public static TransportExtensions<SqsTransport> ConfigureSqsTransport(this TransportExtensions<SqsTransport> transportConfiguration, string queueNamePrefix)
         {
-            var region = EnvironmentHelper.GetEnvironmentVariable(RegionEnvironmentVariableName) ?? "ap-southeast-2";
-
             transportConfiguration
-                .Region(region)
+                .ClientFactory(CreateSQSClient)
                 .QueueNamePrefix(queueNamePrefix)
                 .PreTruncateQueueNamesForAcceptanceTests();
 
@@ -22,7 +22,9 @@
 
             if (!string.IsNullOrEmpty(s3BucketName))
             {
-                transportConfiguration.S3BucketForLargeMessages(s3BucketName, "test");
+                var s3Configuration = transportConfiguration.S3();
+                s3Configuration.ClientFactory(CreateS3Client);
+                s3Configuration.BucketForLargeMessages(s3BucketName, "test");
             }
 
             var nativeDeferralRaw = EnvironmentHelper.GetEnvironmentVariable(NativeDeferralEnvironmentVariableName);        
@@ -34,5 +36,15 @@
 
             return transportConfiguration;
         }
+
+        public static IAmazonSQS CreateSQSClient() => new AmazonSQSClient(new AmazonSQSConfig
+        {
+            RegionEndpoint = RegionEndpoint.GetBySystemName(EnvironmentHelper.GetEnvironmentVariable(RegionEnvironmentVariableName) ?? "ap-southeast-2")
+        });
+
+        public static IAmazonS3 CreateS3Client() => new AmazonS3Client(new AmazonS3Config
+        {
+            RegionEndpoint = RegionEndpoint.GetBySystemName(EnvironmentHelper.GetEnvironmentVariable(RegionEnvironmentVariableName) ?? "ap-southeast-2")
+        });
     }
 }

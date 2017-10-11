@@ -50,7 +50,7 @@ public class Sending_poison_messages : NServiceBusTransportTest
         var transportConfiguration = new TransportExtensions<SqsTransport>(new SettingsHolder());
         transportConfiguration = transportConfiguration.ConfigureSqsTransport(SetupFixture.SqsQueueNamePrefix);
         var connectionConfiguration = new ConnectionConfiguration(transportConfiguration.GetSettings());
-        using (var sqsClient = AwsClientFactory.CreateSqsClient(connectionConfiguration))
+        using (var sqsClient = SqsTransportExtensions.CreateSQSClient())
         {
             var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
             {
@@ -70,7 +70,7 @@ public class Sending_poison_messages : NServiceBusTransportTest
         var transportConfiguration = new TransportExtensions<SqsTransport>(new SettingsHolder());
         transportConfiguration = transportConfiguration.ConfigureSqsTransport(SetupFixture.SqsQueueNamePrefix);
         var connectionConfiguration = new ConnectionConfiguration(transportConfiguration.GetSettings());
-        using (var sqsClient = AwsClientFactory.CreateSqsClient(connectionConfiguration))
+        using (var sqsClient = SqsTransportExtensions.CreateSQSClient())
         {
             var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
             {

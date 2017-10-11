@@ -15,5 +15,51 @@ namespace NServiceBus
         {
             throw new NotImplementedException();
         }
+
+        [ObsoleteEx(
+            ReplacementTypeOrMember = "transport.ClientFactory(() => new AmazonSqsClient(customConfig))",
+            RemoveInVersion = "5.0",
+            TreatAsErrorFromVersion = "4.0")]
+        public static TransportExtensions<SqsTransport> CredentialSource(this TransportExtensions<SqsTransport> transportExtensions, SqsCredentialSource credentialSource)
+        {
+            throw new NotImplementedException();
+        }
+
+        [ObsoleteEx(
+            ReplacementTypeOrMember = "transport.ClientFactory(() => new AmazonSQSClient(new AmazonSQSConfig { RegionEndpoint = region }))",
+            RemoveInVersion = "5.0",
+            TreatAsErrorFromVersion = "4.0")]
+        public static TransportExtensions<SqsTransport> Region(this TransportExtensions<SqsTransport> transportExtensions, string region)
+        {
+            throw new NotImplementedException();
+        }
+
+        [ObsoleteEx(
+            ReplacementTypeOrMember = "transport.ClientFactory(() => new AmazonSQSClient(new AmazonSQSConfig { ProxyHost = host, ProxyPort = port }))",
+            RemoveInVersion = "5.0",
+            TreatAsErrorFromVersion = "4.0")]
+        public static TransportExtensions<SqsTransport> Proxy(this TransportExtensions<SqsTransport> transportExtensions, string proxyHost, int proxyPort)
+        {
+            throw new NotImplementedException();
+        }
+
+        [ObsoleteEx(
+            ReplacementTypeOrMember = "transport.S3().BucketForLargeMessages(string s3BucketForLargeMessages, string s3KeyPrefix)",
+            RemoveInVersion = "5.0",
+            TreatAsErrorFromVersion = "4.0")]
+        public static TransportExtensions<SqsTransport> S3BucketForLargeMessages(this TransportExtensions<SqsTransport> transportExtensions, string s3BucketForLargeMessages, string s3KeyPrefix)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    [ObsoleteEx(
+        ReplacementTypeOrMember = "transport.ClientFactory(() => new AmazonSqsClient(customConfig))",
+        RemoveInVersion = "5.0",
+        TreatAsErrorFromVersion = "4.0")]
+    public enum SqsCredentialSource
+    {
+        EnvironmentVariables,
+        InstanceProfile
     }
 }
