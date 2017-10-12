@@ -9,8 +9,6 @@
   </PropertyGroup>
   <PropertyGroup>
     <Description>An Amazon SQS transport implementation for NServiceBus</Description>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageProjectUrl>https://docs.particular.net/nuget/NServiceBus.AmazonSQS</PackageProjectUrl>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="NServiceBus" Version="[7.0.0-*, 8.0.0)" />
@@ -20,6 +18,7 @@
     <PackageReference Include="AWSSDK.SQS" Version="[3.3.2.7, 3.4)" />
     <PackageReference Include="Fody" Version="2.*" PrivateAssets="All" />
     <PackageReference Include="Obsolete.Fody" Version="4.*" PrivateAssets="All" />
+    <PackageReference Include="Particular.Packaging" Version="*" PrivateAssets="All" />
     <None Include="..\..\GitVersion.yml" Link="GitVersion.yml" />
   </ItemGroup>
 </Project>
