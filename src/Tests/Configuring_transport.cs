@@ -11,7 +11,7 @@ public class Configuring_transport
     public void Parsing_s3_bucket_works()
     {
         var extensions = new TransportExtensions<SqsTransport>(new SettingsHolder());
-        var result = extensions.S3().BucketForLargeMessages("myTestBucket", "blah\blah");
+        var result = extensions.S3("myTestBucket", "blah\blah");
 
         Assert.AreEqual("myTestBucket", result.GetSettings().Get("NServiceBus.AmazonSQS.S3BucketForLargeMessages"));
     }
@@ -21,7 +21,7 @@ public class Configuring_transport
     {
         var extensions = new TransportExtensions<SqsTransport>(new SettingsHolder());
 
-        Assert.Throws<ArgumentNullException>(() => extensions.S3().BucketForLargeMessages("myTestBucket", string.Empty));
+        Assert.Throws<ArgumentNullException>(() => extensions.S3("myTestBucket", string.Empty));
     }
 
     [Test]

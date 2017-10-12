@@ -44,7 +44,7 @@ namespace NServiceBus
         }
 
         [ObsoleteEx(
-            ReplacementTypeOrMember = "transport.S3().BucketForLargeMessages(string s3BucketForLargeMessages, string s3KeyPrefix)",
+            ReplacementTypeOrMember = "transport.S3(string bucketForLargeMessages, string keyPrefix)",
             RemoveInVersion = "5.0",
             TreatAsErrorFromVersion = "4.0")]
         public static TransportExtensions<SqsTransport> S3BucketForLargeMessages(this TransportExtensions<SqsTransport> transportExtensions, string s3BucketForLargeMessages, string s3KeyPrefix)
