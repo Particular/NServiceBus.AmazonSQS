@@ -8,8 +8,7 @@ namespace NServiceBus
     
     public class S3Settings : NServiceBus.Configuration.AdvancedExtensibility.ExposeSettings
     {
-        public NServiceBus.S3Settings BucketForLargeMessages(string s3BucketForLargeMessages, string s3KeyPrefix) { }
-        public NServiceBus.S3Settings ClientFactory(System.Func<Amazon.S3.IAmazonS3> factory) { }
+        public void ClientFactory(System.Func<Amazon.S3.IAmazonS3> factory) { }
     }
     [System.ObsoleteAttribute("Use `transport.ClientFactory(() => new AmazonSqsClient(customConfig))` instead. W" +
         "ill be removed in version 5.0.0.", true)]
@@ -46,10 +45,10 @@ namespace NServiceBus
             "onEndpoint = region }))` instead. The member currently throws a NotImplementedEx" +
             "ception. Will be removed in version 5.0.0.", true)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> Region(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string region) { }
-        public static NServiceBus.S3Settings S3(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
-        [System.ObsoleteAttribute("Use `transport.S3().BucketForLargeMessages(string s3BucketForLargeMessages, strin" +
-            "g s3KeyPrefix)` instead. The member currently throws a NotImplementedException. " +
-            "Will be removed in version 5.0.0.", true)]
+        public static NServiceBus.S3Settings S3(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string bucketForLargeMessages, string keyPrefix) { }
+        [System.ObsoleteAttribute("Use `transport.S3(string bucketForLargeMessages, string keyPrefix)` instead. The " +
+            "member currently throws a NotImplementedException. Will be removed in version 5." +
+            "0.0.", true)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> S3BucketForLargeMessages(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string s3BucketForLargeMessages, string s3KeyPrefix) { }
     }
 }

@@ -22,9 +22,8 @@
 
             if (!string.IsNullOrEmpty(s3BucketName))
             {
-                var s3Configuration = transportConfiguration.S3();
+                var s3Configuration = transportConfiguration.S3(s3BucketName, "test");
                 s3Configuration.ClientFactory(CreateS3Client);
-                s3Configuration.BucketForLargeMessages(s3BucketName, "test");
             }
 
             var nativeDeferralRaw = EnvironmentHelper.GetEnvironmentVariable(NativeDeferralEnvironmentVariableName);        
