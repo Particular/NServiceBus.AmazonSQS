@@ -169,10 +169,11 @@
                                 {
                                     var sentDateTime = message.GetSentDateTime();
                                     var utcNow = DateTime.UtcNow;
-                                    if (sentDateTime + timeToBeReceived <= utcNow)
+                                    var expiresAt = sentDateTime + timeToBeReceived;
+                                    if (expiresAt <= utcNow)
                                     {
                                         // Message has expired.
-                                        Logger.Warn($"Discarding expired message with Id {incomingMessage.MessageId}");
+                                        Logger.Warn($"Discarding expired message with Id {incomingMessage.MessageId}, expired {utcNow-expiresAt} ago at {expiresAt} utc.");
                                         messageExpired = true;
                                     }
                                 }
