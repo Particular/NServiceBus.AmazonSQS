@@ -1,15 +1,12 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>net452;netstandard2.0</TargetFrameworks>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>$(SolutionDir)NServiceBus.snk</AssemblyOriginatorKeyFile>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>CS0419</NoWarn>
-  </PropertyGroup>
-  <PropertyGroup>
     <Description>An Amazon SQS transport implementation for NServiceBus</Description>
   </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="NServiceBus" Version="[7.0.0-*, 8.0.0)" />
     <PackageReference Include="Newtonsoft.Json" Version="[10.0.1, 11.0.0)" />
@@ -19,6 +16,6 @@
     <PackageReference Include="Fody" Version="2.*" PrivateAssets="All" />
     <PackageReference Include="Obsolete.Fody" Version="4.*" PrivateAssets="All" />
     <PackageReference Include="Particular.Packaging" Version="*" PrivateAssets="All" />
-    <None Include="..\..\GitVersion.yml" Link="GitVersion.yml" />
   </ItemGroup>
+
 </Project>
