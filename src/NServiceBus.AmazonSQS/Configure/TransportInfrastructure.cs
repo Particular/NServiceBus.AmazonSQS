@@ -61,7 +61,7 @@
             return new TransportReceiveInfrastructure(
                 CreateMessagePump,
                 CreateQueueCreator,
-                () => Task.FromResult(StartupCheckResult.Success));
+                () => new RequiresWindows().Validate());
         }
 
         public override TransportSendInfrastructure ConfigureSendInfrastructure()
