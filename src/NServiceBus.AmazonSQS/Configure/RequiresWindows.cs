@@ -1,6 +1,6 @@
 ﻿namespace NServiceBus
 {
-    using System.Runtime.InteropServices;
+    using System;
     using System.Threading.Tasks;
     using Transport;
 
@@ -8,7 +8,7 @@
     {
         public Task<StartupCheckResult> Validate()
         {
-            var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            var isWindows = Environment.OSVersion.Platform == PlatformID.Win32NT;
             return Task.FromResult(isWindows ? StartupCheckResult.Success : StartupCheckResult.Failed("Due to a bug in the AWS SDK on linux, Windows is the only supported platform."));
         }
     }
