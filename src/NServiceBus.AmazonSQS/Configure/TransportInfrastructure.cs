@@ -71,6 +71,13 @@
                 () => Task.FromResult(StartupCheckResult.Success));
         }
 
+        public override Task Stop()
+        {
+            sqsClient.Dispose();
+            s3Client.Dispose();
+            return base.Stop();
+        }
+
         public override TransportSubscriptionInfrastructure ConfigureSubscriptionInfrastructure()
         {
             throw new NotImplementedException("NServiceBus.AmazonSQS does not support native pub/sub.");
