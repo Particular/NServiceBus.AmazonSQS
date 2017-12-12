@@ -155,7 +155,15 @@
             try
             {
                 await maxConcurrencySempahore.WaitAsync(token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // shutting, semaphore doesn't need to be released because it was never acquired
+                return;
+            }
 
+            try
+            {
                 IncomingMessage incomingMessage = null;
                 TransportMessage transportMessage = null;
 
