@@ -90,7 +90,7 @@
 
             for (var i = 0; i < degreeOfParallelism; i++)
             {
-                pumpTasks.Add(ConsumeMessages(cancellationTokenSource.Token));
+                pumpTasks.Add(Task.Run(() => ConsumeMessages(cancellationTokenSource.Token), CancellationToken.None));
             }
         }
 
