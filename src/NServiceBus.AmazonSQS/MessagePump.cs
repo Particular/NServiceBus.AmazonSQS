@@ -112,8 +112,8 @@
 
         async Task ConsumeMessages(CancellationToken token)
         {
+            // cached and reused per receive loop
             var concurrentReceiveOperations = new List<Task>(numberOfMessagesToFetch);
-
             while (!token.IsCancellationRequested)
             {
                 try
@@ -124,14 +124,13 @@
 
                     await Task.WhenAll(concurrentReceiveOperations).ConfigureAwait(false);
                 }
-                catch (Exception ex)
-                    when (!(ex is OperationCanceledException && token.IsCancellationRequested))
-                {
-                    Logger.Error("Exception thrown when consuming messages", ex);
-                }
                 catch (OperationCanceledException)
                 {
                     // ignore for graceful shutdown
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("Exception thrown when consuming messages", ex);
                 }
                 finally
                 {
@@ -159,14 +158,8 @@
 
                 IncomingMessage incomingMessage = null;
                 TransportMessage transportMessage = null;
-                var transportTransaction = new TransportTransaction();
-                var contextBag = new ContextBag();
 
-                var messageProcessedOk = false;
-                var messageExpired = false;
                 var isPoisonMessage = false;
-                var errorHandled = false;
-
                 try
                 {
                     transportMessage = JsonConvert.DeserializeObject<TransportMessage>(receivedMessage.Body);
@@ -194,83 +187,18 @@
                 if (isPoisonMessage)
                 {
                     await MovePoisonMessageToErrorQueue(receivedMessage).ConfigureAwait(false);
+                    return;
                 }
-                else
+
+                if (!IsMessageExpired(receivedMessage, incomingMessage))
                 {
-                    // Check that the message hasn't expired
-                    if (incomingMessage.Headers.TryGetValue(TransportHeaders.TimeToBeReceived, out var rawTtbr))
-                    {
-                        incomingMessage.Headers.Remove(TransportHeaders.TimeToBeReceived);
-
-                        var timeToBeReceived = TimeSpan.Parse(rawTtbr);
-
-                        if (timeToBeReceived != TimeSpan.MaxValue)
-                        {
-                            var sentDateTime = receivedMessage.GetSentDateTime();
-                            var utcNow = DateTime.UtcNow;
-                            var expiresAt = sentDateTime + timeToBeReceived;
-                            if (expiresAt <= utcNow)
-                            {
-                                // Message has expired.
-                                Logger.Warn($"Discarding expired message with Id {incomingMessage.MessageId}, expired {utcNow - expiresAt} ago at {expiresAt} utc.");
-                                messageExpired = true;
-                            }
-                        }
-                    }
-
-
-                    if (!messageExpired)
-                    {
-                        var immediateProcessingAttempts = 0;
-
-                        while (!errorHandled && !messageProcessedOk)
-                        {
-                            try
-                            {
-                                using (var messageContextCancellationTokenSource = new CancellationTokenSource())
-                                {
-                                    var messageContext = new MessageContext(
-                                        incomingMessage.MessageId,
-                                        incomingMessage.Headers,
-                                        incomingMessage.Body,
-                                        transportTransaction,
-                                        messageContextCancellationTokenSource,
-                                        contextBag);
-
-                                    await onMessage(messageContext).ConfigureAwait(false);
-
-                                    messageProcessedOk = !messageContextCancellationTokenSource.IsCancellationRequested;
-                                }
-                            }
-                            catch (Exception ex)
-                                when (!(ex is OperationCanceledException && token.IsCancellationRequested))
-                            {
-                                immediateProcessingAttempts++;
-                                var errorHandlerResult = ErrorHandleResult.RetryRequired;
-
-                                try
-                                {
-                                    errorHandlerResult = await onError(new ErrorContext(ex,
-                                        incomingMessage.Headers,
-                                        incomingMessage.MessageId,
-                                        incomingMessage.Body,
-                                        transportTransaction,
-                                        immediateProcessingAttempts)).ConfigureAwait(false);
-                                }
-                                catch (Exception onErrorEx)
-                                {
-                                    Logger.Error("Exception thrown from error handler", onErrorEx);
-                                }
-                                errorHandled = errorHandlerResult == ErrorHandleResult.Handled;
-                            }
-                        }
-                    }
-
-                    // Always delete the message from the queue.
-                    // If processing failed, the onError handler will have moved the message
-                    // to a retry queue.
-                    await DeleteMessage(receivedMessage, transportMessage, incomingMessage, token).ConfigureAwait(false);
+                    await ProcessMessageWithInMemoryRetries(incomingMessage, token).ConfigureAwait(false);
                 }
+
+                // Always delete the message from the queue.
+                // If processing failed, the onError handler will have moved the message
+                // to a retry queue.
+                await DeleteMessage(receivedMessage, transportMessage, incomingMessage, token).ConfigureAwait(false);
             }
             finally
             {
@@ -278,9 +206,92 @@
             }
         }
 
+        async Task ProcessMessageWithInMemoryRetries(IncomingMessage incomingMessage, CancellationToken token)
+        {
+            var immediateProcessingAttempts = 0;
+            var messageProcessedOk = false;
+            var errorHandled = false;
+
+            while (!errorHandled && !messageProcessedOk)
+            {
+                try
+                {
+                    using (var messageContextCancellationTokenSource = new CancellationTokenSource())
+                    {
+                        var messageContext = new MessageContext(
+                            incomingMessage.MessageId,
+                            incomingMessage.Headers,
+                            incomingMessage.Body,
+                            transportTransaction,
+                            messageContextCancellationTokenSource,
+                            contextBag);
+
+                        await onMessage(messageContext).ConfigureAwait(false);
+
+                        messageProcessedOk = !messageContextCancellationTokenSource.IsCancellationRequested;
+                    }
+                }
+                catch (Exception ex)
+                    when (!(ex is OperationCanceledException && token.IsCancellationRequested))
+                {
+                    immediateProcessingAttempts++;
+                    var errorHandlerResult = ErrorHandleResult.RetryRequired;
+
+                    try
+                    {
+                        errorHandlerResult = await onError(new ErrorContext(ex,
+                            incomingMessage.Headers,
+                            incomingMessage.MessageId,
+                            incomingMessage.Body,
+                            transportTransaction,
+                            immediateProcessingAttempts)).ConfigureAwait(false);
+                    }
+                    catch (Exception onErrorEx)
+                    {
+                        Logger.Error("Exception thrown from error handler", onErrorEx);
+                    }
+                    errorHandled = errorHandlerResult == ErrorHandleResult.Handled;
+                }
+            }
+        }
+
+        static bool IsMessageExpired(Message receivedMessage, IncomingMessage incomingMessage)
+        {
+            if (!incomingMessage.Headers.TryGetValue(TransportHeaders.TimeToBeReceived, out var rawTtbr))
+            {
+                return false;
+            }
+
+            incomingMessage.Headers.Remove(TransportHeaders.TimeToBeReceived);
+            var timeToBeReceived = TimeSpan.Parse(rawTtbr);
+            if (timeToBeReceived == TimeSpan.MaxValue)
+            {
+                return false;
+            }
+
+            var sentDateTime = receivedMessage.GetSentDateTime();
+            var utcNow = DateTime.UtcNow;
+            var expiresAt = sentDateTime + timeToBeReceived;
+            if (expiresAt > utcNow)
+            {
+                return false;
+            }
+            // Message has expired.
+            Logger.Warn($"Discarding expired message with Id {incomingMessage.MessageId}, expired {utcNow - expiresAt} ago at {expiresAt} utc.");
+            return true;
+        }
+
         async Task DeleteMessage(Message message, TransportMessage transportMessage, IncomingMessage incomingMessage, CancellationToken token)
         {
-            await sqsClient.DeleteMessageAsync(queueUrl, message.ReceiptHandle, token).ConfigureAwait(false);
+            try
+            {
+                // should not be cancelled
+                await sqsClient.DeleteMessageAsync(queueUrl, message.ReceiptHandle, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (ReceiptHandleIsInvalidException ex)
+            {
+                Logger.Info($"Message receipt handle {message.ReceiptHandle} no longer valid.", ex);
+            }
 
             if (transportMessage != null)
             {
@@ -375,6 +386,8 @@
         QueueUrlCache queueUrlCache;
         int numberOfMessagesToFetch;
         ReceiveMessageRequest receiveMessagesRequest;
+        static readonly TransportTransaction transportTransaction = new TransportTransaction();
+        static readonly ContextBag contextBag = new ContextBag();
 
         static ILog Logger = LogManager.GetLogger(typeof(MessagePump));
     }
