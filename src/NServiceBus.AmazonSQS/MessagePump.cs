@@ -116,10 +116,10 @@
 
             while (!token.IsCancellationRequested)
             {
-                var receivedMessages = await sqsClient.ReceiveMessageAsync(receiveMessagesRequest, token).ConfigureAwait(false);
-
                 try
                 {
+                    var receivedMessages = await sqsClient.ReceiveMessageAsync(receiveMessagesRequest, token).ConfigureAwait(false);
+
                     ProcessMessages(receivedMessages.Messages, concurrentReceiveOperations, token);
 
                     await Task.WhenAll(concurrentReceiveOperations).ConfigureAwait(false);
@@ -280,8 +280,7 @@
 
         async Task DeleteMessage(Message message, TransportMessage transportMessage, IncomingMessage incomingMessage, CancellationToken token)
         {
-            // should not be cancelled
-            await sqsClient.DeleteMessageAsync(queueUrl, message.ReceiptHandle, CancellationToken.None).ConfigureAwait(false);
+            await sqsClient.DeleteMessageAsync(queueUrl, message.ReceiptHandle, token).ConfigureAwait(false);
 
             if (transportMessage != null)
             {
