@@ -1,6 +1,7 @@
 ﻿namespace NServiceBus.AmazonSQS
 {
     using System.Collections.Concurrent;
+    using System.Threading.Tasks;
     using Amazon.SQS;
 
     class QueueUrlCache
@@ -16,9 +17,16 @@
             cache.TryAdd(queueName, queueUrl);
         }
 
-        public string GetQueueUrl(string queueName)
+        public async Task<string> GetQueueUrl(string queueName)
         {
-            return cache.GetOrAdd(queueName, name => sqsClient.GetQueueUrl(name).QueueUrl);
+            if (cache.TryGetValue(queueName, out var queueUrl))
+            {
+                return queueUrl;
+            }
+            var response = await sqsClient.GetQueueUrlAsync(queueName)
+                .ConfigureAwait(false);
+            queueUrl = response.QueueUrl;
+            return cache.AddOrUpdate(queueName, queueUrl, (key, value) => value);
         }
 
         ConcurrentDictionary<string, string> cache;
