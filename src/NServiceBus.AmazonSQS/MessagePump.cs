@@ -299,6 +299,7 @@
             catch (ReceiptHandleIsInvalidException ex)
             {
                 Logger.Info($"Message receipt handle {message.ReceiptHandle} no longer valid.", ex);
+                return; // if another receiver fetches the data from S3
             }
 
             if (transportMessage != null)
