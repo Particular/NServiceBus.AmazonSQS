@@ -98,11 +98,6 @@
         {
             cancellationTokenSource?.Cancel();
 
-            while (maxConcurrencySempahore.CurrentCount != maxConcurrency)
-            {
-                await Task.Delay(50, CancellationToken.None).ConfigureAwait(false);
-            }
-
             await Task.WhenAll(pumpTasks).ConfigureAwait(false);
 
             pumpTasks?.Clear();
