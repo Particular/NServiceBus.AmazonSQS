@@ -307,7 +307,7 @@
                             new DeleteObjectRequest
                             {
                                 BucketName = configuration.S3BucketForLargeMessages,
-                                Key = configuration.S3KeyPrefix + incomingMessage.MessageId
+                                Key = transportMessage.S3BodyKey
                             },
                             token).ConfigureAwait(false);
                     }
