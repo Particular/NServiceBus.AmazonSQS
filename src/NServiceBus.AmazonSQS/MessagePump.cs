@@ -280,7 +280,7 @@
                 return false;
             }
             // Message has expired.
-            Logger.Warn($"Discarding expired message with Id {incomingMessage.MessageId}, expired {utcNow - expiresAt} ago at {expiresAt} utc.");
+            Logger.Info($"Discarding expired message with Id {incomingMessage.MessageId}, expired {utcNow - expiresAt} ago at {expiresAt} utc.");
             return true;
         }
 
