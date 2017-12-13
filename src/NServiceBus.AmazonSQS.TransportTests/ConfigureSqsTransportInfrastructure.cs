@@ -21,7 +21,7 @@ public class ConfigureSqsTransportInfrastructure : IConfigureTransportInfrastruc
         return new TransportConfigurationResult
         {
             TransportInfrastructure = sqsTransport.Initialize(settings, ""),
-            PurgeInputQueueOnStartup = true
+            PurgeInputQueueOnStartup = false
         };
     }
 }
