@@ -62,16 +62,16 @@
             cancellationTokenSource = new CancellationTokenSource();
             maxConcurrency = limitations.MaxConcurrency;
 
-            int degreeOfParallelism;
+            int numberOfPumps;
             if (maxConcurrency <= 10)
             {
-                degreeOfParallelism = 1;
+                numberOfPumps = 1;
                 numberOfMessagesToFetch = maxConcurrency;
             }
             else
             {
+                numberOfPumps = Convert.ToInt32(Math.Ceiling(Convert.ToDouble(maxConcurrency) / numberOfMessagesToFetch));
                 numberOfMessagesToFetch = 10;
-                degreeOfParallelism = Convert.ToInt32(Math.Ceiling(Convert.ToDouble(maxConcurrency) / numberOfMessagesToFetch));
             }
 
             receiveMessagesRequest = new ReceiveMessageRequest
@@ -86,9 +86,9 @@
             };
 
             maxConcurrencySempahore = new SemaphoreSlim(maxConcurrency);
-            pumpTasks = new List<Task>(degreeOfParallelism);
+            pumpTasks = new List<Task>(numberOfPumps);
 
-            for (var i = 0; i < degreeOfParallelism; i++)
+            for (var i = 0; i < numberOfPumps; i++)
             {
                 pumpTasks.Add(Task.Run(() => ConsumeMessages(cancellationTokenSource.Token), CancellationToken.None));
             }
