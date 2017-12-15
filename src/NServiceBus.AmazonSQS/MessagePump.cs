@@ -70,8 +70,8 @@
             }
             else
             {
-                numberOfPumps = Convert.ToInt32(Math.Ceiling(Convert.ToDouble(maxConcurrency) / numberOfMessagesToFetch));
                 numberOfMessagesToFetch = 10;
+                numberOfPumps = Convert.ToInt32(Math.Ceiling(Convert.ToDouble(maxConcurrency) / numberOfMessagesToFetch));
             }
 
             receiveMessagesRequest = new ReceiveMessageRequest
