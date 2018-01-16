@@ -17,6 +17,11 @@ The transport can be configured using the following environment variables:
 
  * **NServiceBus_AmazonSQS_S3Bucket** corresponds to the [S3BucketForLargeMessages](https://docs.particular.net/transports/sqs/configuration-options#s3bucketforlargemessages) parameter. Default is no S3 bucket.
  * **NServiceBus_AmazonSQS_NativeDeferral** corresponds to the [NativeDeferral](https://docs.particular.net/transports/sqs/configuration-options#nativedeferral) parameter. Default is false.
+ 
+ Additional environment variables required for AWS:
+ 
+ * **AWS_ACCESS_KEY_ID** access key ID to sign programmatic requests that you make to AWS. Provisioned via IAM.
+ * **AWS_SECRET_ACCESS_KEY** secret access key to sign programmatic requests that you make to AWS. Provisioned via IAM.
 
 
 ### Queue Names in Acceptance Tests
