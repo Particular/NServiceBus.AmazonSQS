@@ -1,7 +1,7 @@
 ﻿namespace NServiceBus.Transports.SQS
 {
     using System;
-    using System.Collections.Generic;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
@@ -11,7 +11,6 @@
     using Amazon.SQS.Model;
     using AmazonSQS;
     using DelayedDelivery;
-    using DeliveryConstraints;
     using Extensibility;
     using Logging;
     using Newtonsoft.Json;
@@ -19,12 +18,13 @@
 
     class MessageDispatcher : IDispatchMessages
     {
-        public MessageDispatcher(ConnectionConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
+        public MessageDispatcher(ConnectionConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache, bool isDelayedDeliveryEnabled)
         {
             this.configuration = configuration;
             this.s3Client = s3Client;
             this.sqsClient = sqsClient;
             this.queueUrlCache = queueUrlCache;
+            this.isDelayedDeliveryEnabled = isDelayedDeliveryEnabled;
         }
 
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
@@ -46,10 +46,39 @@
             }
         }
 
-        async Task Dispatch(UnicastTransportOperation unicastMessage)
+        async Task Dispatch(UnicastTransportOperation transportOperation)
         {
-            var sqsTransportMessage = new TransportMessage(unicastMessage.Message, unicastMessage.DeliveryConstraints);
+            var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.DeliveryConstraints);
+
+            var delayWithConstraint = transportOperation.DeliveryConstraints.OfType<DelayDeliveryWith>().SingleOrDefault();
+            var deliverAtConstraint = transportOperation.DeliveryConstraints.OfType<DoNotDeliverBefore>().SingleOrDefault();
+
+            var delayDeliveryBy = TimeSpan.Zero;
+
+            if (delayWithConstraint == null)
+            {
+                if (deliverAtConstraint != null)
+                {
+                    delayDeliveryBy = deliverAtConstraint.At - DateTime.UtcNow;
+                }
+            }
+            else
+            {
+                delayDeliveryBy = delayWithConstraint.Delay;
+            }
+
+            var destinationQueue = transportOperation.Destination;
+
+            if (isDelayedDeliveryEnabled && delayDeliveryBy > awsMaxDelayInMinutes)
+            {
+                // TODO: add AWSConfigs.ClockOffset for clock skew (verify how it works)
+                sqsTransportMessage.Headers[TransportHeaders.DelayDueTime] = (DateTime.UtcNow + delayDeliveryBy).ToString(CultureInfo.InvariantCulture);
+                destinationQueue += "-delay.fifo";
+                delayDeliveryBy = awsMaxDelayInMinutes;
+            }
+            
             var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
+
             if (serializedMessage.Length > 256 * 1024)
             {
                 if (string.IsNullOrEmpty(configuration.S3BucketForLargeMessages))
@@ -57,9 +86,9 @@
                     throw new Exception("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
                 }
 
-                var key = $"{configuration.S3KeyPrefix}/{unicastMessage.Message.MessageId}";
+                var key = $"{configuration.S3KeyPrefix}/{transportOperation.Message.MessageId}";
 
-                using (var bodyStream = new MemoryStream(unicastMessage.Message.Body))
+                using (var bodyStream = new MemoryStream(transportOperation.Message.Body))
                 {
                     await s3Client.PutObjectAsync(new PutObjectRequest
                     {
@@ -74,37 +103,23 @@
                 serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
             }
 
-            await SendMessage(serializedMessage, unicastMessage.Destination, unicastMessage.DeliveryConstraints)
+            await SendMessage(serializedMessage, destinationQueue, delayDeliveryBy)
                 .ConfigureAwait(false);
         }
 
-        async Task SendMessage(string message, string destination, List<DeliveryConstraint> constraints)
+        async Task SendMessage(string message, string destination, TimeSpan delayDeliveryBy)
         {
-            var delayWithConstraint = constraints.OfType<DelayDeliveryWith>().SingleOrDefault();
-            var deliverAtConstraint = constraints.OfType<DoNotDeliverBefore>().SingleOrDefault();
-
-            var delayDeliveryBy = TimeSpan.MaxValue;
-            if (delayWithConstraint == null)
-            {
-                if (deliverAtConstraint != null)
-                {
-                    delayDeliveryBy = deliverAtConstraint.At - DateTime.UtcNow;
-                }
-            }
-            else
-            {
-                delayDeliveryBy = delayWithConstraint.Delay;
-            }
-
             var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination, configuration))
                 .ConfigureAwait(false);
             var sendMessageRequest = new SendMessageRequest(queueUrl, message);
 
             // There should be no need to check if the delay time is greater than the maximum allowed
             // by SQS (15 minutes); the call to AWS will fail with an appropriate exception if the limit is exceeded.
-            if (delayDeliveryBy != TimeSpan.MaxValue)
+            var delaySeconds = Math.Max(0, (int)delayDeliveryBy.TotalSeconds);
+
+            if (delaySeconds > 0)
             {
-                sendMessageRequest.DelaySeconds = Math.Max(0, (int)delayDeliveryBy.TotalSeconds);
+                sendMessageRequest.DelaySeconds = delaySeconds;
             }
 
             await sqsClient.SendMessageAsync(sendMessageRequest)
@@ -115,7 +130,9 @@
         IAmazonSQS sqsClient;
         IAmazonS3 s3Client;
         QueueUrlCache queueUrlCache;
+        readonly bool isDelayedDeliveryEnabled;
 
+        static readonly TimeSpan awsMaxDelayInMinutes = TimeSpan.FromMinutes(15);
         static ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
     }
 }
