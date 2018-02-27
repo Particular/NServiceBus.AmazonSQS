@@ -125,37 +125,5 @@
         {
             public string Payload { get; set; }
         }
-
-
-
-
-
-
-        //[Test]
-        //public async Task Should_deliver_messages_when_receiver_not_properly_configured_only_if_below_threshold()
-        //{ }
-
-        //[Test]
-        //public async Task Should_fail_to_deliver_messages_when_sender_not_properly_configured_only_if_above_threshold()
-        //{ }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     }
 }
