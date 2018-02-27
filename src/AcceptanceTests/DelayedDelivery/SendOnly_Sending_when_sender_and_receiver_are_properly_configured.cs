@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.AcceptanceTests
+﻿namespace NServiceBus.AcceptanceTests.DelayedDelivery
 {
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
@@ -6,19 +6,18 @@
     using NServiceBus;
     using NUnit.Framework;
     using System;
-    using System.Linq;
     using System.Threading.Tasks;
 
-    public class SendOnly_Sending_delayed_messages_when_sender_not_properly_configured : NServiceBusAcceptanceTest
+    public class SendOnly_Sending_when_sender_and_receiver_are_properly_configured : NServiceBusAcceptanceTest
     {
         [Test]
-        public async Task Should_deliver_messages_only_if_below_threshold()
+        public async Task Should_deliver_message_if_below_threshold()
         {
             var payload = "some payload";
             var delay = TimeSpan.FromSeconds(2);
 
             var context = await Scenario.Define<Context>()
-                .WithEndpoint<NotConfiguredSendOnlySender>(b => b.When(async (session, c) =>
+                .WithEndpoint<SendOnlySender>(b => b.When(async (session, c) =>
                 {
                     var sendOptions = new SendOptions();
                     sendOptions.DelayDeliveryWith(delay);
@@ -39,29 +38,27 @@
         }
 
         [Test]
-        public void Should_fail_to_deliver_messages_if_above_threshold()
+        public async Task Should_send_message_if_above_threshold()
         {
-            var delay = TimeSpan.FromSeconds(2);
+            var payload = "some payload";
+            var delay = TimeSpan.FromMinutes(16);
 
-            //or whatever exception we want to throw
-            Assert.ThrowsAsync<NotSupportedException>(async () =>
-            {
-                var context = await Scenario.Define<Context>()
-                .WithEndpoint<NotConfiguredSendOnlySender>(b => b.When(async (session, c) =>
+            await Scenario.Define<Context>()
+                .WithEndpoint<SendOnlySender>(b => b.When(async (session, c) =>
                 {
                     var sendOptions = new SendOptions();
                     sendOptions.DelayDeliveryWith(delay);
 
                     await session.Send(new DelayedMessage
                     {
-                        Payload = ""
+                        Payload = payload
                     }, sendOptions);
 
-                    c.SentAt = DateTime.UtcNow;
+                    c.MessageSent = true;
                 }))
-                .Done(c => c.FailedMessages.Any())
+                .WithEndpoint<Receiver>()
+                .Done(c => c.MessageSent)
                 .Run();
-            });
         }
 
         public class Context : ScenarioContext
@@ -70,17 +67,21 @@
             public string Payload { get; set; }
             public DateTime SentAt { get; set; }
             public DateTime ReceivedAt { get; set; }
+            public bool MessageSent { get; set; }
         }
 
 
-        public class NotConfiguredSendOnlySender : EndpointConfigurationBuilder
+        public class SendOnlySender : EndpointConfigurationBuilder
         {
-            public NotConfiguredSendOnlySender()
+            public SendOnlySender()
             {
                 EndpointSetup<DefaultServer>(builder =>
                 {
                     builder.ConfigureTransport().Routing().RouteToEndpoint(typeof(DelayedMessage), typeof(Receiver));
                     builder.SendOnly();
+
+                    //TODO: choose the "NativeDelayedDeliveries" extension method name
+                    //builder.ConfigureSqsTransport().NativeDelayedDeliveries();
                 });
             }
         }
@@ -91,11 +92,8 @@
             {
                 EndpointSetup<DefaultServer>(builder =>
                 {
-                    //TODO: chose the "NativeDelayedDeliveries" extension method name
+                    //TODO: choose the "NativeDelayedDeliveries" extension method name
                     //builder.ConfigureSqsTransport().NativeDelayedDeliveries();
-
-                    //we should provide an internal overload for test purposes only so to tweak the defaul AWS delivery threshold that is 15 minutes
-                    //builder.ConfigureSqsTransport().NativeDelayedDeliveries(testThreshold = 10 seconds);
                 });
             }
 
