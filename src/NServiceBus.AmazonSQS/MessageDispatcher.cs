@@ -103,11 +103,11 @@
                 serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
             }
 
-            await SendMessage(serializedMessage, destinationQueue, delayDeliveryBy)
+            await SendMessage(serializedMessage, destinationQueue, delayDeliveryBy, transportOperation.Message.MessageId)
                 .ConfigureAwait(false);
         }
 
-        async Task SendMessage(string message, string destination, TimeSpan delayDeliveryBy)
+        async Task SendMessage(string message, string destination, TimeSpan delayDeliveryBy, string messageId)
         {
             var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination, configuration))
                 .ConfigureAwait(false);
@@ -120,6 +120,7 @@
             if (delaySeconds > 0)
             {
                 sendMessageRequest.DelaySeconds = delaySeconds;
+                sendMessageRequest.MessageDeduplicationId = sendMessageRequest.MessageGroupId = messageId;
             }
 
             await sqsClient.SendMessageAsync(sendMessageRequest)
