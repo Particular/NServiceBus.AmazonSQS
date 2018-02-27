@@ -6,7 +6,6 @@
     using NServiceBus;
     using NUnit.Framework;
     using System;
-    using System.Linq;
     using System.Threading.Tasks;
 
     public class SendOnly_Sending_when_sender_not_properly_configured : NServiceBusAcceptanceTest

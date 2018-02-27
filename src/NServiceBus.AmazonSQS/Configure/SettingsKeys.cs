@@ -10,7 +10,6 @@
         public const string S3ClientFactory = Prefix + nameof(S3ClientFactory);
         public const string QueueNamePrefix = Prefix + nameof(QueueNamePrefix);
         public const string CredentialSource = Prefix + nameof(CredentialSource);
-        public const string NativeDeferral = Prefix + nameof(NativeDeferral);
         public const string PreTruncateQueueNames = Prefix + nameof(PreTruncateQueueNames);
     }
 }

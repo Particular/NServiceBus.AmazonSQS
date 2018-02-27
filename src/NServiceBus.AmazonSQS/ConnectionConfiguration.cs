@@ -86,18 +86,6 @@
             }
         }
 
-        public bool NativeDeferral
-        {
-            get
-            {
-                if (!nativeDeferral.HasValue)
-                {
-                    nativeDeferral = settings.GetOrDefault<bool>(SettingsKeys.NativeDeferral);
-                }
-                return nativeDeferral.Value;
-            }
-        }
-
         public bool PreTruncateQueueNames
         {
             get
@@ -115,7 +103,6 @@
         string s3BucketForLargeMessages;
         string s3KeyPrefix;
         string queueNamePrefix;
-        bool? nativeDeferral;
         bool? preTruncateQueueNames;
         Func<IAmazonS3> s3ClientFactory;
         Func<IAmazonSQS> sqsClientFactory;

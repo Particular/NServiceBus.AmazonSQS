@@ -86,11 +86,11 @@
         /// If not specified, the default is to use a TimeoutManager based deferral.
         /// </summary>
         /// <remarks>Set to true to use SQS message delays for deferring messages; false otherwise.</remarks>
+        [ObsoleteEx(ReplacementTypeOrMember = "TODO: new api to use instead",
+            TreatAsErrorFromVersion = "5",
+            RemoveInVersion = "6")]
         public static TransportExtensions<SqsTransport> NativeDeferral(this TransportExtensions<SqsTransport> transportExtensions, bool use = true)
         {
-            Guard.AgainstNull(nameof(transportExtensions), transportExtensions);
-            transportExtensions.GetSettings().Set(SettingsKeys.NativeDeferral, use);
-
             return transportExtensions;
         }
 

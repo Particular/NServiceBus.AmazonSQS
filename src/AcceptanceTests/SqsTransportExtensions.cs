@@ -7,7 +7,6 @@
     public static class SqsTransportExtensions
     {
         const string S3BucketEnvironmentVariableName = "NServiceBus_AmazonSQS_S3Bucket";
-        const string NativeDeferralEnvironmentVariableName = "NServiceBus_AmazonSQS_NativeDeferral";
 
         public static TransportExtensions<SqsTransport> ConfigureSqsTransport(this TransportExtensions<SqsTransport> transportConfiguration, string queueNamePrefix)
         {
@@ -22,13 +21,6 @@
             {
                 var s3Configuration = transportConfiguration.S3(s3BucketName, "test");
                 s3Configuration.ClientFactory(CreateS3Client);
-            }
-
-            var nativeDeferralRaw = EnvironmentHelper.GetEnvironmentVariable(NativeDeferralEnvironmentVariableName);
-            var validValue = bool.TryParse(nativeDeferralRaw, out var nativeDeferral);
-            if (validValue && nativeDeferral)
-            {
-                transportConfiguration.NativeDeferral();
             }
 
             return transportConfiguration;
