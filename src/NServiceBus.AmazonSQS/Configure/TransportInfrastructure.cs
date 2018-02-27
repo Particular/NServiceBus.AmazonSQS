@@ -50,7 +50,7 @@
 
         QueueCreator CreateQueueCreator()
         {
-            return new QueueCreator(configuration, s3Client, sqsClient, queueUrlCache);
+            return new QueueCreator(configuration, s3Client, sqsClient, queueUrlCache, isDelayedDeliveryEnabled);
         }
 
         MessageDispatcher CreateMessageDispatcher()

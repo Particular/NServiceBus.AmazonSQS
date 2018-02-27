@@ -14,12 +14,13 @@
 
     class QueueCreator : ICreateQueues
     {
-        public QueueCreator(ConnectionConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
+        public QueueCreator(ConnectionConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache, bool isDelayedDeliveryEnabled)
         {
             this.configuration = configuration;
             this.s3Client = s3Client;
             this.sqsClient = sqsClient;
             this.queueUrlCache = queueUrlCache;
+            this.isDelayedDeliveryEnabled = isDelayedDeliveryEnabled;
         }
 
         public Task CreateQueueIfNecessary(QueueBindings queueBindings, string identity)
@@ -28,16 +29,16 @@
 
             foreach (var address in queueBindings.SendingAddresses)
             {
-                tasks.Add(CreateQueueIfNecessary(address));
+                tasks.Add(CreateQueueIfNecessary(address, false));
             }
             foreach (var address in queueBindings.ReceivingAddresses)
             {
-                tasks.Add(CreateQueueIfNecessary(address));
+                tasks.Add(CreateQueueIfNecessary(address, true));
             }
             return Task.WhenAll(tasks);
         }
 
-        public async Task CreateQueueIfNecessary(string address)
+        async Task CreateQueueIfNecessary(string address, bool createDelayedDeliveryQueue)
         {
             try
             {
@@ -64,6 +65,30 @@
                     configuration.MaxTimeToLive.TotalSeconds.ToString());
 
                 await sqsClient.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
+
+                if (isDelayedDeliveryEnabled && createDelayedDeliveryQueue)
+                {
+                    queueName = QueueNameHelper.GetSqsQueueName(address, configuration) + "-delay.fifo";
+                    sqsRequest = new CreateQueueRequest
+                    {
+                        QueueName = queueName,
+                        Attributes = new Dictionary<string, string> { {"FifoQueue", "true"} }
+                    };
+
+                    Logger.Info($"Creating SQS delayed delivery queue with name '{sqsRequest.QueueName}' for address '{address}'.");
+                    createQueueResponse = await sqsClient.CreateQueueAsync(sqsRequest).ConfigureAwait(false);
+
+                    queueUrlCache.SetQueueUrl(queueName, createQueueResponse.QueueUrl);
+
+                    sqsAttributesRequest = new SetQueueAttributesRequest
+                    {
+                        QueueUrl = createQueueResponse.QueueUrl
+                    };
+                    // TTL on messages in .fifo queue should not be less than maximum AWS delay time (15 minutes). 4 days is the default upon queue creation.
+                    sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod, TimeSpan.FromDays(4).TotalSeconds.ToString());
+
+                    await sqsClient.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
+                }
 
                 if (!string.IsNullOrEmpty(configuration.S3BucketForLargeMessages))
                 {
@@ -128,5 +153,6 @@
         IAmazonS3 s3Client;
         IAmazonSQS sqsClient;
         QueueUrlCache queueUrlCache;
+        readonly bool isDelayedDeliveryEnabled;
     }
 }
