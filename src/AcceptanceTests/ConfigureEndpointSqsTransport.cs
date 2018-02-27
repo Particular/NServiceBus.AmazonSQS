@@ -32,6 +32,8 @@
             // Wait for tests longer than the invisibility time to make sure messages are received.
             settings.TestExecutionTimeout = TimeSpan.FromSeconds(40);
 
+            transportConfig.UnrestrictedDurationDelayedDelivery();
+
             return Task.FromResult(0);
         }
 
