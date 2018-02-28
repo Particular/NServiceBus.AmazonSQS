@@ -141,56 +141,51 @@
                         var dueTime = DateTimeExtensions.ToUtcDateTime(delayAttribute.StringValue);
                         // TODO: add AWSConfigs.ClockOffset for clock skew (verify how it works)
                         var utcNow = DateTime.UtcNow;
-                        if (dueTime < utcNow)
-                        {
-                            ProcessMessages(receivedMessages.Messages, null, token, delayedDeliveryQueueUrl);
-                        }
-                        else
-                        {
-                            var delaySeconds = dueTime - utcNow;
-                            SendMessageRequest sendMessageRequest;
 
-                            if (delaySeconds > awsMaxDelayInMinutes)
+                        var delaySeconds = dueTime - utcNow;
+                        SendMessageRequest sendMessageRequest;
+
+                        if (delaySeconds > awsMaxDelayInMinutes)
+                        {
+                            sendMessageRequest = new SendMessageRequest(delayedDeliveryQueueUrl, receivedMessage.Body)
                             {
-                                sendMessageRequest = new SendMessageRequest(delayedDeliveryQueueUrl, receivedMessage.Body)
-                                {
-                                    MessageAttributes =
+                                MessageAttributes =
                                     {
                                         [TransportHeaders.DelayDueTime] = delayAttribute
                                     }
-                                };
-                                sendMessageRequest.MessageDeduplicationId = sendMessageRequest.MessageGroupId = receivedMessage.Attributes["MessageDeduplicationId"];
-                            }
-                            else
-                            {
-                                sendMessageRequest = new SendMessageRequest(queueUrl, receivedMessage.Body)
-                                {
-                                    DelaySeconds = (int)delaySeconds.TotalSeconds
-                                };
-                            }
-
-                            try
-                            {
-                                // should we allow to cancel this?
-                                await sqsClient.SendMessageAsync(sendMessageRequest, CancellationToken.None)
-                                    .ConfigureAwait(false);
-                            }
-                            catch (Exception ex)
-                            {
-                                // change visibility here?
-                                Logger.Error("BOOOM!", ex);
-                            }
-
-                            try
-                            {
-                                // should not be cancelled
-                                await sqsClient.DeleteMessageAsync(delayedDeliveryQueueUrl, receivedMessage.ReceiptHandle, CancellationToken.None).ConfigureAwait(false);
-                            }
-                            catch (ReceiptHandleIsInvalidException ex)
-                            {
-                                Logger.Info($"Message receipt handle {receivedMessage.ReceiptHandle} no longer valid.", ex);
-                            }
+                            };
+                            sendMessageRequest.MessageDeduplicationId = sendMessageRequest.MessageGroupId = receivedMessage.Attributes["MessageDeduplicationId"];
                         }
+                        else
+                        {
+                            sendMessageRequest = new SendMessageRequest(queueUrl, receivedMessage.Body)
+                            {
+                                DelaySeconds = (int)delaySeconds.TotalSeconds
+                            };
+                        }
+
+                        try
+                        {
+                            // should we allow to cancel this?
+                            await sqsClient.SendMessageAsync(sendMessageRequest, CancellationToken.None)
+                                .ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            // change visibility here?
+                            Logger.Error("BOOOM!", ex);
+                        }
+
+                        try
+                        {
+                            // should not be cancelled
+                            await sqsClient.DeleteMessageAsync(delayedDeliveryQueueUrl, receivedMessage.ReceiptHandle, CancellationToken.None).ConfigureAwait(false);
+                        }
+                        catch (ReceiptHandleIsInvalidException ex)
+                        {
+                            Logger.Info($"Message receipt handle {receivedMessage.ReceiptHandle} no longer valid.", ex);
+                        }
+
                     }
                 }
                 catch (OperationCanceledException)
@@ -214,7 +209,7 @@
                 {
                     var receivedMessages = await sqsClient.ReceiveMessageAsync(receiveMessagesRequest, token).ConfigureAwait(false);
 
-                    ProcessMessages(receivedMessages.Messages, concurrentReceiveOperations, token, queueUrl);
+                    ProcessMessages(receivedMessages.Messages, concurrentReceiveOperations, token);
 
                     await Task.WhenAll(concurrentReceiveOperations).ConfigureAwait(false);
                 }
@@ -235,16 +230,16 @@
 
         // ReSharper disable once ParameterTypeCanBeEnumerable.Local
         // ReSharper disable once SuggestBaseTypeForParameter
-        void ProcessMessages(List<Message> receivedMessages, List<Task> concurrentReceiveOperations, CancellationToken token, string destinationQueueUrl)
+        void ProcessMessages(List<Message> receivedMessages, List<Task> concurrentReceiveOperations, CancellationToken token)
         {
             // ReSharper disable once LoopCanBeConvertedToQuery
             foreach (var receivedMessage in receivedMessages)
             {
-                concurrentReceiveOperations?.Add(ProcessMessage(receivedMessage, token, destinationQueueUrl));
+                concurrentReceiveOperations.Add(ProcessMessage(receivedMessage, token));
             }
         }
 
-        async Task ProcessMessage(Message receivedMessage, CancellationToken token, string destinationQueueUrl)
+        async Task ProcessMessage(Message receivedMessage, CancellationToken token)
         {
             try
             {
@@ -288,7 +283,7 @@
 
                 if (isPoisonMessage)
                 {
-                    await MovePoisonMessageToErrorQueue(receivedMessage, destinationQueueUrl).ConfigureAwait(false);
+                    await MovePoisonMessageToErrorQueue(receivedMessage).ConfigureAwait(false);
                     return;
                 }
 
@@ -300,7 +295,7 @@
                 // Always delete the message from the queue.
                 // If processing failed, the onError handler will have moved the message
                 // to a retry queue.
-                await DeleteMessageAndBodyIfRequired(receivedMessage, transportMessage, destinationQueueUrl, token).ConfigureAwait(false);
+                await DeleteMessageAndBodyIfRequired(receivedMessage, transportMessage, token).ConfigureAwait(false);
             }
             finally
             {
@@ -342,7 +337,7 @@
                     try
                     {
                         errorHandlerResult = await onError(new ErrorContext(ex,
-                            incomingMessage.Headers, // TODO: set failed header to the correct queue, always input queue
+                            incomingMessage.Headers,
                             incomingMessage.MessageId,
                             incomingMessage.Body,
                             transportTransaction,
@@ -383,12 +378,12 @@
             return true;
         }
 
-        async Task DeleteMessageAndBodyIfRequired(Message message, TransportMessage transportMessage, string destinationQueueUrl, CancellationToken token)
+        async Task DeleteMessageAndBodyIfRequired(Message message, TransportMessage transportMessage, CancellationToken token)
         {
             try
             {
                 // should not be cancelled
-                await sqsClient.DeleteMessageAsync(destinationQueueUrl, message.ReceiptHandle, CancellationToken.None).ConfigureAwait(false);
+                await sqsClient.DeleteMessageAsync(queueUrl, message.ReceiptHandle, CancellationToken.None).ConfigureAwait(false);
             }
             catch (ReceiptHandleIsInvalidException ex)
             {
@@ -428,7 +423,7 @@
             }
         }
 
-        async Task MovePoisonMessageToErrorQueue(Message message, string destinationQueueUrl)
+        async Task MovePoisonMessageToErrorQueue(Message message)
         {
             try
             {
@@ -448,14 +443,14 @@
                 {
                     await sqsClient.ChangeMessageVisibilityAsync(new ChangeMessageVisibilityRequest
                     {
-                        QueueUrl = destinationQueueUrl,
+                        QueueUrl = queueUrl,
                         ReceiptHandle = message.ReceiptHandle,
                         VisibilityTimeout = 0
                     }, CancellationToken.None).ConfigureAwait(false);
                 }
                 catch (Exception changeMessageVisibilityEx)
                 {
-                    Logger.Warn($"Error returning poison message back to input queue at url {destinationQueueUrl}. Poison message will become available at the input queue again after the visibility timeout expires.", changeMessageVisibilityEx);
+                    Logger.Warn($"Error returning poison message back to input queue at url {queueUrl}. Poison message will become available at the input queue again after the visibility timeout expires.", changeMessageVisibilityEx);
                 }
                 return;
             }
@@ -464,13 +459,13 @@
             {
                 await sqsClient.DeleteMessageAsync(new DeleteMessageRequest
                 {
-                    QueueUrl = destinationQueueUrl,
+                    QueueUrl = queueUrl,
                     ReceiptHandle = message.ReceiptHandle
                 }, CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                Logger.Warn($"Error removing poison message from input queue {destinationQueueUrl}. This may cause duplicate poison messages in the error queue for this endpoint.", ex);
+                Logger.Warn($"Error removing poison message from input queue {queueUrl}. This may cause duplicate poison messages in the error queue for this endpoint.", ex);
             }
             // If there is a message body in S3, simply leave it there
         }
