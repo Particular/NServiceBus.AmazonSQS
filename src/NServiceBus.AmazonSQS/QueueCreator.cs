@@ -33,7 +33,7 @@
             }
             foreach (var address in queueBindings.ReceivingAddresses)
             {
-                tasks.Add(CreateQueueIfNecessary(address, true));
+                tasks.Add(CreateQueueIfNecessary(address, isDelayedDeliveryEnabled));
             }
             return Task.WhenAll(tasks);
         }
@@ -66,7 +66,7 @@
 
                 await sqsClient.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
 
-                if (isDelayedDeliveryEnabled && createDelayedDeliveryQueue)
+                if (createDelayedDeliveryQueue)
                 {
                     queueName = QueueNameHelper.GetSqsQueueName(address + "-delay.fifo", configuration) ;
                     sqsRequest = new CreateQueueRequest
