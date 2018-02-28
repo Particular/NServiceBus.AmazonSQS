@@ -50,26 +50,6 @@
         async Task Dispatch(UnicastTransportOperation transportOperation)
         {
             var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.DeliveryConstraints);
-
-            var delayWithConstraint = transportOperation.DeliveryConstraints.OfType<DelayDeliveryWith>().SingleOrDefault();
-            var deliverAtConstraint = transportOperation.DeliveryConstraints.OfType<DoNotDeliverBefore>().SingleOrDefault();
-
-            var delayDeliveryBy = TimeSpan.Zero;
-
-            if (delayWithConstraint == null)
-            {
-                if (deliverAtConstraint != null)
-                {
-                    delayDeliveryBy = deliverAtConstraint.At - DateTime.UtcNow;
-                }
-            }
-            else
-            {
-                delayDeliveryBy = delayWithConstraint.Delay;
-            }
-
-            var destinationQueue = transportOperation.Destination;
-           
             var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
 
             if (serializedMessage.Length > 256 * 1024)
@@ -96,13 +76,31 @@
                 serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
             }
 
-            await SendMessage(serializedMessage, destinationQueue, delayDeliveryBy, transportOperation.Message.MessageId)
+            var delayWithConstraint = transportOperation.DeliveryConstraints.OfType<DelayDeliveryWith>().SingleOrDefault();
+            var deliverAtConstraint = transportOperation.DeliveryConstraints.OfType<DoNotDeliverBefore>().SingleOrDefault();
+
+            var delayDeliveryBy = TimeSpan.Zero;
+
+            if (delayWithConstraint == null)
+            {
+                if (deliverAtConstraint != null)
+                {
+                    delayDeliveryBy = deliverAtConstraint.At - DateTime.UtcNow;
+                }
+            }
+            else
+            {
+                delayDeliveryBy = delayWithConstraint.Delay;
+            }
+
+            await SendMessage(serializedMessage, transportOperation.Destination, delayDeliveryBy, transportOperation.Message.MessageId)
                 .ConfigureAwait(false);
         }
 
         async Task SendMessage(string message, string destination, TimeSpan delayDeliveryBy, string messageId)
         {
             var messageAttributes = emptyAttributes;
+
             if (isDelayedDeliveryEnabled && delayDeliveryBy > awsMaxDelayInMinutes)
             {
                 destination += "-delay.fifo";
@@ -148,6 +146,6 @@
 
         static readonly TimeSpan awsMaxDelayInMinutes = TimeSpan.FromMinutes(15);
         static ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
-        static Dictionary<string, MessageAttributeValue> emptyAttributes = new Dictionary<string, MessageAttributeValue>();
+        static readonly Dictionary<string, MessageAttributeValue> emptyAttributes = new Dictionary<string, MessageAttributeValue>();
     }
 }
