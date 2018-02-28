@@ -88,19 +88,6 @@
                 }
             };
 
-            // probably ok to allocate even if we don't need it?
-            receiveDelayedMessagesRequest = new ReceiveMessageRequest
-            {
-                MaxNumberOfMessages = numberOfMessagesToFetch,
-                QueueUrl = delayedDeliveryQueueUrl,
-                WaitTimeSeconds = 1,
-                AttributeNames = new List<string>
-                {
-                    "SentTimestamp", // really needed?
-                    "MessageDeduplicationId"
-                }
-            };
-
             maxConcurrencySempahore = new SemaphoreSlim(maxConcurrency);
             pumpTasks = new List<Task>(numberOfPumps);
 
@@ -111,7 +98,15 @@
 
             if (isDelayedDeliveryEnabled)
             {
-                pumpTasks.Add(Task.Run(() => ConsumeDelayedMessages(cancellationTokenSource.Token), CancellationToken.None));
+                var receiveDelayedMessagesRequest = new ReceiveMessageRequest
+                {
+                    MaxNumberOfMessages = numberOfMessagesToFetch,
+                    QueueUrl = delayedDeliveryQueueUrl,
+                    WaitTimeSeconds = 1,
+                    AttributeNames = new List<string> { "MessageDeduplicationId" }
+                };
+
+                pumpTasks.Add(Task.Run(() => ConsumeDelayedMessages(receiveDelayedMessagesRequest, cancellationTokenSource.Token), CancellationToken.None));
             }
         }
 
@@ -126,13 +121,13 @@
             maxConcurrencySempahore?.Dispose();
         }
 
-        async Task ConsumeDelayedMessages(CancellationToken token)
+        async Task ConsumeDelayedMessages(ReceiveMessageRequest request, CancellationToken token)
         {
             while (!token.IsCancellationRequested)
             {
                 try
                 {
-                    var receivedMessages = await sqsClient.ReceiveMessageAsync(receiveDelayedMessagesRequest, token).ConfigureAwait(false);
+                    var receivedMessages = await sqsClient.ReceiveMessageAsync(request, token).ConfigureAwait(false);
 
                     foreach (var receivedMessage in receivedMessages.Messages)
                     {
@@ -485,7 +480,6 @@
         QueueUrlCache queueUrlCache;
         int numberOfMessagesToFetch;
         ReceiveMessageRequest receiveMessagesRequest;
-        ReceiveMessageRequest receiveDelayedMessagesRequest;
         bool isDelayedDeliveryEnabled;
         static readonly TransportTransaction transportTransaction = new TransportTransaction();
         static readonly ContextBag contextBag = new ContextBag();
