@@ -73,7 +73,7 @@
                     sqsRequest = new CreateQueueRequest
                     {
                         QueueName = queueName,
-                        Attributes = new Dictionary<string, string> { {"FifoQueue", "true"} }
+                        Attributes = new Dictionary<string, string> { { "FifoQueue", "true" } }
                     };
 
                     Logger.Info($"Creating SQS delayed delivery queue with name '{sqsRequest.QueueName}' for address '{address}'.");

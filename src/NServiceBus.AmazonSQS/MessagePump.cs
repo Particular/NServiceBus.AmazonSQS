@@ -149,7 +149,7 @@
                         {
                             var delaySeconds = dueTime - utcNow;
                             SendMessageRequest sendMessageRequest;
-                            
+
                             if (delaySeconds > awsMaxDelayInMinutes)
                             {
                                 sendMessageRequest = new SendMessageRequest(delayedDeliveryQueueUrl, receivedMessage.Body)
