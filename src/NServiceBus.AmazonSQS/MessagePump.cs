@@ -16,8 +16,9 @@
 
     class MessagePump : IPushMessages
     {
-        public MessagePump(ConnectionConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
+        public MessagePump(ConnectionConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache, bool isDelayedDeliveryEnabled)
         {
+            this.isDelayedDeliveryEnabled = isDelayedDeliveryEnabled;
             this.configuration = configuration;
             this.s3Client = s3Client;
             this.sqsClient = sqsClient;
@@ -29,6 +30,8 @@
             queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.InputQueue, configuration))
                 .ConfigureAwait(false);
             errorQueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.ErrorQueue, configuration))
+                .ConfigureAwait(false);
+            delayedDeliveryQueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.InputQueue + "-delay.fifo", configuration))
                 .ConfigureAwait(false);
 
             if (settings.PurgeOnStartup)
@@ -85,12 +88,30 @@
                 }
             };
 
+            // probably ok to allocate even if we don't need it?
+            receiveDelayedMessagesRequest = new ReceiveMessageRequest
+            {
+                MaxNumberOfMessages = numberOfMessagesToFetch,
+                QueueUrl = delayedDeliveryQueueUrl,
+                WaitTimeSeconds = 1,
+                AttributeNames = new List<string>
+                {
+                    "SentTimestamp", // really needed?
+                    "MessageDeduplicationId"
+                }
+            };
+
             maxConcurrencySempahore = new SemaphoreSlim(maxConcurrency);
             pumpTasks = new List<Task>(numberOfPumps);
 
             for (var i = 0; i < numberOfPumps; i++)
             {
                 pumpTasks.Add(Task.Run(() => ConsumeMessages(cancellationTokenSource.Token), CancellationToken.None));
+            }
+
+            if (isDelayedDeliveryEnabled)
+            {
+                pumpTasks.Add(Task.Run(() => ConsumeDelayedMessages(cancellationTokenSource.Token), CancellationToken.None));
             }
         }
 
@@ -105,6 +126,84 @@
             maxConcurrencySempahore?.Dispose();
         }
 
+        async Task ConsumeDelayedMessages(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                try
+                {
+                    var receivedMessages = await sqsClient.ReceiveMessageAsync(receiveDelayedMessagesRequest, token).ConfigureAwait(false);
+
+                    foreach (var receivedMessage in receivedMessages.Messages)
+                    {
+                        // should we be more defensive here?
+                        var delayAttribute = receivedMessage.MessageAttributes[TransportHeaders.DelayDueTime];
+                        var dueTime = DateTimeExtensions.ToUtcDateTime(delayAttribute.StringValue);
+                        // TODO: add AWSConfigs.ClockOffset for clock skew (verify how it works)
+                        var utcNow = DateTime.UtcNow;
+                        if (dueTime < utcNow)
+                        {
+                            ProcessMessages(receivedMessages.Messages, null, token, delayedDeliveryQueueUrl);
+                        }
+                        else
+                        {
+                            var delaySeconds = dueTime - utcNow;
+                            SendMessageRequest sendMessageRequest;
+                            
+                            if (delaySeconds > awsMaxDelayInMinutes)
+                            {
+                                sendMessageRequest = new SendMessageRequest(delayedDeliveryQueueUrl, receivedMessage.Body)
+                                {
+                                    MessageAttributes =
+                                    {
+                                        [TransportHeaders.DelayDueTime] = delayAttribute
+                                    }
+                                };
+                                sendMessageRequest.MessageDeduplicationId = sendMessageRequest.MessageGroupId = receivedMessage.Attributes["MessageDeduplicationId"];
+                            }
+                            else
+                            {
+                                sendMessageRequest = new SendMessageRequest(queueUrl, receivedMessage.Body)
+                                {
+                                    DelaySeconds = (int)delaySeconds.TotalSeconds
+                                };
+                            }
+
+                            try
+                            {
+                                // should we allow to cancel this?
+                                await sqsClient.SendMessageAsync(sendMessageRequest, CancellationToken.None)
+                                    .ConfigureAwait(false);
+                            }
+                            catch (Exception ex)
+                            {
+                                // change visibility here?
+                                Logger.Error("BOOOM!", ex);
+                            }
+
+                            try
+                            {
+                                // should not be cancelled
+                                await sqsClient.DeleteMessageAsync(delayedDeliveryQueueUrl, receivedMessage.ReceiptHandle, CancellationToken.None).ConfigureAwait(false);
+                            }
+                            catch (ReceiptHandleIsInvalidException ex)
+                            {
+                                Logger.Info($"Message receipt handle {receivedMessage.ReceiptHandle} no longer valid.", ex);
+                            }
+                        }
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    // ignore for graceful shutdown
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("Exception thrown when consuming delayed messages", ex);
+                }
+            }
+        }
+
         async Task ConsumeMessages(CancellationToken token)
         {
             // cached and reused per receive loop
@@ -115,7 +214,7 @@
                 {
                     var receivedMessages = await sqsClient.ReceiveMessageAsync(receiveMessagesRequest, token).ConfigureAwait(false);
 
-                    ProcessMessages(receivedMessages.Messages, concurrentReceiveOperations, token);
+                    ProcessMessages(receivedMessages.Messages, concurrentReceiveOperations, token, queueUrl);
 
                     await Task.WhenAll(concurrentReceiveOperations).ConfigureAwait(false);
                 }
@@ -136,16 +235,16 @@
 
         // ReSharper disable once ParameterTypeCanBeEnumerable.Local
         // ReSharper disable once SuggestBaseTypeForParameter
-        void ProcessMessages(List<Message> receivedMessages, List<Task> concurrentReceiveOperations, CancellationToken token)
+        void ProcessMessages(List<Message> receivedMessages, List<Task> concurrentReceiveOperations, CancellationToken token, string destinationQueueUrl)
         {
             // ReSharper disable once LoopCanBeConvertedToQuery
             foreach (var receivedMessage in receivedMessages)
             {
-                concurrentReceiveOperations.Add(ProcessMessage(receivedMessage, token));
+                concurrentReceiveOperations?.Add(ProcessMessage(receivedMessage, token, destinationQueueUrl));
             }
         }
 
-        async Task ProcessMessage(Message receivedMessage, CancellationToken token)
+        async Task ProcessMessage(Message receivedMessage, CancellationToken token, string destinationQueueUrl)
         {
             try
             {
@@ -189,7 +288,7 @@
 
                 if (isPoisonMessage)
                 {
-                    await MovePoisonMessageToErrorQueue(receivedMessage).ConfigureAwait(false);
+                    await MovePoisonMessageToErrorQueue(receivedMessage, destinationQueueUrl).ConfigureAwait(false);
                     return;
                 }
 
@@ -201,7 +300,7 @@
                 // Always delete the message from the queue.
                 // If processing failed, the onError handler will have moved the message
                 // to a retry queue.
-                await DeleteMessage(receivedMessage, transportMessage, incomingMessage, token).ConfigureAwait(false);
+                await DeleteMessageAndBodyIfRequired(receivedMessage, transportMessage, destinationQueueUrl, token).ConfigureAwait(false);
             }
             finally
             {
@@ -284,12 +383,12 @@
             return true;
         }
 
-        async Task DeleteMessage(Message message, TransportMessage transportMessage, IncomingMessage incomingMessage, CancellationToken token)
+        async Task DeleteMessageAndBodyIfRequired(Message message, TransportMessage transportMessage, string destinationQueueUrl, CancellationToken token)
         {
             try
             {
                 // should not be cancelled
-                await sqsClient.DeleteMessageAsync(queueUrl, message.ReceiptHandle, CancellationToken.None).ConfigureAwait(false);
+                await sqsClient.DeleteMessageAsync(destinationQueueUrl, message.ReceiptHandle, CancellationToken.None).ConfigureAwait(false);
             }
             catch (ReceiptHandleIsInvalidException ex)
             {
@@ -329,7 +428,7 @@
             }
         }
 
-        async Task MovePoisonMessageToErrorQueue(Message message)
+        async Task MovePoisonMessageToErrorQueue(Message message, string destinationQueueUrl)
         {
             try
             {
@@ -349,14 +448,14 @@
                 {
                     await sqsClient.ChangeMessageVisibilityAsync(new ChangeMessageVisibilityRequest
                     {
-                        QueueUrl = queueUrl,
+                        QueueUrl = destinationQueueUrl,
                         ReceiptHandle = message.ReceiptHandle,
                         VisibilityTimeout = 0
                     }, CancellationToken.None).ConfigureAwait(false);
                 }
                 catch (Exception changeMessageVisibilityEx)
                 {
-                    Logger.Warn($"Error returning poison message back to input queue at url {queueUrl}. Poison message will become available at the input queue again after the visibility timeout expires.", changeMessageVisibilityEx);
+                    Logger.Warn($"Error returning poison message back to input queue at url {destinationQueueUrl}. Poison message will become available at the input queue again after the visibility timeout expires.", changeMessageVisibilityEx);
                 }
                 return;
             }
@@ -365,13 +464,13 @@
             {
                 await sqsClient.DeleteMessageAsync(new DeleteMessageRequest
                 {
-                    QueueUrl = queueUrl,
+                    QueueUrl = destinationQueueUrl,
                     ReceiptHandle = message.ReceiptHandle
                 }, CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                Logger.Warn($"Error removing poison message from input queue {queueUrl}. This may cause duplicate poison messages in the error queue for this endpoint.", ex);
+                Logger.Warn($"Error removing poison message from input queue {destinationQueueUrl}. This may cause duplicate poison messages in the error queue for this endpoint.", ex);
             }
             // If there is a message body in S3, simply leave it there
         }
@@ -382,6 +481,7 @@
         Func<MessageContext, Task> onMessage;
         SemaphoreSlim maxConcurrencySempahore;
         string queueUrl;
+        string delayedDeliveryQueueUrl;
         string errorQueueUrl;
         int maxConcurrency;
         ConnectionConfiguration configuration;
@@ -390,8 +490,11 @@
         QueueUrlCache queueUrlCache;
         int numberOfMessagesToFetch;
         ReceiveMessageRequest receiveMessagesRequest;
+        ReceiveMessageRequest receiveDelayedMessagesRequest;
+        bool isDelayedDeliveryEnabled;
         static readonly TransportTransaction transportTransaction = new TransportTransaction();
         static readonly ContextBag contextBag = new ContextBag();
+        static readonly TimeSpan awsMaxDelayInMinutes = TimeSpan.FromMinutes(15); // should be somewhere else
 
         static ILog Logger = LogManager.GetLogger(typeof(MessagePump));
     }
