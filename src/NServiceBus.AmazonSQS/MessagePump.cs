@@ -168,7 +168,8 @@
                         catch (Exception ex)
                         {
                             // change visibility here?
-                            Logger.Error("BOOOM!", ex);
+                            Logger.Debug("ConsumeDelayedMessages -> SendMessageAsync failed", ex);
+                            continue;
                         }
 
                         try
