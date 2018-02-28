@@ -68,7 +68,7 @@
 
                 if (isDelayedDeliveryEnabled && createDelayedDeliveryQueue)
                 {
-                    queueName = QueueNameHelper.GetSqsQueueName(address, configuration) + "-delay.fifo";
+                    queueName = QueueNameHelper.GetSqsQueueName(address + "-delay.fifo", configuration) ;
                     sqsRequest = new CreateQueueRequest
                     {
                         QueueName = queueName,
