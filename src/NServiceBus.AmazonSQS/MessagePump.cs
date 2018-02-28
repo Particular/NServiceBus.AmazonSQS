@@ -100,9 +100,9 @@
             {
                 var receiveDelayedMessagesRequest = new ReceiveMessageRequest
                 {
-                    MaxNumberOfMessages = numberOfMessagesToFetch,
+                    MaxNumberOfMessages = 10,
                     QueueUrl = delayedDeliveryQueueUrl,
-                    WaitTimeSeconds = 1,
+                    WaitTimeSeconds = 20,
                     AttributeNames = new List<string> { "MessageDeduplicationId" }
                 };
 
