@@ -342,7 +342,7 @@
                     try
                     {
                         errorHandlerResult = await onError(new ErrorContext(ex,
-                            incomingMessage.Headers,
+                            incomingMessage.Headers, // TODO: set failed header to the correct queue, always input queue
                             incomingMessage.MessageId,
                             incomingMessage.Body,
                             transportTransaction,
