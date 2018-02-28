@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
     using System.Threading.Tasks;
     using Amazon.S3;
@@ -62,7 +63,7 @@
                     QueueUrl = createQueueResponse.QueueUrl
                 };
                 sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod,
-                    configuration.MaxTimeToLive.TotalSeconds.ToString());
+                    configuration.MaxTimeToLive.TotalSeconds.ToString(CultureInfo.InvariantCulture));
 
                 await sqsClient.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
 
@@ -85,7 +86,8 @@
                         QueueUrl = createQueueResponse.QueueUrl
                     };
                     // TTL on messages in .fifo queue should not be less than maximum AWS delay time (15 minutes). 4 days is the default upon queue creation.
-                    sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod, TimeSpan.FromDays(4).TotalSeconds.ToString());
+                    sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod, TimeSpan.FromDays(4).TotalSeconds.ToString(CultureInfo.InvariantCulture));
+                    sqsAttributesRequest.Attributes.Add(QueueAttributeName.DelaySeconds, TimeSpan.FromMinutes(15).TotalSeconds.ToString(CultureInfo.InvariantCulture));
 
                     await sqsClient.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
                 }
