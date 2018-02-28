@@ -131,16 +131,24 @@
 
                     foreach (var receivedMessage in receivedMessages.Messages)
                     {
-                        // should we be more defensive here?
-                        var delayAttribute = receivedMessage.MessageAttributes[TransportHeaders.DelayDueTime];
-                        var dueTime = DateTimeExtensions.ToUtcDateTime(delayAttribute.StringValue);
                         // TODO: add AWSConfigs.ClockOffset for clock skew (verify how it works)
-                        var utcNow = DateTime.UtcNow;
 
-                        var delaySeconds = dueTime - utcNow;
+                        var utcNow = DateTime.UtcNow;
+                        var dueTime = utcNow;
+
+                        if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.DelayDueTime, out var delayAttribute))
+                        {
+                            try
+                            {
+                                dueTime = DateTimeExtensions.ToUtcDateTime(delayAttribute.StringValue);
+                            }
+                            catch { }
+                        }
+
+                        var remainingDelay = dueTime - utcNow;
                         SendMessageRequest sendMessageRequest;
 
-                        if (delaySeconds > awsMaxDelayInMinutes)
+                        if (remainingDelay > awsMaxDelayInMinutes)
                         {
                             sendMessageRequest = new SendMessageRequest(delayedDeliveryQueueUrl, receivedMessage.Body)
                             {
@@ -149,14 +157,19 @@
                                         [TransportHeaders.DelayDueTime] = delayAttribute
                                     }
                             };
+
                             sendMessageRequest.MessageDeduplicationId = sendMessageRequest.MessageGroupId = receivedMessage.Attributes["MessageDeduplicationId"];
                         }
                         else
                         {
-                            sendMessageRequest = new SendMessageRequest(queueUrl, receivedMessage.Body)
+                            sendMessageRequest = new SendMessageRequest(queueUrl, receivedMessage.Body);
+
+                            var delaySeconds = Math.Max(0, (int)remainingDelay.TotalSeconds);
+
+                            if (delaySeconds > 0)
                             {
-                                DelaySeconds = (int)delaySeconds.TotalSeconds
-                            };
+                                sendMessageRequest.DelaySeconds = delaySeconds;
+                            }
                         }
 
                         try
