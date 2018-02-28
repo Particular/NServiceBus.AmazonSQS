@@ -1,7 +1,7 @@
 ﻿namespace NServiceBus.Transports.SQS
 {
     using System;
-    using System.Globalization;
+    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
@@ -14,6 +14,7 @@
     using Extensibility;
     using Logging;
     using Newtonsoft.Json;
+    using NServiceBus;
     using Transport;
 
     class MessageDispatcher : IDispatchMessages
@@ -68,15 +69,7 @@
             }
 
             var destinationQueue = transportOperation.Destination;
-
-            if (isDelayedDeliveryEnabled && delayDeliveryBy > awsMaxDelayInMinutes)
-            {
-                // TODO: add AWSConfigs.ClockOffset for clock skew (verify how it works)
-                sqsTransportMessage.Headers[TransportHeaders.DelayDueTime] = (DateTime.UtcNow + delayDeliveryBy).ToString(CultureInfo.InvariantCulture);
-                destinationQueue += "-delay.fifo";
-                delayDeliveryBy = awsMaxDelayInMinutes;
-            }
-            
+           
             var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
 
             if (serializedMessage.Length > 256 * 1024)
@@ -109,9 +102,29 @@
 
         async Task SendMessage(string message, string destination, TimeSpan delayDeliveryBy, string messageId)
         {
+            var messageAttributes = emptyAttributes;
+            if (isDelayedDeliveryEnabled && delayDeliveryBy > awsMaxDelayInMinutes)
+            {
+                destination += "-delay.fifo";
+                delayDeliveryBy = awsMaxDelayInMinutes;
+
+                messageAttributes = new Dictionary<string, MessageAttributeValue>
+                {
+                    [TransportHeaders.DelayDueTime] = new MessageAttributeValue
+                    {
+                        StringValue = DateTimeExtensions.ToWireFormattedString(DateTime.UtcNow + delayDeliveryBy)
+                    }
+                };
+            }
+
             var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination, configuration))
                 .ConfigureAwait(false);
-            var sendMessageRequest = new SendMessageRequest(queueUrl, message);
+
+            // TODO: add AWSConfigs.ClockOffset for clock skew (verify how it works)
+            var sendMessageRequest = new SendMessageRequest(queueUrl, message)
+            {
+                MessageAttributes = messageAttributes
+            };
 
             // There should be no need to check if the delay time is greater than the maximum allowed
             // by SQS (15 minutes); the call to AWS will fail with an appropriate exception if the limit is exceeded.
@@ -135,5 +148,6 @@
 
         static readonly TimeSpan awsMaxDelayInMinutes = TimeSpan.FromMinutes(15);
         static ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
+        static Dictionary<string, MessageAttributeValue> emptyAttributes = new Dictionary<string, MessageAttributeValue>();
     }
 }
