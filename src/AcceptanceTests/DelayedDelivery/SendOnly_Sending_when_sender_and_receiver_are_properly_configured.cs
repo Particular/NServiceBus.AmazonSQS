@@ -56,7 +56,7 @@
                     c.MessageSent = true;
                 }))
                 .WithEndpoint<Receiver>()
-                .Done(c => c.MessageSent)
+                .Done(c => c.Received)
                 .Run();
 
             Assert.GreaterOrEqual(context.ReceivedAt - context.SentAt, delay, "The message has been received earlier than expected, we're so good!");

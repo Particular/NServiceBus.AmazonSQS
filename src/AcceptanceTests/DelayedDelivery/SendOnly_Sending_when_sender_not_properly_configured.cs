@@ -39,7 +39,7 @@
         [Test]
         public void Should_fail_to_send_message_if_above_queue_delay_time()
         {
-            var delay = QueueDelayTime.Add(TimeSpan.FromSeconds(1));
+            var delay = TimeSpan.FromMinutes(16);
 
             //or whatever exception we want to throw
             Assert.ThrowsAsync<NotSupportedException>(async () =>
