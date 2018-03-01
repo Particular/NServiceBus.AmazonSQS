@@ -98,16 +98,17 @@
 
         async Task SendMessage(string message, string destination, TimeSpan delayDeliveryBy, string messageId)
         {
-            if (!configuration.IsDelayedDeliveryEnabled && delayDeliveryBy > configuration.QueueDelayTime && delayDeliveryBy > MaximumQueueDelayTime)
+            if (!configuration.IsDelayedDeliveryEnabled && delayDeliveryBy > configuration.DelayedDeliveryQueueDelayTime && delayDeliveryBy > MaximumQueueDelayTime)
             {
                 throw new NotSupportedException(
-                    $"In order to be able to send delayed deliveries with a delay time greater than '{configuration.QueueDelayTime.ToString()}' the unrestricted delayed delivery has to be enabled. Use `.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()`");
+                    $"In order to be able to send delayed deliveries with a delay time greater than '{configuration.DelayedDeliveryQueueDelayTime.ToString()}' the unrestricted delayed delivery has to be enabled. Use `.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()`");
             }
 
             try
             {
                 SendMessageRequest sendMessageRequest;
-                if (configuration.IsDelayedDeliveryEnabled && delayDeliveryBy > configuration.QueueDelayTime)
+
+                if (configuration.IsDelayedDeliveryEnabled && delayDeliveryBy > configuration.DelayedDeliveryQueueDelayTime)
                 {
                     var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination + "-delay.fifo", configuration))
                         .ConfigureAwait(false);
@@ -143,9 +144,9 @@
                 await sqsClient.SendMessageAsync(sendMessageRequest)
                     .ConfigureAwait(false);
             }
-            catch (QueueDoesNotExistException e) when (configuration.IsDelayedDeliveryEnabled && delayDeliveryBy > configuration.QueueDelayTime)
+            catch (QueueDoesNotExistException e) when (configuration.IsDelayedDeliveryEnabled && delayDeliveryBy > configuration.DelayedDeliveryQueueDelayTime)
             {
-                throw new NotSupportedException($"In order to be able to send delayed deliveries to '{destination}' with a delay time greater than '{configuration.QueueDelayTime.ToString()}' the unrestricted delayed delivery has to be enabled on '{destination}'. Use `.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()` in the endpoint configuration of '{destination}'.", e);
+                throw new NotSupportedException($"In order to be able to send delayed deliveries to '{destination}' with a delay time greater than '{configuration.DelayedDeliveryQueueDelayTime.ToString()}' the unrestricted delayed delivery has to be enabled on '{destination}'. Use `.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()` in the endpoint configuration of '{destination}'.", e);
             }
         }
 

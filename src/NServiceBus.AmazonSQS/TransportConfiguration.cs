@@ -104,20 +104,20 @@
             {
                 if (!isDelayedDeliveryEnabled.HasValue)
                 {
-                    isDelayedDeliveryEnabled = settings.GetOrDefault<bool>(SettingsKeys.UnrestrictedDurationDelayedDelivery);
+                    isDelayedDeliveryEnabled = settings.HasSetting(SettingsKeys.UnrestrictedDurationDelayedDeliveryQueueDelayTime);
                 }
 
                 return isDelayedDeliveryEnabled.Value;
             }
         }
 
-        public TimeSpan QueueDelayTime
+        public TimeSpan DelayedDeliveryQueueDelayTime
         {
             get
             {
                 if (!queueDelayTime.HasValue)
                 {
-                    queueDelayTime = settings.GetOrDefault<TimeSpan>(SettingsKeys.UnrestrictedDurationQueueDelayTime);
+                    queueDelayTime = settings.GetOrDefault<TimeSpan>(SettingsKeys.UnrestrictedDurationDelayedDeliveryQueueDelayTime);
                 }
 
                 return queueDelayTime.Value;

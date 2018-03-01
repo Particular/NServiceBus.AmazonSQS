@@ -101,7 +101,7 @@
         /// </summary>
         public static TransportExtensions<SqsTransport> UnrestrictedDurationDelayedDelivery(this TransportExtensions<SqsTransport> transportExtensions)
         {
-            return transportExtensions.UnrestrictedDurationDelayedDelivery(MaximumQueueDelayTime);
+            return transportExtensions.UnrestrictedDurationDelayedDelivery(maximumQueueDelayTime);
         }
 
         /// <summary>
@@ -127,17 +127,16 @@
         {
             Guard.AgainstNull(nameof(transportExtensions), transportExtensions);
 
-            if (queueDelayTime.TotalSeconds <= 0 && queueDelayTime > MaximumQueueDelayTime)
+            if (queueDelayTime.TotalSeconds <= 0 && queueDelayTime > maximumQueueDelayTime)
             {
                 throw new ArgumentException("Queue delay needs to be between 1 second and maximum 15 minutes.", nameof(queueDelayTime));
             }
 
-            transportExtensions.GetSettings().Set(SettingsKeys.UnrestrictedDurationDelayedDelivery, true);
-            transportExtensions.GetSettings().Set(SettingsKeys.UnrestrictedDurationQueueDelayTime, queueDelayTime);
+            transportExtensions.GetSettings().Set(SettingsKeys.UnrestrictedDurationDelayedDeliveryQueueDelayTime, queueDelayTime);
 
             return transportExtensions;
         }
 
-        static readonly TimeSpan MaximumQueueDelayTime = TimeSpan.FromMinutes(15);
+        static readonly TimeSpan maximumQueueDelayTime = TimeSpan.FromMinutes(15);
     }
 }

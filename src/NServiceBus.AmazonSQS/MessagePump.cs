@@ -154,7 +154,7 @@
                         var remainingDelay = dueTime - utcNow;
                         SendMessageRequest sendMessageRequest;
 
-                        if (remainingDelay > configuration.QueueDelayTime)
+                        if (remainingDelay > configuration.DelayedDeliveryQueueDelayTime)
                         {
                             sendMessageRequest = new SendMessageRequest(delayedDeliveryQueueUrl, receivedMessage.Body)
                             {
