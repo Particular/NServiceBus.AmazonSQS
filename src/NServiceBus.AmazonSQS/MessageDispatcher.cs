@@ -109,7 +109,8 @@
 
                 if (configuration.IsDelayedDeliveryEnabled && delayDeliveryBy > configuration.DelayedDeliveryQueueDelayTime)
                 {
-                    var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination + TransportConfiguration.DelayedDeliveryQueueSuffix, configuration))
+                    destination += TransportConfiguration.DelayedDeliveryQueueSuffix;
+                    var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination, configuration))
                         .ConfigureAwait(false);
 
                     // TODO: add AWSConfigs.ClockOffset for clock skew (verify how it works)
@@ -143,7 +144,7 @@
                 await sqsClient.SendMessageAsync(sendMessageRequest)
                     .ConfigureAwait(false);
             }
-            catch (QueueDoesNotExistException e) when (configuration.IsDelayedDeliveryEnabled && delayDeliveryBy > configuration.DelayedDeliveryQueueDelayTime)
+            catch (QueueDoesNotExistException e) when (destination.EndsWith(TransportConfiguration.DelayedDeliveryQueueSuffix, StringComparison.OrdinalIgnoreCase))
             {
                 throw new QueueDoesNotExistException($"Destination '{destination}' doesn't support delayed messages longer than {configuration.DelayedDeliveryQueueDelayTime}. To enable support for longer delays, call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()' on the '{destination}' endpoint.", e);
             }
