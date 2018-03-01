@@ -48,6 +48,28 @@
 
         async Task Dispatch(UnicastTransportOperation transportOperation)
         {
+            var delayWithConstraint = transportOperation.DeliveryConstraints.OfType<DelayDeliveryWith>().SingleOrDefault();
+            var deliverAtConstraint = transportOperation.DeliveryConstraints.OfType<DoNotDeliverBefore>().SingleOrDefault();
+
+            var delayDeliveryBy = TimeSpan.Zero;
+
+            if (delayWithConstraint == null)
+            {
+                if (deliverAtConstraint != null)
+                {
+                    delayDeliveryBy = deliverAtConstraint.At - DateTime.UtcNow;
+                }
+            }
+            else
+            {
+                delayDeliveryBy = delayWithConstraint.Delay;
+            }
+
+            if (!configuration.IsDelayedDeliveryEnabled && delayDeliveryBy > awsMaximumQueueDelayTime)
+            {
+                throw new NotSupportedException($"To send messages with a delay time greater than '{awsMaximumQueueDelayTime}', call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()'.");
+            }
+
             var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.DeliveryConstraints);
             var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
 
@@ -75,35 +97,12 @@
                 serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
             }
 
-            var delayWithConstraint = transportOperation.DeliveryConstraints.OfType<DelayDeliveryWith>().SingleOrDefault();
-            var deliverAtConstraint = transportOperation.DeliveryConstraints.OfType<DoNotDeliverBefore>().SingleOrDefault();
-
-            var delayDeliveryBy = TimeSpan.Zero;
-
-            if (delayWithConstraint == null)
-            {
-                if (deliverAtConstraint != null)
-                {
-                    delayDeliveryBy = deliverAtConstraint.At - DateTime.UtcNow;
-                }
-            }
-            else
-            {
-                delayDeliveryBy = delayWithConstraint.Delay;
-            }
-
             await SendMessage(serializedMessage, transportOperation.Destination, delayDeliveryBy, transportOperation.Message.MessageId)
                 .ConfigureAwait(false);
         }
 
         async Task SendMessage(string message, string destination, TimeSpan delayDeliveryBy, string messageId)
         {
-            if (!configuration.IsDelayedDeliveryEnabled && delayDeliveryBy > configuration.DelayedDeliveryQueueDelayTime && delayDeliveryBy > MaximumQueueDelayTime)
-            {
-                throw new NotSupportedException(
-                    $"In order to be able to send delayed deliveries with a delay time greater than '{configuration.DelayedDeliveryQueueDelayTime.ToString()}' the unrestricted delayed delivery has to be enabled. Use `.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()`");
-            }
-
             try
             {
                 SendMessageRequest sendMessageRequest;
@@ -156,6 +155,6 @@
         QueueUrlCache queueUrlCache;
 
         static ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
-        static readonly TimeSpan MaximumQueueDelayTime = TimeSpan.FromMinutes(15);
+        static readonly TimeSpan awsMaximumQueueDelayTime = TimeSpan.FromMinutes(15);
     }
 }
