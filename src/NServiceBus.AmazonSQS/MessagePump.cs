@@ -170,7 +170,7 @@
                         {
                             sendMessageRequest = new SendMessageRequest(queueUrl, receivedMessage.Body);
 
-                            var delaySeconds = Math.Max(0, (int)remainingDelay.TotalSeconds);
+                            var delaySeconds = Convert.ToInt32(Math.Ceiling(remainingDelay.TotalSeconds));
 
                             if (delaySeconds > 0)
                             {

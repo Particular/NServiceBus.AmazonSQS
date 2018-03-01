@@ -133,12 +133,14 @@
                     var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination, configuration))
                         .ConfigureAwait(false);
 
+                    sendMessageRequest = new SendMessageRequest(queueUrl, message);
+
                     var delaySeconds = Convert.ToInt32(Math.Ceiling(delayDeliveryBy.TotalSeconds));
 
-                    sendMessageRequest = new SendMessageRequest(queueUrl, message)
+                    if (delaySeconds > 0)
                     {
-                        DelaySeconds = delaySeconds
-                    };
+                        sendMessageRequest.DelaySeconds = delaySeconds;
+                    }
                 }
 
                 await sqsClient.SendMessageAsync(sendMessageRequest)
