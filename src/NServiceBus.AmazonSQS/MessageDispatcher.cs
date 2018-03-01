@@ -132,9 +132,11 @@
                     var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination, configuration))
                         .ConfigureAwait(false);
 
+                    var delaySeconds = Convert.ToInt32(Math.Ceiling(delayDeliveryBy.TotalSeconds));
+
                     sendMessageRequest = new SendMessageRequest(queueUrl, message)
                     {
-                        DelaySeconds = (int)delayDeliveryBy.TotalSeconds
+                        DelaySeconds = delaySeconds
                     };
                 }
 
