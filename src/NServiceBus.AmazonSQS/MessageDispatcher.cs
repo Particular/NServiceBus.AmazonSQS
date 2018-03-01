@@ -145,7 +145,7 @@
             }
             catch (QueueDoesNotExistException e) when (configuration.IsDelayedDeliveryEnabled && delayDeliveryBy > configuration.DelayedDeliveryQueueDelayTime)
             {
-                throw new NotSupportedException($"In order to be able to send delayed deliveries to '{destination}' with a delay time greater than '{configuration.DelayedDeliveryQueueDelayTime.ToString()}' the unrestricted delayed delivery has to be enabled on '{destination}'. Use `.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()` in the endpoint configuration of '{destination}'.", e);
+                throw new QueueDoesNotExistException($"Destination '{destination}' doesn't support delayed messages longer than {configuration.DelayedDeliveryQueueDelayTime}. To enable support for longer delays, call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()' on the '{destination}' endpoint.", e);
             }
         }
 
