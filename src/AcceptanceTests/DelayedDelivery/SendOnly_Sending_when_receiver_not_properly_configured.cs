@@ -4,6 +4,7 @@
     using System.Threading.Tasks;
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
+    using Amazon.SQS.Model;
     using EndpointTemplates;
     using NUnit.Framework;
 
@@ -41,12 +42,6 @@
         {
             var delay = QueueDelayTime.Add(TimeSpan.FromSeconds(1));
 
-            /*
-             * In this scenario sender knows nothing about receiver configuration
-             * sender won't be able to find the "<receiver>-delays.fifo" queue
-             * so I suppose that the SDK will throw a meaningful exception at send time
-             */
-            //or whatever exception we want to throw
             Assert.ThrowsAsync<NotSupportedException>(async () =>
             {
                 await Scenario.Define<Context>()
@@ -73,8 +68,7 @@
             public DateTime SentAt { get; set; }
             public DateTime ReceivedAt { get; set; }
         }
-
-
+        
         public class SendOnlySender : EndpointConfigurationBuilder
         {
             public SendOnlySender()

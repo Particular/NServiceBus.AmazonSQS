@@ -32,8 +32,8 @@
                 .Done(c => c.Received)
                 .Run();
 
-            Assert.GreaterOrEqual(context.ReceivedAt - context.SentAt, delay, "The message has been received earlier than expected, we're so good!");
-            Assert.AreEqual(payload, context.Payload, "The received payload doesn't match the sent one. BAD BAD BAD");
+            Assert.GreaterOrEqual(context.ReceivedAt - context.SentAt, delay, "The message has been received earlier than expected.");
+            Assert.AreEqual(payload, context.Payload, "The received payload doesn't match the sent one.");
         }
 
         [Test]
@@ -41,7 +41,6 @@
         {
             var delay = TimeSpan.FromMinutes(16);
 
-            //or whatever exception we want to throw
             Assert.ThrowsAsync<NotSupportedException>(async () =>
             {
                 await Scenario.Define<Context>()

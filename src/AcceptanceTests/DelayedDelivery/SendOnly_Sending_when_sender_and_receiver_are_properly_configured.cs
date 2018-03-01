@@ -32,12 +32,12 @@
                 .Done(c => c.Received)
                 .Run();
 
-            Assert.GreaterOrEqual(context.ReceivedAt - context.SentAt, delay, "The message has been received earlier than expected, we're so good!");
-            Assert.AreEqual(payload, context.Payload, "The received payload doesn't match the sent one. BAD BAD BAD");
+            Assert.GreaterOrEqual(context.ReceivedAt - context.SentAt, delay, "The message has been received earlier than expected.");
+            Assert.AreEqual(payload, context.Payload, "The received payload doesn't match the sent one.");
         }
 
         [Test]
-        public async Task Should_send_message_if_above_queue_delay_time()
+        public async Task Should_deliver_message_if_above_queue_delay_time()
         {
             var payload = "some payload";
             var delay = QueueDelayTime.Add(TimeSpan.FromSeconds(1));
@@ -59,8 +59,8 @@
                 .Done(c => c.Received)
                 .Run();
 
-            Assert.GreaterOrEqual(context.ReceivedAt - context.SentAt, delay, "The message has been received earlier than expected, we're so good!");
-            Assert.AreEqual(payload, context.Payload, "The received payload doesn't match the sent one. BAD BAD BAD");
+            Assert.GreaterOrEqual(context.ReceivedAt - context.SentAt, delay, "The message has been received earlier than expected.");
+            Assert.AreEqual(payload, context.Payload, "The received payload doesn't match the sent one.");
         }
 
         static readonly TimeSpan QueueDelayTime = TimeSpan.FromSeconds(3);
@@ -71,7 +71,6 @@
             public string Payload { get; set; }
             public DateTime SentAt { get; set; }
             public DateTime ReceivedAt { get; set; }
-            public bool MessageSent { get; set; }
         }
 
         public class SendOnlySender : EndpointConfigurationBuilder
