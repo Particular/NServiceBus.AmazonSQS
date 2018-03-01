@@ -110,7 +110,7 @@
 
                 if (configuration.IsDelayedDeliveryEnabled && delayDeliveryBy > configuration.DelayedDeliveryQueueDelayTime)
                 {
-                    var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination + "-delay.fifo", configuration))
+                    var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination + TransportConfiguration.DelayedDeliveryQueueSuffix, configuration))
                         .ConfigureAwait(false);
 
                     // TODO: add AWSConfigs.ClockOffset for clock skew (verify how it works)

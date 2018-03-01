@@ -33,7 +33,7 @@
 
             if (configuration.IsDelayedDeliveryEnabled)
             {
-                delayedDeliveryQueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.InputQueue + "-delay.fifo", configuration))
+                delayedDeliveryQueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.InputQueue + TransportConfiguration.DelayedDeliveryQueueSuffix, configuration))
                     .ConfigureAwait(false);
             }
 

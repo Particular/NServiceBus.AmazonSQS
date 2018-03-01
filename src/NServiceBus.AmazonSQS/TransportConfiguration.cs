@@ -124,6 +124,8 @@
             }
         }
 
+        public const string DelayedDeliveryQueueSuffix = "-delay.fifo";
+
         ReadOnlySettings settings;
         TimeSpan? maxTTL;
         string s3BucketForLargeMessages;
