@@ -42,7 +42,7 @@
         {
             var delay = QueueDelayTime.Add(TimeSpan.FromSeconds(1));
 
-            Assert.ThrowsAsync<NotSupportedException>(async () =>
+            Assert.ThrowsAsync<QueueDoesNotExistException>(async () =>
             {
                 await Scenario.Define<Context>()
                     .WithEndpoint<SendOnlySender>(b => b.When(async (session, c) =>
