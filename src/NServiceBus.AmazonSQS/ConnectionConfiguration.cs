@@ -98,12 +98,40 @@
             }
         }
 
+        public bool IsDelayedDeliveryEnabled
+        {
+            get
+            {
+                if (!isDelayedDeliveryEnabled.HasValue)
+                {
+                    isDelayedDeliveryEnabled = settings.GetOrDefault<bool>(SettingsKeys.UnrestrictedDurationDelayedDelivery);
+                }
+
+                return isDelayedDeliveryEnabled.Value;
+            }
+        }
+
+        public TimeSpan QueueDelayTime
+        {
+            get
+            {
+                if (!queueDelayTime.HasValue)
+                {
+                    queueDelayTime = settings.GetOrDefault<TimeSpan>(SettingsKeys.UnrestrictedDurationQueueDelayTime);
+                }
+
+                return queueDelayTime.Value;
+            }
+        }
+
         ReadOnlySettings settings;
         TimeSpan? maxTTL;
         string s3BucketForLargeMessages;
         string s3KeyPrefix;
         string queueNamePrefix;
+        bool? isDelayedDeliveryEnabled;
         bool? preTruncateQueueNames;
+        TimeSpan? queueDelayTime;
         Func<IAmazonS3> s3ClientFactory;
         Func<IAmazonSQS> sqsClientFactory;
     }

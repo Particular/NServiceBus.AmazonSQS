@@ -15,13 +15,12 @@
 
     class QueueCreator : ICreateQueues
     {
-        public QueueCreator(ConnectionConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache, bool isDelayedDeliveryEnabled)
+        public QueueCreator(ConnectionConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
         {
             this.configuration = configuration;
             this.s3Client = s3Client;
             this.sqsClient = sqsClient;
             this.queueUrlCache = queueUrlCache;
-            this.isDelayedDeliveryEnabled = isDelayedDeliveryEnabled;
         }
 
         public Task CreateQueueIfNecessary(QueueBindings queueBindings, string identity)
@@ -34,7 +33,7 @@
             }
             foreach (var address in queueBindings.ReceivingAddresses)
             {
-                tasks.Add(CreateQueueIfNecessary(address, isDelayedDeliveryEnabled));
+                tasks.Add(CreateQueueIfNecessary(address, configuration.IsDelayedDeliveryEnabled));
             }
             return Task.WhenAll(tasks);
         }
@@ -87,7 +86,7 @@
                     };
                     // TTL on messages in .fifo queue should not be less than maximum AWS delay time (15 minutes). 4 days is the default upon queue creation.
                     sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod, TimeSpan.FromDays(4).TotalSeconds.ToString(CultureInfo.InvariantCulture));
-                    sqsAttributesRequest.Attributes.Add(QueueAttributeName.DelaySeconds, TimeSpan.FromMinutes(15).TotalSeconds.ToString(CultureInfo.InvariantCulture));
+                    sqsAttributesRequest.Attributes.Add(QueueAttributeName.DelaySeconds, configuration.QueueDelayTime.TotalSeconds.ToString(CultureInfo.InvariantCulture));
 
                     await sqsClient.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
                 }
@@ -155,6 +154,5 @@
         IAmazonS3 s3Client;
         IAmazonSQS sqsClient;
         QueueUrlCache queueUrlCache;
-        readonly bool isDelayedDeliveryEnabled;
     }
 }

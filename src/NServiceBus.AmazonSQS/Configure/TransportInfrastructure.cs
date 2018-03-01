@@ -24,8 +24,6 @@
             s3Client = configuration.S3ClientFactory();
 
             queueUrlCache = new QueueUrlCache(sqsClient);
-
-            isDelayedDeliveryEnabled = settings.GetOrDefault<bool>(SettingsKeys.UnrestrictedDurationDelayedDelivery);
         }
 
 
@@ -45,17 +43,17 @@
 
         MessagePump CreateMessagePump()
         {
-            return new MessagePump(configuration, s3Client, sqsClient, queueUrlCache, isDelayedDeliveryEnabled);
+            return new MessagePump(configuration, s3Client, sqsClient, queueUrlCache);
         }
 
         QueueCreator CreateQueueCreator()
         {
-            return new QueueCreator(configuration, s3Client, sqsClient, queueUrlCache, isDelayedDeliveryEnabled);
+            return new QueueCreator(configuration, s3Client, sqsClient, queueUrlCache);
         }
 
         MessageDispatcher CreateMessageDispatcher()
         {
-            return new MessageDispatcher(configuration, s3Client, sqsClient, queueUrlCache, isDelayedDeliveryEnabled);
+            return new MessageDispatcher(configuration, s3Client, sqsClient, queueUrlCache);
         }
 
         public override TransportReceiveInfrastructure ConfigureReceiveInfrastructure()
@@ -109,6 +107,5 @@
         readonly IAmazonS3 s3Client;
         readonly QueueUrlCache queueUrlCache;
         readonly ConnectionConfiguration configuration;
-        readonly bool isDelayedDeliveryEnabled;
     }
 }

@@ -19,13 +19,12 @@
 
     class MessageDispatcher : IDispatchMessages
     {
-        public MessageDispatcher(ConnectionConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache, bool isDelayedDeliveryEnabled)
+        public MessageDispatcher(ConnectionConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
         {
             this.configuration = configuration;
             this.s3Client = s3Client;
             this.sqsClient = sqsClient;
             this.queueUrlCache = queueUrlCache;
-            this.isDelayedDeliveryEnabled = isDelayedDeliveryEnabled;
         }
 
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
@@ -101,10 +100,10 @@
         {
             var messageAttributes = emptyAttributes;
 
-            if (isDelayedDeliveryEnabled && delayDeliveryBy > awsMaxDelayInMinutes)
+            if (configuration.IsDelayedDeliveryEnabled && delayDeliveryBy > configuration.QueueDelayTime)
             {
                 destination += "-delay.fifo";
-                delayDeliveryBy = awsMaxDelayInMinutes;
+                delayDeliveryBy = configuration.QueueDelayTime;
 
                 messageAttributes = new Dictionary<string, MessageAttributeValue>
                 {
@@ -142,9 +141,7 @@
         IAmazonSQS sqsClient;
         IAmazonS3 s3Client;
         QueueUrlCache queueUrlCache;
-        readonly bool isDelayedDeliveryEnabled;
 
-        static readonly TimeSpan awsMaxDelayInMinutes = TimeSpan.FromMinutes(15);
         static ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
         static readonly Dictionary<string, MessageAttributeValue> emptyAttributes = new Dictionary<string, MessageAttributeValue>();
     }

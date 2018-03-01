@@ -16,9 +16,8 @@
 
     class MessagePump : IPushMessages
     {
-        public MessagePump(ConnectionConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache, bool isDelayedDeliveryEnabled)
+        public MessagePump(ConnectionConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
         {
-            this.isDelayedDeliveryEnabled = isDelayedDeliveryEnabled;
             this.configuration = configuration;
             this.s3Client = s3Client;
             this.sqsClient = sqsClient;
@@ -96,7 +95,7 @@
                 pumpTasks.Add(Task.Run(() => ConsumeMessages(cancellationTokenSource.Token), CancellationToken.None));
             }
 
-            if (isDelayedDeliveryEnabled)
+            if (configuration.IsDelayedDeliveryEnabled)
             {
                 var receiveDelayedMessagesRequest = new ReceiveMessageRequest
                 {
@@ -142,13 +141,16 @@
                             {
                                 dueTime = DateTimeExtensions.ToUtcDateTime(delayAttribute.StringValue);
                             }
-                            catch { }
+                            catch
+                            {
+                                // ignored
+                            }
                         }
 
                         var remainingDelay = dueTime - utcNow;
                         SendMessageRequest sendMessageRequest;
 
-                        if (remainingDelay > awsMaxDelayInMinutes)
+                        if (remainingDelay > configuration.QueueDelayTime)
                         {
                             sendMessageRequest = new SendMessageRequest(delayedDeliveryQueueUrl, receivedMessage.Body)
                             {
@@ -494,10 +496,8 @@
         QueueUrlCache queueUrlCache;
         int numberOfMessagesToFetch;
         ReceiveMessageRequest receiveMessagesRequest;
-        bool isDelayedDeliveryEnabled;
         static readonly TransportTransaction transportTransaction = new TransportTransaction();
         static readonly ContextBag contextBag = new ContextBag();
-        static readonly TimeSpan awsMaxDelayInMinutes = TimeSpan.FromMinutes(15); // should be somewhere else
 
         static ILog Logger = LogManager.GetLogger(typeof(MessagePump));
     }
