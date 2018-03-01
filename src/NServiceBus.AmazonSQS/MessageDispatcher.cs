@@ -18,7 +18,7 @@
 
     class MessageDispatcher : IDispatchMessages
     {
-        public MessageDispatcher(ConnectionConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
+        public MessageDispatcher(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
         {
             this.configuration = configuration;
             this.s3Client = s3Client;
@@ -149,7 +149,7 @@
             }
         }
 
-        ConnectionConfiguration configuration;
+        TransportConfiguration configuration;
         IAmazonSQS sqsClient;
         IAmazonS3 s3Client;
         QueueUrlCache queueUrlCache;

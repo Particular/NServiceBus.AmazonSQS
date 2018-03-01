@@ -6,25 +6,25 @@
 
     static class QueueNameHelper
     {
-        public static string GetSqsQueueName(string destination, ConnectionConfiguration connectionConfiguration)
+        public static string GetSqsQueueName(string destination, TransportConfiguration transportConfiguration)
         {
             if (string.IsNullOrWhiteSpace(destination))
             {
                 throw new ArgumentNullException(nameof(destination));
             }
 
-            var s = connectionConfiguration.QueueNamePrefix + destination;
+            var s = transportConfiguration.QueueNamePrefix + destination;
 
-            if (connectionConfiguration.PreTruncateQueueNames && s.Length > 80)
+            if (transportConfiguration.PreTruncateQueueNames && s.Length > 80)
             {
-                var charsToTake = 80 - connectionConfiguration.QueueNamePrefix.Length;
-                s = connectionConfiguration.QueueNamePrefix + 
+                var charsToTake = 80 - transportConfiguration.QueueNamePrefix.Length;
+                s = transportConfiguration.QueueNamePrefix + 
                     new string(s.Reverse().Take(charsToTake).Reverse().ToArray());
             }
 
             if (s.Length > 80)
             {
-                throw new Exception($"Address {destination} with configured prefix {connectionConfiguration.QueueNamePrefix} is longer than 80 characters and therefore cannot be used to create an SQS queue. Use a shorter queue name.");
+                throw new Exception($"Address {destination} with configured prefix {transportConfiguration.QueueNamePrefix} is longer than 80 characters and therefore cannot be used to create an SQS queue. Use a shorter queue name.");
             }
 
             var skipCharacters = s.EndsWith(".fifo") ? 5 : 0;

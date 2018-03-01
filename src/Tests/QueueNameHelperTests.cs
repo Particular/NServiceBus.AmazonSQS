@@ -16,7 +16,7 @@
         [TestCase("destination-delay.fifo.fifo", "destination-delay-fifo.fifo")]
         public void Preserves_FifoQueue(string destination, string expected)
         {
-            var configuration = new ConnectionConfiguration(new SettingsHolder());
+            var configuration = new TransportConfiguration(new SettingsHolder());
 
             var result = QueueNameHelper.GetSqsQueueName(destination, configuration);
             Assert.AreEqual(expected, result);
@@ -33,7 +33,7 @@
             settings.Set(SettingsKeys.PreTruncateQueueNames, true);
             settings.Set(SettingsKeys.QueueNamePrefix, string.Empty);
 
-            var configuration = new ConnectionConfiguration(settings);
+            var configuration = new TransportConfiguration(settings);
 
             var result = QueueNameHelper.GetSqsQueueName(destination, configuration);
             Console.WriteLine(result);

@@ -32,12 +32,12 @@
         {
             // Once all tests have completed, delete all queues that were created.
             // Use the QueueNamePrefix to determine which queues to delete.
-            var transportConfiguration = new TransportExtensions<SqsTransport>(new SettingsHolder());
-            transportConfiguration = transportConfiguration.ConfigureSqsTransport(SqsQueueNamePrefix);
-            var connectionConfiguration = new ConnectionConfiguration(transportConfiguration.GetSettings());
+            var transport = new TransportExtensions<SqsTransport>(new SettingsHolder());
+            transport = transport.ConfigureSqsTransport(SqsQueueNamePrefix);
+            var transportConfiguration = new TransportConfiguration(transport.GetSettings());
             using (var sqsClient = SqsTransportExtensions.CreateSQSClient())
             {
-                var listQueuesResult = await sqsClient.ListQueuesAsync(connectionConfiguration.QueueNamePrefix).ConfigureAwait(false);
+                var listQueuesResult = await sqsClient.ListQueuesAsync(transportConfiguration.QueueNamePrefix).ConfigureAwait(false);
                 foreach (var queueUrl in listQueuesResult.QueueUrls)
                 {
                     try

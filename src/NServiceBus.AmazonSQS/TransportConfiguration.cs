@@ -5,9 +5,9 @@
     using Amazon.SQS;
     using Settings;
 
-    class ConnectionConfiguration
+    class TransportConfiguration
     {
-        public ConnectionConfiguration(ReadOnlySettings settings)
+        public TransportConfiguration(ReadOnlySettings settings)
         {
             // Accessing the settings bag during runtime means a lot of boxing and unboxing,
             // all properties of this class are lazy initialized once they are accessed

@@ -16,7 +16,7 @@
 
     class MessagePump : IPushMessages
     {
-        public MessagePump(ConnectionConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
+        public MessagePump(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
         {
             this.configuration = configuration;
             this.s3Client = s3Client;
@@ -494,7 +494,7 @@
         string delayedDeliveryQueueUrl;
         string errorQueueUrl;
         int maxConcurrency;
-        ConnectionConfiguration configuration;
+        TransportConfiguration configuration;
         IAmazonS3 s3Client;
         IAmazonSQS sqsClient;
         QueueUrlCache queueUrlCache;

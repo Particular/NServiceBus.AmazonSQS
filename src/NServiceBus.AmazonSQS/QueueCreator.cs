@@ -15,7 +15,7 @@
 
     class QueueCreator : ICreateQueues
     {
-        public QueueCreator(ConnectionConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
+        public QueueCreator(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
         {
             this.configuration = configuration;
             this.s3Client = s3Client;
@@ -150,7 +150,7 @@
         }
 
         static ILog Logger = LogManager.GetLogger(typeof(QueueCreator));
-        ConnectionConfiguration configuration;
+        TransportConfiguration configuration;
         IAmazonS3 s3Client;
         IAmazonSQS sqsClient;
         QueueUrlCache queueUrlCache;

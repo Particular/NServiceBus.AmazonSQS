@@ -47,14 +47,14 @@ public class Sending_poison_messages : NServiceBusTransportTest
 
     async Task SendPoisonMessage(string inputQueueName)
     {
-        var transportConfiguration = new TransportExtensions<SqsTransport>(new SettingsHolder());
-        transportConfiguration = transportConfiguration.ConfigureSqsTransport(SetupFixture.SqsQueueNamePrefix);
-        var connectionConfiguration = new ConnectionConfiguration(transportConfiguration.GetSettings());
+        var transport = new TransportExtensions<SqsTransport>(new SettingsHolder());
+        transport = transport.ConfigureSqsTransport(SetupFixture.SqsQueueNamePrefix);
+        var transportConfiguration = new TransportConfiguration(transport.GetSettings());
         using (var sqsClient = SqsTransportExtensions.CreateSQSClient())
         {
             var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
             {
-                QueueName = QueueNameHelper.GetSqsQueueName(inputQueueName, connectionConfiguration)
+                QueueName = QueueNameHelper.GetSqsQueueName(inputQueueName, transportConfiguration)
             }).ConfigureAwait(false);
 
             await sqsClient.SendMessageAsync(new SendMessageRequest
@@ -67,14 +67,14 @@ public class Sending_poison_messages : NServiceBusTransportTest
 
     async Task CheckErrorQueue(string errorQueueName, CancellationToken cancellationToken)
     {
-        var transportConfiguration = new TransportExtensions<SqsTransport>(new SettingsHolder());
-        transportConfiguration = transportConfiguration.ConfigureSqsTransport(SetupFixture.SqsQueueNamePrefix);
-        var connectionConfiguration = new ConnectionConfiguration(transportConfiguration.GetSettings());
+        var transport = new TransportExtensions<SqsTransport>(new SettingsHolder());
+        transport = transport.ConfigureSqsTransport(SetupFixture.SqsQueueNamePrefix);
+        var transportConfiguration = new TransportConfiguration(transport.GetSettings());
         using (var sqsClient = SqsTransportExtensions.CreateSQSClient())
         {
             var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
             {
-                QueueName = QueueNameHelper.GetSqsQueueName(errorQueueName, connectionConfiguration)
+                QueueName = QueueNameHelper.GetSqsQueueName(errorQueueName, transportConfiguration)
             }, cancellationToken).ConfigureAwait(false);
 
             var messageReceived = false;

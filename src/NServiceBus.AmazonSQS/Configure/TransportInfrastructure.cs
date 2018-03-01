@@ -18,7 +18,7 @@
     {
         public TransportInfrastructure(ReadOnlySettings settings)
         {
-            configuration = new ConnectionConfiguration(settings);
+            configuration = new TransportConfiguration(settings);
 
             sqsClient = configuration.SqsClientFactory();
             s3Client = configuration.S3ClientFactory();
@@ -106,6 +106,6 @@
         readonly IAmazonSQS sqsClient;
         readonly IAmazonS3 s3Client;
         readonly QueueUrlCache queueUrlCache;
-        readonly ConnectionConfiguration configuration;
+        readonly TransportConfiguration configuration;
     }
 }
