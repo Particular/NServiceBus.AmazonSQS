@@ -106,7 +106,8 @@
                     MaxNumberOfMessages = 10,
                     QueueUrl = delayedDeliveryQueueUrl,
                     WaitTimeSeconds = 20,
-                    AttributeNames = new List<string> { "MessageDeduplicationId" }
+                    AttributeNames = new List<string> { "MessageDeduplicationId" },
+                    MessageAttributeNames = new List<string> { "All" }
                 };
 
                 pumpTasks.Add(Task.Run(() => ConsumeDelayedMessages(receiveDelayedMessagesRequest, cancellationTokenSource.Token), CancellationToken.None));
