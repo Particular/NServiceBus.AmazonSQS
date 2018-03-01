@@ -14,7 +14,6 @@
     using Extensibility;
     using Logging;
     using Newtonsoft.Json;
-    using NServiceBus;
     using Transport;
 
     class MessageDispatcher : IDispatchMessages
@@ -37,6 +36,7 @@
                 {
                     tasks[i] = Dispatch(operations[i]);
                 }
+
                 await Task.WhenAll(tasks).ConfigureAwait(false);
             }
             catch (Exception e)
@@ -98,43 +98,53 @@
 
         async Task SendMessage(string message, string destination, TimeSpan delayDeliveryBy, string messageId)
         {
-            var messageAttributes = emptyAttributes;
-
-            if (configuration.IsDelayedDeliveryEnabled && delayDeliveryBy > configuration.QueueDelayTime)
+            if (!configuration.IsDelayedDeliveryEnabled && delayDeliveryBy > configuration.QueueDelayTime && delayDeliveryBy > MaximumQueueDelayTime)
             {
-                destination += "-delay.fifo";
-                delayDeliveryBy = configuration.QueueDelayTime;
+                throw new NotSupportedException(
+                    $"In order to be able to send delayed deliveries with a delay time greater than '{configuration.QueueDelayTime.ToString()}' the unrestricted delayed delivery has to be enabled. Use `.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()`");
+            }
 
-                messageAttributes = new Dictionary<string, MessageAttributeValue>
+            try
+            {
+                SendMessageRequest sendMessageRequest;
+                if (configuration.IsDelayedDeliveryEnabled && delayDeliveryBy > configuration.QueueDelayTime)
                 {
-                    [TransportHeaders.DelayDueTime] = new MessageAttributeValue
+                    var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination + "-delay.fifo", configuration))
+                        .ConfigureAwait(false);
+
+                    // TODO: add AWSConfigs.ClockOffset for clock skew (verify how it works)
+                    sendMessageRequest = new SendMessageRequest(queueUrl, message)
                     {
-                        StringValue = DateTimeExtensions.ToWireFormattedString(DateTime.UtcNow + delayDeliveryBy)
-                    }
-                };
+                        MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                        {
+                            [TransportHeaders.DelayDueTime] = new MessageAttributeValue
+                            {
+                                StringValue = DateTimeExtensions.ToWireFormattedString(DateTime.UtcNow + delayDeliveryBy),
+                                DataType = "String"
+                            }
+                        },
+                        MessageDeduplicationId = messageId,
+                        MessageGroupId = messageId
+                    };
+                }
+                else
+                {
+                    var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination, configuration))
+                        .ConfigureAwait(false);
+
+                    sendMessageRequest = new SendMessageRequest(queueUrl, message)
+                    {
+                        DelaySeconds = (int)delayDeliveryBy.TotalSeconds
+                    };
+                }
+
+                await sqsClient.SendMessageAsync(sendMessageRequest)
+                    .ConfigureAwait(false);
             }
-
-            var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination, configuration))
-                .ConfigureAwait(false);
-
-            // TODO: add AWSConfigs.ClockOffset for clock skew (verify how it works)
-            var sendMessageRequest = new SendMessageRequest(queueUrl, message)
+            catch (QueueDoesNotExistException e) when (configuration.IsDelayedDeliveryEnabled && delayDeliveryBy > configuration.QueueDelayTime)
             {
-                MessageAttributes = messageAttributes
-            };
-
-            // There should be no need to check if the delay time is greater than the maximum allowed
-            // by SQS (15 minutes); the call to AWS will fail with an appropriate exception if the limit is exceeded.
-            var delaySeconds = Math.Max(0, (int)delayDeliveryBy.TotalSeconds);
-
-            if (delaySeconds > 0)
-            {
-                sendMessageRequest.DelaySeconds = delaySeconds;
-                sendMessageRequest.MessageDeduplicationId = sendMessageRequest.MessageGroupId = messageId;
+                throw new NotSupportedException($"In order to be able to send delayed deliveries to '{destination}' with a delay time greater than '{configuration.QueueDelayTime.ToString()}' the unrestricted delayed delivery has to be enabled on '{destination}'. Use `.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()` in the endpoint configuration of '{destination}'.", e);
             }
-
-            await sqsClient.SendMessageAsync(sendMessageRequest)
-                .ConfigureAwait(false);
         }
 
         ConnectionConfiguration configuration;
@@ -143,6 +153,6 @@
         QueueUrlCache queueUrlCache;
 
         static ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
-        static readonly Dictionary<string, MessageAttributeValue> emptyAttributes = new Dictionary<string, MessageAttributeValue>();
+        static readonly TimeSpan MaximumQueueDelayTime = TimeSpan.FromMinutes(15);
     }
 }
