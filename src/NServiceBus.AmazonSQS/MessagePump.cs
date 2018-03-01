@@ -30,8 +30,12 @@
                 .ConfigureAwait(false);
             errorQueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.ErrorQueue, configuration))
                 .ConfigureAwait(false);
-            delayedDeliveryQueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.InputQueue + "-delay.fifo", configuration))
-                .ConfigureAwait(false);
+
+            if (configuration.IsDelayedDeliveryEnabled)
+            {
+                delayedDeliveryQueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.InputQueue + "-delay.fifo", configuration))
+                    .ConfigureAwait(false);
+            }
 
             if (settings.PurgeOnStartup)
             {
