@@ -1,5 +1,10 @@
 ﻿namespace NServiceBus.Transports.SQS
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Threading.Tasks;
     using Amazon.S3;
     using Amazon.S3.Model;
     using Amazon.SQS;
@@ -9,11 +14,6 @@
     using Extensibility;
     using Logging;
     using Newtonsoft.Json;
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Threading.Tasks;
     using Transport;
 
     class MessageDispatcher : IDispatchMessages
