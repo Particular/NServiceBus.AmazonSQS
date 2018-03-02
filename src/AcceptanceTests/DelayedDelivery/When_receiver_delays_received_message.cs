@@ -1,13 +1,13 @@
 ﻿namespace NServiceBus.AcceptanceTests.DelayedDelivery
 {
-    using System;
-    using System.Threading.Tasks;
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
     using EndpointTemplates;
     using NUnit.Framework;
+    using System;
+    using System.Threading.Tasks;
 
-    public class When_receiver_delays_received_mesage : NServiceBusAcceptanceTest
+    public class When_receiver_delays_received_message : NServiceBusAcceptanceTest
     {
         [Test]
         public async Task Should_deliver_message_if_below_queue_delay_time()
