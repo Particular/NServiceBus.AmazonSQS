@@ -96,8 +96,8 @@
         }
 
         /// <summary>
-        /// TODO: needs a better description
-        /// Configure SQS transport to support delayed messages longer than AWS maximum time.
+        /// Configures the SQS transport to support delayed messages of any duration.
+        /// Without calling this API, delayed messages are subject to SQS Delivery Delay duration restrictions.
         /// </summary>
         public static TransportExtensions<SqsTransport> UnrestrictedDurationDelayedDelivery(this TransportExtensions<SqsTransport> transportExtensions)
         {
