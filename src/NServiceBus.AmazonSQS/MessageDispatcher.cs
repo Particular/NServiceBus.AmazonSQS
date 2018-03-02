@@ -127,11 +127,6 @@
                         MessageDeduplicationId = messageId,
                         MessageGroupId = messageId
                     };
-
-                    if (configuration.RegenerateMessageDeduplicationId)
-                    {
-                        sendMessageRequest.MessageDeduplicationId = sendMessageRequest.MessageGroupId = Guid.NewGuid().ToString();
-                    }
                 }
                 else
                 {
