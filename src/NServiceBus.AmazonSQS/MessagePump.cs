@@ -208,7 +208,6 @@
 
                         try
                         {
-                            // should we allow to cancel this?
                             await sqsClient.SendMessageAsync(sendMessageRequest, CancellationToken.None)
                                 .ConfigureAwait(false);
                         }
@@ -221,8 +220,8 @@
 
                         try
                         {
-                            // should not be cancelled
-                            await sqsClient.DeleteMessageAsync(delayedDeliveryQueueUrl, receivedMessage.ReceiptHandle, CancellationToken.None).ConfigureAwait(false);
+                            await sqsClient.DeleteMessageAsync(delayedDeliveryQueueUrl, receivedMessage.ReceiptHandle, CancellationToken.None)
+                                .ConfigureAwait(false);
                         }
                         catch (ReceiptHandleIsInvalidException ex)
                         {
