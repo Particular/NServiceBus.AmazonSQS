@@ -12,5 +12,6 @@
         public const string CredentialSource = Prefix + nameof(CredentialSource);
         public const string PreTruncateQueueNames = Prefix + nameof(PreTruncateQueueNames);
         public const string UnrestrictedDurationDelayedDeliveryQueueDelayTime = Prefix + nameof(UnrestrictedDurationDelayedDeliveryQueueDelayTime);
+        public const string UnrestrictedDurationDelayedDeliveryRegenerateMessageDeduplicationId = Prefix + nameof(UnrestrictedDurationDelayedDeliveryRegenerateMessageDeduplicationId);
     }
 }

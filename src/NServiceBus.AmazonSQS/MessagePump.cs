@@ -165,7 +165,13 @@
                                     }
                             };
 
-                            sendMessageRequest.MessageDeduplicationId = sendMessageRequest.MessageGroupId = receivedMessage.Attributes["MessageDeduplicationId"];
+                            var groupId = receivedMessage.Attributes["MessageDeduplicationId"];
+                            // this is only here for acceptance testing purpose. In real prod code this is always false.
+                            if (configuration.RegenerateMessageDeduplicationId)
+                            {
+                                groupId = Guid.NewGuid().ToString();
+                            }
+                            sendMessageRequest.MessageDeduplicationId = sendMessageRequest.MessageGroupId = groupId;
                         }
                         else
                         {

@@ -123,7 +123,7 @@
             return transportExtensions;
         }
 
-        internal static TransportExtensions<SqsTransport> UnrestrictedDurationDelayedDelivery(this TransportExtensions<SqsTransport> transportExtensions, TimeSpan queueDelayTime)
+        internal static TransportExtensions<SqsTransport> UnrestrictedDurationDelayedDelivery(this TransportExtensions<SqsTransport> transportExtensions, TimeSpan queueDelayTime, bool regenerateMessageDeduplicationId = false)
         {
             Guard.AgainstNull(nameof(transportExtensions), transportExtensions);
 
@@ -133,6 +133,7 @@
             }
 
             transportExtensions.GetSettings().Set(SettingsKeys.UnrestrictedDurationDelayedDeliveryQueueDelayTime, queueDelayTime);
+            transportExtensions.GetSettings().Set(SettingsKeys.UnrestrictedDurationDelayedDeliveryRegenerateMessageDeduplicationId, regenerateMessageDeduplicationId);
 
             return transportExtensions;
         }

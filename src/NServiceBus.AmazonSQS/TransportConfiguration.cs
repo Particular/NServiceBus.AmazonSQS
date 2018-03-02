@@ -111,13 +111,26 @@
             }
         }
 
+        public bool RegenerateMessageDeduplicationId
+        {
+            get
+            {
+                if (!regenerateMessageDeduplicationId.HasValue)
+                {
+                    regenerateMessageDeduplicationId = settings.Get<bool>(SettingsKeys.UnrestrictedDurationDelayedDeliveryRegenerateMessageDeduplicationId);
+                }
+
+                return regenerateMessageDeduplicationId.Value;
+            }
+        }
+
         public TimeSpan DelayedDeliveryQueueDelayTime
         {
             get
             {
                 if (!queueDelayTime.HasValue)
                 {
-                    queueDelayTime = settings.GetOrDefault<TimeSpan>(SettingsKeys.UnrestrictedDurationDelayedDeliveryQueueDelayTime);
+                    queueDelayTime = settings.Get<TimeSpan>(SettingsKeys.UnrestrictedDurationDelayedDeliveryQueueDelayTime);
                 }
 
                 return queueDelayTime.Value;
@@ -132,6 +145,7 @@
         string s3KeyPrefix;
         string queueNamePrefix;
         bool? isDelayedDeliveryEnabled;
+        bool? regenerateMessageDeduplicationId;
         bool? preTruncateQueueNames;
         TimeSpan? queueDelayTime;
         Func<IAmazonS3> s3ClientFactory;
