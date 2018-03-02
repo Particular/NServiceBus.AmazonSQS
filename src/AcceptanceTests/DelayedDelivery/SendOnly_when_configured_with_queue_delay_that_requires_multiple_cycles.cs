@@ -65,7 +65,7 @@
         {
             public Receiver()
             {
-                EndpointSetup<DefaultServer>(builder => { builder.ConfigureSqsTransport().UnrestrictedDurationDelayedDelivery(QueueDelayTime, regenerateMessageDeduplicationId: true); });
+                EndpointSetup<DefaultServer>(builder => { builder.ConfigureSqsTransport().UnrestrictedDurationDelayedDelivery(QueueDelayTime); });
             }
 
             public class MyMessageHandler : IHandleMessages<DelayedMessage>
