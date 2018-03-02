@@ -213,8 +213,11 @@
                         }
                         catch (Exception ex)
                         {
-                            // change visibility here?
                             Logger.Debug("ConsumeDelayedMessages -> SendMessageAsync failed", ex);
+
+                            await sqsClient.ChangeMessageVisibilityAsync(request.QueueUrl, receivedMessage.ReceiptHandle, 0, CancellationToken.None)
+                                .ConfigureAwait(false);
+                            
                             continue;
                         }
 
