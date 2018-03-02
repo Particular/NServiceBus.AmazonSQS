@@ -68,7 +68,7 @@
             public DateTime SentAt { get; set; }
             public DateTime ReceivedAt { get; set; }
         }
-        
+
         public class SendOnlySender : EndpointConfigurationBuilder
         {
             public SendOnlySender()

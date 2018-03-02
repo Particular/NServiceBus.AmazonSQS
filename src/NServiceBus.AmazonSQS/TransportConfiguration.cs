@@ -111,19 +111,6 @@
             }
         }
 
-        public bool RegenerateMessageDeduplicationId
-        {
-            get
-            {
-                if (!regenerateMessageDeduplicationId.HasValue)
-                {
-                    regenerateMessageDeduplicationId = settings.Get<bool>(SettingsKeys.UnrestrictedDurationDelayedDeliveryRegenerateMessageDeduplicationId);
-                }
-
-                return regenerateMessageDeduplicationId.Value;
-            }
-        }
-
         public TimeSpan DelayedDeliveryQueueDelayTime
         {
             get
@@ -138,6 +125,7 @@
         }
 
         public const string DelayedDeliveryQueueSuffix = "-delay.fifo";
+        public static readonly TimeSpan AwsMaximumQueueDelayTime = TimeSpan.FromMinutes(15);
 
         ReadOnlySettings settings;
         TimeSpan? maxTTL;
@@ -145,7 +133,6 @@
         string s3KeyPrefix;
         string queueNamePrefix;
         bool? isDelayedDeliveryEnabled;
-        bool? regenerateMessageDeduplicationId;
         bool? preTruncateQueueNames;
         TimeSpan? queueDelayTime;
         Func<IAmazonS3> s3ClientFactory;

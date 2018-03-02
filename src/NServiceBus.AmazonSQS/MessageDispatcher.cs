@@ -65,9 +65,9 @@
                 delayDeliveryBy = delayWithConstraint.Delay;
             }
 
-            if (!configuration.IsDelayedDeliveryEnabled && delayDeliveryBy > awsMaximumQueueDelayTime)
+            if (!configuration.IsDelayedDeliveryEnabled && delayDeliveryBy > TransportConfiguration.AwsMaximumQueueDelayTime)
             {
-                throw new NotSupportedException($"To send messages with a delay time greater than '{awsMaximumQueueDelayTime}', call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()'.");
+                throw new NotSupportedException($"To send messages with a delay time greater than '{TransportConfiguration.AwsMaximumQueueDelayTime}', call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()'.");
             }
 
             var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.DeliveryConstraints);
@@ -158,6 +158,5 @@
         QueueUrlCache queueUrlCache;
 
         static ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
-        static readonly TimeSpan awsMaximumQueueDelayTime = TimeSpan.FromMinutes(15);
     }
 }

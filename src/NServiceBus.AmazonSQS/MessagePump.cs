@@ -165,13 +165,15 @@
                                     }
                             };
 
-                            var groupId = receivedMessage.Attributes["MessageDeduplicationId"];
+                            var deduplicationId = receivedMessage.Attributes["MessageDeduplicationId"];
+
                             // this is only here for acceptance testing purpose. In real prod code this is always false.
-                            if (configuration.RegenerateMessageDeduplicationId)
+                            if (configuration.DelayedDeliveryQueueDelayTime < TransportConfiguration.AwsMaximumQueueDelayTime)
                             {
-                                groupId = Guid.NewGuid().ToString();
+                                deduplicationId = Guid.NewGuid().ToString();
                             }
-                            sendMessageRequest.MessageDeduplicationId = sendMessageRequest.MessageGroupId = groupId;
+
+                            sendMessageRequest.MessageDeduplicationId = sendMessageRequest.MessageGroupId = deduplicationId;
                         }
                         else
                         {
