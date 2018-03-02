@@ -33,8 +33,27 @@
 
             if (configuration.IsDelayedDeliveryEnabled)
             {
-                delayedDeliveryQueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.InputQueue + TransportConfiguration.DelayedDeliveryQueueSuffix, configuration))
+                var delayedDeliveryQueueName = settings.InputQueue + TransportConfiguration.DelayedDeliveryQueueSuffix;
+                delayedDeliveryQueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(delayedDeliveryQueueName, configuration))
                     .ConfigureAwait(false);
+
+                var queueAttributes = await sqsClient.GetQueueAttributesAsync(delayedDeliveryQueueUrl, new List<string> { "DelaySeconds", "MessageRetentionPeriod", "RedrivePolicy" })
+                    .ConfigureAwait(false);
+
+                if (queueAttributes.DelaySeconds < (int)configuration.DelayedDeliveryQueueDelayTime.TotalSeconds)
+                {
+                    throw new Exception($"Delayed delivery queue '{delayedDeliveryQueueName}' should not have Delivery Delay less than {configuration.DelayedDeliveryQueueDelayTime}.");
+                }
+
+                if (queueAttributes.MessageRetentionPeriod < (int)TransportConfiguration.DelayedDeliveryQueueMessageRetentionPeriod.TotalSeconds)
+                {
+                    throw new Exception($"Delayed delivery queue '{delayedDeliveryQueueName}' should not have Message Retention Period less than {TransportConfiguration.DelayedDeliveryQueueMessageRetentionPeriod}.");
+                }
+
+                if (queueAttributes.Attributes.ContainsKey("RedrivePolicy"))
+                {
+                    throw new Exception($"Delayed delivery queue '{delayedDeliveryQueueName}' should not have Redrive Policy enabled.");
+                }
             }
 
             if (settings.PurgeOnStartup)
