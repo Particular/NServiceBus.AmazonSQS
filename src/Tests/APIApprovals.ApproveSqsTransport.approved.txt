@@ -35,6 +35,8 @@ namespace NServiceBus
         [System.ObsoleteAttribute("Use `MaxTimeToLive` instead. The member currently throws a NotImplementedExceptio" +
             "n. Will be removed in version 5.0.0.", true)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> MaxTTLDays(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, int maxTtlDays) { }
+        [System.ObsoleteAttribute("This API is no longer needed because SQS is always used to delay messages. Will b" +
+            "e treated as an error from version 5.0.0. Will be removed in version 6.0.0.", false)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> NativeDeferral(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, bool use = True) { }
         [System.ObsoleteAttribute("Use `transport.ClientFactory(() => new AmazonSQSClient(new AmazonSQSConfig { Prox" +
             "yHost = host, ProxyPort = port }))` instead. The member currently throws a NotIm" +
@@ -50,5 +52,6 @@ namespace NServiceBus
             "member currently throws a NotImplementedException. Will be removed in version 5." +
             "0.0.", true)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> S3BucketForLargeMessages(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string s3BucketForLargeMessages, string s3KeyPrefix) { }
+        public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> UnrestrictedDurationDelayedDelivery(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
     }
 }
