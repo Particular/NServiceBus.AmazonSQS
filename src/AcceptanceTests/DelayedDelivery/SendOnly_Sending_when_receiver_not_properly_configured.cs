@@ -22,19 +22,19 @@
                     var sendOptions = new SendOptions();
                     sendOptions.DelayDeliveryWith(delay);
 
+                    c.SentAt = DateTime.UtcNow;
+
                     await session.Send(new DelayedMessage
                     {
                         Payload = payload
                     }, sendOptions);
-
-                    c.SentAt = DateTime.UtcNow;
                 }))
                 .WithEndpoint<NotConfiguredReceiver>()
                 .Done(c => c.Received)
                 .Run();
 
-            Assert.GreaterOrEqual(context.ReceivedAt - context.SentAt, delay, "The message has been received earlier than expected, we're so good!");
-            Assert.AreEqual(payload, context.Payload, "The received payload doesn't match the sent one. BAD BAD BAD");
+            Assert.GreaterOrEqual(context.ReceivedAt - context.SentAt, delay, "The message has been received earlier than expected.");
+            Assert.AreEqual(payload, context.Payload, "The received payload doesn't match the sent one.");
         }
 
         [Test]

@@ -9,7 +9,6 @@
 
     public class SendOnly_when_configured_with_queue_delay_that_requires_multiple_cycles : NServiceBusAcceptanceTest
     {
-
         [Test]
         public async Task Should_deliver()
         {

@@ -21,12 +21,12 @@
                     var sendOptions = new SendOptions();
                     sendOptions.DelayDeliveryWith(delay);
 
+                    c.SentAt = DateTime.UtcNow;
+
                     await session.Send(new DelayedMessage
                     {
                         Payload = payload
                     }, sendOptions);
-
-                    c.SentAt = DateTime.UtcNow;
                 }))
                 .WithEndpoint<Receiver>()
                 .Done(c => c.Received)
