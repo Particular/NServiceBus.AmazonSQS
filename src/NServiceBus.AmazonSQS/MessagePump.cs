@@ -125,7 +125,7 @@
                     MaxNumberOfMessages = 10,
                     QueueUrl = delayedDeliveryQueueUrl,
                     WaitTimeSeconds = 20,
-                    AttributeNames = new List<string> { "MessageDeduplicationId" },
+                    AttributeNames = new List<string> { "MessageDeduplicationId", "SentTimestamp", "ApproximateFirstReceiveTimestamp" },
                     MessageAttributeNames = new List<string> { "All" }
                 };
 
@@ -154,34 +154,34 @@
 
                     foreach (var receivedMessage in receivedMessages.Messages)
                     {
-                        // TODO: add AWSConfigs.ClockOffset for clock skew (verify how it works)
+                        long delay = 0;
 
-                        var utcNow = DateTime.UtcNow;
-                        var dueTime = utcNow;
-
-                        if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.DelayDueTime, out var delayAttribute))
+                        if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.DelaySeconds, out var delayAttribute))
                         {
-                            try
-                            {
-                                dueTime = DateTimeExtensions.ToUtcDateTime(delayAttribute.StringValue);
-                            }
-                            catch
-                            {
-                                // ignored
-                            }
+                            Int64.TryParse(delayAttribute.StringValue, out delay);
                         }
 
-                        var remainingDelay = dueTime - utcNow;
+                        var sent = UnixTimeConverter.FromUnixTimeMilliseconds(Convert.ToInt64(receivedMessage.Attributes["SentTimestamp"]));
+                        var received = UnixTimeConverter.FromUnixTimeMilliseconds(Convert.ToInt64(receivedMessage.Attributes["ApproximateFirstReceiveTimestamp"]));
+
+                        var elapsed = received - sent;
+
+                        var remainingDelay = delay - (long)elapsed.TotalSeconds;
+
                         SendMessageRequest sendMessageRequest;
 
-                        if (remainingDelay > configuration.DelayedDeliveryQueueDelayTime)
+                        if (TimeSpan.FromSeconds(remainingDelay) > configuration.DelayedDeliveryQueueDelayTime)
                         {
                             sendMessageRequest = new SendMessageRequest(delayedDeliveryQueueUrl, receivedMessage.Body)
                             {
                                 MessageAttributes =
+                                {
+                                    [TransportHeaders.DelaySeconds] = new MessageAttributeValue
                                     {
-                                        [TransportHeaders.DelayDueTime] = delayAttribute
+                                        StringValue = remainingDelay.ToString(),
+                                        DataType = "String",
                                     }
+                                }
                             };
 
                             var deduplicationId = receivedMessage.Attributes["MessageDeduplicationId"];
@@ -198,11 +198,9 @@
                         {
                             sendMessageRequest = new SendMessageRequest(queueUrl, receivedMessage.Body);
 
-                            var delaySeconds = Convert.ToInt32(Math.Ceiling(remainingDelay.TotalSeconds));
-
-                            if (delaySeconds > 0)
+                            if (remainingDelay > 0)
                             {
-                                sendMessageRequest.DelaySeconds = delaySeconds;
+                                sendMessageRequest.DelaySeconds = (int)remainingDelay;
                             }
                         }
 
@@ -217,7 +215,7 @@
 
                             await sqsClient.ChangeMessageVisibilityAsync(request.QueueUrl, receivedMessage.ReceiptHandle, 0, CancellationToken.None)
                                 .ConfigureAwait(false);
-                            
+
                             continue;
                         }
 

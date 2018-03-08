@@ -1,7 +1,6 @@
 ﻿namespace NServiceBus.Transports.SQS
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
@@ -48,24 +47,21 @@
 
         async Task Dispatch(UnicastTransportOperation transportOperation)
         {
-            var delayWithConstraint = transportOperation.DeliveryConstraints.OfType<DelayDeliveryWith>().SingleOrDefault();
-            var deliverAtConstraint = transportOperation.DeliveryConstraints.OfType<DoNotDeliverBefore>().SingleOrDefault();
+            var delayDeliveryWith = transportOperation.DeliveryConstraints.OfType<DelayDeliveryWith>().SingleOrDefault();
+            var doNotDeliverBefore = transportOperation.DeliveryConstraints.OfType<DoNotDeliverBefore>().SingleOrDefault();
 
-            var delayDeliveryBy = TimeSpan.Zero;
+            long delay = 0;
 
-            if (delayWithConstraint == null)
+            if (delayDeliveryWith != null)
             {
-                if (deliverAtConstraint != null)
-                {
-                    delayDeliveryBy = deliverAtConstraint.At - DateTime.UtcNow;
-                }
+                delay = Convert.ToInt64(Math.Ceiling(delayDeliveryWith.Delay.TotalSeconds));
             }
-            else
+            else if (doNotDeliverBefore != null)
             {
-                delayDeliveryBy = delayWithConstraint.Delay;
+                delay = Convert.ToInt64(Math.Ceiling((doNotDeliverBefore.At - DateTime.UtcNow).TotalSeconds));
             }
 
-            if (!configuration.IsDelayedDeliveryEnabled && delayDeliveryBy > TransportConfiguration.AwsMaximumQueueDelayTime)
+            if (!configuration.IsDelayedDeliveryEnabled && TimeSpan.FromSeconds(delay) > TransportConfiguration.AwsMaximumQueueDelayTime)
             {
                 throw new NotSupportedException($"To send messages with a delay time greater than '{TransportConfiguration.AwsMaximumQueueDelayTime}', call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()'.");
             }
@@ -97,31 +93,30 @@
                 serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
             }
 
-            await SendMessage(serializedMessage, transportOperation.Destination, delayDeliveryBy, transportOperation.Message.MessageId)
+            await SendMessage(serializedMessage, transportOperation.Destination, delay, transportOperation.Message.MessageId)
                 .ConfigureAwait(false);
         }
 
-        async Task SendMessage(string message, string destination, TimeSpan delayDeliveryBy, string messageId)
+        async Task SendMessage(string message, string destination, long delay, string messageId)
         {
             try
             {
                 SendMessageRequest sendMessageRequest;
 
-                if (configuration.IsDelayedDeliveryEnabled && delayDeliveryBy > configuration.DelayedDeliveryQueueDelayTime)
+                if (configuration.IsDelayedDeliveryEnabled && TimeSpan.FromSeconds(delay) > configuration.DelayedDeliveryQueueDelayTime)
                 {
                     destination += TransportConfiguration.DelayedDeliveryQueueSuffix;
                     var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination, configuration))
                         .ConfigureAwait(false);
 
-                    // TODO: add AWSConfigs.ClockOffset for clock skew (verify how it works)
                     sendMessageRequest = new SendMessageRequest(queueUrl, message)
                     {
-                        MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                        MessageAttributes =
                         {
-                            [TransportHeaders.DelayDueTime] = new MessageAttributeValue
+                            [TransportHeaders.DelaySeconds] = new MessageAttributeValue
                             {
-                                StringValue = DateTimeExtensions.ToWireFormattedString(DateTime.UtcNow + delayDeliveryBy),
-                                DataType = "String"
+                                StringValue = delay.ToString(),
+                                DataType = "String",
                             }
                         },
                         MessageDeduplicationId = messageId,
@@ -135,11 +130,9 @@
 
                     sendMessageRequest = new SendMessageRequest(queueUrl, message);
 
-                    var delaySeconds = Convert.ToInt32(Math.Ceiling(delayDeliveryBy.TotalSeconds));
-
-                    if (delaySeconds > 0)
+                    if (delay > 0)
                     {
-                        sendMessageRequest.DelaySeconds = delaySeconds;
+                        sendMessageRequest.DelaySeconds = (int)delay;
                     }
                 }
 
