@@ -50,18 +50,18 @@
             var delayDeliveryWith = transportOperation.DeliveryConstraints.OfType<DelayDeliveryWith>().SingleOrDefault();
             var doNotDeliverBefore = transportOperation.DeliveryConstraints.OfType<DoNotDeliverBefore>().SingleOrDefault();
 
-            long delay = 0;
+            long delaySeconds = 0;
 
             if (delayDeliveryWith != null)
             {
-                delay = Convert.ToInt64(Math.Ceiling(delayDeliveryWith.Delay.TotalSeconds));
+                delaySeconds = Convert.ToInt64(Math.Ceiling(delayDeliveryWith.Delay.TotalSeconds));
             }
             else if (doNotDeliverBefore != null)
             {
-                delay = Convert.ToInt64(Math.Ceiling((doNotDeliverBefore.At - DateTime.UtcNow).TotalSeconds));
+                delaySeconds = Convert.ToInt64(Math.Ceiling((doNotDeliverBefore.At - DateTime.UtcNow).TotalSeconds));
             }
 
-            if (!configuration.IsDelayedDeliveryEnabled && delay > TransportConfiguration.AwsMaximumQueueDelayTime)
+            if (!configuration.IsDelayedDeliveryEnabled && delaySeconds > TransportConfiguration.AwsMaximumQueueDelayTime)
             {
                 throw new NotSupportedException($"To send messages with a delay time greater than '{TimeSpan.FromSeconds(TransportConfiguration.AwsMaximumQueueDelayTime)}', call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()'.");
             }
@@ -93,17 +93,17 @@
                 serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
             }
 
-            await SendMessage(serializedMessage, transportOperation.Destination, delay, transportOperation.Message.MessageId)
+            await SendMessage(serializedMessage, transportOperation.Destination, delaySeconds, transportOperation.Message.MessageId)
                 .ConfigureAwait(false);
         }
 
-        async Task SendMessage(string message, string destination, long delay, string messageId)
+        async Task SendMessage(string message, string destination, long delaySeconds, string messageId)
         {
             try
             {
                 SendMessageRequest sendMessageRequest;
 
-                if (configuration.IsDelayedDeliveryEnabled && delay > configuration.DelayedDeliveryQueueDelayTime)
+                if (configuration.IsDelayedDeliveryEnabled && delaySeconds > configuration.DelayedDeliveryQueueDelayTime)
                 {
                     destination += TransportConfiguration.DelayedDeliveryQueueSuffix;
                     var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination, configuration))
@@ -115,7 +115,7 @@
                         {
                             [TransportHeaders.DelaySeconds] = new MessageAttributeValue
                             {
-                                StringValue = delay.ToString(),
+                                StringValue = delaySeconds.ToString(),
                                 DataType = "String",
                             }
                         },
@@ -130,9 +130,9 @@
 
                     sendMessageRequest = new SendMessageRequest(queueUrl, message);
 
-                    if (delay > 0)
+                    if (delaySeconds > 0)
                     {
-                        sendMessageRequest.DelaySeconds = (int)delay;
+                        sendMessageRequest.DelaySeconds = (int)delaySeconds;
                     }
                 }
 

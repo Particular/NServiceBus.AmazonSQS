@@ -154,11 +154,11 @@
 
                     foreach (var receivedMessage in receivedMessages.Messages)
                     {
-                        long delay = 0;
+                        long delaySeconds = 0;
 
                         if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.DelaySeconds, out var delayAttribute))
                         {
-                            Int64.TryParse(delayAttribute.StringValue, out delay);
+                            Int64.TryParse(delayAttribute.StringValue, out delaySeconds);
                         }
 
                         var sent = UnixTimeConverter.FromUnixTimeMilliseconds(Convert.ToInt64(receivedMessage.Attributes["SentTimestamp"]));
@@ -166,7 +166,7 @@
 
                         var elapsed = received - sent;
 
-                        var remainingDelay = delay - (long)elapsed.TotalSeconds;
+                        var remainingDelay = delaySeconds - (long)elapsed.TotalSeconds;
 
                         SendMessageRequest sendMessageRequest;
 
