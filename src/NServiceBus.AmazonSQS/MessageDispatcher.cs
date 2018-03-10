@@ -116,7 +116,7 @@
                             [TransportHeaders.DelaySeconds] = new MessageAttributeValue
                             {
                                 StringValue = delaySeconds.ToString(),
-                                DataType = "String",
+                                DataType = "String"
                             }
                         },
                         MessageDeduplicationId = messageId,

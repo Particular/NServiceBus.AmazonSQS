@@ -179,7 +179,7 @@
                                     [TransportHeaders.DelaySeconds] = new MessageAttributeValue
                                     {
                                         StringValue = remainingDelay.ToString(),
-                                        DataType = "String",
+                                        DataType = "String"
                                     }
                                 }
                             };
