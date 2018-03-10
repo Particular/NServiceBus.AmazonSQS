@@ -40,9 +40,9 @@
                 var queueAttributes = await sqsClient.GetQueueAttributesAsync(delayedDeliveryQueueUrl, new List<string> { "DelaySeconds", "MessageRetentionPeriod", "RedrivePolicy" })
                     .ConfigureAwait(false);
 
-                if (queueAttributes.DelaySeconds < (int)configuration.DelayedDeliveryQueueDelayTime.TotalSeconds)
+                if (queueAttributes.DelaySeconds < configuration.DelayedDeliveryQueueDelayTime)
                 {
-                    throw new Exception($"Delayed delivery queue '{delayedDeliveryQueueName}' should not have Delivery Delay less than {configuration.DelayedDeliveryQueueDelayTime}.");
+                    throw new Exception($"Delayed delivery queue '{delayedDeliveryQueueName}' should not have Delivery Delay less than {TimeSpan.FromSeconds(configuration.DelayedDeliveryQueueDelayTime)}.");
                 }
 
                 if (queueAttributes.MessageRetentionPeriod < (int)TransportConfiguration.DelayedDeliveryQueueMessageRetentionPeriod.TotalSeconds)
@@ -170,7 +170,7 @@
 
                         SendMessageRequest sendMessageRequest;
 
-                        if (TimeSpan.FromSeconds(remainingDelay) > configuration.DelayedDeliveryQueueDelayTime)
+                        if (remainingDelay > configuration.DelayedDeliveryQueueDelayTime)
                         {
                             sendMessageRequest = new SendMessageRequest(delayedDeliveryQueueUrl, receivedMessage.Body)
                             {

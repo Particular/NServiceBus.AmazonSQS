@@ -111,13 +111,13 @@
             }
         }
 
-        public TimeSpan DelayedDeliveryQueueDelayTime
+        public int DelayedDeliveryQueueDelayTime
         {
             get
             {
                 if (!queueDelayTime.HasValue)
                 {
-                    queueDelayTime = settings.Get<TimeSpan>(SettingsKeys.UnrestrictedDurationDelayedDeliveryQueueDelayTime);
+                    queueDelayTime = settings.Get<int>(SettingsKeys.UnrestrictedDurationDelayedDeliveryQueueDelayTime);
                 }
 
                 return queueDelayTime.Value;
@@ -125,7 +125,7 @@
         }
 
         public const string DelayedDeliveryQueueSuffix = "-delay.fifo";
-        public static readonly TimeSpan AwsMaximumQueueDelayTime = TimeSpan.FromMinutes(15);
+        public static readonly int AwsMaximumQueueDelayTime = (int)TimeSpan.FromMinutes(15).TotalSeconds;
         public static readonly TimeSpan DelayedDeliveryQueueMessageRetentionPeriod = TimeSpan.FromDays(4);
 
         ReadOnlySettings settings;
@@ -135,7 +135,7 @@
         string queueNamePrefix;
         bool? isDelayedDeliveryEnabled;
         bool? preTruncateQueueNames;
-        TimeSpan? queueDelayTime;
+        int? queueDelayTime;
         Func<IAmazonS3> s3ClientFactory;
         Func<IAmazonSQS> sqsClientFactory;
     }

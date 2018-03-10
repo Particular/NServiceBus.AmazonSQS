@@ -61,9 +61,9 @@
                 delay = Convert.ToInt64(Math.Ceiling((doNotDeliverBefore.At - DateTime.UtcNow).TotalSeconds));
             }
 
-            if (!configuration.IsDelayedDeliveryEnabled && TimeSpan.FromSeconds(delay) > TransportConfiguration.AwsMaximumQueueDelayTime)
+            if (!configuration.IsDelayedDeliveryEnabled && delay > TransportConfiguration.AwsMaximumQueueDelayTime)
             {
-                throw new NotSupportedException($"To send messages with a delay time greater than '{TransportConfiguration.AwsMaximumQueueDelayTime}', call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()'.");
+                throw new NotSupportedException($"To send messages with a delay time greater than '{TimeSpan.FromSeconds(TransportConfiguration.AwsMaximumQueueDelayTime)}', call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()'.");
             }
 
             var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.DeliveryConstraints);
@@ -103,7 +103,7 @@
             {
                 SendMessageRequest sendMessageRequest;
 
-                if (configuration.IsDelayedDeliveryEnabled && TimeSpan.FromSeconds(delay) > configuration.DelayedDeliveryQueueDelayTime)
+                if (configuration.IsDelayedDeliveryEnabled && delay > configuration.DelayedDeliveryQueueDelayTime)
                 {
                     destination += TransportConfiguration.DelayedDeliveryQueueSuffix;
                     var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination, configuration))
@@ -141,7 +141,7 @@
             }
             catch (QueueDoesNotExistException e) when (destination.EndsWith(TransportConfiguration.DelayedDeliveryQueueSuffix, StringComparison.OrdinalIgnoreCase))
             {
-                throw new QueueDoesNotExistException($"Destination '{destination}' doesn't support delayed messages longer than {configuration.DelayedDeliveryQueueDelayTime}. To enable support for longer delays, call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()' on the '{destination}' endpoint.", e);
+                throw new QueueDoesNotExistException($"Destination '{destination}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(configuration.DelayedDeliveryQueueDelayTime)}. To enable support for longer delays, call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()' on the '{destination}' endpoint.", e);
             }
         }
 

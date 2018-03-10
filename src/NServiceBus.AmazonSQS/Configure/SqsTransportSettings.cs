@@ -127,12 +127,12 @@
         {
             Guard.AgainstNull(nameof(transportExtensions), transportExtensions);
 
-            if (queueDelayTime.TotalSeconds <= 0 && queueDelayTime > maximumQueueDelayTime)
+            if (queueDelayTime < TimeSpan.FromSeconds(1) || queueDelayTime > maximumQueueDelayTime)
             {
-                throw new ArgumentException("Queue delay needs to be between 1 second and maximum 15 minutes.", nameof(queueDelayTime));
+                throw new ArgumentException("Queue delay needs to be between 1 second and 15 minutes.", nameof(queueDelayTime));
             }
 
-            transportExtensions.GetSettings().Set(SettingsKeys.UnrestrictedDurationDelayedDeliveryQueueDelayTime, queueDelayTime);
+            transportExtensions.GetSettings().Set(SettingsKeys.UnrestrictedDurationDelayedDeliveryQueueDelayTime, Convert.ToInt32(Math.Ceiling(queueDelayTime.TotalSeconds)));
 
             return transportExtensions;
         }
