@@ -125,7 +125,7 @@
                     MaxNumberOfMessages = 10,
                     QueueUrl = delayedDeliveryQueueUrl,
                     WaitTimeSeconds = 20,
-                    AttributeNames = new List<string> { "MessageDeduplicationId", "SentTimestamp", "ApproximateFirstReceiveTimestamp" },
+                    AttributeNames = new List<string> { "MessageDeduplicationId", "SentTimestamp", "ApproximateFirstReceiveTimestamp", "ApproximateReceiveCount" },
                     MessageAttributeNames = new List<string> { "All" }
                 };
 
@@ -163,6 +163,11 @@
 
                         var sent = UnixTimeConverter.FromUnixTimeMilliseconds(Convert.ToInt64(receivedMessage.Attributes["SentTimestamp"]));
                         var received = UnixTimeConverter.FromUnixTimeMilliseconds(Convert.ToInt64(receivedMessage.Attributes["ApproximateFirstReceiveTimestamp"]));
+
+                        if (Convert.ToInt32(receivedMessage.Attributes["ApproximateReceiveCount"]) > 1)
+                        {
+                            received = DateTimeOffset.UtcNow;
+                        }
 
                         var elapsed = received - sent;
 
