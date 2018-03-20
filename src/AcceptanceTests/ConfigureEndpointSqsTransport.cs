@@ -27,7 +27,7 @@
                 }
             }
 
-            settings.TestExecutionTimeout = TimeSpan.FromSeconds(20);
+            settings.TestExecutionTimeout = TimeSpan.FromSeconds(20 * 2);
 
             return Task.FromResult(0);
         }
