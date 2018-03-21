@@ -27,7 +27,10 @@
                 }
             }
 
-            settings.TestExecutionTimeout = TimeSpan.FromSeconds(20 * 2);
+            // TODO: remove when AWS SDK bug is resolved https://github.com/aws/aws-sdk-net/issues/796
+            // The bug causes messages to be marked as in flight, but not delivered to the client.
+            // Wait for tests longer than the invisibility time to make sure messages are received.
+            settings.TestExecutionTimeout = TimeSpan.FromSeconds(40);
 
             return Task.FromResult(0);
         }
