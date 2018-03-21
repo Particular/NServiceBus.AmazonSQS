@@ -82,20 +82,6 @@
         }
 
         /// <summary>
-        /// Configures the SQS transport to use SQS message delays for deferring messages.
-        /// The maximum deferral time permitted by SQS is 15 minutes.
-        /// If not specified, the default is to use a TimeoutManager based deferral.
-        /// </summary>
-        /// <remarks>Set to true to use SQS message delays for deferring messages; false otherwise.</remarks>
-        [ObsoleteEx(Message = "This API is no longer needed because SQS is always used to delay messages.",
-            TreatAsErrorFromVersion = "5",
-            RemoveInVersion = "6")]
-        public static TransportExtensions<SqsTransport> NativeDeferral(this TransportExtensions<SqsTransport> transportExtensions, bool use = true)
-        {
-            return transportExtensions;
-        }
-
-        /// <summary>
         /// Configures the SQS transport to support delayed messages of any duration.
         /// Without calling this API, delayed messages are subject to SQS Delivery Delay duration restrictions.
         /// </summary>
