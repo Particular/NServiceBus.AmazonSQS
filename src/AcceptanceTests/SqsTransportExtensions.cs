@@ -26,12 +26,8 @@
             return transportConfiguration;
         }
 
-#if NET452
         public static IAmazonSQS CreateSQSClient() => new AmazonSQSClient();
-#endif
-#if NETCOREAPP2_0
-        public static IAmazonSQS CreateSQSClient() => new AmazonSQSClient(new AmazonSQSConfig { CacheHttpClient = false });
-#endif
+
         public static IAmazonS3 CreateS3Client() => new AmazonS3Client();
     }
 }
