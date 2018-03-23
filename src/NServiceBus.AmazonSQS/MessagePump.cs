@@ -153,7 +153,7 @@
             }
             catch (OperationCanceledException)
             {
-                // shutting, semaphore doesn't need to be released because it was never acquired
+                // shutting down, semaphore doesn't need to be released because it was never acquired
                 return;
             }
 
