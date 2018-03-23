@@ -1,7 +1,6 @@
 ﻿namespace NServiceBus.Transports.SQS
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
@@ -11,7 +10,6 @@
     using Amazon.SQS.Model;
     using AmazonSQS;
     using DelayedDelivery;
-    using DeliveryConstraints;
     using Extensibility;
     using Logging;
     using Newtonsoft.Json;
@@ -19,7 +17,7 @@
 
     class MessageDispatcher : IDispatchMessages
     {
-        public MessageDispatcher(ConnectionConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
+        public MessageDispatcher(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
         {
             this.configuration = configuration;
             this.s3Client = s3Client;
@@ -37,6 +35,7 @@
                 {
                     tasks[i] = Dispatch(operations[i]);
                 }
+
                 await Task.WhenAll(tasks).ConfigureAwait(false);
             }
             catch (Exception e)
@@ -46,10 +45,30 @@
             }
         }
 
-        async Task Dispatch(UnicastTransportOperation unicastMessage)
+        async Task Dispatch(UnicastTransportOperation transportOperation)
         {
-            var sqsTransportMessage = new TransportMessage(unicastMessage.Message, unicastMessage.DeliveryConstraints);
+            var delayDeliveryWith = transportOperation.DeliveryConstraints.OfType<DelayDeliveryWith>().SingleOrDefault();
+            var doNotDeliverBefore = transportOperation.DeliveryConstraints.OfType<DoNotDeliverBefore>().SingleOrDefault();
+
+            long delaySeconds = 0;
+
+            if (delayDeliveryWith != null)
+            {
+                delaySeconds = Convert.ToInt64(Math.Ceiling(delayDeliveryWith.Delay.TotalSeconds));
+            }
+            else if (doNotDeliverBefore != null)
+            {
+                delaySeconds = Convert.ToInt64(Math.Ceiling((doNotDeliverBefore.At - DateTime.UtcNow).TotalSeconds));
+            }
+
+            if (!configuration.IsDelayedDeliveryEnabled && delaySeconds > TransportConfiguration.AwsMaximumQueueDelayTime)
+            {
+                throw new NotSupportedException($"To send messages with a delay time greater than '{TimeSpan.FromSeconds(TransportConfiguration.AwsMaximumQueueDelayTime)}', call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()'.");
+            }
+
+            var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.DeliveryConstraints);
             var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
+
             if (serializedMessage.Length > 256 * 1024)
             {
                 if (string.IsNullOrEmpty(configuration.S3BucketForLargeMessages))
@@ -57,9 +76,9 @@
                     throw new Exception("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
                 }
 
-                var key = $"{configuration.S3KeyPrefix}/{unicastMessage.Message.MessageId}";
+                var key = $"{configuration.S3KeyPrefix}/{transportOperation.Message.MessageId}";
 
-                using (var bodyStream = new MemoryStream(unicastMessage.Message.Body))
+                using (var bodyStream = new MemoryStream(transportOperation.Message.Body))
                 {
                     await s3Client.PutObjectAsync(new PutObjectRequest
                     {
@@ -74,44 +93,61 @@
                 serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
             }
 
-            await SendMessage(serializedMessage, unicastMessage.Destination, unicastMessage.DeliveryConstraints)
+            await SendMessage(serializedMessage, transportOperation.Destination, delaySeconds, transportOperation.Message.MessageId)
                 .ConfigureAwait(false);
         }
 
-        async Task SendMessage(string message, string destination, List<DeliveryConstraint> constraints)
+        async Task SendMessage(string message, string destination, long delaySeconds, string messageId)
         {
-            var delayWithConstraint = constraints.OfType<DelayDeliveryWith>().SingleOrDefault();
-            var deliverAtConstraint = constraints.OfType<DoNotDeliverBefore>().SingleOrDefault();
-
-            var delayDeliveryBy = TimeSpan.MaxValue;
-            if (delayWithConstraint == null)
+            try
             {
-                if (deliverAtConstraint != null)
+                SendMessageRequest sendMessageRequest;
+
+                if (configuration.IsDelayedDeliveryEnabled && delaySeconds > configuration.DelayedDeliveryQueueDelayTime)
                 {
-                    delayDeliveryBy = deliverAtConstraint.At - DateTime.UtcNow;
+                    destination += TransportConfiguration.DelayedDeliveryQueueSuffix;
+                    var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination, configuration))
+                        .ConfigureAwait(false);
+
+                    sendMessageRequest = new SendMessageRequest(queueUrl, message)
+                    {
+                        MessageAttributes =
+                        {
+                            [TransportHeaders.DelaySeconds] = new MessageAttributeValue
+                            {
+                                StringValue = delaySeconds.ToString(),
+                                DataType = "String"
+                            }
+                        },
+                        MessageDeduplicationId = messageId,
+                        MessageGroupId = messageId
+                    };
                 }
+                else
+                {
+                    var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination, configuration))
+                        .ConfigureAwait(false);
+
+                    sendMessageRequest = new SendMessageRequest(queueUrl, message);
+
+                    if (delaySeconds > 0)
+                    {
+                        sendMessageRequest.DelaySeconds = (int)delaySeconds;
+                    }
+                }
+
+                await sqsClient.SendMessageAsync(sendMessageRequest)
+                    .ConfigureAwait(false);
             }
-            else
+            catch (QueueDoesNotExistException e) when (destination.EndsWith(TransportConfiguration.DelayedDeliveryQueueSuffix, StringComparison.OrdinalIgnoreCase))
             {
-                delayDeliveryBy = delayWithConstraint.Delay;
+                var queueName = destination.Substring(0, destination.Length - TransportConfiguration.DelayedDeliveryQueueSuffix.Length);
+
+                throw new QueueDoesNotExistException($"Destination '{queueName}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(configuration.DelayedDeliveryQueueDelayTime)}. To enable support for longer delays, call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()' on the '{queueName}' endpoint.", e);
             }
-
-            var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination, configuration))
-                .ConfigureAwait(false);
-            var sendMessageRequest = new SendMessageRequest(queueUrl, message);
-
-            // There should be no need to check if the delay time is greater than the maximum allowed
-            // by SQS (15 minutes); the call to AWS will fail with an appropriate exception if the limit is exceeded.
-            if (delayDeliveryBy != TimeSpan.MaxValue)
-            {
-                sendMessageRequest.DelaySeconds = Math.Max(0, (int)delayDeliveryBy.TotalSeconds);
-            }
-
-            await sqsClient.SendMessageAsync(sendMessageRequest)
-                .ConfigureAwait(false);
         }
 
-        ConnectionConfiguration configuration;
+        TransportConfiguration configuration;
         IAmazonSQS sqsClient;
         IAmazonS3 s3Client;
         QueueUrlCache queueUrlCache;

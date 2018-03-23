@@ -13,7 +13,7 @@
     {
         public static async Task<IncomingMessage> ToIncomingMessage(this TransportMessage transportMessage,
             IAmazonS3 amazonS3,
-            ConnectionConfiguration connectionConfiguration,
+            TransportConfiguration transportConfiguration,
             CancellationToken cancellationToken)
         {
             var messageId = transportMessage.Headers[Headers.MessageId];
@@ -26,7 +26,7 @@
             }
             else
             {
-                var s3GetResponse = await amazonS3.GetObjectAsync(connectionConfiguration.S3BucketForLargeMessages,
+                var s3GetResponse = await amazonS3.GetObjectAsync(transportConfiguration.S3BucketForLargeMessages,
                     transportMessage.S3BodyKey,
                     cancellationToken).ConfigureAwait(false);
 

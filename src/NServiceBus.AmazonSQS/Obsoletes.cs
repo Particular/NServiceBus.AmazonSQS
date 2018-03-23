@@ -51,6 +51,14 @@ namespace NServiceBus
         {
             throw new NotImplementedException();
         }
+
+        [ObsoleteEx(Message = "This API is no longer needed because SQS is always used to delay messages.",
+            RemoveInVersion = "5.0",
+            TreatAsErrorFromVersion = "4.0")]
+        public static TransportExtensions<SqsTransport> NativeDeferral(this TransportExtensions<SqsTransport> transportExtensions, bool use = true)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     [ObsoleteEx(
