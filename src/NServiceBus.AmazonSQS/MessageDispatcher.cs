@@ -141,7 +141,9 @@
             }
             catch (QueueDoesNotExistException e) when (destination.EndsWith(TransportConfiguration.DelayedDeliveryQueueSuffix, StringComparison.OrdinalIgnoreCase))
             {
-                throw new QueueDoesNotExistException($"Destination '{destination}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(configuration.DelayedDeliveryQueueDelayTime)}. To enable support for longer delays, call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()' on the '{destination}' endpoint.", e);
+                var queueName = destination.Substring(0, destination.Length - TransportConfiguration.DelayedDeliveryQueueSuffix.Length);
+
+                throw new QueueDoesNotExistException($"Destination '{queueName}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(configuration.DelayedDeliveryQueueDelayTime)}. To enable support for longer delays, call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()' on the '{queueName}' endpoint.", e);
             }
         }
 
