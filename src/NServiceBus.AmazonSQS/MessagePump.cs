@@ -233,7 +233,6 @@
                         {
                             Logger.Info($"Message receipt handle {receivedMessage.ReceiptHandle} no longer valid.", ex);
                         }
-
                     }
                 }
                 catch (OperationCanceledException)

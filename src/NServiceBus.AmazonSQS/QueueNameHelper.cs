@@ -18,7 +18,7 @@
             if (transportConfiguration.PreTruncateQueueNames && s.Length > 80)
             {
                 var charsToTake = 80 - transportConfiguration.QueueNamePrefix.Length;
-                s = transportConfiguration.QueueNamePrefix + 
+                s = transportConfiguration.QueueNamePrefix +
                     new string(s.Reverse().Take(charsToTake).Reverse().ToArray());
             }
 

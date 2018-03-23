@@ -20,9 +20,9 @@
         public void OneTimeSetUp()
         {
             // Generate a new queue name prefix for acceptance tests
-            // every time the tests are run. 
+            // every time the tests are run.
             // This is to work around an SQS limitation that prevents
-            // us from deleting then creating a queue with the 
+            // us from deleting then creating a queue with the
             // same name in a 60 second period.
             SqsQueueNamePrefix = $"AT{DateTime.Now:yyyyMMddHHmmss}";
         }
