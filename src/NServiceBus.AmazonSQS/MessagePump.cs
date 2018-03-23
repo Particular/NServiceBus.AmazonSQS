@@ -37,7 +37,7 @@
                 delayedDeliveryQueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(delayedDeliveryQueueName, configuration))
                     .ConfigureAwait(false);
 
-                var queueAttributes = await sqsClient.GetQueueAttributesAsync(delayedDeliveryQueueUrl, new List<string> { "DelaySeconds", "MessageRetentionPeriod", "RedrivePolicy" })
+                var queueAttributes = await GetQueueAttributesFromDelayedDeliveryQueueWithRetriesToWorkaroundSDKIssue()
                     .ConfigureAwait(false);
 
                 if (queueAttributes.DelaySeconds < configuration.DelayedDeliveryQueueDelayTime)
@@ -516,6 +516,34 @@
                 Logger.Warn($"Error removing poison message from input queue {queueUrl}. This may cause duplicate poison messages in the error queue for this endpoint.", ex);
             }
             // If there is a message body in S3, simply leave it there
+        }
+
+        async Task<GetQueueAttributesResponse> GetQueueAttributesFromDelayedDeliveryQueueWithRetriesToWorkaroundSDKIssue()
+        {
+            var attributeNames = new List<string>
+            {
+                "DelaySeconds",
+                "MessageRetentionPeriod",
+                "RedrivePolicy"
+            };
+
+            GetQueueAttributesResponse queueAttributes = null;
+
+            for (var i = 0; i < 4; i++)
+            {
+                queueAttributes = await sqsClient.GetQueueAttributesAsync(delayedDeliveryQueueUrl, attributeNames)
+                    .ConfigureAwait(false);
+
+                if (queueAttributes.DelaySeconds != 0)
+                {
+                    break;
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(i))
+                    .ConfigureAwait(false);
+            }
+
+            return queueAttributes;
         }
 
         CancellationTokenSource cancellationTokenSource;
