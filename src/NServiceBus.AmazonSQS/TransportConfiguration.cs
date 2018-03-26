@@ -5,9 +5,9 @@
     using Amazon.SQS;
     using Settings;
 
-    class ConnectionConfiguration
+    class TransportConfiguration
     {
-        public ConnectionConfiguration(ReadOnlySettings settings)
+        public TransportConfiguration(ReadOnlySettings settings)
         {
             // Accessing the settings bag during runtime means a lot of boxing and unboxing,
             // all properties of this class are lazy initialized once they are accessed
@@ -86,18 +86,6 @@
             }
         }
 
-        public bool NativeDeferral
-        {
-            get
-            {
-                if (!nativeDeferral.HasValue)
-                {
-                    nativeDeferral = settings.GetOrDefault<bool>(SettingsKeys.NativeDeferral);
-                }
-                return nativeDeferral.Value;
-            }
-        }
-
         public bool PreTruncateQueueNames
         {
             get
@@ -110,13 +98,44 @@
             }
         }
 
+        public bool IsDelayedDeliveryEnabled
+        {
+            get
+            {
+                if (!isDelayedDeliveryEnabled.HasValue)
+                {
+                    isDelayedDeliveryEnabled = settings.HasSetting(SettingsKeys.UnrestrictedDurationDelayedDeliveryQueueDelayTime);
+                }
+
+                return isDelayedDeliveryEnabled.Value;
+            }
+        }
+
+        public int DelayedDeliveryQueueDelayTime
+        {
+            get
+            {
+                if (!queueDelayTime.HasValue)
+                {
+                    queueDelayTime = settings.Get<int>(SettingsKeys.UnrestrictedDurationDelayedDeliveryQueueDelayTime);
+                }
+
+                return queueDelayTime.Value;
+            }
+        }
+
+        public const string DelayedDeliveryQueueSuffix = "-delay.fifo";
+        public static readonly int AwsMaximumQueueDelayTime = (int)TimeSpan.FromMinutes(15).TotalSeconds;
+        public static readonly TimeSpan DelayedDeliveryQueueMessageRetentionPeriod = TimeSpan.FromDays(4);
+
         ReadOnlySettings settings;
         TimeSpan? maxTTL;
         string s3BucketForLargeMessages;
         string s3KeyPrefix;
         string queueNamePrefix;
-        bool? nativeDeferral;
+        bool? isDelayedDeliveryEnabled;
         bool? preTruncateQueueNames;
+        int? queueDelayTime;
         Func<IAmazonS3> s3ClientFactory;
         Func<IAmazonSQS> sqsClientFactory;
     }
