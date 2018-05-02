@@ -23,6 +23,7 @@ namespace NServiceBus
     public class static SqsTransportSettings
     {
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> CredentialSource(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, NServiceBus.SqsCredentialSource credentialSource) { }
+        public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> EnableV1CompatibilityMode(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> MaxTTLDays(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, int maxTtlDays) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> NativeDeferral(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, bool use = True) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> Proxy(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string proxyHost, int proxyPort) { }

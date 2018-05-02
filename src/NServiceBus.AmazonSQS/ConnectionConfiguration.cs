@@ -132,6 +132,19 @@
             }
         }
 
+        public bool UseV1CompatiblePayload
+        {
+            get
+            {
+                if (!useV1CompatiblePayload.HasValue)
+                {
+                    useV1CompatiblePayload = settings.GetOrDefault<bool>(SettingsKeys.V1CompatibilityMode);
+                }
+
+                return useV1CompatiblePayload.Value;
+            }
+        }
+
         RegionEndpoint region;
         ReadOnlySettings settings;
         int? maxTtlDays;
@@ -143,5 +156,6 @@
         int? proxyPort;
         bool? nativeDeferral;
         bool? preTruncateQueueNames;
+        bool? useV1CompatiblePayload;
     }
 }
