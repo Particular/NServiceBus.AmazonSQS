@@ -13,6 +13,7 @@
     using Extensibility;
     using Logging;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Serialization;
     using Transport;
 
     class MessageDispatcher : IDispatchMessages
@@ -67,7 +68,13 @@
             }
 
             var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.DeliveryConstraints);
-            var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
+
+            var jsonSerializerSettings = new JsonSerializerSettings
+            {
+                ContractResolver = configuration.UseV1CompatiblePayload ? new DefaultContractResolver() : new ReducedPayloadContractResolver()
+            };
+
+            var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage, jsonSerializerSettings);
 
             if (serializedMessage.Length > 256 * 1024)
             {
@@ -90,7 +97,7 @@
 
                 sqsTransportMessage.S3BodyKey = key;
                 sqsTransportMessage.Body = string.Empty;
-                serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
+                serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage, jsonSerializerSettings);
             }
 
             await SendMessage(serializedMessage, transportOperation.Destination, delaySeconds, transportOperation.Message.MessageId)
