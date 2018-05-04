@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
     using System.Threading.Tasks;
     using Amazon.S3;
@@ -14,7 +15,7 @@
 
     class QueueCreator : ICreateQueues
     {
-        public QueueCreator(ConnectionConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
+        public QueueCreator(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
         {
             this.configuration = configuration;
             this.s3Client = s3Client;
@@ -28,16 +29,16 @@
 
             foreach (var address in queueBindings.SendingAddresses)
             {
-                tasks.Add(CreateQueueIfNecessary(address));
+                tasks.Add(CreateQueueIfNecessary(address, false));
             }
             foreach (var address in queueBindings.ReceivingAddresses)
             {
-                tasks.Add(CreateQueueIfNecessary(address));
+                tasks.Add(CreateQueueIfNecessary(address, configuration.IsDelayedDeliveryEnabled));
             }
             return Task.WhenAll(tasks);
         }
 
-        public async Task CreateQueueIfNecessary(string address)
+        async Task CreateQueueIfNecessary(string address, bool createDelayedDeliveryQueue)
         {
             try
             {
@@ -61,9 +62,34 @@
                     QueueUrl = createQueueResponse.QueueUrl
                 };
                 sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod,
-                    ((int)TimeSpan.FromDays(configuration.MaxTTLDays).TotalSeconds).ToString());
+                    configuration.MaxTimeToLive.TotalSeconds.ToString(CultureInfo.InvariantCulture));
 
                 await sqsClient.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
+
+                if (createDelayedDeliveryQueue)
+                {
+                    queueName = QueueNameHelper.GetSqsQueueName(address + TransportConfiguration.DelayedDeliveryQueueSuffix, configuration);
+                    sqsRequest = new CreateQueueRequest
+                    {
+                        QueueName = queueName,
+                        Attributes = new Dictionary<string, string> { { "FifoQueue", "true" } }
+                    };
+
+                    Logger.Info($"Creating SQS delayed delivery queue with name '{sqsRequest.QueueName}' for address '{address}'.");
+                    createQueueResponse = await sqsClient.CreateQueueAsync(sqsRequest).ConfigureAwait(false);
+
+                    queueUrlCache.SetQueueUrl(queueName, createQueueResponse.QueueUrl);
+
+                    sqsAttributesRequest = new SetQueueAttributesRequest
+                    {
+                        QueueUrl = createQueueResponse.QueueUrl
+                    };
+
+                    sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod, TransportConfiguration.DelayedDeliveryQueueMessageRetentionPeriod.TotalSeconds.ToString(CultureInfo.InvariantCulture));
+                    sqsAttributesRequest.Attributes.Add(QueueAttributeName.DelaySeconds, configuration.DelayedDeliveryQueueDelayTime.ToString(CultureInfo.InvariantCulture));
+
+                    await sqsClient.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
+                }
 
                 if (!string.IsNullOrEmpty(configuration.S3BucketForLargeMessages))
                 {
@@ -106,7 +132,7 @@
                                                 Status = LifecycleRuleStatus.Enabled,
                                                 Expiration = new LifecycleRuleExpiration
                                                 {
-                                                    Days = configuration.MaxTTLDays
+                                                    Days = (int)Math.Ceiling(configuration.MaxTimeToLive.TotalDays)
                                                 }
                                             }
                                         }
@@ -124,7 +150,7 @@
         }
 
         static ILog Logger = LogManager.GetLogger(typeof(QueueCreator));
-        ConnectionConfiguration configuration;
+        TransportConfiguration configuration;
         IAmazonS3 s3Client;
         IAmazonSQS sqsClient;
         QueueUrlCache queueUrlCache;

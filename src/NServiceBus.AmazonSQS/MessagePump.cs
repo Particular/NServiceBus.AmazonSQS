@@ -16,7 +16,7 @@
 
     class MessagePump : IPushMessages
     {
-        public MessagePump(ConnectionConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
+        public MessagePump(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
         {
             this.configuration = configuration;
             this.s3Client = s3Client;
@@ -30,6 +30,31 @@
                 .ConfigureAwait(false);
             errorQueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.ErrorQueue, configuration))
                 .ConfigureAwait(false);
+
+            if (configuration.IsDelayedDeliveryEnabled)
+            {
+                var delayedDeliveryQueueName = settings.InputQueue + TransportConfiguration.DelayedDeliveryQueueSuffix;
+                delayedDeliveryQueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(delayedDeliveryQueueName, configuration))
+                    .ConfigureAwait(false);
+
+                var queueAttributes = await GetQueueAttributesFromDelayedDeliveryQueueWithRetriesToWorkaroundSDKIssue()
+                    .ConfigureAwait(false);
+
+                if (queueAttributes.DelaySeconds < configuration.DelayedDeliveryQueueDelayTime)
+                {
+                    throw new Exception($"Delayed delivery queue '{delayedDeliveryQueueName}' should not have Delivery Delay less than {TimeSpan.FromSeconds(configuration.DelayedDeliveryQueueDelayTime)}.");
+                }
+
+                if (queueAttributes.MessageRetentionPeriod < (int)TransportConfiguration.DelayedDeliveryQueueMessageRetentionPeriod.TotalSeconds)
+                {
+                    throw new Exception($"Delayed delivery queue '{delayedDeliveryQueueName}' should not have Message Retention Period less than {TransportConfiguration.DelayedDeliveryQueueMessageRetentionPeriod}.");
+                }
+
+                if (queueAttributes.Attributes.ContainsKey("RedrivePolicy"))
+                {
+                    throw new Exception($"Delayed delivery queue '{delayedDeliveryQueueName}' should not have Redrive Policy enabled.");
+                }
+            }
 
             if (settings.PurgeOnStartup)
             {
@@ -92,6 +117,20 @@
             {
                 pumpTasks.Add(Task.Run(() => ConsumeMessages(cancellationTokenSource.Token), CancellationToken.None));
             }
+
+            if (configuration.IsDelayedDeliveryEnabled)
+            {
+                var receiveDelayedMessagesRequest = new ReceiveMessageRequest
+                {
+                    MaxNumberOfMessages = 10,
+                    QueueUrl = delayedDeliveryQueueUrl,
+                    WaitTimeSeconds = 20,
+                    AttributeNames = new List<string> { "MessageDeduplicationId", "SentTimestamp", "ApproximateFirstReceiveTimestamp", "ApproximateReceiveCount" },
+                    MessageAttributeNames = new List<string> { "All" }
+                };
+
+                pumpTasks.Add(Task.Run(() => ConsumeDelayedMessages(receiveDelayedMessagesRequest, cancellationTokenSource.Token), CancellationToken.None));
+            }
         }
 
         public async Task Stop()
@@ -103,6 +142,108 @@
             pumpTasks?.Clear();
             cancellationTokenSource?.Dispose();
             maxConcurrencySempahore?.Dispose();
+        }
+
+        async Task ConsumeDelayedMessages(ReceiveMessageRequest request, CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                try
+                {
+                    var receivedMessages = await sqsClient.ReceiveMessageAsync(request, token).ConfigureAwait(false);
+
+                    foreach (var receivedMessage in receivedMessages.Messages)
+                    {
+                        long delaySeconds = 0;
+
+                        if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.DelaySeconds, out var delayAttribute))
+                        {
+                            Int64.TryParse(delayAttribute.StringValue, out delaySeconds);
+                        }
+
+                        var sent = UnixTimeConverter.FromUnixTimeMilliseconds(Convert.ToInt64(receivedMessage.Attributes["SentTimestamp"]));
+                        var received = UnixTimeConverter.FromUnixTimeMilliseconds(Convert.ToInt64(receivedMessage.Attributes["ApproximateFirstReceiveTimestamp"]));
+
+                        if (Convert.ToInt32(receivedMessage.Attributes["ApproximateReceiveCount"]) > 1)
+                        {
+                            received = DateTimeOffset.UtcNow;
+                        }
+
+                        var elapsed = received - sent;
+
+                        var remainingDelay = delaySeconds - (long)elapsed.TotalSeconds;
+
+                        SendMessageRequest sendMessageRequest;
+
+                        if (remainingDelay > configuration.DelayedDeliveryQueueDelayTime)
+                        {
+                            sendMessageRequest = new SendMessageRequest(delayedDeliveryQueueUrl, receivedMessage.Body)
+                            {
+                                MessageAttributes =
+                                {
+                                    [TransportHeaders.DelaySeconds] = new MessageAttributeValue
+                                    {
+                                        StringValue = remainingDelay.ToString(),
+                                        DataType = "String"
+                                    }
+                                }
+                            };
+
+                            var deduplicationId = receivedMessage.Attributes["MessageDeduplicationId"];
+
+                            // this is only here for acceptance testing purpose. In real prod code this is always false.
+                            if (configuration.DelayedDeliveryQueueDelayTime < TransportConfiguration.AwsMaximumQueueDelayTime)
+                            {
+                                deduplicationId = Guid.NewGuid().ToString();
+                            }
+
+                            sendMessageRequest.MessageDeduplicationId = sendMessageRequest.MessageGroupId = deduplicationId;
+                        }
+                        else
+                        {
+                            sendMessageRequest = new SendMessageRequest(queueUrl, receivedMessage.Body);
+
+                            if (remainingDelay > 0)
+                            {
+                                sendMessageRequest.DelaySeconds = (int)remainingDelay;
+                            }
+                        }
+
+                        try
+                        {
+                            await sqsClient.SendMessageAsync(sendMessageRequest, CancellationToken.None)
+                                .ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Debug("ConsumeDelayedMessages -> SendMessageAsync failed", ex);
+
+                            await sqsClient.ChangeMessageVisibilityAsync(request.QueueUrl, receivedMessage.ReceiptHandle, 0, CancellationToken.None)
+                                .ConfigureAwait(false);
+
+                            continue;
+                        }
+
+                        try
+                        {
+                            await sqsClient.DeleteMessageAsync(delayedDeliveryQueueUrl, receivedMessage.ReceiptHandle, CancellationToken.None)
+                                .ConfigureAwait(false);
+                        }
+                        catch (ReceiptHandleIsInvalidException ex)
+                        {
+                            Logger.Info($"Message receipt handle {receivedMessage.ReceiptHandle} no longer valid.", ex);
+                        }
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    // ignore for graceful shutdown
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("Exception thrown when consuming delayed messages", ex);
+                }
+            }
         }
 
         async Task ConsumeMessages(CancellationToken token)
@@ -153,7 +294,7 @@
             }
             catch (OperationCanceledException)
             {
-                // shutting down, semaphore doesn't need to be released because it was never acquired
+                // shutting, semaphore doesn't need to be released because it was never acquired
                 return;
             }
 
@@ -201,7 +342,7 @@
                 // Always delete the message from the queue.
                 // If processing failed, the onError handler will have moved the message
                 // to a retry queue.
-                await DeleteMessage(receivedMessage, transportMessage, incomingMessage, token).ConfigureAwait(false);
+                await DeleteMessageAndBodyIfRequired(receivedMessage, transportMessage, token).ConfigureAwait(false);
             }
             finally
             {
@@ -284,7 +425,7 @@
             return true;
         }
 
-        async Task DeleteMessage(Message message, TransportMessage transportMessage, IncomingMessage incomingMessage, CancellationToken token)
+        async Task DeleteMessageAndBodyIfRequired(Message message, TransportMessage transportMessage, CancellationToken token)
         {
             try
             {
@@ -376,15 +517,44 @@
             // If there is a message body in S3, simply leave it there
         }
 
+        async Task<GetQueueAttributesResponse> GetQueueAttributesFromDelayedDeliveryQueueWithRetriesToWorkaroundSDKIssue()
+        {
+            var attributeNames = new List<string>
+            {
+                "DelaySeconds",
+                "MessageRetentionPeriod",
+                "RedrivePolicy"
+            };
+
+            GetQueueAttributesResponse queueAttributes = null;
+
+            for (var i = 0; i < 4; i++)
+            {
+                queueAttributes = await sqsClient.GetQueueAttributesAsync(delayedDeliveryQueueUrl, attributeNames)
+                    .ConfigureAwait(false);
+
+                if (queueAttributes.DelaySeconds != 0)
+                {
+                    break;
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(i))
+                    .ConfigureAwait(false);
+            }
+
+            return queueAttributes;
+        }
+
         CancellationTokenSource cancellationTokenSource;
         List<Task> pumpTasks;
         Func<ErrorContext, Task<ErrorHandleResult>> onError;
         Func<MessageContext, Task> onMessage;
         SemaphoreSlim maxConcurrencySempahore;
         string queueUrl;
+        string delayedDeliveryQueueUrl;
         string errorQueueUrl;
         int maxConcurrency;
-        ConnectionConfiguration configuration;
+        TransportConfiguration configuration;
         IAmazonS3 s3Client;
         IAmazonSQS sqsClient;
         QueueUrlCache queueUrlCache;

@@ -11,8 +11,7 @@
     public class SqsTransport : TransportDefinition, IMessageDrivenSubscriptionTransport
     {
         /// <inheritdoc />
-        public override string ExampleConnectionStringForErrorMessage
-            => "";
+        public override string ExampleConnectionStringForErrorMessage => "";
 
         /// <inheritdoc />
         public override bool RequiresConnectionString => false;
@@ -27,10 +26,7 @@
 
             settings.SetDefault(SettingsKeys.S3BucketForLargeMessages, string.Empty);
             settings.SetDefault(SettingsKeys.S3KeyPrefix, string.Empty);
-            settings.SetDefault(SettingsKeys.MaxTTLDays, 4);
-            settings.SetDefault(SettingsKeys.CredentialSource, SqsCredentialSource.EnvironmentVariables);
-            settings.SetDefault(SettingsKeys.ProxyHost, string.Empty);
-            settings.SetDefault(SettingsKeys.ProxyPort, 0);
+            settings.SetDefault(SettingsKeys.MaxTimeToLive, TimeSpan.FromDays(4));
             settings.SetDefault(SettingsKeys.QueueNamePrefix, string.Empty);
 
             return new TransportInfrastructure(settings);

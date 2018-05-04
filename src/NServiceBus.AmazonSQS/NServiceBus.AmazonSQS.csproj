@@ -1,27 +1,26 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFramework>net452</TargetFramework>
-    <AssemblyName>NServiceBus.AmazonSQS</AssemblyName>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <TargetFrameworks>net452;netstandard2.0</TargetFrameworks>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>$(SolutionDir)NServiceBus.snk</AssemblyOriginatorKeyFile>
-    <DebugType>full</DebugType>
-    <DebugSymbols>True</DebugSymbols>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>CS0419</NoWarn>
-    <UpdateAssemblyInfo>true</UpdateAssemblyInfo>
+    <Description>An Amazon SQS transport implementation for NServiceBus</Description>
   </PropertyGroup>
-  <PropertyGroup>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-  </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="NServiceBus" Version="[6.0.0, 7.0.0)" />
+    <PackageReference Include="AWSSDK.S3" Version="[3.3.16, 3.4)" />
+    <PackageReference Include="AWSSDK.SQS" Version="[3.3.3.2, 3.4)" />
+    <PackageReference Include="NServiceBus" Version="[7.0.0-rc0001, 8.0.0)" />
+    <PackageReference Include="Newtonsoft.Json" Version="[10.0.1, 11.0.0)" />
+    <PackageReference Include="Fody" Version="2.4.5" PrivateAssets="All" />
+    <PackageReference Include="Obsolete.Fody" Version="4.3.7" PrivateAssets="All" />
     <PackageReference Include="Particular.CodeRules" Version="0.2.0" PrivateAssets="All" />
-    <PackageReference Include="Newtonsoft.Json" Version="[11.0.1, 12.0.0)" />
-    <PackageReference Include="AWSSDK.Core" version="[3.3.17.5, 3.4)" />
-    <PackageReference Include="AWSSDK.S3" Version="[3.3.9, 3.4)" />
-    <PackageReference Include="AWSSDK.SQS" Version="[3.3.2.7, 3.4)" />
-    <None Include="..\..\GitVersion.yml" Link="GitVersion.yml" />
+    <PackageReference Include="Particular.Packaging" Version="0.1.0" PrivateAssets="All" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SourceLink.Create.GitHub" Version="2.5.0" PrivateAssets="All" />
+    <DotNetCliToolReference Include="dotnet-sourcelink-git" Version="2.5.0" />
+  </ItemGroup>
+
 </Project>

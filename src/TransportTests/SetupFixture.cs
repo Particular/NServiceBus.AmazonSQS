@@ -4,7 +4,7 @@
     using System.Threading.Tasks;
     using AmazonSQS;
     using AmazonSQS.AcceptanceTests;
-    using Configuration.AdvanceExtensibility;
+    using Configuration.AdvancedExtensibility;
     using NUnit.Framework;
     using Settings;
 
@@ -20,9 +20,9 @@
         public void OneTimeSetUp()
         {
             // Generate a new queue name prefix for acceptance tests
-            // every time the tests are run. 
+            // every time the tests are run.
             // This is to work around an SQS limitation that prevents
-            // us from deleting then creating a queue with the 
+            // us from deleting then creating a queue with the
             // same name in a 60 second period.
             SqsQueueNamePrefix = $"TT{DateTime.Now:yyyyMMddHHmmss}";
         }
@@ -32,20 +32,22 @@
         {
             // Once all tests have completed, delete all queues that were created.
             // Use the QueueNamePrefix to determine which queues to delete.
-            var transportConfiguration = new TransportExtensions<SqsTransport>(new SettingsHolder());
-            transportConfiguration = transportConfiguration.ConfigureSqsTransport(SqsQueueNamePrefix);
-            var connectionConfiguration = new ConnectionConfiguration(transportConfiguration.GetSettings());
-            var sqsClient = AwsClientFactory.CreateSqsClient(connectionConfiguration);
-            var listQueuesResult = await sqsClient.ListQueuesAsync(connectionConfiguration.QueueNamePrefix).ConfigureAwait(false);
-            foreach (var queueUrl in listQueuesResult.QueueUrls)
+            var transport = new TransportExtensions<SqsTransport>(new SettingsHolder());
+            transport = transport.ConfigureSqsTransport(SqsQueueNamePrefix);
+            var transportConfiguration = new TransportConfiguration(transport.GetSettings());
+            using (var sqsClient = SqsTransportExtensions.CreateSQSClient())
             {
-                try
+                var listQueuesResult = await sqsClient.ListQueuesAsync(transportConfiguration.QueueNamePrefix).ConfigureAwait(false);
+                foreach (var queueUrl in listQueuesResult.QueueUrls)
                 {
-                    await sqsClient.DeleteQueueAsync(queueUrl).ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Exception when deleting queue: {ex}");
+                    try
+                    {
+                        await sqsClient.DeleteQueueAsync(queueUrl).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Exception when deleting queue: {ex}");
+                    }
                 }
             }
         }

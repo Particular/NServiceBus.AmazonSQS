@@ -14,7 +14,7 @@
         {
         }
 
-        public TransportMessage(OutgoingMessage outgoingMessage, List<DeliveryConstraint> deliveryConstrants)
+        public TransportMessage(OutgoingMessage outgoingMessage, List<DeliveryConstraint> deliveryConstraints)
         {
             Headers = outgoingMessage.Headers;
 
@@ -25,7 +25,7 @@
                 Headers[NServiceBus.Headers.MessageId] = messageId;
             }
 
-            var discardConstraint = deliveryConstrants.OfType<DiscardIfNotReceivedBefore>().SingleOrDefault();
+            var discardConstraint = deliveryConstraints.OfType<DiscardIfNotReceivedBefore>().SingleOrDefault();
             if (discardConstraint != null)
             {
                 Headers[TransportHeaders.TimeToBeReceived] = discardConstraint.MaxTime.ToString();

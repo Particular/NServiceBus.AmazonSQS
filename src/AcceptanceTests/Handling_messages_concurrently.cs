@@ -1,15 +1,17 @@
-﻿namespace NServiceBus.AcceptanceTests.Sqs
+﻿namespace NServiceBus.AcceptanceTests
 {
+
+    using System;
+    using NServiceBus;
+    using NUnit.Framework;
     using System.Threading.Tasks;
     using System.Linq;
     using System.Threading;
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
     using EndpointTemplates;
-    using NUnit.Framework;
-    using System;
 
-    public class When_handling_messages_concurrently : NServiceBusAcceptanceTest
+    public class Handling_messages_concurrently : NServiceBusAcceptanceTest
     {
         [Test]
         public async Task Should_not_exceed_max_concurrency_level()
@@ -65,7 +67,7 @@
                     // simulate some work
                     await Task.Delay(10);
                     Interlocked.Increment(ref Context.ReceiveCount);
-                    
+
                     Context.MaxConcurrency = Math.Max(Context.MaxConcurrency, Context.CurrentConcurrency);
                     Interlocked.Decrement(ref Context.CurrentConcurrency);
                 }

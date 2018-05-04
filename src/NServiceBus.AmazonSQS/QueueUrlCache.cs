@@ -26,7 +26,7 @@
             var response = await sqsClient.GetQueueUrlAsync(queueName)
                 .ConfigureAwait(false);
             queueUrl = response.QueueUrl;
-            return cache.AddOrUpdate(queueName, queueUrl, (key, value) => value);
+            return cache.AddOrUpdate(queueName, queueUrl, (key,value) => value);
         }
 
         ConcurrentDictionary<string, string> cache;
