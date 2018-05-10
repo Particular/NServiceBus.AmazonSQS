@@ -15,6 +15,7 @@
     using Extensibility;
     using Logging;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Serialization;
     using Transport;
 
     class MessageDispatcher : IDispatchMessages
@@ -25,6 +26,11 @@
             this.s3Client = s3Client;
             this.sqsClient = sqsClient;
             this.queueUrlCache = queueUrlCache;
+
+            jsonSerializerSettings = new JsonSerializerSettings
+            {
+                ContractResolver = configuration.UseV1CompatiblePayload ? new DefaultContractResolver() : new ReducedPayloadContractResolver()
+            };
         }
 
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
@@ -49,7 +55,9 @@
         async Task Dispatch(UnicastTransportOperation unicastMessage)
         {
             var sqsTransportMessage = new TransportMessage(unicastMessage.Message, unicastMessage.DeliveryConstraints);
-            var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
+
+            var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage, jsonSerializerSettings);
+
             if (serializedMessage.Length > 256 * 1024)
             {
                 if (string.IsNullOrEmpty(configuration.S3BucketForLargeMessages))
@@ -71,7 +79,7 @@
 
                 sqsTransportMessage.S3BodyKey = key;
                 sqsTransportMessage.Body = string.Empty;
-                serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
+                serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage, jsonSerializerSettings);
             }
 
             await SendMessage(serializedMessage, unicastMessage.Destination, unicastMessage.DeliveryConstraints)
@@ -115,6 +123,7 @@
         IAmazonSQS sqsClient;
         IAmazonS3 s3Client;
         QueueUrlCache queueUrlCache;
+        JsonSerializerSettings jsonSerializerSettings;
 
         static ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
     }
