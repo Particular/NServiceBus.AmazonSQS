@@ -98,6 +98,19 @@
             }
         }
 
+        public bool UseV1CompatiblePayload
+        {
+            get
+            {
+                if (!useV1CompatiblePayload.HasValue)
+                {
+                    useV1CompatiblePayload = settings.GetOrDefault<bool>(SettingsKeys.V1CompatibilityMode);
+                }
+
+                return useV1CompatiblePayload.Value;
+            }
+        }
+
         public bool IsDelayedDeliveryEnabled
         {
             get
@@ -135,6 +148,7 @@
         string queueNamePrefix;
         bool? isDelayedDeliveryEnabled;
         bool? preTruncateQueueNames;
+		bool? useV1CompatiblePayload;
         int? queueDelayTime;
         Func<IAmazonS3> s3ClientFactory;
         Func<IAmazonSQS> sqsClientFactory;
