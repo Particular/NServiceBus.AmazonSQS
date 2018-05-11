@@ -60,6 +60,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="SqsTransportMessageTests.cs" />
     <Compile Include="when_parsing_connection_string.cs" />
     <Compile Include="when_sending_messages.cs" />
   </ItemGroup>
