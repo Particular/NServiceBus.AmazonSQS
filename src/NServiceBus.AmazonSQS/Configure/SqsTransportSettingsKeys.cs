@@ -13,5 +13,6 @@
         public const string ProxyPort = Prefix + nameof(ProxyPort);
         public const string NativeDeferral = Prefix + nameof(NativeDeferral);
         public const string PreTruncateQueueNames = Prefix + nameof(PreTruncateQueueNames);
+        public const string V1CompatibilityMode = Prefix + nameof(V1CompatibilityMode);
     }
 }
