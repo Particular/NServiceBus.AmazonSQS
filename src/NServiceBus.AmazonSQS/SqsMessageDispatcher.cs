@@ -15,6 +15,7 @@
     using DeliveryConstraints;
     using System.Linq;
     using DelayedDelivery;
+    using Newtonsoft.Json.Serialization;
 
     internal class SqsMessageDispatcher : IDispatchMessages
     {
@@ -30,12 +31,22 @@
 
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
         {
+            if (jsonSerializerSettings == null)
+            {
+                jsonSerializerSettings = new JsonSerializerSettings
+                {
+                    ContractResolver = ConnectionConfiguration.UseV1CompatiblePayload
+                        ? new DefaultContractResolver()
+                        : new ReducedPayloadContractResolver()
+                };
+            }
+
             try
             {
                 foreach( var unicastMessage in outgoingMessages.UnicastTransportOperations)
                 {
                     var sqsTransportMessage = new SqsTransportMessage(unicastMessage.Message, unicastMessage.DeliveryConstraints);
-                    var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
+                    var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage, jsonSerializerSettings);
                     if (serializedMessage.Length > 256 * 1024)
                     {
                         if (string.IsNullOrEmpty(ConnectionConfiguration.S3BucketForLargeMessages))
@@ -54,7 +65,7 @@
 
                         sqsTransportMessage.S3BodyKey = key;
                         sqsTransportMessage.Body = String.Empty;
-                        serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage);
+                        serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage, jsonSerializerSettings);
                     }
 
                     try
@@ -110,5 +121,6 @@
         }
 
         static ILog Logger = LogManager.GetLogger(typeof(SqsMessageDispatcher));
+        static JsonSerializerSettings jsonSerializerSettings;
     }
 }
