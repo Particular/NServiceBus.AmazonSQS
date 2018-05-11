@@ -60,6 +60,7 @@
     <Compile Include="Configure\SqsTransportInfrastructure.cs" />
     <Compile Include="Configure\SqsTransportSettings.cs" />
     <Compile Include="Configure\SqsTransportSettingsKeys.cs" />
+    <Compile Include="ReducedPayloadContractResolver.cs" />
     <Compile Include="SqsQueueNameHelper.cs" />
     <Compile Include="Extensions\AmazonServiceExtensions.cs" />
     <Compile Include="Extensions\SqsMessageExtensions.cs" />
