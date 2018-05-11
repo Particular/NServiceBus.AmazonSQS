@@ -31,6 +31,7 @@ namespace NServiceBus
             "he member currently throws a NotImplementedException. Will be removed in version" +
             " 5.0.0.", true)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> CredentialSource(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, NServiceBus.SqsCredentialSource credentialSource) { }
+        public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> EnableV1CompatibilityMode(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> MaxTimeToLive(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.TimeSpan maxTimeToLive) { }
         [System.ObsoleteAttribute("Use `MaxTimeToLive` instead. The member currently throws a NotImplementedExceptio" +
             "n. Will be removed in version 5.0.0.", true)]
