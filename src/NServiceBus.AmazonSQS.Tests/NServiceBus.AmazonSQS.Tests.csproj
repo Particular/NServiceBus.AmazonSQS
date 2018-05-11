@@ -43,6 +43,10 @@
       <HintPath>..\packages\AWSSDK.SQS.3.3.1.12\lib\net45\AWSSDK.SQS.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\packages\Newtonsoft.Json.6.0.7\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="NServiceBus.Core, Version=6.0.0.0, Culture=neutral, PublicKeyToken=9fc386479f8a226c, processorArchitecture=MSIL">
       <HintPath>..\packages\NServiceBus.6.2.1\lib\net452\NServiceBus.Core.dll</HintPath>
       <Private>True</Private>
@@ -60,6 +64,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MockSqsClient.cs" />
+    <Compile Include="SqsMessageDispatcherTests.cs" />
+    <Compile Include="SqsTransportMessageTests.cs" />
     <Compile Include="when_parsing_connection_string.cs" />
     <Compile Include="when_sending_messages.cs" />
   </ItemGroup>

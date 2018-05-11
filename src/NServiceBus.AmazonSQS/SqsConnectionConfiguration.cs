@@ -31,5 +31,7 @@
         public bool NativeDeferral => _settings.GetOrDefault<bool>(SqsTransportSettingsKeys.NativeDeferral);
 
         public bool PreTruncateQueueNames => _settings.GetOrDefault<bool>(SqsTransportSettingsKeys.PreTruncateQueueNames);
+
+        public bool UseV1CompatiblePayload => _settings.GetOrDefault<bool>(SqsTransportSettingsKeys.V1CompatibilityMode);
     }
 }
