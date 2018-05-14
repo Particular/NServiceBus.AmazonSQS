@@ -34,7 +34,7 @@
             Body = outgoingMessage.Body != null ? Convert.ToBase64String(outgoingMessage.Body) : "empty message";
         }
 
-        public Dictionary<string, string> Headers { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, string> Headers { get; set; }
 
         public string Body { get; set; }
 

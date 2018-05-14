@@ -55,6 +55,7 @@
         {
             var transportMessage = new TransportMessage
             {
+                Headers = new Dictionary<string, string>(),
                 TimeToBeReceived = expectedTtbr.ToString()
             };
 
@@ -65,7 +66,10 @@
         [Test]
         public void Does_not_add_TimeToBeReceived_Header_when_property_is_set_to_null()
         {
-            var transportMessage = new TransportMessage();
+            var transportMessage = new TransportMessage
+            {
+                Headers = new Dictionary<string, string>()
+            };
 
             Assert.IsFalse(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), "TimeToBeReceived header was populated");
         }
@@ -98,6 +102,7 @@
         {
             var transportMessage = new TransportMessage
             {
+                Headers = new Dictionary<string, string>(),
                 ReplyToAddress = expectedReplyToAddress
             };
 
@@ -110,6 +115,7 @@
         {
             var transportMessage = new TransportMessage
             {
+                Headers = new Dictionary<string, string>(),
                 ReplyToAddress = null
             };
 
