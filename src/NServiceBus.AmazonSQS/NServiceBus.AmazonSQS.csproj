@@ -10,7 +10,7 @@
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="[3.3.16, 3.4)" />
     <PackageReference Include="AWSSDK.SQS" Version="[3.3.3.2, 3.4)" />
-    <PackageReference Include="NServiceBus" Version="[7.0.0-rc0001, 8.0.0)" />
+    <PackageReference Include="NServiceBus" Version="[7.0.0, 8.0.0)" />
     <PackageReference Include="Newtonsoft.Json" Version="[10.0.1, 11.0.0)" />
     <PackageReference Include="Fody" Version="2.4.5" PrivateAssets="All" />
     <PackageReference Include="Obsolete.Fody" Version="4.3.7" PrivateAssets="All" />
