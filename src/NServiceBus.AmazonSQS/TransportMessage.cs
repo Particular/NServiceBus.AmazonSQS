@@ -28,7 +28,7 @@
             var discardConstraint = deliveryConstraints.OfType<DiscardIfNotReceivedBefore>().SingleOrDefault();
             if (discardConstraint != null)
             {
-                Headers[TransportHeaders.TimeToBeReceived] = discardConstraint.MaxTime.ToString();
+                TimeToBeReceived = discardConstraint.MaxTime.ToString();
             }
 
             Body = outgoingMessage.Body != null ? Convert.ToBase64String(outgoingMessage.Body) : "empty message";
@@ -39,5 +39,29 @@
         public string Body { get; set; }
 
         public string S3BodyKey { get; set; }
+
+        public string TimeToBeReceived
+        {
+            get => Headers.ContainsKey(TransportHeaders.TimeToBeReceived) ? Headers[TransportHeaders.TimeToBeReceived] : TimeSpan.MaxValue.ToString();
+            set
+            {
+                if (value != null)
+                {
+                    Headers[TransportHeaders.TimeToBeReceived] = value;
+                }
+            }
+        }
+
+        public string ReplyToAddress
+        {
+            get => Headers.ContainsKey(NServiceBus.Headers.ReplyToAddress) ? Headers[NServiceBus.Headers.ReplyToAddress] : null;
+            set
+            {
+                if (value != null)
+                {
+                    Headers[NServiceBus.Headers.ReplyToAddress] = value;
+                }
+            }
+        }
     }
 }
