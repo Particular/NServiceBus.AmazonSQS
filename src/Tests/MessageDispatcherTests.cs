@@ -14,7 +14,7 @@
     using Transports.SQS;
 
     [TestFixture]
-    public partial class MessageDispatcherTests
+    public class MessageDispatcherTests
     {
         static TimeSpan expectedTtbr = TimeSpan.MaxValue.Subtract(TimeSpan.FromHours(1));
         const string expectedReplyToAddress = "TestReplyToAddress";
@@ -27,7 +27,7 @@
 
             var mockSqsClient = new MockSqsClient();
 
-            var dispatcher = new MessageDispatcher(new ConnectionConfiguration(settings), null, mockSqsClient, new QueueUrlCache(mockSqsClient));
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, new QueueUrlCache(mockSqsClient));
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -46,7 +46,7 @@
             Assert.IsNotEmpty(mockSqsClient.RequestsSent, "No requests sent");
             var request = mockSqsClient.RequestsSent.First();
 
-            var bodyJson = JObject.Parse(request.MessageBody);
+            IDictionary<string,JToken> bodyJson = JObject.Parse(request.MessageBody);
 
             Assert.IsTrue(bodyJson.ContainsKey("TimeToBeReceived"), "TimeToBeReceived not serialized");
             Assert.AreEqual(expectedTtbr.ToString(), bodyJson["TimeToBeReceived"].Value<string>(), "Expected TTBR mismatch");
@@ -63,7 +63,7 @@
 
             var mockSqsClient = new MockSqsClient();
 
-            var dispatcher = new MessageDispatcher(new ConnectionConfiguration(settings), null, mockSqsClient, new QueueUrlCache(mockSqsClient));
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, new QueueUrlCache(mockSqsClient));
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -82,7 +82,7 @@
             Assert.IsNotEmpty(mockSqsClient.RequestsSent, "No requests sent");
             var request = mockSqsClient.RequestsSent.First();
 
-            var bodyJson = JObject.Parse(request.MessageBody);
+            IDictionary<string,JToken> bodyJson = JObject.Parse(request.MessageBody);
 
             Assert.IsFalse(bodyJson.ContainsKey("TimeToBeReceived"), "TimeToBeReceived serialized");
             Assert.IsFalse(bodyJson.ContainsKey("ReplyToAddress"), "ReplyToAddress serialized");

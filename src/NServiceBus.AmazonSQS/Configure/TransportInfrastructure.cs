@@ -16,12 +16,12 @@
 
     class TransportInfrastructure : Transport.TransportInfrastructure
     {
-        public TransportInfrastructure(SettingsHolder settings)
+        public TransportInfrastructure(ReadOnlySettings settings)
         {
-            configuration = new ConnectionConfiguration(settings);
+            configuration = new TransportConfiguration(settings);
 
-            sqsClient = AwsClientFactory.CreateSqsClient(configuration);
-            s3Client = AwsClientFactory.CreateS3Client(configuration);
+            sqsClient = configuration.SqsClientFactory();
+            s3Client = configuration.S3ClientFactory();
 
             queueUrlCache = new QueueUrlCache(sqsClient);
         }
@@ -106,6 +106,6 @@
         readonly IAmazonSQS sqsClient;
         readonly IAmazonS3 s3Client;
         readonly QueueUrlCache queueUrlCache;
-        readonly ConnectionConfiguration configuration;
+        readonly TransportConfiguration configuration;
     }
 }

@@ -1,17 +1,18 @@
-﻿namespace NServiceBus.AcceptanceTests.Sqs
+﻿namespace NServiceBus.AcceptanceTests
 {
+    using System;
+    using NServiceBus;
+    using NUnit.Framework;
     using System.Threading.Tasks;
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
     using EndpointTemplates;
-    using NUnit.Framework;
-    using System;
-    using Configuration.AdvanceExtensibility;
+    using Configuration.AdvancedExtensibility;
 
-    public class When_sending_messages_larger_than_256kb : NServiceBusAcceptanceTest
+    public class Sending_messages_larger_than_256kb : NServiceBusAcceptanceTest
     {
         [Test]
-        public async Task Should_receive_messages_with_largepayload_correctly()
+        public async Task Should_receive_messages_with_large_payload_correctly()
         {
             var payloadToSend = new byte[PayloadSize];
 

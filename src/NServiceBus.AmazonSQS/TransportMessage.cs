@@ -14,7 +14,7 @@
         {
         }
 
-        public TransportMessage(OutgoingMessage outgoingMessage, List<DeliveryConstraint> deliveryConstrants)
+        public TransportMessage(OutgoingMessage outgoingMessage, List<DeliveryConstraint> deliveryConstraints)
         {
             Headers = outgoingMessage.Headers;
 
@@ -25,7 +25,7 @@
                 Headers[NServiceBus.Headers.MessageId] = messageId;
             }
 
-            var discardConstraint = deliveryConstrants.OfType<DiscardIfNotReceivedBefore>().SingleOrDefault();
+            var discardConstraint = deliveryConstraints.OfType<DiscardIfNotReceivedBefore>().SingleOrDefault();
             if (discardConstraint != null)
             {
                 TimeToBeReceived = discardConstraint.MaxTime.ToString();
@@ -34,7 +34,7 @@
             Body = outgoingMessage.Body != null ? Convert.ToBase64String(outgoingMessage.Body) : "empty message";
         }
 
-        public Dictionary<string, string> Headers { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, string> Headers { get; set; }
 
         public string Body { get; set; }
 
