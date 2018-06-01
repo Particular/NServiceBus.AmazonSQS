@@ -21,6 +21,11 @@ The transport can be configured using the following environment variables:
  
  * **AWS_ACCESS_KEY_ID** access key ID to sign programmatic requests that you make to AWS. Provisioned via IAM.
  * **AWS_SECRET_ACCESS_KEY** secret access key to sign programmatic requests that you make to AWS. Provisioned via IAM.
+ 
+ Additional environment variables required for AWS:
+ 
+ * **AWS_ACCESS_KEY_ID** access key ID to sign programmatic requests that you make to AWS. Provisioned via IAM.
+ * **AWS_SECRET_ACCESS_KEY** secret access key to sign programmatic requests that you make to AWS. Provisioned via IAM.
 
 
 ### Queue Names in Acceptance Tests
