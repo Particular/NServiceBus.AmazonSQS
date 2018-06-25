@@ -1,9 +1,5 @@
 ﻿namespace NServiceBus.Transports.SQS
 {
-    using System;
-    using System.IO;
-    using System.Linq;
-    using System.Threading.Tasks;
     using Amazon.S3;
     using Amazon.S3.Model;
     using Amazon.SQS;
@@ -14,6 +10,10 @@
     using Logging;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Serialization;
+    using System;
+    using System.IO;
+    using System.Linq;
+    using System.Threading.Tasks;
     using Transport;
 
     class MessageDispatcher : IDispatchMessages
@@ -39,7 +39,7 @@
                 var tasks = new Task[operations.Count];
                 for (var i = 0; i < operations.Count; i++)
                 {
-                    tasks[i] = Dispatch(operations[i]);
+                    tasks[i] = Dispatch(operations[i]).WithLogging(Logger);
                 }
 
                 await Task.WhenAll(tasks).ConfigureAwait(false);
