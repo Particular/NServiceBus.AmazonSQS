@@ -1,9 +1,5 @@
 ﻿namespace NServiceBus.Transports.SQS
 {
-    using System;
-    using System.IO;
-    using System.Linq;
-    using System.Threading.Tasks;
     using Amazon.S3;
     using Amazon.S3.Model;
     using Amazon.SQS;
@@ -14,6 +10,10 @@
     using Logging;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Serialization;
+    using System;
+    using System.IO;
+    using System.Linq;
+    using System.Threading.Tasks;
     using Transport;
 
     class MessageDispatcher : IDispatchMessages
@@ -151,6 +151,11 @@
                 var queueName = destination.Substring(0, destination.Length - TransportConfiguration.DelayedDeliveryQueueSuffix.Length);
 
                 throw new QueueDoesNotExistException($"Destination '{queueName}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(configuration.DelayedDeliveryQueueDelayTime)}. To enable support for longer delays, call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()' on the '{queueName}' endpoint.", e);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error while sending message, with MessageId '{messageId}', to '{destination}'", ex);
+                throw;
             }
         }
 
