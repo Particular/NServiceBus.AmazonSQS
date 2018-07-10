@@ -34,8 +34,8 @@
                     new OutgoingMessage("1234", new Dictionary<string, string>
                     {
                         {TransportHeaders.TimeToBeReceived, expectedTtbr.ToString()},
-                        {Headers.ReplyToAddress, expectedReplyToAddress}                        
-                    }, Encoding.Default.GetBytes("{}")), 
+                        {Headers.ReplyToAddress, expectedReplyToAddress}
+                    }, Encoding.Default.GetBytes("{}")),
                     new UnicastAddressTag("address")));
 
             var transportTransaction = new TransportTransaction();
@@ -46,13 +46,15 @@
             Assert.IsNotEmpty(mockSqsClient.RequestsSent, "No requests sent");
             var request = mockSqsClient.RequestsSent.First();
 
-            IDictionary<string,JToken> bodyJson = JObject.Parse(request.MessageBody);
+            var bodyJson = JObject.Parse(request.MessageBody);
 
             Assert.IsTrue(bodyJson.ContainsKey("TimeToBeReceived"), "TimeToBeReceived not serialized");
             Assert.AreEqual(expectedTtbr.ToString(), bodyJson["TimeToBeReceived"].Value<string>(), "Expected TTBR mismatch");
 
             Assert.IsTrue(bodyJson.ContainsKey("ReplyToAddress"), "ReplyToAddress not serialized");
-            Assert.AreEqual(expectedReplyToAddress, bodyJson["ReplyToAddress"].Value<string>(), "Expected ReplyToAddress mismatch");
+            Assert.IsTrue(bodyJson["ReplyToAddress"].HasValues, "ReplyToAddress is not an object");
+            Assert.IsTrue(bodyJson["ReplyToAddress"].Value<JObject>().ContainsKey("Queue"), "ReplyToAddress does not have a Queue value");
+            Assert.AreEqual(expectedReplyToAddress, bodyJson["ReplyToAddress"].Value<JObject>()["Queue"].Value<string>(), "Expected ReplyToAddress mismatch");
         }
 
 
