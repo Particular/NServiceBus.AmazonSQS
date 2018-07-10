@@ -52,16 +52,22 @@
             }
         }
 
-        public string ReplyToAddress
+        public Address ReplyToAddress
         {
-            get => Headers.ContainsKey(NServiceBus.Headers.ReplyToAddress) ? Headers[NServiceBus.Headers.ReplyToAddress] : null;
+            get => Headers.ContainsKey(NServiceBus.Headers.ReplyToAddress) ? new Address {Queue = Headers[NServiceBus.Headers.ReplyToAddress]} : null;
             set
             {
-                if (value != null)
+                if (!string.IsNullOrWhiteSpace(value?.Queue))
                 {
-                    Headers[NServiceBus.Headers.ReplyToAddress] = value;
+                    Headers[NServiceBus.Headers.ReplyToAddress] = value.Queue;
                 }
             }
+        }
+
+        public class Address
+        {
+            public string Queue { get; set; }
+            public string Machine { get; set; }
         }
     }
 }
