@@ -334,7 +334,7 @@
                     return;
                 }
 
-                if (!IsMessageExpired(receivedMessage, incomingMessage))
+                if (!IsMessageExpired(receivedMessage, incomingMessage, sqsClient.Config.ClockOffset))
                 {
                     await ProcessMessageWithInMemoryRetries(incomingMessage, token).ConfigureAwait(false);
                 }
@@ -399,7 +399,7 @@
             }
         }
 
-        static bool IsMessageExpired(Message receivedMessage, IncomingMessage incomingMessage)
+        static bool IsMessageExpired(Message receivedMessage, IncomingMessage incomingMessage, TimeSpan clockOffset)
         {
             if (!incomingMessage.Headers.TryGetValue(TransportHeaders.TimeToBeReceived, out var rawTtbr))
             {
@@ -413,7 +413,7 @@
                 return false;
             }
 
-            var sentDateTime = receivedMessage.GetSentDateTime();
+            var sentDateTime = receivedMessage.GetSentDateTime(clockOffset);
             var utcNow = DateTime.UtcNow;
             var expiresAt = sentDateTime + timeToBeReceived;
             if (expiresAt > utcNow)
