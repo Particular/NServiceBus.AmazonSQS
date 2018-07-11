@@ -85,7 +85,7 @@
 
             var transportMessage = new TransportMessage(outgoingMessage, new List<DeliveryConstraint>());
 
-            Assert.AreEqual(expectedReplyToAddress, transportMessage.ReplyToAddress.Queue, "ReplyToAddress is not the expected value");
+            Assert.AreEqual(expectedReplyToAddress, transportMessage.ReplyToAddress.Value.Queue, "ReplyToAddress is not the expected value");
         }
 
         [Test]
@@ -104,7 +104,7 @@
             var transportMessage = new TransportMessage
             {
                 Headers = new Dictionary<string, string>(),
-                ReplyToAddress = new TransportMessage.Address {Queue = expectedReplyToAddress}
+                ReplyToAddress = new TransportMessage.Address { Queue = expectedReplyToAddress }
             };
 
             Assert.IsTrue(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), "ReplyToAddress header is missing");
@@ -148,6 +148,27 @@
             Assert.AreEqual(expectedTtbr.ToString(), transportMessage.Headers[TransportHeaders.TimeToBeReceived], "TimeToBeReceived header does not match expected value.");
             Assert.IsTrue(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), "ReplyToAddress header is missing");
             Assert.AreEqual(expectedReplyToAddress, transportMessage.Headers[Headers.ReplyToAddress], "ReplyToAddress header does not match expected value.");
+        }
+        
+        [Test]
+        public void Can_be_built_from_serialized_message()
+        {
+            var json = JsonConvert.SerializeObject(new
+            {
+                Headers = new Dictionary<string, string>
+                {
+                    {Headers.MessageId, Guid.Empty.ToString()}
+                },
+                Body = "empty message",
+                S3BodyKey = (string)null,
+            });
+
+            var transportMessage = JsonConvert.DeserializeObject<TransportMessage>(json);
+
+            Assert.IsFalse(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), "TimeToBeReceived header was found");
+            Assert.AreEqual(TimeSpan.MaxValue.ToString(), transportMessage.TimeToBeReceived, "TimeToBeReceived does not match expected value.");
+            Assert.IsFalse(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), "ReplyToAddress header was found");
+            Assert.IsNull(transportMessage.ReplyToAddress, "ReplyToAddress was not null.");
         }
     }
 }

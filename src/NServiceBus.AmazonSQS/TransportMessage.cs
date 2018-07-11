@@ -52,19 +52,19 @@
             }
         }
 
-        public Address ReplyToAddress
+        public Address? ReplyToAddress
         {
-            get => Headers.ContainsKey(NServiceBus.Headers.ReplyToAddress) ? new Address {Queue = Headers[NServiceBus.Headers.ReplyToAddress]} : null;
+            get => Headers.ContainsKey(NServiceBus.Headers.ReplyToAddress) ? new Address { Queue = Headers[NServiceBus.Headers.ReplyToAddress] } : (Address?)null;
             set
             {
                 if (!string.IsNullOrWhiteSpace(value?.Queue))
                 {
-                    Headers[NServiceBus.Headers.ReplyToAddress] = value.Queue;
+                    Headers[NServiceBus.Headers.ReplyToAddress] = value.Value.Queue;
                 }
             }
         }
 
-        public class Address
+        public struct Address
         {
             public string Queue { get; set; }
             public string Machine { get; set; }
