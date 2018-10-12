@@ -4,9 +4,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 15.0.28010.2041
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NServiceBus.AmazonSQS", "NServiceBus.AmazonSQS\NServiceBus.AmazonSQS.csproj", "{A40EBAE3-ADF8-4CD8-87DA-025BCA6BA1C2}"
-	ProjectSection(ProjectDependencies) = postProject
-		{0451BAEF-DF2E-4B98-8644-94EE9415E389} = {0451BAEF-DF2E-4B98-8644-94EE9415E389}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NServiceBus.AmazonSQS.Tests", "NServiceBus.AmazonSQS.Tests\NServiceBus.AmazonSQS.Tests.csproj", "{7E15376E-8902-49AA-8AB9-3916A012D588}"
 EndProject
