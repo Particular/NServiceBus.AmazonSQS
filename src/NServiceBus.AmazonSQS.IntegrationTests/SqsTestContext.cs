@@ -102,7 +102,7 @@
 
             }
 
-            int approxNumberOfMessages = 0;
+            int approxNumberOfMessages;
             do
             {
                 Thread.Sleep(2000);
