@@ -5,7 +5,6 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.S3;
-    using Amazon.S3.Model;
     using Amazon.SQS;
     using Amazon.SQS.Model;
     using AmazonSQS;
@@ -438,35 +437,9 @@
                 return; // if another receiver fetches the data from S3
             }
 
-            if (transportMessage != null)
+            if (!string.IsNullOrEmpty(transportMessage?.S3BodyKey))
             {
-                if (!string.IsNullOrEmpty(transportMessage.S3BodyKey))
-                {
-                    try
-                    {
-                        await s3Client.DeleteObjectAsync(
-                            new DeleteObjectRequest
-                            {
-                                BucketName = configuration.S3BucketForLargeMessages,
-                                Key = transportMessage.S3BodyKey
-                            },
-                            token).ConfigureAwait(false);
-                    }
-                    catch (Exception ex)
-                    {
-                        // If deleting the message body from S3 fails, we don't
-                        // want the exception to make its way through to the _endProcessMessage below,
-                        // as the message has been successfully processed and deleted from the SQS queue
-                        // and effectively doesn't exist anymore.
-                        // It doesn't really matter, as S3 is configured to delete message body data
-                        // automatically after a certain period of time.
-                        Logger.Warn("Couldn't delete message body from S3. Message body data will be aged out by the S3 lifecycle policy when the TTL expires.", ex);
-                    }
-                }
-            }
-            else
-            {
-                Logger.Warn("Couldn't delete message body from S3 because the TransportMessage was null. Message body data will be aged out by the S3 lifecycle policy when the TTL expires.");
+                Logger.Info($"Message body data with key '{transportMessage.S3BodyKey}' will be aged out by the S3 lifecycle policy when the TTL expires.");
             }
         }
 
