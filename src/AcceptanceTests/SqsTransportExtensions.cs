@@ -15,16 +15,19 @@
                 .QueueNamePrefix(queueNamePrefix)
                 .PreTruncateQueueNamesForAcceptanceTests();
 
-            var s3BucketName = EnvironmentHelper.GetEnvironmentVariable(S3BucketEnvironmentVariableName);
+            S3BucketName = EnvironmentHelper.GetEnvironmentVariable(S3BucketEnvironmentVariableName);
 
-            if (!string.IsNullOrEmpty(s3BucketName))
+            if (!string.IsNullOrEmpty(S3BucketName))
             {
-                var s3Configuration = transportConfiguration.S3(s3BucketName, "test");
+                var s3Configuration = transportConfiguration.S3(S3BucketName, S3Prefix);
                 s3Configuration.ClientFactory(CreateS3Client);
             }
 
             return transportConfiguration;
         }
+
+        public const string S3Prefix = "test";
+        public static string S3BucketName;
 
         public static IAmazonSQS CreateSQSClient() => new AmazonSQSClient();
 
