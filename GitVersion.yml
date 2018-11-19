@@ -5,3 +5,7 @@ branches:
     tag: alpharelease
   release:
     tag: rc
+ignore:
+  sha:
+    - cb61cb1c92bbf373671f39984d8bdd470301f905
+    - 6d3f02d548379338d40313089b4ec8984652b715
