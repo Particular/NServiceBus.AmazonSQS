@@ -3,9 +3,11 @@
     using System.Threading.Tasks;
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
+    using AmazonSQS.AcceptanceTests;
     using EndpointTemplates;
     using NUnit.Framework;
     using System;
+    using Amazon.S3;
     using Configuration.AdvanceExtensibility;
 
     public class When_sending_messages_larger_than_256kb : NServiceBusAcceptanceTest
@@ -24,7 +26,9 @@
                 .Done(c => c.ReceivedPayload != null)
                 .Run();
 
+            var s3Client = new AmazonS3Client();
             Assert.AreEqual(payloadToSend, context.ReceivedPayload, "The large payload should be handled correctly using S3");
+            Assert.DoesNotThrowAsync(async () => await s3Client.GetObjectAsync(SqsTransportConfigurationExtensions.S3BucketName, $"{SqsTransportConfigurationExtensions.S3Prefix}/{context.MessageId}"));
         }
 
         [Test]
@@ -38,8 +42,8 @@
                     // Don't configure an S3 bucket for this endpoint
                     b.CustomConfig(x =>
                     {
-                        x.GetSettings().Set("NServiceBus.AmazonSQS.S3BucketForLargeMessages", string.Empty);
-                        x.GetSettings().Set("NServiceBus.AmazonSQS.S3Key", string.Empty);
+                        x.GetSettings().Set(SettingsKeys.S3BucketForLargeMessages, string.Empty);
+                        x.GetSettings().Set(SettingsKeys.S3KeyPrefix, string.Empty);
                     });
 
                     b.When(async (session, c) =>
@@ -63,8 +67,8 @@
                     // Don't configure an S3 bucket for this endpoint
                     b.CustomConfig(x =>
                     {
-                        x.GetSettings().Set("NServiceBus.AmazonSQS.S3BucketForLargeMessages", string.Empty);
-                        x.GetSettings().Set("NServiceBus.AmazonSQS.S3Key", string.Empty);
+                        x.GetSettings().Set(SettingsKeys.S3BucketForLargeMessages, string.Empty);
+                        x.GetSettings().Set(SettingsKeys.S3KeyPrefix, string.Empty);
                     });
                 })
                 .Done(c => c.GotTheException)
@@ -78,6 +82,8 @@
         public class Context : ScenarioContext
         {
             public byte[] ReceivedPayload { get; set; }
+
+            public string MessageId { get; set; }
 
             public bool GotTheException { get; set; }
 
@@ -109,6 +115,7 @@
                 public Task Handle(MyMessageWithLargePayload messageWithLargePayload, IMessageHandlerContext context)
                 {
                     Context.ReceivedPayload = messageWithLargePayload.Payload;
+                    Context.MessageId = context.MessageId;
 
                     return Task.FromResult(0);
                 }
