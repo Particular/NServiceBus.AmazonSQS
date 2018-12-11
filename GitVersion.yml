@@ -5,3 +5,6 @@ branches:
     tag: beta
   release:
     tag: rc
+ignore:
+  sha:
+    - 8fb53199be08755a13ac6c1f1445052f2472578d
