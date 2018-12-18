@@ -5,8 +5,6 @@
     <AssemblyName>NServiceBus.AmazonSQS</AssemblyName>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>$(SolutionDir)NServiceBus.snk</AssemblyOriginatorKeyFile>
-    <DebugType>full</DebugType>
-    <DebugSymbols>True</DebugSymbols>
     <NoWarn>CS0419</NoWarn>
   </PropertyGroup>
   <ItemGroup>
