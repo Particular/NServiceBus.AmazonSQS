@@ -1,22 +1,15 @@
-﻿#if (NET452)
-using System.IO;
-using System.Reflection;
-using ApprovalTests;
+﻿using NServiceBus;
 using NUnit.Framework;
+using Particular.Approvals;
 using PublicApiGenerator;
-using System.Runtime.CompilerServices;
 
 [TestFixture]
-class APIApprovals
+public class APIApprovals
 {
     [Test]
-    [MethodImpl(MethodImplOptions.NoInlining)]
     public void ApproveSqsTransport()
     {
-        var combine = Path.Combine(TestContext.CurrentContext.TestDirectory, "NServiceBus.AmazonSQS.dll");
-        var assembly = Assembly.LoadFile(combine);
-        var publicApi = ApiGenerator.GeneratePublicApi(assembly);
-        Approvals.Verify(publicApi);
+        var publicApi = ApiGenerator.GeneratePublicApi(typeof(SqsTransport).Assembly, excludeAttributes: new[] { "System.Runtime.Versioning.TargetFrameworkAttribute" });
+        Approver.Verify(publicApi);
     }
 }
-#endif
