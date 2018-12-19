@@ -1,5 +1,6 @@
 ﻿namespace NServiceBus.AmazonSQS.AcceptanceTests
 {
+    using Amazon.Runtime;
     using Amazon.S3;
     using Amazon.SQS;
     using NServiceBus.AcceptanceTests.ScenarioDescriptors;
@@ -29,8 +30,16 @@
         public const string S3Prefix = "test";
         public static string S3BucketName;
 
-        public static IAmazonSQS CreateSQSClient() => new AmazonSQSClient();
+        public static IAmazonSQS CreateSQSClient()
+        {
+            var credentials = new EnvironmentVariablesAWSCredentials();
+            return new AmazonSQSClient(credentials);
+        }
 
-        public static IAmazonS3 CreateS3Client() => new AmazonS3Client();
+        public static IAmazonS3 CreateS3Client()
+        {
+            var credentials = new EnvironmentVariablesAWSCredentials();
+            return new AmazonS3Client(credentials);
+        }
     }
 }
