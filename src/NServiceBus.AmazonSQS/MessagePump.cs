@@ -367,7 +367,7 @@
                             incomingMessage.Body,
                             transportTransaction,
                             messageContextCancellationTokenSource,
-                            contextBag);
+                            new ContextBag());
 
                         await onMessage(messageContext).ConfigureAwait(false);
 
@@ -534,7 +534,6 @@
         int numberOfMessagesToFetch;
         ReceiveMessageRequest receiveMessagesRequest;
         static readonly TransportTransaction transportTransaction = new TransportTransaction();
-        static readonly ContextBag contextBag = new ContextBag();
 
         static ILog Logger = LogManager.GetLogger(typeof(MessagePump));
     }
