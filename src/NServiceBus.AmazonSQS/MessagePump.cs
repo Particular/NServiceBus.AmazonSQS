@@ -462,14 +462,12 @@
                 {
                     QueueUrl = errorQueueUrl,
                     MessageBody = message.Body,
-                    MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                    MessageAttributes =
                     {
+                        [Headers.MessageId] = new MessageAttributeValue
                         {
-                            Headers.MessageId, new MessageAttributeValue
-                            {
-                                StringValue = messageId,
-                                DataType = "String"
-                            }
+                            StringValue = messageId,
+                            DataType = "String"
                         }
                     }
                 }, CancellationToken.None).ConfigureAwait(false);
