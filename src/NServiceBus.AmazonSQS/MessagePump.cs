@@ -290,11 +290,21 @@
                 byte[] messageBody = null;
                 TransportMessage transportMessage = null;
                 Exception exception = null;
-                var messageId = receivedMessage.MessageId;
-
+                var nativeMessageId = receivedMessage.MessageId;
+                string messageId = null;
                 var isPoisonMessage = false;
+                
                 try
                 {
+                    if (receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
+                    {
+                        messageId = messageIdAttribute.StringValue;
+                    }
+                    else
+                    {
+                        messageId = nativeMessageId;
+                    }
+                    
                     transportMessage = JsonConvert.DeserializeObject<TransportMessage>(receivedMessage.Body);
 
                     messageBody = await transportMessage.RetrieveBody(s3Client, configuration, token).ConfigureAwait(false);
@@ -318,33 +328,25 @@
 
                 if (isPoisonMessage)
                 {
-                    string messageIdText;
-                    string messageId;
-                    if (receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
-                    {
-                        messageId = messageIdAttribute.StringValue;
-                        messageIdText = $"NServiceBus Message Id {messageId}";
-                    }
-                    else
-                    {
-                        messageId = receivedMessage.MessageId;
-                        messageIdText = $"SQS Message Id {messageId}";
-                    }
+                    var logMessage = $"Treating message with {messageId} as a poison message. Moving to error queue.";
+                    
                     if (exception != null)
                     {
-                        Logger.Warn($"Treating message with {messageIdText} as a poison message. Moving to error queue.", exception);
+                        Logger.Warn(logMessage, exception);
                     }
                     else
                     {
-                        Logger.Warn($"Treating message with {messageIdText} as a poison message. Moving to error queue.");
+                        Logger.Warn(logMessage);
                     }
+                    
                     await MovePoisonMessageToErrorQueue(receivedMessage, messageId).ConfigureAwait(false);
                     return;
                 }
 
                 if (!IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, sqsClient.Config.ClockOffset))
                 {
-                    await ProcessMessageWithInMemoryRetries(transportMessage.Headers, messageId, messageBody, token).ConfigureAwait(false);
+                    // here we also want to use the native message id because the core demands it like that
+                    await ProcessMessageWithInMemoryRetries(transportMessage.Headers, nativeMessageId, messageBody, token).ConfigureAwait(false);
                 }
 
                 // Always delete the message from the queue.
@@ -358,7 +360,7 @@
             }
         }
 
-        async Task ProcessMessageWithInMemoryRetries(Dictionary<string, string> headers, string messageId, byte[] body, CancellationToken token)
+        async Task ProcessMessageWithInMemoryRetries(Dictionary<string, string> headers, string nativeMessageId, byte[] body, CancellationToken token)
         {
             var immediateProcessingAttempts = 0;
             var messageProcessedOk = false;
@@ -371,7 +373,7 @@
                     using (var messageContextCancellationTokenSource = new CancellationTokenSource())
                     {
                         var messageContext = new MessageContext(
-                            messageId,
+                            nativeMessageId,
                             headers,
                             body,
                             transportTransaction,
@@ -393,7 +395,7 @@
                     {
                         errorHandlerResult = await onError(new ErrorContext(ex,
                             headers,
-                            messageId,
+                            nativeMessageId,
                             body,
                             transportTransaction,
                             immediateProcessingAttempts)).ConfigureAwait(false);
