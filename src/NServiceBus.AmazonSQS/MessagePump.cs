@@ -137,8 +137,13 @@
             cancellationTokenSource?.Cancel();
 
             await Task.WhenAll(pumpTasks).ConfigureAwait(false);
-
             pumpTasks?.Clear();
+            
+            while (maxConcurrencySempahore.CurrentCount != maxConcurrency)
+            {
+                await Task.Delay(50).ConfigureAwait(false);
+            }
+            
             cancellationTokenSource?.Dispose();
             maxConcurrencySempahore?.Dispose();
         }
@@ -247,17 +252,18 @@
 
         async Task ConsumeMessages(CancellationToken token)
         {
-            // cached and reused per receive loop
-            var concurrentReceiveOperations = new List<Task>(numberOfMessagesToFetch);
+
             while (!token.IsCancellationRequested)
             {
                 try
                 {
                     var receivedMessages = await sqsClient.ReceiveMessageAsync(receiveMessagesRequest, token).ConfigureAwait(false);
 
-                    ProcessMessages(receivedMessages.Messages, concurrentReceiveOperations, token);
-
-                    await Task.WhenAll(concurrentReceiveOperations).ConfigureAwait(false);
+                    // ReSharper disable once LoopCanBeConvertedToQuery
+                    foreach (var receivedMessage in receivedMessages.Messages)
+                    {
+                        ProcessMessage(receivedMessage, token).Ignore();
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -267,22 +273,7 @@
                 {
                     Logger.Error("Exception thrown when consuming messages", ex);
                 }
-                finally
-                {
-                    concurrentReceiveOperations.Clear();
-                }
             } // while
-        }
-
-        // ReSharper disable once ParameterTypeCanBeEnumerable.Local
-        // ReSharper disable once SuggestBaseTypeForParameter
-        void ProcessMessages(List<Message> receivedMessages, List<Task> concurrentReceiveOperations, CancellationToken token)
-        {
-            // ReSharper disable once LoopCanBeConvertedToQuery
-            foreach (var receivedMessage in receivedMessages)
-            {
-                concurrentReceiveOperations.Add(ProcessMessage(receivedMessage, token));
-            }
         }
 
         async Task ProcessMessage(Message receivedMessage, CancellationToken token)
