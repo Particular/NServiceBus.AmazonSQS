@@ -17,6 +17,7 @@
     public class MessageDispatcherTests
     {
         static TimeSpan expectedTtbr = TimeSpan.MaxValue.Subtract(TimeSpan.FromHours(1));
+
         const string expectedReplyToAddress = "TestReplyToAddress";
 
         [Test]
@@ -57,7 +58,6 @@
             Assert.AreEqual(expectedReplyToAddress, bodyJson["ReplyToAddress"].Value<JObject>()["Queue"].Value<string>(), "Expected ReplyToAddress mismatch");
         }
 
-
         [Test]
         public async Task Does_not_send_extra_properties_in_payload_by_default()
         {
@@ -89,5 +89,31 @@
             Assert.IsFalse(bodyJson.ContainsKey("TimeToBeReceived"), "TimeToBeReceived serialized");
             Assert.IsFalse(bodyJson.ContainsKey("ReplyToAddress"), "ReplyToAddress serialized");
         }
+
+        [Test]
+        public async Task Includes_message_id_in_message_attributes()
+        {
+            var settings = new SettingsHolder();
+
+            var mockSqsClient = new MockSqsClient();
+
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, new QueueUrlCache(mockSqsClient));
+
+            var expectedId = "1234";
+
+            var transportOperations = new TransportOperations(
+                new TransportOperation(
+                    new OutgoingMessage(expectedId, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new UnicastAddressTag("address")));
+
+            var transportTransaction = new TransportTransaction();
+            var context = new ContextBag();
+
+            await dispatcher.Dispatch(transportOperations, transportTransaction, context);
+
+            var sentMessage = mockSqsClient.RequestsSent.First();
+            Assert.AreEqual(expectedId, sentMessage.MessageAttributes[Headers.MessageId].StringValue);
+        }
+
     }
 }

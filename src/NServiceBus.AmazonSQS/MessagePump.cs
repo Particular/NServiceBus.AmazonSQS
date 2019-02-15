@@ -103,10 +103,8 @@
                 MaxNumberOfMessages = numberOfMessagesToFetch,
                 QueueUrl = queueUrl,
                 WaitTimeSeconds = 20,
-                AttributeNames = new List<string>
-                {
-                    "SentTimestamp"
-                }
+                AttributeNames = new List<string> { "SentTimestamp" },
+                MessageAttributeNames = new List<string> { Headers.MessageId },
             };
 
             maxConcurrencySempahore = new SemaphoreSlim(maxConcurrency);
@@ -125,7 +123,7 @@
                     QueueUrl = delayedDeliveryQueueUrl,
                     WaitTimeSeconds = 20,
                     AttributeNames = new List<string> { "MessageDeduplicationId", "SentTimestamp", "ApproximateFirstReceiveTimestamp", "ApproximateReceiveCount" },
-                    MessageAttributeNames = new List<string> { "All" }
+                    MessageAttributeNames = new List<string> { "All" },
                 };
 
                 pumpTasks.Add(Task.Run(() => ConsumeDelayedMessages(receiveDelayedMessagesRequest, cancellationTokenSource.Token), CancellationToken.None));
@@ -291,6 +289,7 @@
             {
                 byte[] messageBody = null;
                 TransportMessage transportMessage = null;
+                Exception exception = null;
                 var messageId = receivedMessage.MessageId;
 
                 var isPoisonMessage = false;
@@ -308,19 +307,38 @@
                 catch (Exception ex)
                 {
                     // Can't deserialize. This is a poison message
-                    Logger.Warn($"Treating message with SQS Message Id {receivedMessage.MessageId} as a poison message due to exception {ex}. Moving to error queue.");
+                    exception = ex;
                     isPoisonMessage = true;
                 }
 
                 if (messageBody == null || transportMessage == null)
                 {
-                    Logger.Warn($"Treating message with SQS Message Id {receivedMessage.MessageId} as a poison message because it could not be converted to an incoming message. Moving to error queue.");
                     isPoisonMessage = true;
                 }
 
                 if (isPoisonMessage)
                 {
-                    await MovePoisonMessageToErrorQueue(receivedMessage).ConfigureAwait(false);
+                    string messageIdText;
+                    string messageId;
+                    if (receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
+                    {
+                        messageId = messageIdAttribute.StringValue;
+                        messageIdText = $"NServiceBus Message Id {messageId}";
+                    }
+                    else
+                    {
+                        messageId = receivedMessage.MessageId;
+                        messageIdText = $"SQS Message Id {messageId}";
+                    }
+                    if (exception != null)
+                    {
+                        Logger.Warn($"Treating message with {messageIdText} as a poison message. Moving to error queue.", exception);
+                    }
+                    else
+                    {
+                        Logger.Warn($"Treating message with {messageIdText} as a poison message. Moving to error queue.");
+                    }
+                    await MovePoisonMessageToErrorQueue(receivedMessage, messageId).ConfigureAwait(false);
                     return;
                 }
 
@@ -332,7 +350,7 @@
                 // Always delete the message from the queue.
                 // If processing failed, the onError handler will have moved the message
                 // to a retry queue.
-                await DeleteMessageAndBodyIfRequired(receivedMessage, transportMessage.S3BodyKey, token).ConfigureAwait(false);
+                await DeleteMessageAndBodyIfRequired(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
             }
             finally
             {
@@ -415,7 +433,7 @@
             return true;
         }
 
-        async Task DeleteMessageAndBodyIfRequired(Message message, string s3BodyKey, CancellationToken token)
+        async Task DeleteMessageAndBodyIfRequired(Message message, string s3BodyKey)
         {
             try
             {
@@ -434,14 +452,24 @@
             }
         }
 
-        async Task MovePoisonMessageToErrorQueue(Message message)
+        async Task MovePoisonMessageToErrorQueue(Message message, string messageId)
         {
             try
             {
                 await sqsClient.SendMessageAsync(new SendMessageRequest
                 {
                     QueueUrl = errorQueueUrl,
-                    MessageBody = message.Body
+                    MessageBody = message.Body,
+                    MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                    {
+                        {
+                            Headers.MessageId, new MessageAttributeValue
+                            {
+                                StringValue = messageId,
+                                DataType = "String"
+                            }
+                        }
+                    }
                 }, CancellationToken.None).ConfigureAwait(false);
                 // The MessageAttributes on message are read-only attributes provided by SQS
                 // and can't be re-sent. Unfortunately all the SQS metadata
