@@ -299,15 +299,16 @@
 
             try
             {
-                IncomingMessage incomingMessage = null;
+                byte[] messageBody = null;
                 TransportMessage transportMessage = null;
+                var messageId = receivedMessage.MessageId;
 
                 var isPoisonMessage = false;
                 try
                 {
                     transportMessage = JsonConvert.DeserializeObject<TransportMessage>(receivedMessage.Body);
 
-                    incomingMessage = await transportMessage.ToIncomingMessage(s3Client, configuration, token).ConfigureAwait(false);
+                    messageBody = await transportMessage.RetrieveBody(s3Client, configuration, token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
@@ -321,9 +322,9 @@
                     isPoisonMessage = true;
                 }
 
-                if (incomingMessage == null || transportMessage == null)
+                if (messageBody == null || transportMessage == null)
                 {
-                    Logger.Warn($"Treating message with SQS Message Id {receivedMessage.MessageId} as a poison message because it could not be converted to an IncomingMessage. Moving to error queue.");
+                    Logger.Warn($"Treating message with SQS Message Id {receivedMessage.MessageId} as a poison message because it could not be converted to an incoming message. Moving to error queue.");
                     isPoisonMessage = true;
                 }
 
@@ -333,15 +334,15 @@
                     return;
                 }
 
-                if (!IsMessageExpired(receivedMessage, incomingMessage, sqsClient.Config.ClockOffset))
+                if (!IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, sqsClient.Config.ClockOffset))
                 {
-                    await ProcessMessageWithInMemoryRetries(incomingMessage, token).ConfigureAwait(false);
+                    await ProcessMessageWithInMemoryRetries(transportMessage.Headers, messageId, messageBody, token).ConfigureAwait(false);
                 }
 
                 // Always delete the message from the queue.
                 // If processing failed, the onError handler will have moved the message
                 // to a retry queue.
-                await DeleteMessageAndBodyIfRequired(receivedMessage, transportMessage, token).ConfigureAwait(false);
+                await DeleteMessageAndBodyIfRequired(receivedMessage, transportMessage.S3BodyKey, token).ConfigureAwait(false);
             }
             finally
             {
@@ -349,7 +350,7 @@
             }
         }
 
-        async Task ProcessMessageWithInMemoryRetries(IncomingMessage incomingMessage, CancellationToken token)
+        async Task ProcessMessageWithInMemoryRetries(Dictionary<string, string> headers, string messageId, byte[] body, CancellationToken token)
         {
             var immediateProcessingAttempts = 0;
             var messageProcessedOk = false;
@@ -362,9 +363,9 @@
                     using (var messageContextCancellationTokenSource = new CancellationTokenSource())
                     {
                         var messageContext = new MessageContext(
-                            incomingMessage.MessageId,
-                            incomingMessage.Headers,
-                            incomingMessage.Body,
+                            messageId,
+                            headers,
+                            body,
                             transportTransaction,
                             messageContextCancellationTokenSource,
                             new ContextBag());
@@ -383,9 +384,9 @@
                     try
                     {
                         errorHandlerResult = await onError(new ErrorContext(ex,
-                            incomingMessage.Headers,
-                            incomingMessage.MessageId,
-                            incomingMessage.Body,
+                            headers,
+                            messageId,
+                            body,
                             transportTransaction,
                             immediateProcessingAttempts)).ConfigureAwait(false);
                     }
@@ -398,14 +399,14 @@
             }
         }
 
-        static bool IsMessageExpired(Message receivedMessage, IncomingMessage incomingMessage, TimeSpan clockOffset)
+        static bool IsMessageExpired(Message receivedMessage, Dictionary<string, string> headers, string messageId, TimeSpan clockOffset)
         {
-            if (!incomingMessage.Headers.TryGetValue(TransportHeaders.TimeToBeReceived, out var rawTtbr))
+            if (!headers.TryGetValue(TransportHeaders.TimeToBeReceived, out var rawTtbr))
             {
                 return false;
             }
 
-            incomingMessage.Headers.Remove(TransportHeaders.TimeToBeReceived);
+            headers.Remove(TransportHeaders.TimeToBeReceived);
             var timeToBeReceived = TimeSpan.Parse(rawTtbr);
             if (timeToBeReceived == TimeSpan.MaxValue)
             {
@@ -420,11 +421,11 @@
                 return false;
             }
             // Message has expired.
-            Logger.Info($"Discarding expired message with Id {incomingMessage.MessageId}, expired {utcNow - expiresAt} ago at {expiresAt} utc.");
+            Logger.Info($"Discarding expired message with Id {messageId}, expired {utcNow - expiresAt} ago at {expiresAt} utc.");
             return true;
         }
 
-        async Task DeleteMessageAndBodyIfRequired(Message message, TransportMessage transportMessage, CancellationToken token)
+        async Task DeleteMessageAndBodyIfRequired(Message message, string s3BodyKey, CancellationToken token)
         {
             try
             {
@@ -437,9 +438,9 @@
                 return; // if another receiver fetches the data from S3
             }
 
-            if (!string.IsNullOrEmpty(transportMessage?.S3BodyKey))
+            if (!string.IsNullOrEmpty(s3BodyKey))
             {
-                Logger.Info($"Message body data with key '{transportMessage.S3BodyKey}' will be aged out by the S3 lifecycle policy when the TTL expires.");
+                Logger.Info($"Message body data with key '{s3BodyKey}' will be aged out by the S3 lifecycle policy when the TTL expires.");
             }
         }
 
