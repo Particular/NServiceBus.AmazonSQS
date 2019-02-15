@@ -252,7 +252,6 @@
 
         async Task ConsumeMessages(CancellationToken token)
         {
-
             while (!token.IsCancellationRequested)
             {
                 try
@@ -262,6 +261,16 @@
                     // ReSharper disable once LoopCanBeConvertedToQuery
                     foreach (var receivedMessage in receivedMessages.Messages)
                     {
+                        try
+                        {
+                            await maxConcurrencySempahore.WaitAsync(token).ConfigureAwait(false);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            // shutting, semaphore doesn't need to be released because it was never acquired
+                            return;
+                        }
+                        
                         ProcessMessage(receivedMessage, token).Ignore();
                     }
                 }
@@ -278,16 +287,6 @@
 
         async Task ProcessMessage(Message receivedMessage, CancellationToken token)
         {
-            try
-            {
-                await maxConcurrencySempahore.WaitAsync(token).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                // shutting, semaphore doesn't need to be released because it was never acquired
-                return;
-            }
-
             try
             {
                 byte[] messageBody = null;
