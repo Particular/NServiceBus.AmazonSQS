@@ -6,17 +6,14 @@
     using System.Threading.Tasks;
     using Amazon.S3;
     using Amazon.SQS.Model;
-    using Transport;
 
     static class MessageExtensions
     {
-        public static async Task<IncomingMessage> ToIncomingMessage(this TransportMessage transportMessage,
+        public static async Task<byte[]> RetrieveBody(this TransportMessage transportMessage,
             IAmazonS3 amazonS3,
             TransportConfiguration transportConfiguration,
             CancellationToken cancellationToken)
         {
-            var messageId = transportMessage.Headers[Headers.MessageId];
-
             byte[] body;
 
             if (string.IsNullOrEmpty(transportMessage.S3BodyKey))
@@ -44,7 +41,7 @@
                 }
             }
 
-            return new IncomingMessage(messageId, transportMessage.Headers, body);
+            return body;
         }
 
         public static DateTime GetSentDateTime(this Message message, TimeSpan clockOffset)
