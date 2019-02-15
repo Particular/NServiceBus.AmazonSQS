@@ -321,12 +321,7 @@
                     isPoisonMessage = true;
                 }
 
-                if (messageBody == null || transportMessage == null)
-                {
-                    isPoisonMessage = true;
-                }
-
-                if (isPoisonMessage)
+                if (isPoisonMessage || messageBody == null || transportMessage == null)
                 {
                     var logMessage = $"Treating message with {messageId} as a poison message. Moving to error queue.";
                     
