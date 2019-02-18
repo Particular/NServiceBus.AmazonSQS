@@ -160,7 +160,7 @@
                     {Headers.MessageId, Guid.Empty.ToString()}
                 },
                 Body = "empty message",
-                S3BodyKey = (string)null,
+                S3BodyKey = (string)null
             });
 
             var transportMessage = JsonConvert.DeserializeObject<TransportMessage>(json);

@@ -104,10 +104,10 @@
                 QueueUrl = queueUrl,
                 WaitTimeSeconds = 20,
                 AttributeNames = new List<string> { "SentTimestamp" },
-                MessageAttributeNames = new List<string> { Headers.MessageId },
+                MessageAttributeNames = new List<string> { Headers.MessageId }
             };
 
-            maxConcurrencySempahore = new SemaphoreSlim(maxConcurrency);
+            maxConcurrencySemaphore = new SemaphoreSlim(maxConcurrency);
             pumpTasks = new List<Task>(numberOfPumps);
 
             for (var i = 0; i < numberOfPumps; i++)
@@ -123,7 +123,7 @@
                     QueueUrl = delayedDeliveryQueueUrl,
                     WaitTimeSeconds = 20,
                     AttributeNames = new List<string> { "MessageDeduplicationId", "SentTimestamp", "ApproximateFirstReceiveTimestamp", "ApproximateReceiveCount" },
-                    MessageAttributeNames = new List<string> { "All" },
+                    MessageAttributeNames = new List<string> { "All" }
                 };
 
                 pumpTasks.Add(Task.Run(() => ConsumeDelayedMessages(receiveDelayedMessagesRequest, cancellationTokenSource.Token), CancellationToken.None));
@@ -137,13 +137,13 @@
             await Task.WhenAll(pumpTasks).ConfigureAwait(false);
             pumpTasks?.Clear();
             
-            while (maxConcurrencySempahore.CurrentCount != maxConcurrency)
+            while (maxConcurrencySemaphore.CurrentCount != maxConcurrency)
             {
                 await Task.Delay(50).ConfigureAwait(false);
             }
             
             cancellationTokenSource?.Dispose();
-            maxConcurrencySempahore?.Dispose();
+            maxConcurrencySemaphore?.Dispose();
         }
 
         async Task ConsumeDelayedMessages(ReceiveMessageRequest request, CancellationToken token)
@@ -160,7 +160,7 @@
 
                         if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.DelaySeconds, out var delayAttribute))
                         {
-                            Int64.TryParse(delayAttribute.StringValue, out delaySeconds);
+                            long.TryParse(delayAttribute.StringValue, out delaySeconds);
                         }
 
                         var sent = UnixTimeConverter.FromUnixTimeMilliseconds(Convert.ToInt64(receivedMessage.Attributes["SentTimestamp"]));
@@ -261,7 +261,7 @@
                     {
                         try
                         {
-                            await maxConcurrencySempahore.WaitAsync(token).ConfigureAwait(false);
+                            await maxConcurrencySemaphore.WaitAsync(token).ConfigureAwait(false);
                         }
                         catch (OperationCanceledException)
                         {
@@ -351,7 +351,7 @@
             }
             finally
             {
-                maxConcurrencySempahore.Release();
+                maxConcurrencySemaphore.Release();
             }
         }
 
@@ -536,7 +536,7 @@
         List<Task> pumpTasks;
         Func<ErrorContext, Task<ErrorHandleResult>> onError;
         Func<MessageContext, Task> onMessage;
-        SemaphoreSlim maxConcurrencySempahore;
+        SemaphoreSlim maxConcurrencySemaphore;
         string queueUrl;
         string delayedDeliveryQueueUrl;
         string errorQueueUrl;
