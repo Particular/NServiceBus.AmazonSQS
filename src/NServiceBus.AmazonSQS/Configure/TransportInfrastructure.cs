@@ -21,7 +21,10 @@
             configuration = new TransportConfiguration(settings);
 
             sqsClient = configuration.SqsClientFactory();
-            s3Client = configuration.S3ClientFactory();
+            if (!string.IsNullOrEmpty(settings.GetOrDefault<string>(SettingsKeys.S3BucketForLargeMessages)))
+            {
+                s3Client = configuration.S3ClientFactory();
+            }
 
             queueUrlCache = new QueueUrlCache(sqsClient);
         }
