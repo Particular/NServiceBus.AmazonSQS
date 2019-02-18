@@ -135,7 +135,17 @@
                     var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination, configuration))
                         .ConfigureAwait(false);
 
-                    sendMessageRequest = new SendMessageRequest(queueUrl, message);
+                    sendMessageRequest = new SendMessageRequest(queueUrl, message)
+                    {
+                        MessageAttributes =
+                        {
+                            [Headers.MessageId] = new MessageAttributeValue
+                            {
+                                StringValue = messageId,
+                                DataType = "String"
+                            }
+                        }
+                    };
 
                     if (delaySeconds > 0)
                     {
