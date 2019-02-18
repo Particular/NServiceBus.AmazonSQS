@@ -136,12 +136,12 @@
 
             await Task.WhenAll(pumpTasks).ConfigureAwait(false);
             pumpTasks?.Clear();
-            
+
             while (maxConcurrencySemaphore.CurrentCount != maxConcurrency)
             {
                 await Task.Delay(50).ConfigureAwait(false);
             }
-            
+
             cancellationTokenSource?.Dispose();
             maxConcurrencySemaphore?.Dispose();
         }
@@ -268,7 +268,7 @@
                             // shutting, semaphore doesn't need to be released because it was never acquired
                             return;
                         }
-                        
+
                         ProcessMessage(receivedMessage, token).Ignore();
                     }
                 }
@@ -293,7 +293,7 @@
                 var nativeMessageId = receivedMessage.MessageId;
                 string messageId = null;
                 var isPoisonMessage = false;
-                
+
                 try
                 {
                     if (receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
@@ -304,7 +304,7 @@
                     {
                         messageId = nativeMessageId;
                     }
-                    
+
                     transportMessage = JsonConvert.DeserializeObject<TransportMessage>(receivedMessage.Body);
 
                     messageBody = await transportMessage.RetrieveBody(s3Client, configuration, token).ConfigureAwait(false);
@@ -324,7 +324,7 @@
                 if (isPoisonMessage || messageBody == null || transportMessage == null)
                 {
                     var logMessage = $"Treating message with {messageId} as a poison message. Moving to error queue.";
-                    
+
                     if (exception != null)
                     {
                         Logger.Warn(logMessage, exception);
@@ -333,7 +333,7 @@
                     {
                         Logger.Warn(logMessage);
                     }
-                    
+
                     await MovePoisonMessageToErrorQueue(receivedMessage, messageId).ConfigureAwait(false);
                     return;
                 }
@@ -369,7 +369,7 @@
                     {
                         var messageContext = new MessageContext(
                             nativeMessageId,
-                            headers,
+                            new Dictionary<string, string>(headers),
                             body,
                             transportTransaction,
                             messageContextCancellationTokenSource,
@@ -389,7 +389,7 @@
                     try
                     {
                         errorHandlerResult = await onError(new ErrorContext(ex,
-                            headers,
+                            new Dictionary<string, string>(headers),
                             nativeMessageId,
                             body,
                             transportTransaction,
