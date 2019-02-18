@@ -16,4 +16,11 @@
     <PackageReference Include="NUnit" Version="3.11.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.11.2" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- Remove once core ATTs have been fixed, see https://github.com/Particular/NServiceBus/pull/5329 -->
+    <Compile Remove="\**\MessageId\When_message_has_empty_id_header.cs" />
+    <Compile Remove="\**\Pipeline\When_sending_to_another_endpoint.cs" />
+    <Compile Remove="\**\Recoverability\When_message_fails_retries.cs" />
+</ItemGroup>
 </Project>
