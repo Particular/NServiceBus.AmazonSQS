@@ -33,6 +33,7 @@ namespace NServiceBus.Transports.SQS
                         MessageAttributes = message.MessageAttributes,
                         MessageGroupId = message.MessageGroupId,
                         MessageDeduplicationId = message.MessageDeduplicationId,
+                        DelaySeconds = Convert.ToInt32(message.DelaySeconds)
                     };
 
                     // we don't have to recheck payload size here because the upport layer checks that a request can always fit 256 KB size limit

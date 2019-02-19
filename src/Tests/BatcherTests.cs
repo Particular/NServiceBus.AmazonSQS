@@ -245,5 +245,24 @@ namespace Tests
             Assert.IsNull(secondEntry.MessageGroupId);
             Assert.IsNull(secondEntry.MessageDeduplicationId);
         }
+
+        [Test]
+        public void AppliesDelayIfNecessary()
+        {
+            var preparedMessages = new[]
+            {
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", DelaySeconds = 150},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+            };
+
+            var batches = Batcher.Batch(preparedMessages);
+
+            var firstBatch = batches.ElementAt(0);
+            var firstEntry = firstBatch.Entries.ElementAt(0);
+            var secondEntry = firstBatch.Entries.ElementAt(1);
+
+            Assert.AreEqual(150, firstEntry.DelaySeconds);
+            Assert.AreEqual(0, secondEntry.DelaySeconds);
+        }
     }
 }
