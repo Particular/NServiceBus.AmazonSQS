@@ -78,6 +78,78 @@ namespace Tests
         }
 
         [Test]
+        public void MultipleBatchesForMessagesNotFittingIntoBatchDueToMessageSize()
+        {
+            var preparedMessages = new[]
+            {
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(256), "destination1", "https://destination1", 0, false),
+
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(256), "destination1", "https://destination1", 0, false),
+
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(64), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(64), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(64), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(64), "destination1", "https://destination1", 0, false),
+
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(200), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+            };
+
+            var batches = Batcher.Batch(preparedMessages);
+
+            Assert.AreEqual(7, batches.Count());
+            Assert.AreEqual(1, batches.ElementAt(0).Entries.Count);
+            Assert.AreEqual(1, batches.ElementAt(1).Entries.Count);
+            Assert.AreEqual(4, batches.ElementAt(2).Entries.Count);
+            Assert.AreEqual(6, batches.ElementAt(3).Entries.Count);
+            Assert.AreEqual(10, batches.ElementAt(4).Entries.Count);
+            Assert.AreEqual(10, batches.ElementAt(5).Entries.Count);
+            Assert.AreEqual(10, batches.ElementAt(6).Entries.Count);
+        }
+
+        static string GenerateBody(int sizeInKB)
+        {
+            return new string('b', sizeInKB);
+        }
+
+        [Test]
         public void BatchPerDestination_MultipleBatchesForGreaterThan10Entries()
         {
             var preparedMessages = new[]
