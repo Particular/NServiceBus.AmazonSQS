@@ -125,7 +125,7 @@
                 queue.Append("-" + logicalAddress.Qualifier);
             }
 
-            return queue.ToString();
+            return QueueNameHelper.GetSqsQueueName(queue.ToString(), configuration);
         }
 
         readonly IAmazonSQS sqsClient;
