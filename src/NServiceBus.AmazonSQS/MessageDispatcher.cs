@@ -85,6 +85,7 @@
 
             var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage, jsonSerializerSettings);
 
+            var messageId = transportOperation.Message.MessageId;
             if (serializedMessage.Length > 256 * 1024)
             {
                 if (string.IsNullOrEmpty(configuration.S3BucketForLargeMessages))
@@ -92,7 +93,7 @@
                     throw new Exception("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
                 }
 
-                var key = $"{configuration.S3KeyPrefix}/{transportOperation.Message.MessageId}";
+                var key = $"{configuration.S3KeyPrefix}/{messageId}";
 
                 using (var bodyStream = new MemoryStream(transportOperation.Message.Body))
                 {
@@ -109,71 +110,57 @@
                 serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage, jsonSerializerSettings);
             }
 
-            var delayLongerThanDelayedDeliveryQueueDelayTime = configuration.IsDelayedDeliveryEnabled && delaySeconds > configuration.DelayedDeliveryQueueDelayTime;
+            var preparedMessage = new PreparedMessage();
 
-            string queueUrl, destination;
-            if (delayLongerThanDelayedDeliveryQueueDelayTime)
+            var delayLongerThanConfiguredDelayedDeliveryQueueDelayTime = configuration.IsDelayedDeliveryEnabled && delaySeconds > configuration.DelayedDeliveryQueueDelayTime;
+
+            if (delayLongerThanConfiguredDelayedDeliveryQueueDelayTime)
             {
-                destination = $"{transportOperation.Destination}{TransportConfiguration.DelayedDeliveryQueueSuffix}";
-                queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination, configuration))
+                preparedMessage.Destination = $"{transportOperation.Destination}{TransportConfiguration.DelayedDeliveryQueueSuffix}";
+                preparedMessage.QueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(preparedMessage.Destination, configuration))
                     .ConfigureAwait(false);
+
+                preparedMessage.MessageDeduplicationId = messageId;
+                preparedMessage.MessageGroupId = messageId;
+
+                preparedMessage.MessageAttributes[TransportHeaders.DelaySeconds] = new MessageAttributeValue
+                {
+                    StringValue = delaySeconds.ToString(),
+                    DataType = "String"
+                };
             }
             else
             {
-                destination = transportOperation.Destination;
-                queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination, configuration))
+                preparedMessage.Destination = transportOperation.Destination;
+                preparedMessage.QueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(preparedMessage.Destination, configuration))
                     .ConfigureAwait(false);
+
+                preparedMessage.MessageAttributes[Headers.MessageId] = new MessageAttributeValue
+                {
+                    StringValue = messageId,
+                    DataType = "String"
+                };
+
+                if (delaySeconds > 0)
+                {
+                    preparedMessage.DelaySeconds = delaySeconds;
+                }
             }
 
-            return new PreparedMessage(transportOperation.Message.MessageId, serializedMessage, destination, queueUrl, delaySeconds, delayLongerThanDelayedDeliveryQueueDelayTime);
+            preparedMessage.Body = serializedMessage;
+            preparedMessage.MessageId = messageId;
+
+            return preparedMessage;
         }
 
         async Task SendMessage(PreparedMessage message)
         {
             try
             {
-                SendMessageRequest sendMessageRequest;
-
-                if (message.DelayLongerThanDelayedDeliveryQueueDelayTime)
-                {
-                    sendMessageRequest = new SendMessageRequest(message.QueueUrl, message.Body)
-                    {
-                        MessageAttributes =
-                        {
-                            [TransportHeaders.DelaySeconds] = new MessageAttributeValue
-                            {
-                                StringValue = message.DelaySeconds.ToString(),
-                                DataType = "String"
-                            }
-                        },
-                        MessageDeduplicationId = message.MessageId,
-                        MessageGroupId = message.MessageId
-                    };
-                }
-                else
-                {
-                    sendMessageRequest = new SendMessageRequest(message.QueueUrl, message.Body)
-                    {
-                        MessageAttributes =
-                        {
-                            [Headers.MessageId] = new MessageAttributeValue
-                            {
-                                StringValue = message.MessageId,
-                                DataType = "String"
-                            }
-                        }
-                    };
-
-                    if (message.DelaySeconds > 0)
-                    {
-                        sendMessageRequest.DelaySeconds = (int)message.DelaySeconds;
-                    }
-                }
-
-                await sqsClient.SendMessageAsync(sendMessageRequest)
+                await sqsClient.SendMessageAsync(null) // TODO
                     .ConfigureAwait(false);
             }
-            catch (QueueDoesNotExistException e) when (message.DelayLongerThanDelayedDeliveryQueueDelayTime)
+            catch (QueueDoesNotExistException e) when (message.Destination.EndsWith(TransportConfiguration.DelayedDeliveryQueueSuffix, StringComparison.OrdinalIgnoreCase))
             {
                 var queueName = message.Destination.Substring(0, message.Destination.Length - TransportConfiguration.DelayedDeliveryQueueSuffix.Length);
 

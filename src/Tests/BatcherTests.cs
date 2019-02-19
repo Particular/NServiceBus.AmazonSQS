@@ -2,6 +2,7 @@ namespace Tests
 {
     using System;
     using System.Linq;
+    using Amazon.SQS.Model;
     using NServiceBus.Transports.SQS;
     using NUnit.Framework;
 
@@ -13,9 +14,9 @@ namespace Tests
         {
             var preparedMessages = new[]
             {
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination2", "https://destination2", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination3", "https://destination3", 0, false),
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination3", QueueUrl = "https://destination3" },
             };
 
             var batches = Batcher.Batch(preparedMessages);
@@ -31,16 +32,16 @@ namespace Tests
         {
             var preparedMessages = new[]
             {
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
             };
 
             var batches = Batcher.Batch(preparedMessages);
@@ -54,20 +55,20 @@ namespace Tests
         {
             var preparedMessages = new[]
             {
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
 
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
             };
 
             var batches = Batcher.Batch(preparedMessages);
@@ -82,54 +83,54 @@ namespace Tests
         {
             var preparedMessages = new[]
             {
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(256), "destination1", "https://destination1", 0, false),
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(256)},
 
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(256), "destination1", "https://destination1", 0, false),
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(256)},
 
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(64), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(64), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(64), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(64), "destination1", "https://destination1", 0, false),
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(64)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(64)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(64)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(64)},
 
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(200), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(200)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
 
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
 
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
 
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), GenerateBody(10), "destination1", "https://destination1", 0, false),
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
             };
 
             var batches = Batcher.Batch(preparedMessages);
@@ -154,32 +155,32 @@ namespace Tests
         {
             var preparedMessages = new[]
             {
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination2", "https://destination2", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination2", "https://destination2", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination2", "https://destination2", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination2", "https://destination2", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination2", "https://destination2", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination2", "https://destination2", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination2", "https://destination2", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination2", "https://destination2", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination2", "https://destination2", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination2", "https://destination2", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination2", "https://destination2", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination2", "https://destination2", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination1", "https://destination1", 0, false),
-                new PreparedMessage(Guid.NewGuid().ToString(), string.Empty, "destination2", "https://destination2", 0, false),
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
             };
 
             var batches = Batcher.Batch(preparedMessages);
@@ -189,6 +190,60 @@ namespace Tests
             Assert.AreEqual(3, batches.ElementAt(1).Entries.Count);
             Assert.AreEqual(10, batches.ElementAt(2).Entries.Count);
             Assert.AreEqual(3, batches.ElementAt(3).Entries.Count);
+        }
+
+        [Test]
+        public void AppliesIdentity()
+        {
+            var messageId = Guid.NewGuid().ToString();
+
+            var preparedMessages = new[]
+            {
+                new PreparedMessage{ MessageId = messageId, Destination = "destination1", QueueUrl = "https://destination1" },
+            };
+
+            var batches = Batcher.Batch(preparedMessages);
+
+            Assert.AreEqual(messageId, batches.Single().Entries.Single().Id);
+        }
+
+        [Test]
+        public void AppliesAttributes()
+        {
+            var preparedMessages = new[]
+            {
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", MessageAttributes = {
+                    ["SomeKey"] = new MessageAttributeValue { StringValue = "SomeValue" }
+                }},
+            };
+
+            var batches = Batcher.Batch(preparedMessages);
+
+            // not exactly a really robus test but good enough
+            Assert.AreEqual("SomeValue", batches.Single().Entries.Single().MessageAttributes["SomeKey"].StringValue);
+        }
+
+        [Test]
+        public void AppliesGroupIdentityIfNecessary()
+        {
+            var messageId = Guid.NewGuid().ToString();
+
+            var preparedMessages = new[]
+            {
+                new PreparedMessage{ MessageId = messageId, Destination = "destination1", QueueUrl = "https://destination1", MessageGroupId = messageId, MessageDeduplicationId = messageId },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+            };
+
+            var batches = Batcher.Batch(preparedMessages);
+
+            var firstBatch = batches.ElementAt(0);
+            var firstEntry = firstBatch.Entries.ElementAt(0);
+            var secondEntry = firstBatch.Entries.ElementAt(1);
+
+            Assert.AreEqual(messageId, firstEntry.MessageGroupId);
+            Assert.AreEqual(messageId, firstEntry.MessageDeduplicationId);
+            Assert.IsNull(secondEntry.MessageGroupId);
+            Assert.IsNull(secondEntry.MessageDeduplicationId);
         }
     }
 }
