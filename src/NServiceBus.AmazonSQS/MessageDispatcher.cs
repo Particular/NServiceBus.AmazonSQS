@@ -100,22 +100,34 @@
                 serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage, jsonSerializerSettings);
             }
 
-            await SendMessage(serializedMessage, transportOperation.Destination, delaySeconds, transportOperation.Message.MessageId)
+            var delayLongerThanDelayedDeliveryQueueDelayTime = configuration.IsDelayedDeliveryEnabled && delaySeconds > configuration.DelayedDeliveryQueueDelayTime;
+
+            string queueUrl, destination;
+            if (delayLongerThanDelayedDeliveryQueueDelayTime)
+            {
+                destination = $"{transportOperation.Destination}{TransportConfiguration.DelayedDeliveryQueueSuffix}";
+                queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination, configuration))
+                    .ConfigureAwait(false);
+            }
+            else
+            {
+                destination = transportOperation.Destination;
+                queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination, configuration))
+                    .ConfigureAwait(false);
+            }
+
+            await SendMessage(serializedMessage, destination, queueUrl, delaySeconds, delayLongerThanDelayedDeliveryQueueDelayTime, transportOperation.Message.MessageId)
                 .ConfigureAwait(false);
         }
 
-        async Task SendMessage(string message, string destination, long delaySeconds, string messageId)
+        async Task SendMessage(string message, string destination, string queueUrl, long delaySeconds, bool delayLongerThanDelayedDeliveryQueueDelayTime, string messageId)
         {
             try
             {
                 SendMessageRequest sendMessageRequest;
 
-                if (configuration.IsDelayedDeliveryEnabled && delaySeconds > configuration.DelayedDeliveryQueueDelayTime)
+                if (delayLongerThanDelayedDeliveryQueueDelayTime)
                 {
-                    destination += TransportConfiguration.DelayedDeliveryQueueSuffix;
-                    var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination, configuration))
-                        .ConfigureAwait(false);
-
                     sendMessageRequest = new SendMessageRequest(queueUrl, message)
                     {
                         MessageAttributes =
@@ -132,9 +144,6 @@
                 }
                 else
                 {
-                    var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(destination, configuration))
-                        .ConfigureAwait(false);
-
                     sendMessageRequest = new SendMessageRequest(queueUrl, message)
                     {
                         MessageAttributes =
@@ -156,7 +165,7 @@
                 await sqsClient.SendMessageAsync(sendMessageRequest)
                     .ConfigureAwait(false);
             }
-            catch (QueueDoesNotExistException e) when (destination.EndsWith(TransportConfiguration.DelayedDeliveryQueueSuffix, StringComparison.OrdinalIgnoreCase))
+            catch (QueueDoesNotExistException e) when (delayLongerThanDelayedDeliveryQueueDelayTime)
             {
                 var queueName = destination.Substring(0, destination.Length - TransportConfiguration.DelayedDeliveryQueueSuffix.Length);
 
