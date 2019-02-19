@@ -157,7 +157,7 @@
         {
             try
             {
-                await sqsClient.SendMessageAsync(null) // TODO
+                await sqsClient.SendMessageAsync(message.ToRequest())
                     .ConfigureAwait(false);
             }
             catch (QueueDoesNotExistException e) when (message.Destination.EndsWith(TransportConfiguration.DelayedDeliveryQueueSuffix, StringComparison.OrdinalIgnoreCase))
