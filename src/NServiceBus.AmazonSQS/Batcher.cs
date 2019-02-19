@@ -4,6 +4,7 @@ namespace NServiceBus.Transports.SQS
     using System.Collections.Generic;
     using System.Linq;
     using Amazon.SQS.Model;
+    using AmazonSQS;
 
     static class Batcher
     {
@@ -25,7 +26,7 @@ namespace NServiceBus.Transports.SQS
                     var bodyLength = message.Body?.Length * 1024 ?? 0;
                     payloadSize += bodyLength;
 
-                    if (payloadSize > 256 * 1024)
+                    if (payloadSize > TransportConfiguration.MaximumMessageSize)
                     {
                         alLBatches.Add(message.ToBatchRequest(currentDestinationBatches));
                         currentDestinationBatches.Clear();
@@ -37,7 +38,7 @@ namespace NServiceBus.Transports.SQS
                     currentDestinationBatches.Add(entry);
 
                     var currentCount = currentDestinationBatches.Count;
-                    if(currentCount !=0 && currentCount % 10 == 0)
+                    if(currentCount !=0 && currentCount % TransportConfiguration.MaximumItemsInBatch == 0)
                     {
                         alLBatches.Add(message.ToBatchRequest(currentDestinationBatches));
                         currentDestinationBatches.Clear();

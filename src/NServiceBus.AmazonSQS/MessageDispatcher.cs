@@ -86,7 +86,7 @@
             var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage, jsonSerializerSettings);
 
             var messageId = transportOperation.Message.MessageId;
-            if (serializedMessage.Length > 256 * 1024)
+            if (serializedMessage.Length > TransportConfiguration.MaximumMessageSize)
             {
                 if (string.IsNullOrEmpty(configuration.S3BucketForLargeMessages))
                 {
