@@ -33,18 +33,25 @@
 
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
         {
+            var concurrentDispatchTasks = new[] { TaskExtensions.Completed, TaskExtensions.Completed };
+
             foreach (var dispatchConsistencyGroup in outgoingMessages.UnicastTransportOperations.GroupBy(o => o.RequiredDispatchConsistency))
             {
+                switch (dispatchConsistencyGroup.Key)
+                {
+                    case DispatchConsistency.Isolated:
+                        concurrentDispatchTasks[0] = DispatchIsolated(dispatchConsistencyGroup.ToArray());
+                        break;
+                    case DispatchConsistency.Default:
+                        concurrentDispatchTasks[1] = DispatchBatched(dispatchConsistencyGroup.ToArray());
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+
                 try
                 {
-                    var operationCount = dispatchConsistencyGroup.Count();
-                    var tasks = new Task[operationCount];
-                    for (var i = 0; i < operationCount; i++)
-                    {
-                        tasks[i] = Dispatch(dispatchConsistencyGroup.ElementAt(i));
-                    }
-
-                    await Task.WhenAll(tasks).ConfigureAwait(false);
+                    await Task.WhenAll(concurrentDispatchTasks).ConfigureAwait(false);
                 }
                 catch (Exception e)
                 {
@@ -52,6 +59,45 @@
                     throw;
                 }
             }
+        }
+
+        Task DispatchIsolated(UnicastTransportOperation[] isolatedTransportOperations)
+        {
+            var operationCount = isolatedTransportOperations.Length;
+            var tasks = new Task[operationCount];
+            for (var i = 0; i < operationCount; i++)
+            {
+                tasks[i] = Dispatch(isolatedTransportOperations[i]);
+            }
+            return Task.WhenAll(tasks);
+        }
+
+        async Task DispatchBatched(UnicastTransportOperation[] toBeBatchedTransportOperations)
+        {
+            var operationCount = toBeBatchedTransportOperations.Length;
+            var tasks = new Task<PreparedMessage>[operationCount];
+            for (var i = 0; i < operationCount; i++)
+            {
+                tasks[i] = PrepareMessage(toBeBatchedTransportOperations[i]);
+            }
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+
+            var preparedMessages = tasks.Select(x => x.Result).ToList();
+            var batches = Batcher.Batch(preparedMessages);
+
+            operationCount = batches.Count();
+            var batchTasks = new Task[operationCount];
+            for (var i = 0; i < operationCount; i++)
+            {
+                batchTasks[i] = SendBatch(batches.ElementAt(i));
+            }
+            await Task.WhenAll(batchTasks).ConfigureAwait(false);
+        }
+
+        async Task SendBatch(SendMessageBatchRequest batch)
+        {
+            // TODO exception handling and all that stuff
+            await sqsClient.SendMessageBatchAsync(batch).ConfigureAwait(false);
         }
 
         async Task Dispatch(UnicastTransportOperation transportOperation)
