@@ -37,7 +37,8 @@
                         {TransportHeaders.TimeToBeReceived, expectedTtbr.ToString()},
                         {Headers.ReplyToAddress, expectedReplyToAddress}
                     }, Encoding.Default.GetBytes("{}")),
-                    new UnicastAddressTag("address")));
+                    new UnicastAddressTag("address"),
+                    DispatchConsistency.Isolated));
 
             var transportTransaction = new TransportTransaction();
             var context = new ContextBag();
@@ -74,7 +75,8 @@
                         {TransportHeaders.TimeToBeReceived, expectedTtbr.ToString()},
                         {Headers.ReplyToAddress, expectedReplyToAddress}
                     }, Encoding.Default.GetBytes("{}")),
-                    new UnicastAddressTag("address")));
+                    new UnicastAddressTag("address"),
+                    DispatchConsistency.Isolated));
 
             var transportTransaction = new TransportTransaction();
             var context = new ContextBag();
@@ -104,7 +106,8 @@
             var transportOperations = new TransportOperations(
                 new TransportOperation(
                     new OutgoingMessage(expectedId, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
-                    new UnicastAddressTag("address")));
+                    new UnicastAddressTag("address"),
+                    DispatchConsistency.Isolated));
 
             var transportTransaction = new TransportTransaction();
             var context = new ContextBag();
