@@ -90,16 +90,37 @@
             var batchTasks = new Task[operationCount];
             for (var i = 0; i < operationCount; i++)
             {
-                batchTasks[i] = SendBatch(batches.ElementAt(i));
+                batchTasks[i] = SendBatch(batches.ElementAt(i), i, operationCount);
             }
             await Task.WhenAll(batchTasks).ConfigureAwait(false);
         }
 
-        async Task SendBatch(BatchEntry batch)
+        async Task SendBatch(BatchEntry batch, int batchNumber, int totalBatches)
         {
             try
             {
-                await sqsClient.SendMessageBatchAsync(batch.BatchRequest).ConfigureAwait(false);
+                if (Logger.IsDebugEnabled)
+                {
+                    var message = batch.PreparedMessagesBydId.Values.First();
+
+                    Logger.Debug($"Sending batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(Environment.NewLine, batch.PreparedMessagesBydId.Keys)}' to destination {message.Destination}");
+                }
+
+                var result = await sqsClient.SendMessageBatchAsync(batch.BatchRequest).ConfigureAwait(false);
+
+                if (Logger.IsDebugEnabled)
+                {
+                    var message = batch.PreparedMessagesBydId.Values.First();
+
+                    Logger.Debug($"Sent batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(Environment.NewLine, batch.PreparedMessagesBydId.Keys)}' to destination {message.Destination}");
+                }
+
+                foreach (var errorEntry in result.Failed)
+                {
+                    Logger.Warn($"Retrying message with MessageId {errorEntry.Id} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
+                    await SendMessage(batch.PreparedMessagesBydId[errorEntry.Id])
+                        .ConfigureAwait(false);
+                }
             }
             catch (QueueDoesNotExistException e)
             {
@@ -129,6 +150,24 @@
 
             await SendMessage(message)
                 .ConfigureAwait(false);
+        }
+
+        async Task SendMessage(PreparedMessage message)
+        {
+            try
+            {
+                await sqsClient.SendMessageAsync(message.ToRequest())
+                    .ConfigureAwait(false);
+            }
+            catch (QueueDoesNotExistException e) when (message.OriginalDestination != null)
+            {
+                throw new QueueDoesNotExistException($"Destination '{message.OriginalDestination}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(configuration.DelayedDeliveryQueueDelayTime)}. To enable support for longer delays, call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()' on the '{message.OriginalDestination}' endpoint.", e);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error while sending message, with MessageId '{message.MessageId}', to '{message.Destination}'", ex);
+                throw;
+            }
         }
 
         async Task<PreparedMessage> PrepareMessage(UnicastTransportOperation transportOperation)
@@ -223,24 +262,6 @@
             preparedMessage.MessageId = messageId;
 
             return preparedMessage;
-        }
-
-        async Task SendMessage(PreparedMessage message)
-        {
-            try
-            {
-                await sqsClient.SendMessageAsync(message.ToRequest())
-                    .ConfigureAwait(false);
-            }
-            catch (QueueDoesNotExistException e) when (message.OriginalDestination != null)
-            {
-                throw new QueueDoesNotExistException($"Destination '{message.OriginalDestination}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(configuration.DelayedDeliveryQueueDelayTime)}. To enable support for longer delays, call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()' on the '{message.OriginalDestination}' endpoint.", e);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"Error while sending message, with MessageId '{message.MessageId}', to '{message.Destination}'", ex);
-                throw;
-            }
         }
 
         TransportConfiguration configuration;
