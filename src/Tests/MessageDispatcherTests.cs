@@ -115,5 +115,34 @@
             Assert.AreEqual(expectedId, sentMessage.MessageAttributes[Headers.MessageId].StringValue);
         }
 
+        [Test]
+        public async Task Should_dispatch_isolated_operations()
+        {
+            var settings = new SettingsHolder();
+
+            var mockSqsClient = new MockSqsClient();
+
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, new QueueUrlCache(mockSqsClient));
+
+            var transportOperations = new TransportOperations(
+                new TransportOperation(
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new UnicastAddressTag("address1"),
+                    DispatchConsistency.Isolated),
+                new TransportOperation(
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new UnicastAddressTag("address2"),
+                    DispatchConsistency.Isolated));
+
+            var transportTransaction = new TransportTransaction();
+            var context = new ContextBag();
+
+            await dispatcher.Dispatch(transportOperations, transportTransaction, context);
+
+            Assert.AreEqual(2, mockSqsClient.RequestsSent.Count);
+            Assert.AreEqual("address1", mockSqsClient.RequestsSent.ElementAt(0).QueueUrl);
+            Assert.AreEqual("address2", mockSqsClient.RequestsSent.ElementAt(1).QueueUrl);
+        }
+
     }
 }
