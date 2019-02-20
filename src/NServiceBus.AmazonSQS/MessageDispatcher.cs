@@ -1,5 +1,10 @@
 ﻿namespace NServiceBus.Transports.SQS
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Threading.Tasks;
     using Amazon.S3;
     using Amazon.S3.Model;
     using Amazon.SQS;
@@ -10,11 +15,6 @@
     using Logging;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Serialization;
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Threading.Tasks;
     using Transport;
 
     class MessageDispatcher : IDispatchMessages
@@ -34,7 +34,7 @@
 
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
         {
-            var concurrentDispatchTasks = new[] { TaskExtensions.Completed, TaskExtensions.Completed };
+            var concurrentDispatchTasks = new[] {TaskExtensions.Completed, TaskExtensions.Completed};
 
             foreach (var dispatchConsistencyGroup in outgoingMessages.UnicastTransportOperations.GroupBy(o => o.RequiredDispatchConsistency))
             {
@@ -70,6 +70,7 @@
             {
                 tasks[i] = Dispatch(isolatedTransportOperations[i]);
             }
+
             return Task.WhenAll(tasks);
         }
 
@@ -81,18 +82,20 @@
             {
                 tasks[i] = PrepareMessage(toBeBatchedTransportOperations[i]);
             }
+
             await Task.WhenAll(tasks).ConfigureAwait(false);
 
             var preparedMessages = tasks.Select(x => x.Result).ToList();
 
-            var batches = Batcher.Batch(preparedMessages).ToList();
+            var batches = Batcher.Batch(preparedMessages);
 
             operationCount = batches.Count;
             var batchTasks = new Task[operationCount];
             for (var i = 0; i < operationCount; i++)
             {
-                batchTasks[i] = SendBatch(batches[i], i+1, operationCount);
+                batchTasks[i] = SendBatch(batches[i], i + 1, operationCount);
             }
+
             await Task.WhenAll(batchTasks).ConfigureAwait(false);
         }
 
