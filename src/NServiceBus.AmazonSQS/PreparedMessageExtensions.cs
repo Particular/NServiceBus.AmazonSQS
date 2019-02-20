@@ -2,6 +2,7 @@ namespace NServiceBus.Transports.SQS
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using Amazon.SQS.Model;
 
     static class PreparedMessageExtensions
@@ -17,7 +18,7 @@ namespace NServiceBus.Transports.SQS
             };
         }
 
-        public static SendMessageBatchRequestEntry ToBatchEntry(this PreparedMessage message)
+        static SendMessageBatchRequestEntry ToBatchEntry(this PreparedMessage message)
         {
             return new SendMessageBatchRequestEntry(message.MessageId, message.Body)
             {
@@ -28,9 +29,16 @@ namespace NServiceBus.Transports.SQS
             };
         }
 
-        public static SendMessageBatchRequest ToBatchRequest(this PreparedMessage message, IEnumerable<SendMessageBatchRequestEntry> batchEntries)
+        public static BatchEntry ToBatchRequest(this PreparedMessage message, Dictionary<string, PreparedMessage> batchEntries)
         {
-            return new SendMessageBatchRequest(message.QueueUrl, new List<SendMessageBatchRequestEntry>(batchEntries));
+            var preparedMessagesBydId = batchEntries.ToDictionary(x => x.Key, x => x.Value);
+            var batchRequestEntries = new List<SendMessageBatchRequestEntry>(preparedMessagesBydId.Select(x => x.Value.ToBatchEntry()));
+            
+            return new BatchEntry
+            {
+                BatchRequest = new SendMessageBatchRequest(message.QueueUrl, batchRequestEntries),
+                PreparedMessagesBydId = preparedMessagesBydId
+            };
         }
     }
 }

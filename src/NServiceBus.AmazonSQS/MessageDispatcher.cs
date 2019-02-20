@@ -85,6 +85,7 @@
             var preparedMessages = tasks.Select(x => x.Result).ToList();
             var batches = Batcher.Batch(preparedMessages);
 
+            // TODO address multiple enumerations?
             operationCount = batches.Count();
             var batchTasks = new Task[operationCount];
             for (var i = 0; i < operationCount; i++)
@@ -94,10 +95,31 @@
             await Task.WhenAll(batchTasks).ConfigureAwait(false);
         }
 
-        async Task SendBatch(SendMessageBatchRequest batch)
+        async Task SendBatch(BatchEntry batch)
         {
-            // TODO exception handling and all that stuff
-            await sqsClient.SendMessageBatchAsync(batch).ConfigureAwait(false);
+            try
+            {
+                await sqsClient.SendMessageBatchAsync(batch.BatchRequest).ConfigureAwait(false);
+            }
+            catch (QueueDoesNotExistException e)
+            {
+                var message = batch.PreparedMessagesBydId.Values.First();
+
+                if (message.OriginalDestination != null)
+                {
+                    throw new QueueDoesNotExistException($"Destination '{message.OriginalDestination}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(configuration.DelayedDeliveryQueueDelayTime)}. To enable support for longer delays, call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()' on the '{message.OriginalDestination}' endpoint.", e);
+                }
+
+                Logger.Error($"Error while sending a batch of messages, with message ids '{string.Join(Environment.NewLine, batch.PreparedMessagesBydId.Keys)}', to '{message.Destination}'. The destination does not exist.", e);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                var message = batch.PreparedMessagesBydId.Values.First();
+
+                Logger.Error($"Error while sending a batch of messages, with message ids '{string.Join(Environment.NewLine, batch.PreparedMessagesBydId.Keys)}', to '{message.Destination}'", ex);
+                throw;
+            }
         }
 
         async Task Dispatch(UnicastTransportOperation transportOperation)

@@ -10,6 +10,18 @@ namespace Tests
     public class BatcherTests
     {
         [Test]
+        public void NoBatchesIfNothingToBatch()
+        {
+            var preparedMessages = new PreparedMessage[0]
+            {
+            };
+
+            var batches = Batcher.Batch(preparedMessages);
+
+            Assert.IsEmpty(batches);
+        }
+
+        [Test]
         public void BatchPerDestination()
         {
             var preparedMessages = new[]
@@ -22,9 +34,9 @@ namespace Tests
             var batches = Batcher.Batch(preparedMessages);
 
             Assert.AreEqual(3, batches.Count());
-            Assert.AreEqual("https://destination1", batches.ElementAt(0).QueueUrl);
-            Assert.AreEqual("https://destination2", batches.ElementAt(1).QueueUrl);
-            Assert.AreEqual("https://destination3", batches.ElementAt(2).QueueUrl);
+            Assert.AreEqual("https://destination1", batches.ElementAt(0).BatchRequest.QueueUrl);
+            Assert.AreEqual("https://destination2", batches.ElementAt(1).BatchRequest.QueueUrl);
+            Assert.AreEqual("https://destination3", batches.ElementAt(2).BatchRequest.QueueUrl);
         }
 
         [Test]
@@ -47,7 +59,7 @@ namespace Tests
             var batches = Batcher.Batch(preparedMessages);
 
             Assert.AreEqual(1, batches.Count());
-            Assert.AreEqual(10, batches.ElementAt(0).Entries.Count);
+            Assert.AreEqual(10, batches.ElementAt(0).BatchRequest.Entries.Count);
         }
 
         [Test]
@@ -74,8 +86,8 @@ namespace Tests
             var batches = Batcher.Batch(preparedMessages);
 
             Assert.AreEqual(2, batches.Count());
-            Assert.AreEqual(10, batches.ElementAt(0).Entries.Count);
-            Assert.AreEqual(3, batches.ElementAt(1).Entries.Count);
+            Assert.AreEqual(10, batches.ElementAt(0).BatchRequest.Entries.Count);
+            Assert.AreEqual(3, batches.ElementAt(1).BatchRequest.Entries.Count);
         }
 
         [Test]
@@ -136,13 +148,13 @@ namespace Tests
             var batches = Batcher.Batch(preparedMessages);
 
             Assert.AreEqual(7, batches.Count());
-            Assert.AreEqual(1, batches.ElementAt(0).Entries.Count);
-            Assert.AreEqual(1, batches.ElementAt(1).Entries.Count);
-            Assert.AreEqual(4, batches.ElementAt(2).Entries.Count);
-            Assert.AreEqual(6, batches.ElementAt(3).Entries.Count);
-            Assert.AreEqual(10, batches.ElementAt(4).Entries.Count);
-            Assert.AreEqual(10, batches.ElementAt(5).Entries.Count);
-            Assert.AreEqual(10, batches.ElementAt(6).Entries.Count);
+            Assert.AreEqual(1, batches.ElementAt(0).BatchRequest.Entries.Count);
+            Assert.AreEqual(1, batches.ElementAt(1).BatchRequest.Entries.Count);
+            Assert.AreEqual(4, batches.ElementAt(2).BatchRequest.Entries.Count);
+            Assert.AreEqual(6, batches.ElementAt(3).BatchRequest.Entries.Count);
+            Assert.AreEqual(10, batches.ElementAt(4).BatchRequest.Entries.Count);
+            Assert.AreEqual(10, batches.ElementAt(5).BatchRequest.Entries.Count);
+            Assert.AreEqual(10, batches.ElementAt(6).BatchRequest.Entries.Count);
         }
 
         static string GenerateBody(int sizeInKB)
@@ -186,10 +198,10 @@ namespace Tests
             var batches = Batcher.Batch(preparedMessages);
 
             Assert.AreEqual(4, batches.Count());
-            Assert.AreEqual(10, batches.ElementAt(0).Entries.Count);
-            Assert.AreEqual(3, batches.ElementAt(1).Entries.Count);
-            Assert.AreEqual(10, batches.ElementAt(2).Entries.Count);
-            Assert.AreEqual(3, batches.ElementAt(3).Entries.Count);
+            Assert.AreEqual(10, batches.ElementAt(0).BatchRequest.Entries.Count);
+            Assert.AreEqual(3, batches.ElementAt(1).BatchRequest.Entries.Count);
+            Assert.AreEqual(10, batches.ElementAt(2).BatchRequest.Entries.Count);
+            Assert.AreEqual(3, batches.ElementAt(3).BatchRequest.Entries.Count);
         }
 
         [Test]
@@ -204,7 +216,7 @@ namespace Tests
 
             var batches = Batcher.Batch(preparedMessages);
 
-            Assert.AreEqual(messageId, batches.Single().Entries.Single().Id);
+            Assert.AreEqual(messageId, batches.Single().BatchRequest.Entries.Single().Id);
         }
 
         [Test]
@@ -220,7 +232,7 @@ namespace Tests
             var batches = Batcher.Batch(preparedMessages);
 
             // not exactly a really robus test but good enough
-            Assert.AreEqual("SomeValue", batches.Single().Entries.Single().MessageAttributes["SomeKey"].StringValue);
+            Assert.AreEqual("SomeValue", batches.Single().BatchRequest.Entries.Single().MessageAttributes["SomeKey"].StringValue);
         }
 
         [Test]
@@ -237,8 +249,8 @@ namespace Tests
             var batches = Batcher.Batch(preparedMessages);
 
             var firstBatch = batches.ElementAt(0);
-            var firstEntry = firstBatch.Entries.ElementAt(0);
-            var secondEntry = firstBatch.Entries.ElementAt(1);
+            var firstEntry = firstBatch.BatchRequest.Entries.ElementAt(0);
+            var secondEntry = firstBatch.BatchRequest.Entries.ElementAt(1);
 
             Assert.AreEqual(messageId, firstEntry.MessageGroupId);
             Assert.AreEqual(messageId, firstEntry.MessageDeduplicationId);
@@ -258,8 +270,8 @@ namespace Tests
             var batches = Batcher.Batch(preparedMessages);
 
             var firstBatch = batches.ElementAt(0);
-            var firstEntry = firstBatch.Entries.ElementAt(0);
-            var secondEntry = firstBatch.Entries.ElementAt(1);
+            var firstEntry = firstBatch.BatchRequest.Entries.ElementAt(0);
+            var secondEntry = firstBatch.BatchRequest.Entries.ElementAt(1);
 
             Assert.AreEqual(150, firstEntry.DelaySeconds);
             Assert.AreEqual(0, secondEntry.DelaySeconds);

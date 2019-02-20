@@ -3,15 +3,14 @@ namespace NServiceBus.Transports.SQS
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using Amazon.SQS.Model;
     using AmazonSQS;
 
     static class Batcher
     {
-        public static IEnumerable<SendMessageBatchRequest> Batch(IEnumerable<PreparedMessage> preparedMessages)
+        public static IEnumerable<BatchEntry> Batch(IEnumerable<PreparedMessage> preparedMessages)
         {
-            var alLBatches = new List<SendMessageBatchRequest>();
-            var currentDestinationBatches = new List<SendMessageBatchRequestEntry>();
+            var alLBatches = new List<BatchEntry>();
+            var currentDestinationBatches = new Dictionary<string, PreparedMessage>();
 
             var groupByDestination = preparedMessages.GroupBy(m => m.QueueUrl, StringComparer.OrdinalIgnoreCase);
             foreach (var group in groupByDestination)
@@ -33,9 +32,8 @@ namespace NServiceBus.Transports.SQS
                         payloadSize = bodyLength;
                     }
 
-                    var entry = message.ToBatchEntry();
                     // we don't have to recheck payload size here because the upport layer checks that a request can always fit 256 KB size limit
-                    currentDestinationBatches.Add(entry);
+                    currentDestinationBatches.Add(message.MessageId, message);
 
                     var currentCount = currentDestinationBatches.Count;
                     if(currentCount !=0 && currentCount % TransportConfiguration.MaximumItemsInBatch == 0)
