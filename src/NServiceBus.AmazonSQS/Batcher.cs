@@ -36,7 +36,7 @@ namespace NServiceBus.Transports.SQS
                     currentDestinationBatches.Add(message.MessageId, message);
 
                     var currentCount = currentDestinationBatches.Count;
-                    if(currentCount !=0 && currentCount % TransportConfiguration.MaximumItemsInBatch == 0)
+                    if (currentCount != 0 && currentCount % TransportConfiguration.MaximumItemsInBatch == 0)
                     {
                         allBatches.Add(message.ToBatchRequest(currentDestinationBatches));
                         currentDestinationBatches.Clear();
