@@ -33,7 +33,7 @@ namespace NServiceBus.Transports.SQS
         {
             var preparedMessagesBydId = batchEntries.ToDictionary(x => x.Key, x => x.Value);
             var batchRequestEntries = new List<SendMessageBatchRequestEntry>(preparedMessagesBydId.Select(x => x.Value.ToBatchEntry()));
-            
+
             return new BatchEntry
             {
                 BatchRequest = new SendMessageBatchRequest(message.QueueUrl, batchRequestEntries),

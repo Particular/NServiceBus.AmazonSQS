@@ -22,7 +22,7 @@ namespace NServiceBus.Transports.SQS
                     var message = group.ElementAt(i);
                     firstMessage = firstMessage ?? message;
 
-                    var bodyLength = message.Body?.Length * 1024 ?? 0;
+                    var bodyLength = message.Body?.Length ?? 0;
                     payloadSize += bodyLength;
 
                     if (payloadSize > TransportConfiguration.MaximumMessageSize)

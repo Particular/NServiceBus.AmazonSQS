@@ -159,7 +159,7 @@ namespace Tests
 
         static string GenerateBody(int sizeInKB)
         {
-            return new string('b', sizeInKB);
+            return new string('b', sizeInKB * 1024);
         }
 
         [Test]
