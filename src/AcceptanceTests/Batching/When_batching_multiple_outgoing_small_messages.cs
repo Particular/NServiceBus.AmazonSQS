@@ -133,7 +133,7 @@ namespace NServiceBus.AcceptanceTests.Batching
         {
             public Receiver()
             {
-                EndpointSetup<DefaultServer>();
+                EndpointSetup<DefaultServer>(c => c.LimitMessageProcessingConcurrencyTo(60));
             }
 
             public class MyMessageHandler : IHandleMessages<MyMessage>
