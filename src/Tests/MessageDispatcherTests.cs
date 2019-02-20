@@ -243,7 +243,7 @@
             var context = new ContextBag();
 
             var exception = Assert.ThrowsAsync<QueueDoesNotExistException>(async () => await dispatcher.Dispatch(transportOperations, transportTransaction, context));
-            StringAssert.StartsWith("Destination 'address1' doesn't support delayed messages longer than", exception.Message);
+            StringAssert.StartsWith("Unable to send batch '1/1'. Destination 'address1' doesn't support delayed messages longer than", exception.Message);
         }
     }
 }

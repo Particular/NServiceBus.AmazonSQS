@@ -90,7 +90,7 @@
             var batchTasks = new Task[operationCount];
             for (var i = 0; i < operationCount; i++)
             {
-                batchTasks[i] = SendBatch(batches.ElementAt(i), i, operationCount);
+                batchTasks[i] = SendBatch(batches.ElementAt(i), i+1, operationCount);
             }
             await Task.WhenAll(batchTasks).ConfigureAwait(false);
         }
@@ -128,17 +128,17 @@
 
                 if (message.OriginalDestination != null)
                 {
-                    throw new QueueDoesNotExistException($"Destination '{message.OriginalDestination}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(configuration.DelayedDeliveryQueueDelayTime)}. To enable support for longer delays, call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()' on the '{message.OriginalDestination}' endpoint.", e);
+                    throw new QueueDoesNotExistException($"Unable to send batch '{batchNumber}/{totalBatches}'. Destination '{message.OriginalDestination}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(configuration.DelayedDeliveryQueueDelayTime)}. To enable support for longer delays, call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()' on the '{message.OriginalDestination}' endpoint.", e);
                 }
 
-                Logger.Error($"Error while sending a batch of messages, with message ids '{string.Join(Environment.NewLine, batch.PreparedMessagesBydId.Keys)}', to '{message.Destination}'. The destination does not exist.", e);
+                Logger.Error($"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(Environment.NewLine, batch.PreparedMessagesBydId.Keys)}', to '{message.Destination}'. The destination does not exist.", e);
                 throw;
             }
             catch (Exception ex)
             {
                 var message = batch.PreparedMessagesBydId.Values.First();
 
-                Logger.Error($"Error while sending a batch of messages, with message ids '{string.Join(Environment.NewLine, batch.PreparedMessagesBydId.Keys)}', to '{message.Destination}'", ex);
+                Logger.Error($"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(Environment.NewLine, batch.PreparedMessagesBydId.Keys)}', to '{message.Destination}'", ex);
                 throw;
             }
         }
