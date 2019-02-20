@@ -10,8 +10,9 @@
 
     class MockSqsClient : IAmazonSQS
     {
-        public List<SendMessageRequest> RequestsSent { get; set; } = new List<SendMessageRequest>();
-        public List<SendMessageBatchRequest> BatchRequestsSent { get; set; } = new List<SendMessageBatchRequest>();
+        public List<SendMessageRequest> RequestsSent { get; } = new List<SendMessageRequest>();
+        public Func<SendMessageRequest, SendMessageResponse> RequestResponse = req => new SendMessageResponse();
+        public List<SendMessageBatchRequest> BatchRequestsSent { get; } = new List<SendMessageBatchRequest>();
 
         public Func<SendMessageBatchRequest, SendMessageBatchResponse> BatchRequestResponse = req => new SendMessageBatchResponse();
 
@@ -349,7 +350,7 @@
         public Task<SendMessageResponse> SendMessageAsync(SendMessageRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             RequestsSent.Add(request);
-            return Task.FromResult<SendMessageResponse>(null);
+            return Task.FromResult(RequestResponse(request));
         }
 
         public SendMessageBatchResponse SendMessageBatch(string queueUrl, List<SendMessageBatchRequestEntry> entries)
