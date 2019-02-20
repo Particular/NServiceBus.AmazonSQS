@@ -144,5 +144,34 @@
             Assert.AreEqual("address2", mockSqsClient.RequestsSent.ElementAt(1).QueueUrl);
         }
 
+        [Test]
+        public async Task Should_batch_non_isolated_operations()
+        {
+            var settings = new SettingsHolder();
+
+            var mockSqsClient = new MockSqsClient();
+
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, new QueueUrlCache(mockSqsClient));
+
+            var transportOperations = new TransportOperations(
+                new TransportOperation(
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new UnicastAddressTag("address1"),
+                    DispatchConsistency.Default),
+                new TransportOperation(
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new UnicastAddressTag("address2"),
+                    DispatchConsistency.Default));
+
+            var transportTransaction = new TransportTransaction();
+            var context = new ContextBag();
+
+            await dispatcher.Dispatch(transportOperations, transportTransaction, context);
+
+            Assert.IsEmpty(mockSqsClient.RequestsSent);
+            Assert.AreEqual(2, mockSqsClient.BatchRequestsSent.Count);
+            Assert.AreEqual("address1", mockSqsClient.BatchRequestsSent.ElementAt(0).QueueUrl);
+            Assert.AreEqual("address2", mockSqsClient.BatchRequestsSent.ElementAt(1).QueueUrl);
+        }
     }
 }
