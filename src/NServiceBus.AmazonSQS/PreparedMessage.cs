@@ -8,6 +8,7 @@ namespace NServiceBus.Transports.SQS
         public string MessageId { get; set; }
         public string Body{ get; set; }
         public string Destination { get; set; }
+        public string OriginalDestination { get; set; }
         public string QueueUrl { get; set; }
         public long DelaySeconds { get; set; }
         public Dictionary<string, MessageAttributeValue> MessageAttributes { get; } = new Dictionary<string, MessageAttributeValue>();
