@@ -10,7 +10,7 @@
     using AmazonSQS;
     using Extensibility;
     using Logging;
-    using Newtonsoft.Json;
+    using SimpleJson;
     using Transport;
 
     class MessagePump : IPushMessages
@@ -305,8 +305,7 @@
                         messageId = nativeMessageId;
                     }
 
-                    transportMessage = JsonConvert.DeserializeObject<TransportMessage>(receivedMessage.Body);
-
+                    transportMessage = SimpleJson.DeserializeObject<TransportMessage>(receivedMessage.Body);
                     messageBody = await transportMessage.RetrieveBody(s3Client, configuration, token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)

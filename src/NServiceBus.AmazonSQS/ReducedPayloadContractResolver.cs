@@ -1,20 +1,17 @@
 ﻿namespace NServiceBus.AmazonSQS
 {
-    using System.Reflection;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Serialization;
-    
-    class ReducedPayloadContractResolver : DefaultContractResolver
+    using SimpleJson;
+
+    class ReducedPayloadSerializerStrategy : PocoJsonSerializerStrategy
     {
-        protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
+        ReducedPayloadSerializerStrategy()
         {
-            var property = base.CreateProperty(member, memberSerialization);
-
-            property.ShouldSerialize = instance => property.DeclaringType != typeof(TransportMessage) || 
-                                                   property.PropertyName != nameof(TransportMessage.TimeToBeReceived) && 
-                                                   property.PropertyName != nameof(TransportMessage.ReplyToAddress);
-
-            return property;
+            var cache = GetCache[typeof(TransportMessage)];
+            cache.Remove(nameof(TransportMessage.TimeToBeReceived));
+            cache.Remove(nameof(TransportMessage.ReplyToAddress));
         }
+
+        static ReducedPayloadSerializerStrategy reducedPayloadSerializerStrategy;
+        public static ReducedPayloadSerializerStrategy Instance => reducedPayloadSerializerStrategy ?? (reducedPayloadSerializerStrategy = new ReducedPayloadSerializerStrategy());
     }
 }
