@@ -7,9 +7,9 @@ namespace NServiceBus.Transports.SQS
 
     static class Batcher
     {
-        public static IEnumerable<BatchEntry> Batch(IEnumerable<PreparedMessage> preparedMessages)
+        public static IReadOnlyList<BatchEntry> Batch(IReadOnlyList<PreparedMessage> preparedMessages)
         {
-            var alLBatches = new List<BatchEntry>();
+            var allBatches = new List<BatchEntry>();
             var currentDestinationBatches = new Dictionary<string, PreparedMessage>();
 
             var groupByDestination = preparedMessages.GroupBy(m => m.QueueUrl, StringComparer.OrdinalIgnoreCase);
@@ -27,7 +27,7 @@ namespace NServiceBus.Transports.SQS
 
                     if (payloadSize > TransportConfiguration.MaximumMessageSize)
                     {
-                        alLBatches.Add(message.ToBatchRequest(currentDestinationBatches));
+                        allBatches.Add(message.ToBatchRequest(currentDestinationBatches));
                         currentDestinationBatches.Clear();
                         payloadSize = bodyLength;
                     }
@@ -38,7 +38,7 @@ namespace NServiceBus.Transports.SQS
                     var currentCount = currentDestinationBatches.Count;
                     if(currentCount !=0 && currentCount % TransportConfiguration.MaximumItemsInBatch == 0)
                     {
-                        alLBatches.Add(message.ToBatchRequest(currentDestinationBatches));
+                        allBatches.Add(message.ToBatchRequest(currentDestinationBatches));
                         currentDestinationBatches.Clear();
                         payloadSize = bodyLength;
                     }
@@ -46,12 +46,12 @@ namespace NServiceBus.Transports.SQS
 
                 if (currentDestinationBatches.Count > 0)
                 {
-                    alLBatches.Add(firstMessage.ToBatchRequest(currentDestinationBatches));
+                    allBatches.Add(firstMessage.ToBatchRequest(currentDestinationBatches));
                     currentDestinationBatches.Clear();
                 }
             }
 
-            return alLBatches;
+            return allBatches;
         }
     }
 }
