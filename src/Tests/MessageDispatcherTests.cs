@@ -5,6 +5,9 @@
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
+    using Amazon.SQS.Model;
+    using DelayedDelivery;
+    using DeliveryConstraints;
     using Extensibility;
     using Newtonsoft.Json.Linq;
     using NUnit.Framework;
@@ -145,6 +148,35 @@
             Assert.AreEqual(2, mockSqsClient.RequestsSent.Count);
             Assert.AreEqual("address1", mockSqsClient.RequestsSent.ElementAt(0).QueueUrl);
             Assert.AreEqual("address2", mockSqsClient.RequestsSent.ElementAt(1).QueueUrl);
+        }
+
+        [Test]
+        public void Should_raise_queue_does_not_exists_for_delayed_delivery_for_isolated_dispatch()
+        {
+            var settings = new SettingsHolder();
+            var transportExtensions = new TransportExtensions<SqsTransport>(settings);
+            transportExtensions.UnrestrictedDurationDelayedDelivery();
+
+            var mockSqsClient = new MockSqsClient();
+            mockSqsClient.RequestResponse = req => throw new QueueDoesNotExistException("Queue does not exist");
+
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, new QueueUrlCache(mockSqsClient));
+
+            var transportOperations = new TransportOperations(
+                new TransportOperation(
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new UnicastAddressTag("address1"),
+                    DispatchConsistency.Isolated,
+                    new List<DeliveryConstraint>
+                    {
+                        new DelayDeliveryWith(TimeSpan.FromMinutes(30))
+                    }));
+
+            var transportTransaction = new TransportTransaction();
+            var context = new ContextBag();
+
+            var exception = Assert.ThrowsAsync<QueueDoesNotExistException>(async () => await dispatcher.Dispatch(transportOperations, transportTransaction, context));
+            StringAssert.StartsWith("Destination 'address1' doesn't support delayed messages longer than", exception.Message);
         }
 
         [Test]
