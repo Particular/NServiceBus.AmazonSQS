@@ -84,7 +84,7 @@
             await Task.WhenAll(tasks).ConfigureAwait(false);
 
             var preparedMessages = tasks.Select(x => x.Result).ToList();
-            
+
             var batches = Batcher.Batch(preparedMessages).ToList();
 
             operationCount = batches.Count;

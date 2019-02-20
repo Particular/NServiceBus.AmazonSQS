@@ -1,7 +1,10 @@
 namespace NServiceBus.AcceptanceTests.Batching
 {
     using System;
-    using System.Threading;
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
     using System.Threading.Tasks;
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
@@ -16,7 +19,27 @@ namespace NServiceBus.AcceptanceTests.Batching
         {
             var kickOffMessageId = Guid.NewGuid().ToString();
 
-            var context = await Scenario.Define<Context>(c => c.LogLevel = LogLevel.Debug)
+            var listOfMessagesForBatching = new List<string>();
+            for (var i = 0; i < 50; i++)
+            {
+                listOfMessagesForBatching.Add(Guid.NewGuid().ToString());
+            }
+
+            var listOfMessagesForImmediateDispatch = new List<string>();
+            for (var i = 0; i < 10; i++)
+            {
+                listOfMessagesForImmediateDispatch.Add(Guid.NewGuid().ToString());
+            }
+
+            var allMessageids = listOfMessagesForBatching.Union(listOfMessagesForImmediateDispatch).ToList();
+
+            var context = await Scenario.Define<Context>(c =>
+                {
+
+                    c.LogLevel = LogLevel.Debug;
+                    c.MessageIdsForBatching = listOfMessagesForBatching;
+                    c.MessageIdsForImmediateDispatch = listOfMessagesForImmediateDispatch;
+                })
                 .WithEndpoint<Sender>(b => b.When(session =>
                 {
                     var options = new SendOptions();
@@ -26,24 +49,48 @@ namespace NServiceBus.AcceptanceTests.Batching
                     return session.Send(new SendMessagesInBatches(), options);
                 }))
                 .WithEndpoint<Receiver>()
-                .Done(c => c.ReceiveCount >= 60)
+                .Done(c => allMessageids.All(id => c.MessageIdsReceived.Contains(id)))
                 .Run();
 
+            var logoutput = AggregateBatchLogOutput(context);
+
+            StringAssert.Contains(kickOffMessageId, logoutput, "Kickoff message was not present in any of the batches");
+            StringAssert.Contains("1/1", logoutput, "Should have used 1 batch for the initial kickoff message but didn't");
+            StringAssert.Contains("5/5", logoutput, "Should have used 5 batches for the batched message dispatch but didn't");
+
+            foreach (var messageIdForBatching in listOfMessagesForBatching)
+            {
+                StringAssert.Contains(messageIdForBatching, logoutput, $"{messageIdForBatching} not found in any of the batches. Output: {logoutput}");
+            }
+
+            foreach (var messageIdForImmediateDispatch in listOfMessagesForImmediateDispatch)
+            {
+                StringAssert.DoesNotContain(messageIdForImmediateDispatch, logoutput, $"{messageIdForImmediateDispatch} was found in any of the batches. Output: {logoutput}");
+            }
+
+            // let's see how many times this actually happens
+            StringAssert.DoesNotContain("Retried message with MessageId", "Messages have been retried but they shouldn't have been");
+        }
+
+        static string AggregateBatchLogOutput(ScenarioContext context)
+        {
+            var builder = new StringBuilder();
             foreach (var logItem in context.Logs)
             {
-                if (logItem.Message.StartsWith("Sending batch") || logItem.Message.StartsWith("Sent batch"))
+                if (logItem.Message.StartsWith("Sent batch") || logItem.Message.StartsWith("Retried message with MessageId"))
                 {
-                    Console.WriteLine(logItem.Message);
+                    builder.AppendLine(logItem.Message);
                 }
             }
 
-            Assert.AreEqual(60, context.ReceiveCount);
-            // TODO add more asserts
+            return builder.ToString();
         }
 
         public class Context : ScenarioContext
         {
-            public int ReceiveCount;
+            public List<string> MessageIdsForBatching { get; set; }
+            public List<string> MessageIdsForImmediateDispatch { get; set; }
+            public ConcurrentBag<string> MessageIdsReceived { get; } = new ConcurrentBag<string>();
         }
 
         public class Sender : EndpointConfigurationBuilder
@@ -58,17 +105,24 @@ namespace NServiceBus.AcceptanceTests.Batching
 
             public class BatchHandler : IHandleMessages<SendMessagesInBatches>
             {
+                public Context Context { get; set; }
+
                 public async Task Handle(SendMessagesInBatches message, IMessageHandlerContext context)
                 {
-                    for (var i = 0; i < 50; i++)
-                    {
-                        await context.Send(new MyMessage());
-                    }
-
-                    for (var i = 0; i < 10; i++)
+                    foreach (var messageId in Context.MessageIdsForBatching)
                     {
                         var options = new SendOptions();
+                        options.SetMessageId(messageId);
+
+                        await context.Send(new MyMessage(), options);
+                    }
+
+                    foreach (var messageId in Context.MessageIdsForImmediateDispatch)
+                    {
+                        var options = new SendOptions();
+                        options.SetMessageId(messageId);
                         options.RequireImmediateDispatch();
+
                         await context.Send(new MyMessage(), options);
                     }
                 }
@@ -88,7 +142,7 @@ namespace NServiceBus.AcceptanceTests.Batching
 
                 public Task Handle(MyMessage messageWithLargePayload, IMessageHandlerContext context)
                 {
-                    Interlocked.Increment(ref Context.ReceiveCount);
+                    Context.MessageIdsReceived.Add(context.MessageId);
                     return Task.FromResult(0);
                 }
             }

@@ -16,6 +16,25 @@
 
         public Func<SendMessageBatchRequest, SendMessageBatchResponse> BatchRequestResponse = req => new SendMessageBatchResponse();
 
+        public Task<GetQueueUrlResponse> GetQueueUrlAsync(string queueName, CancellationToken cancellationToken = new CancellationToken())
+        {
+            return Task.FromResult(new GetQueueUrlResponse {QueueUrl = queueName});
+        }
+
+        public Task<SendMessageBatchResponse> SendMessageBatchAsync(SendMessageBatchRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            BatchRequestsSent.Add(request);
+            return Task.FromResult(BatchRequestResponse(request));
+        }
+
+        public Task<SendMessageResponse> SendMessageAsync(SendMessageRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            RequestsSent.Add(request);
+            return Task.FromResult(RequestResponse(request));
+        }
+
+        #region NotImplemented
+
         public void Dispose()
         {
             throw new NotImplementedException();
@@ -42,6 +61,7 @@
         }
 
         public IClientConfig Config { get; }
+
         public string AuthorizeS3ToSendMessage(string queueUrl, string bucket)
         {
             throw new NotImplementedException();
@@ -222,11 +242,6 @@
             throw new NotImplementedException();
         }
 
-        public Task<GetQueueUrlResponse> GetQueueUrlAsync(string queueName, CancellationToken cancellationToken = new CancellationToken())
-        {
-            return Task.FromResult(new GetQueueUrlResponse {QueueUrl = queueName});
-        }
-
         public Task<GetQueueUrlResponse> GetQueueUrlAsync(GetQueueUrlRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
@@ -347,12 +362,6 @@
             throw new NotImplementedException();
         }
 
-        public Task<SendMessageResponse> SendMessageAsync(SendMessageRequest request, CancellationToken cancellationToken = new CancellationToken())
-        {
-            RequestsSent.Add(request);
-            return Task.FromResult(RequestResponse(request));
-        }
-
         public SendMessageBatchResponse SendMessageBatch(string queueUrl, List<SendMessageBatchRequestEntry> entries)
         {
             throw new NotImplementedException();
@@ -366,12 +375,6 @@
         public Task<SendMessageBatchResponse> SendMessageBatchAsync(string queueUrl, List<SendMessageBatchRequestEntry> entries, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
-        }
-
-        public Task<SendMessageBatchResponse> SendMessageBatchAsync(SendMessageBatchRequest request, CancellationToken cancellationToken = new CancellationToken())
-        {
-            BatchRequestsSent.Add(request);
-            return Task.FromResult(BatchRequestResponse(request));
         }
 
         public SetQueueAttributesResponse SetQueueAttributes(string queueUrl, Dictionary<string, string> attributes)
@@ -413,5 +416,7 @@
         {
             throw new NotImplementedException();
         }
+
+        #endregion
     }
 }

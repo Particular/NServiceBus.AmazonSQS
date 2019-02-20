@@ -145,6 +145,7 @@
 
             await dispatcher.Dispatch(transportOperations, transportTransaction, context);
 
+            Assert.IsEmpty(mockSqsClient.BatchRequestsSent);
             Assert.AreEqual(2, mockSqsClient.RequestsSent.Count);
             Assert.AreEqual("address1", mockSqsClient.RequestsSent.ElementAt(0).QueueUrl);
             Assert.AreEqual("address2", mockSqsClient.RequestsSent.ElementAt(1).QueueUrl);
