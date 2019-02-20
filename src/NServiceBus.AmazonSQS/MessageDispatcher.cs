@@ -11,6 +11,7 @@
     using Newtonsoft.Json;
     using Newtonsoft.Json.Serialization;
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
@@ -83,14 +84,14 @@
             await Task.WhenAll(tasks).ConfigureAwait(false);
 
             var preparedMessages = tasks.Select(x => x.Result).ToList();
-            var batches = Batcher.Batch(preparedMessages);
+            
+            var batches = Batcher.Batch(preparedMessages).ToList();
 
-            // TODO address multiple enumerations?
-            operationCount = batches.Count();
+            operationCount = batches.Count;
             var batchTasks = new Task[operationCount];
             for (var i = 0; i < operationCount; i++)
             {
-                batchTasks[i] = SendBatch(batches.ElementAt(i), i+1, operationCount);
+                batchTasks[i] = SendBatch(batches[i], i+1, operationCount);
             }
             await Task.WhenAll(batchTasks).ConfigureAwait(false);
         }
@@ -115,11 +116,17 @@
                     Logger.Debug($"Sent batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Keys)}' to destination {message.Destination}");
                 }
 
+                List<Task> redispatchTasks = null;
                 foreach (var errorEntry in result.Failed)
                 {
-                    Logger.Warn($"Retrying message with MessageId {errorEntry.Id} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
-                    await SendMessage(batch.PreparedMessagesBydId[errorEntry.Id])
-                        .ConfigureAwait(false);
+                    redispatchTasks = redispatchTasks ?? new List<Task>(result.Failed.Count);
+                    Logger.Info($"Retrying message with MessageId {errorEntry.Id} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
+                    redispatchTasks.Add(SendMessageForBatch(batch.PreparedMessagesBydId[errorEntry.Id], batchNumber, totalBatches));
+                }
+
+                if (redispatchTasks != null)
+                {
+                    await Task.WhenAll(redispatchTasks).ConfigureAwait(false);
                 }
             }
             catch (QueueDoesNotExistException e)
@@ -150,6 +157,12 @@
 
             await SendMessage(message)
                 .ConfigureAwait(false);
+        }
+
+        async Task SendMessageForBatch(PreparedMessage message, int batchNumber, int totalBatches)
+        {
+            await SendMessage(message).ConfigureAwait(false);
+            Logger.Info($"Retried message with MessageId {message.MessageId} that failed in batch '{batchNumber}/{totalBatches}'.");
         }
 
         async Task SendMessage(PreparedMessage message)
