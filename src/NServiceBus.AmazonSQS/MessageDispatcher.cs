@@ -13,8 +13,7 @@
     using DelayedDelivery;
     using Extensibility;
     using Logging;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Serialization;
+    using SimpleJson;
     using Transport;
 
     class MessageDispatcher : IDispatchMessages
@@ -25,11 +24,7 @@
             this.s3Client = s3Client;
             this.sqsClient = sqsClient;
             this.queueUrlCache = queueUrlCache;
-
-            jsonSerializerSettings = new JsonSerializerSettings
-            {
-                ContractResolver = configuration.UseV1CompatiblePayload ? new DefaultContractResolver() : new ReducedPayloadContractResolver()
-            };
+            serializerStrategy = configuration.UseV1CompatiblePayload ? SimpleJson.PocoJsonSerializerStrategy : ReducedPayloadSerializerStrategy.Instance;
         }
 
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
@@ -209,7 +204,7 @@
 
             var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.DeliveryConstraints);
 
-            var serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage, jsonSerializerSettings);
+            var serializedMessage = SimpleJson.SerializeObject(sqsTransportMessage, serializerStrategy);
 
             var messageId = transportOperation.Message.MessageId;
             if (serializedMessage.Length > TransportConfiguration.MaximumMessageSize)
@@ -233,7 +228,7 @@
 
                 sqsTransportMessage.S3BodyKey = key;
                 sqsTransportMessage.Body = string.Empty;
-                serializedMessage = JsonConvert.SerializeObject(sqsTransportMessage, jsonSerializerSettings);
+                serializedMessage = SimpleJson.SerializeObject(sqsTransportMessage, serializerStrategy);
             }
 
             var preparedMessage = new PreparedMessage();
@@ -284,7 +279,7 @@
         IAmazonSQS sqsClient;
         IAmazonS3 s3Client;
         QueueUrlCache queueUrlCache;
-        JsonSerializerSettings jsonSerializerSettings;
+        IJsonSerializerStrategy serializerStrategy;
 
         static ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
     }
