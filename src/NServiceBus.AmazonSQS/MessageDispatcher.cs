@@ -33,21 +33,24 @@
 
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
         {
-            try
+            foreach (var dispatchConsistencyGroup in outgoingMessages.UnicastTransportOperations.GroupBy(o => o.RequiredDispatchConsistency))
             {
-                var operations = outgoingMessages.UnicastTransportOperations;
-                var tasks = new Task[operations.Count];
-                for (var i = 0; i < operations.Count; i++)
+                try
                 {
-                    tasks[i] = Dispatch(operations[i]);
-                }
+                    var operationCount = dispatchConsistencyGroup.Count();
+                    var tasks = new Task[operationCount];
+                    for (var i = 0; i < operationCount; i++)
+                    {
+                        tasks[i] = Dispatch(dispatchConsistencyGroup.ElementAt(i));
+                    }
 
-                await Task.WhenAll(tasks).ConfigureAwait(false);
-            }
-            catch (Exception e)
-            {
-                Logger.Error("Exception from Send.", e);
-                throw;
+                    await Task.WhenAll(tasks).ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    Logger.Error("Exception from Send.", e);
+                    throw;
+                }
             }
         }
 
