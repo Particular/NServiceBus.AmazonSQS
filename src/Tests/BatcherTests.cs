@@ -38,6 +38,22 @@ namespace Tests
             Assert.AreEqual("https://destination2", batches.ElementAt(1).BatchRequest.QueueUrl);
             Assert.AreEqual("https://destination3", batches.ElementAt(2).BatchRequest.QueueUrl);
         }
+        
+        [Test]
+        public void BatchPerDestination_case_sensitive()
+        {
+            var preparedMessages = new[]
+            {
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "Destination1", QueueUrl = "https://Destination1" },
+                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+            };
+
+            var batches = Batcher.Batch(preparedMessages);
+
+            Assert.AreEqual(2, batches.Count());
+            Assert.AreEqual("https://Destination1", batches.ElementAt(0).BatchRequest.QueueUrl);
+            Assert.AreEqual("https://destination1", batches.ElementAt(1).BatchRequest.QueueUrl);
+        }
 
         [Test]
         public void SingleBatchForLessOrEqual10Entries()

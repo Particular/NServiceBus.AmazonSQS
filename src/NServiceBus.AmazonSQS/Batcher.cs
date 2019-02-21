@@ -12,14 +12,13 @@ namespace NServiceBus.Transports.SQS
             var allBatches = new List<BatchEntry>();
             var currentDestinationBatches = new Dictionary<string, PreparedMessage>();
 
-            var groupByDestination = preparedMessages.GroupBy(m => m.QueueUrl, StringComparer.OrdinalIgnoreCase);
+            var groupByDestination = preparedMessages.GroupBy(m => m.QueueUrl, StringComparer.Ordinal);
             foreach (var group in groupByDestination)
             {
                 PreparedMessage firstMessage = null;
                 var payloadSize = 0;
-                for (var i = 0; i < group.Count(); i++)
+                foreach (var message in group)
                 {
-                    var message = group.ElementAt(i);
                     firstMessage = firstMessage ?? message;
 
                     var bodyLength = message.Body?.Length ?? 0;
