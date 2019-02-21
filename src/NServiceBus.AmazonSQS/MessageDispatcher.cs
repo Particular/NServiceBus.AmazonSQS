@@ -270,7 +270,7 @@
 
                 if (delaySeconds > 0)
                 {
-                    preparedMessage.DelaySeconds = delaySeconds;
+                    preparedMessage.DelaySeconds = Convert.ToInt32(delaySeconds);
                 }
             }
 

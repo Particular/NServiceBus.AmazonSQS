@@ -1,6 +1,5 @@
 namespace NServiceBus.Transports.SQS
 {
-    using System;
     using System.Collections.Generic;
     using System.Linq;
     using Amazon.SQS.Model;
@@ -14,7 +13,7 @@ namespace NServiceBus.Transports.SQS
                 MessageGroupId = message.MessageGroupId,
                 MessageDeduplicationId = message.MessageDeduplicationId,
                 MessageAttributes = message.MessageAttributes,
-                DelaySeconds = Convert.ToInt32(message.DelaySeconds)
+                DelaySeconds = message.DelaySeconds
             };
         }
 
@@ -25,7 +24,7 @@ namespace NServiceBus.Transports.SQS
                 MessageAttributes = message.MessageAttributes,
                 MessageGroupId = message.MessageGroupId,
                 MessageDeduplicationId = message.MessageDeduplicationId,
-                DelaySeconds = Convert.ToInt32(message.DelaySeconds)
+                DelaySeconds = message.DelaySeconds
             };
         }
 
