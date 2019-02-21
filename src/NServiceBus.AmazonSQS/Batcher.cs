@@ -32,7 +32,7 @@ namespace NServiceBus.Transports.SQS
                         payloadSize = bodyLength;
                     }
 
-                    // we don't have to recheck payload size here because the upport layer checks that a request can always fit 256 KB size limit
+                    // we don't have to recheck payload size here because the support layer checks that a request can always fit 256 KB size limit
                     currentDestinationBatches.Add(message.MessageId, message);
 
                     var currentCount = currentDestinationBatches.Count;
