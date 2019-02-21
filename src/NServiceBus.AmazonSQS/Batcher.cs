@@ -7,7 +7,7 @@ namespace NServiceBus.Transports.SQS
 
     static class Batcher
     {
-        public static IReadOnlyList<BatchEntry> Batch(IReadOnlyList<PreparedMessage> preparedMessages)
+        public static IReadOnlyList<BatchEntry> Batch(IEnumerable<PreparedMessage> preparedMessages)
         {
             var allBatches = new List<BatchEntry>();
             var currentDestinationBatches = new Dictionary<string, PreparedMessage>();

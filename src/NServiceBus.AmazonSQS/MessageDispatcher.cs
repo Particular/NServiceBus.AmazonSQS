@@ -34,17 +34,18 @@
 
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
         {
-            var concurrentDispatchTasks = new[] {TaskExtensions.Completed, TaskExtensions.Completed};
-
+            List<Task> concurrentDispatchTasks = null;
             foreach (var dispatchConsistencyGroup in outgoingMessages.UnicastTransportOperations.GroupBy(o => o.RequiredDispatchConsistency))
             {
                 switch (dispatchConsistencyGroup.Key)
                 {
                     case DispatchConsistency.Isolated:
-                        concurrentDispatchTasks[0] = DispatchIsolated(dispatchConsistencyGroup.ToArray());
+                        concurrentDispatchTasks = concurrentDispatchTasks ?? new List<Task>();
+                        concurrentDispatchTasks.Add(DispatchIsolated(dispatchConsistencyGroup));
                         break;
                     case DispatchConsistency.Default:
-                        concurrentDispatchTasks[1] = DispatchBatched(dispatchConsistencyGroup.ToArray());
+                        concurrentDispatchTasks = concurrentDispatchTasks ?? new List<Task>();
+                        concurrentDispatchTasks.Add(DispatchBatched(dispatchConsistencyGroup));
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -62,41 +63,48 @@
             }
         }
 
-        Task DispatchIsolated(UnicastTransportOperation[] isolatedTransportOperations)
+        Task DispatchIsolated(IEnumerable<UnicastTransportOperation> isolatedTransportOperations)
         {
-            var operationCount = isolatedTransportOperations.Length;
-            var tasks = new Task[operationCount];
-            for (var i = 0; i < operationCount; i++)
+            List<Task> tasks = null;
+            // ReSharper disable once LoopCanBeConvertedToQuery
+            foreach (var operation in isolatedTransportOperations)
             {
-                tasks[i] = Dispatch(isolatedTransportOperations[i]);
+                tasks = tasks ?? new List<Task>();
+                tasks.Add(Dispatch(operation));
             }
 
-            return Task.WhenAll(tasks);
+            return tasks != null ? Task.WhenAll(tasks) : TaskExtensions.Completed;
         }
 
-        async Task DispatchBatched(UnicastTransportOperation[] toBeBatchedTransportOperations)
+        async Task DispatchBatched(IEnumerable<UnicastTransportOperation> toBeBatchedTransportOperations)
         {
-            var operationCount = toBeBatchedTransportOperations.Length;
-            var tasks = new Task<PreparedMessage>[operationCount];
-            for (var i = 0; i < operationCount; i++)
+            List<Task<PreparedMessage>> tasks = null;
+            foreach (var operation in toBeBatchedTransportOperations)
             {
-                tasks[i] = PrepareMessage(toBeBatchedTransportOperations[i]);
+                tasks = tasks ?? new List<Task<PreparedMessage>>();
+                tasks.Add(PrepareMessage(operation));
             }
 
-            await Task.WhenAll(tasks).ConfigureAwait(false);
-
-            var preparedMessages = tasks.Select(x => x.Result).ToList();
-
-            var batches = Batcher.Batch(preparedMessages);
-
-            operationCount = batches.Count;
-            var batchTasks = new Task[operationCount];
-            for (var i = 0; i < operationCount; i++)
+            if (tasks != null)
             {
-                batchTasks[i] = SendBatch(batches[i], i + 1, operationCount);
-            }
+                await Task.WhenAll(tasks).ConfigureAwait(false);
 
-            await Task.WhenAll(batchTasks).ConfigureAwait(false);
+                var batches = Batcher.Batch(tasks.Select(x => x.Result));
+
+                var operationCount = batches.Count;
+                Task[] batchTasks = null;
+                for (var i = 0; i < operationCount; i++)
+                {
+                    batchTasks = batchTasks ?? new Task[operationCount];
+
+                    batchTasks[i] = SendBatch(batches[i], i + 1, operationCount);
+                }
+
+                if (batchTasks != null)
+                {
+                    await Task.WhenAll(batchTasks).ConfigureAwait(false);
+                }
+            }
         }
 
         async Task SendBatch(BatchEntry batch, int batchNumber, int totalBatches)
