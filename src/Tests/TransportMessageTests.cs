@@ -85,7 +85,7 @@
 
             var transportMessage = new TransportMessage(outgoingMessage, new List<DeliveryConstraint>());
 
-            Assert.AreEqual(expectedReplyToAddress, transportMessage.ReplyToAddress.Value.Queue, "ReplyToAddress is not the expected value");
+            Assert.AreEqual(expectedReplyToAddress, transportMessage.ReplyToAddress.Queue, "ReplyToAddress is not the expected value");
         }
 
         [Test]
