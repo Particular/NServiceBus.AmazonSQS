@@ -69,7 +69,7 @@ namespace NServiceBus.AcceptanceTests.Batching
             }
 
             // let's see how many times this actually happens
-            StringAssert.DoesNotContain("Retried message with MessageId", "Messages have been retried but they shouldn't have been");
+            StringAssert.DoesNotContain("Retried message with MessageId", logoutput, "Messages have been retried but they shouldn't have been");
         }
 
         static string AggregateBatchLogOutput(ScenarioContext context)
