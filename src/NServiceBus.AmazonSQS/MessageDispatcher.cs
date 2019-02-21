@@ -78,33 +78,25 @@
 
         async Task DispatchBatched(IEnumerable<UnicastTransportOperation> toBeBatchedTransportOperations)
         {
-            List<Task<PreparedMessage>> tasks = null;
+            var tasks = new List<Task<PreparedMessage>>();
+            // ReSharper disable once LoopCanBeConvertedToQuery
             foreach (var operation in toBeBatchedTransportOperations)
             {
-                tasks = tasks ?? new List<Task<PreparedMessage>>();
                 tasks.Add(PrepareMessage(operation));
             }
 
-            if (tasks != null)
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+
+            var batches = Batcher.Batch(tasks.Select(x => x.Result));
+
+            var operationCount = batches.Count;
+            var batchTasks = new Task[operationCount];
+            for (var i = 0; i < operationCount; i++)
             {
-                await Task.WhenAll(tasks).ConfigureAwait(false);
-
-                var batches = Batcher.Batch(tasks.Select(x => x.Result));
-
-                var operationCount = batches.Count;
-                Task[] batchTasks = null;
-                for (var i = 0; i < operationCount; i++)
-                {
-                    batchTasks = batchTasks ?? new Task[operationCount];
-
-                    batchTasks[i] = SendBatch(batches[i], i + 1, operationCount);
-                }
-
-                if (batchTasks != null)
-                {
-                    await Task.WhenAll(batchTasks).ConfigureAwait(false);
-                }
+                batchTasks[i] = SendBatch(batches[i], i + 1, operationCount);
             }
+
+            await Task.WhenAll(batchTasks).ConfigureAwait(false);
         }
 
         async Task SendBatch(BatchEntry batch, int batchNumber, int totalBatches)
