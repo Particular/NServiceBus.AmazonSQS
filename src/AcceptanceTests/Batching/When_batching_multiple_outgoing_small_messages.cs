@@ -65,7 +65,7 @@ namespace NServiceBus.AcceptanceTests.Batching
 
             foreach (var messageIdForImmediateDispatch in listOfMessagesForImmediateDispatch)
             {
-                StringAssert.DoesNotContain(messageIdForImmediateDispatch, logoutput, $"{messageIdForImmediateDispatch} was found in any of the batches. Output: {logoutput}");
+                StringAssert.DoesNotContain(messageIdForImmediateDispatch, logoutput, $"{messageIdForImmediateDispatch} should not be included in any of the batches. Output: {logoutput}");
             }
 
             // let's see how many times this actually happens
