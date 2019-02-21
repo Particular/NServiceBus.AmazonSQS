@@ -97,7 +97,7 @@
         public override Task Stop()
         {
             sqsClient.Dispose();
-            s3Client.Dispose();
+            s3Client?.Dispose();
             return base.Stop();
         }
 
