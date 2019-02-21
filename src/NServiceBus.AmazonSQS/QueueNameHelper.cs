@@ -27,9 +27,14 @@
                 throw new Exception($"Address {destination} with configured prefix {transportConfiguration.QueueNamePrefix} is longer than 80 characters and therefore cannot be used to create an SQS queue. Use a shorter queue name.");
             }
 
-            var skipCharacters = s.EndsWith(".fifo") ? 5 : 0;
             var queueNameBuilder = new StringBuilder(s);
 
+            return GetSanitizedQueueName(queueNameBuilder, s);
+        }
+
+        public static string GetSanitizedQueueName(StringBuilder queueNameBuilder, string queueName)
+        {
+            var skipCharacters = queueName.EndsWith(".fifo") ? 5 : 0;
             // SQS queue names can only have alphanumeric characters, hyphens and underscores.
             // Any other characters will be replaced with a hyphen.
             for (var i = 0; i < queueNameBuilder.Length - skipCharacters; ++i)
