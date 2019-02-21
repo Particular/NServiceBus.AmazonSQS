@@ -207,7 +207,7 @@
 
                             if (remainingDelay > 0)
                             {
-                                sendMessageRequest.DelaySeconds = (int)remainingDelay;
+                                sendMessageRequest.DelaySeconds = Convert.ToInt32(remainingDelay);
                             }
                         }
 

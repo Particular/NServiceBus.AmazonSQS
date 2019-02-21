@@ -5,6 +5,9 @@
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
+    using Amazon.SQS.Model;
+    using DelayedDelivery;
+    using DeliveryConstraints;
     using Extensibility;
     using Newtonsoft.Json.Linq;
     using NUnit.Framework;
@@ -37,7 +40,8 @@
                         {TransportHeaders.TimeToBeReceived, expectedTtbr.ToString()},
                         {Headers.ReplyToAddress, expectedReplyToAddress}
                     }, Encoding.Default.GetBytes("{}")),
-                    new UnicastAddressTag("address")));
+                    new UnicastAddressTag("address"),
+                    DispatchConsistency.Isolated));
 
             var transportTransaction = new TransportTransaction();
             var context = new ContextBag();
@@ -74,7 +78,8 @@
                         {TransportHeaders.TimeToBeReceived, expectedTtbr.ToString()},
                         {Headers.ReplyToAddress, expectedReplyToAddress}
                     }, Encoding.Default.GetBytes("{}")),
-                    new UnicastAddressTag("address")));
+                    new UnicastAddressTag("address"),
+                    DispatchConsistency.Isolated));
 
             var transportTransaction = new TransportTransaction();
             var context = new ContextBag();
@@ -104,7 +109,8 @@
             var transportOperations = new TransportOperations(
                 new TransportOperation(
                     new OutgoingMessage(expectedId, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
-                    new UnicastAddressTag("address")));
+                    new UnicastAddressTag("address"),
+                    DispatchConsistency.Isolated));
 
             var transportTransaction = new TransportTransaction();
             var context = new ContextBag();
@@ -115,5 +121,212 @@
             Assert.AreEqual(expectedId, sentMessage.MessageAttributes[Headers.MessageId].StringValue);
         }
 
+        [Test]
+        public async Task Should_dispatch_isolated_operations()
+        {
+            var settings = new SettingsHolder();
+
+            var mockSqsClient = new MockSqsClient();
+
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, new QueueUrlCache(mockSqsClient));
+
+            var transportOperations = new TransportOperations(
+                new TransportOperation(
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new UnicastAddressTag("address1"),
+                    DispatchConsistency.Isolated),
+                new TransportOperation(
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new UnicastAddressTag("address2"),
+                    DispatchConsistency.Isolated));
+
+            var transportTransaction = new TransportTransaction();
+            var context = new ContextBag();
+
+            await dispatcher.Dispatch(transportOperations, transportTransaction, context);
+
+            Assert.IsEmpty(mockSqsClient.BatchRequestsSent);
+            Assert.AreEqual(2, mockSqsClient.RequestsSent.Count);
+            Assert.AreEqual("address1", mockSqsClient.RequestsSent.ElementAt(0).QueueUrl);
+            Assert.AreEqual("address2", mockSqsClient.RequestsSent.ElementAt(1).QueueUrl);
+        }
+
+        [Test]
+        public void Should_raise_queue_does_not_exists_for_delayed_delivery_for_isolated_dispatch()
+        {
+            var settings = new SettingsHolder();
+            var transportExtensions = new TransportExtensions<SqsTransport>(settings);
+            transportExtensions.UnrestrictedDurationDelayedDelivery();
+
+            var mockSqsClient = new MockSqsClient();
+            mockSqsClient.RequestResponse = req => throw new QueueDoesNotExistException("Queue does not exist");
+
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, new QueueUrlCache(mockSqsClient));
+
+            var transportOperations = new TransportOperations(
+                new TransportOperation(
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new UnicastAddressTag("address1"),
+                    DispatchConsistency.Isolated,
+                    new List<DeliveryConstraint>
+                    {
+                        new DelayDeliveryWith(TimeSpan.FromMinutes(30))
+                    }));
+
+            var transportTransaction = new TransportTransaction();
+            var context = new ContextBag();
+
+            var exception = Assert.ThrowsAsync<QueueDoesNotExistException>(async () => await dispatcher.Dispatch(transportOperations, transportTransaction, context));
+            StringAssert.StartsWith("Destination 'address1' doesn't support delayed messages longer than", exception.Message);
+        }
+
+        [Test]
+        public async Task Should_batch_non_isolated_operations()
+        {
+            var settings = new SettingsHolder();
+
+            var mockSqsClient = new MockSqsClient();
+
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, new QueueUrlCache(mockSqsClient));
+
+            var transportOperations = new TransportOperations(
+                new TransportOperation(
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new UnicastAddressTag("address1"),
+                    DispatchConsistency.Default),
+                new TransportOperation(
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new UnicastAddressTag("address2"),
+                    DispatchConsistency.Default));
+
+            var transportTransaction = new TransportTransaction();
+            var context = new ContextBag();
+
+            await dispatcher.Dispatch(transportOperations, transportTransaction, context);
+
+            Assert.IsEmpty(mockSqsClient.RequestsSent);
+            Assert.AreEqual(2, mockSqsClient.BatchRequestsSent.Count);
+            Assert.AreEqual("address1", mockSqsClient.BatchRequestsSent.ElementAt(0).QueueUrl);
+            Assert.AreEqual("address2", mockSqsClient.BatchRequestsSent.ElementAt(1).QueueUrl);
+        }
+
+        [Test]
+        public void Should_raise_queue_does_not_exists_for_delayed_delivery_for_non_isolated_dispatch()
+        {
+            var settings = new SettingsHolder();
+            var transportExtensions = new TransportExtensions<SqsTransport>(settings);
+            transportExtensions.UnrestrictedDurationDelayedDelivery();
+
+            var mockSqsClient = new MockSqsClient();
+            mockSqsClient.BatchRequestResponse = req => throw new QueueDoesNotExistException("Queue does not exist");
+
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, new QueueUrlCache(mockSqsClient));
+
+            var transportOperations = new TransportOperations(
+                new TransportOperation(
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new UnicastAddressTag("address1"),
+                    DispatchConsistency.Default,
+                    new List<DeliveryConstraint>
+                    {
+                        new DelayDeliveryWith(TimeSpan.FromMinutes(30))
+                    }),
+                new TransportOperation(
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new UnicastAddressTag("address1"),
+                    DispatchConsistency.Default,
+                    new List<DeliveryConstraint>
+                    {
+                        new DelayDeliveryWith(TimeSpan.FromMinutes(30))
+                    }));
+
+            var transportTransaction = new TransportTransaction();
+            var context = new ContextBag();
+
+            var exception = Assert.ThrowsAsync<QueueDoesNotExistException>(async () => await dispatcher.Dispatch(transportOperations, transportTransaction, context));
+            StringAssert.StartsWith("Unable to send batch '1/1'. Destination 'address1' doesn't support delayed messages longer than", exception.Message);
+        }
+
+        [Test]
+        public async Task Should_dispatch_non_batched_all_messages_that_failed_in_batch()
+        {
+            var settings = new SettingsHolder();
+
+            var mockSqsClient = new MockSqsClient();
+
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, new QueueUrlCache(mockSqsClient));
+
+            var firstMessageIdThatWillFail = Guid.NewGuid().ToString();
+            var secondMessageIdThatWillFail = Guid.NewGuid().ToString();
+
+            mockSqsClient.BatchRequestResponse = req =>
+            {
+                if (req.Entries.Any(x => x.Id == firstMessageIdThatWillFail))
+                {
+                    return new SendMessageBatchResponse
+                    {
+                        Failed = new List<BatchResultErrorEntry>
+                        {
+                            new BatchResultErrorEntry
+                            {
+                                Id = firstMessageIdThatWillFail,
+                                Message = "You know why"
+                            }
+                        }
+                    };
+                }
+
+                if (req.Entries.Any(x => x.Id == secondMessageIdThatWillFail))
+                {
+                    return new SendMessageBatchResponse
+                    {
+                        Failed = new List<BatchResultErrorEntry>
+                        {
+                            new BatchResultErrorEntry
+                            {
+                                Id = secondMessageIdThatWillFail,
+                                Message = "You know why"
+                            }
+                        }
+                    };
+                }
+
+                return new SendMessageBatchResponse();
+            };
+
+            var firstMessageThatWillBeSuccessful = Guid.NewGuid().ToString();
+            var secondMessageThatWillBeSuccessful = Guid.NewGuid().ToString();
+
+            var transportOperations = new TransportOperations(
+                new TransportOperation(
+                    new OutgoingMessage(firstMessageIdThatWillFail, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new UnicastAddressTag("address1"),
+                    DispatchConsistency.Default),
+                new TransportOperation(
+                    new OutgoingMessage(firstMessageThatWillBeSuccessful, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new UnicastAddressTag("address1"),
+                    DispatchConsistency.Default),
+                new TransportOperation(
+                    new OutgoingMessage(secondMessageThatWillBeSuccessful, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new UnicastAddressTag("address2"),
+                    DispatchConsistency.Default),
+                new TransportOperation(
+                    new OutgoingMessage(secondMessageIdThatWillFail, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new UnicastAddressTag("address2"),
+                    DispatchConsistency.Default));
+
+            var transportTransaction = new TransportTransaction();
+            var context = new ContextBag();
+
+            await dispatcher.Dispatch(transportOperations, transportTransaction, context);
+
+            Assert.AreEqual(2, mockSqsClient.RequestsSent.Count);
+            Assert.AreEqual(firstMessageIdThatWillFail, mockSqsClient.RequestsSent.ElementAt(0).MessageAttributes[Headers.MessageId].StringValue);
+            Assert.AreEqual(secondMessageIdThatWillFail, mockSqsClient.RequestsSent.ElementAt(1).MessageAttributes[Headers.MessageId].StringValue);
+
+            Assert.AreEqual(2, mockSqsClient.BatchRequestsSent.Count);
+            CollectionAssert.AreEquivalent(new[] { firstMessageIdThatWillFail, firstMessageThatWillBeSuccessful }, mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Select(x => x.Id));
+            CollectionAssert.AreEquivalent(new[] { secondMessageIdThatWillFail, secondMessageThatWillBeSuccessful }, mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Select(x => x.Id));
+        }
     }
 }
