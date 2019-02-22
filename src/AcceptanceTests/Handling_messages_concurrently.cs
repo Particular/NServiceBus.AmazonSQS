@@ -60,7 +60,7 @@
             {
                 public Context Context { get; set; }
 
-                public async Task Handle(MyMessage messageWithLargePayload, IMessageHandlerContext context)
+                public async Task Handle(MyMessage message, IMessageHandlerContext context)
                 {
                     Interlocked.Increment(ref Context.CurrentConcurrency);
 

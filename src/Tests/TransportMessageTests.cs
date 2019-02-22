@@ -3,17 +3,14 @@
     using System;
     using System.Collections.Generic;
     using DeliveryConstraints;
-    using Newtonsoft.Json;
     using NUnit.Framework;
     using Performance.TimeToBeReceived;
+    using SimpleJson;
     using Transport;
 
     [TestFixture]
     public class TransportMessageTests
     {
-        static TimeSpan expectedTtbr = TimeSpan.MaxValue.Subtract(TimeSpan.FromHours(1));
-        const string expectedReplyToAddress = "TestReplyToAddress";
-
         [Test]
         public void Defaults_TimeToBeReceived_to_TimeSpan_MaxTime_when_DiscardIfNotReceivedBefore_is_not_provided()
         {
@@ -45,7 +42,7 @@
             var transportMessage = new TransportMessage();
             transportMessage.Headers = new Dictionary<string, string>
             {
-                { TransportHeaders.TimeToBeReceived, expectedTtbr.ToString() }
+                {TransportHeaders.TimeToBeReceived, expectedTtbr.ToString()}
             };
 
             Assert.AreEqual(expectedTtbr.ToString(), transportMessage.TimeToBeReceived, "TimeToBeReceived does not match expected value.");
@@ -77,10 +74,10 @@
 
         [Test]
         public void Populates_ReplyToAddress_when_header_is_present()
-        {            
+        {
             var outgoingMessage = new OutgoingMessage(string.Empty, new Dictionary<string, string>
             {
-                { Headers.ReplyToAddress, expectedReplyToAddress }
+                {Headers.ReplyToAddress, expectedReplyToAddress}
             }, new byte[0]);
 
             var transportMessage = new TransportMessage(outgoingMessage, new List<DeliveryConstraint>());
@@ -104,7 +101,7 @@
             var transportMessage = new TransportMessage
             {
                 Headers = new Dictionary<string, string>(),
-                ReplyToAddress = new TransportMessage.Address { Queue = expectedReplyToAddress }
+                ReplyToAddress = new TransportMessage.Address {Queue = expectedReplyToAddress}
             };
 
             Assert.IsTrue(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), "ReplyToAddress header is missing");
@@ -126,23 +123,23 @@
         [Test]
         public void Can_be_built_from_serialized_v1_message()
         {
-            var json = JsonConvert.SerializeObject(new
+            var json = SimpleJson.SerializeObject(new TransportMessage
             {
                 Headers = new Dictionary<string, string>
                 {
                     {Headers.MessageId, Guid.Empty.ToString()}
                 },
                 Body = "empty message",
-                S3BodyKey = (string)null,
-                TimeToBeReceived = expectedTtbr,
-                ReplyToAddress = new
+                S3BodyKey = null,
+                TimeToBeReceived = expectedTtbr.ToString(),
+                ReplyToAddress = new TransportMessage.Address
                 {
                     Queue = expectedReplyToAddress,
                     Machine = Environment.MachineName
                 }
             });
 
-            var transportMessage = JsonConvert.DeserializeObject<TransportMessage>(json);
+            var transportMessage = SimpleJson.DeserializeObject<TransportMessage>(json);
 
             Assert.IsTrue(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), "TimeToBeReceived header is missing");
             Assert.AreEqual(expectedTtbr.ToString(), transportMessage.Headers[TransportHeaders.TimeToBeReceived], "TimeToBeReceived header does not match expected value.");
@@ -153,22 +150,25 @@
         [Test]
         public void Can_be_built_from_serialized_message()
         {
-            var json = JsonConvert.SerializeObject(new
+            var json = SimpleJson.SerializeObject(new 
             {
                 Headers = new Dictionary<string, string>
                 {
                     {Headers.MessageId, Guid.Empty.ToString()}
                 },
                 Body = "empty message",
-                S3BodyKey = (string)null,
+                S3BodyKey = (string)null
             });
 
-            var transportMessage = JsonConvert.DeserializeObject<TransportMessage>(json);
+            var transportMessage = SimpleJson.DeserializeObject<TransportMessage>(json);
 
             Assert.IsFalse(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), "TimeToBeReceived header was found");
             Assert.AreEqual(TimeSpan.MaxValue.ToString(), transportMessage.TimeToBeReceived, "TimeToBeReceived does not match expected value.");
             Assert.IsFalse(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), "ReplyToAddress header was found");
             Assert.IsNull(transportMessage.ReplyToAddress, "ReplyToAddress was not null.");
         }
+
+        const string expectedReplyToAddress = "TestReplyToAddress";
+        static TimeSpan expectedTtbr = TimeSpan.MaxValue.Subtract(TimeSpan.FromHours(1));
     }
 }

@@ -8,6 +8,7 @@
     using Amazon.SQS;
     using AmazonSQS;
     using DelayedDelivery;
+    using Logging;
     using Performance.TimeToBeReceived;
     using Routing;
     using Settings;
@@ -20,8 +21,30 @@
         {
             configuration = new TransportConfiguration(settings);
 
-            sqsClient = configuration.SqsClientFactory();
-            s3Client = configuration.S3ClientFactory();
+            try
+            {
+                sqsClient = configuration.SqsClientFactory();
+            }
+            catch (Exception e) // ideally this would just raise AmazonClientException but the fullframework and .net core version behave different, see https://github.com/aws/aws-sdk-net/issues/1216
+            {
+                var message = "Unable to configure the SQS client. Make sure the environment variables for AWS_REGION, AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set or the client factory configures the created client accordingly";
+                Logger.Error(message, e);
+                throw new Exception(message, e);
+            }
+
+            try
+            {
+                if (!string.IsNullOrEmpty(settings.GetOrDefault<string>(SettingsKeys.S3BucketForLargeMessages)))
+                {
+                    s3Client = configuration.S3ClientFactory();
+                }
+            }
+            catch (Exception e) // ideally this would just raise AmazonClientException but the fullframework and .net core version behave different, see https://github.com/aws/aws-sdk-net/issues/1216
+            {
+                var message = "Unable to configure the S3 client. Make sure the environment variables for AWS_REGION, AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set or the client factory configures the created client accordingly";
+                Logger.Error(message, e);
+                throw new Exception(message, e);
+            }
 
             queueUrlCache = new QueueUrlCache(sqsClient);
         }
@@ -74,7 +97,7 @@
         public override Task Stop()
         {
             sqsClient.Dispose();
-            s3Client.Dispose();
+            s3Client?.Dispose();
             return base.Stop();
         }
 
@@ -96,16 +119,19 @@
             {
                 queue.Append("-" + logicalAddress.EndpointInstance.Discriminator);
             }
+
             if (logicalAddress.Qualifier != null)
             {
                 queue.Append("-" + logicalAddress.Qualifier);
             }
-            return queue.ToString();
+
+            return QueueNameHelper.GetSanitizedQueueName(queue, queueName);
         }
 
         readonly IAmazonSQS sqsClient;
         readonly IAmazonS3 s3Client;
         readonly QueueUrlCache queueUrlCache;
         readonly TransportConfiguration configuration;
+        static ILog Logger = LogManager.GetLogger(typeof(TransportInfrastructure));
     }
 }

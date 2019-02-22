@@ -10,10 +10,10 @@
     using EndpointTemplates;
     using Configuration.AdvancedExtensibility;
 
-    public class Sending_messages_larger_than_256kb : NServiceBusAcceptanceTest
+    public class Sending_messages_with_large_payloads : NServiceBusAcceptanceTest
     {
         [Test]
-        public async Task Should_receive_messages_with_large_payload_correctly()
+        public async Task Should_receive_messages_with_payload_larger_than_threshold_correctly_with_s3_configured()
         {
             var payloadToSend = new byte[PayloadSize];
 
@@ -32,7 +32,54 @@
         }
 
         [Test]
-        public async Task Should_fail_when_no_s3_bucket_is_configured()
+        public async Task Should_receive_messages_with_payload_smaller_than_threshold_correctly_without_s3_configured()
+        {
+            var payloadToSend = new byte[PayloadSizeBelowThreshold];
+
+            var context = await Scenario.Define<Context>()
+                .WithEndpoint<Sender>(b =>
+                {
+                    // Don't configure an S3 bucket for this endpoint
+                    b.CustomConfig(x =>
+                    {
+                        x.GetSettings().Set(SettingsKeys.S3BucketForLargeMessages, string.Empty);
+                        x.GetSettings().Set(SettingsKeys.S3KeyPrefix, string.Empty);
+                    });
+
+                    b.When(async (session, c) =>
+                    {
+                        try
+                        {
+                            await session.Send(new MyMessageWithLargePayload
+                            {
+                                Payload = payloadToSend
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            c.Exception = ex;
+                            c.GotTheException = true;
+                        }
+                    });
+                })
+                .WithEndpoint<Receiver>(b =>
+                {
+                    // Don't configure an S3 bucket for this endpoint
+                    b.CustomConfig(x =>
+                    {
+                        x.GetSettings().Set(SettingsKeys.S3BucketForLargeMessages, string.Empty);
+                        x.GetSettings().Set(SettingsKeys.S3KeyPrefix, string.Empty);
+                    });
+                })
+                .Done(c => c.ReceivedPayload != null || c.Exception != null)
+                .Run();
+
+            Assert.IsNull(context.Exception);
+            Assert.AreEqual(payloadToSend, context.ReceivedPayload, "The large payload should be handled correctly using S3");
+        }
+
+        [Test]
+        public async Task Should_fail_with_payload_larger_than_threshold_without_s3_configured()
         {
             var payloadToSend = new byte[PayloadSize];
 
@@ -77,7 +124,8 @@
             Assert.AreEqual(context.Exception.Message, "Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
         }
 
-        const int PayloadSize = 257 * 1024;
+        const int PayloadSize = 150 * 1024;
+        const int PayloadSizeBelowThreshold = 137 * 1024;
 
         public class Context : ScenarioContext
         {

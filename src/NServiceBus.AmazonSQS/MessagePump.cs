@@ -10,7 +10,7 @@
     using AmazonSQS;
     using Extensibility;
     using Logging;
-    using Newtonsoft.Json;
+    using SimpleJson;
     using Transport;
 
     class MessagePump : IPushMessages
@@ -103,13 +103,11 @@
                 MaxNumberOfMessages = numberOfMessagesToFetch,
                 QueueUrl = queueUrl,
                 WaitTimeSeconds = 20,
-                AttributeNames = new List<string>
-                {
-                    "SentTimestamp"
-                }
+                AttributeNames = new List<string> { "SentTimestamp" },
+                MessageAttributeNames = new List<string> { Headers.MessageId }
             };
 
-            maxConcurrencySempahore = new SemaphoreSlim(maxConcurrency);
+            maxConcurrencySemaphore = new SemaphoreSlim(maxConcurrency);
             pumpTasks = new List<Task>(numberOfPumps);
 
             for (var i = 0; i < numberOfPumps; i++)
@@ -137,10 +135,15 @@
             cancellationTokenSource?.Cancel();
 
             await Task.WhenAll(pumpTasks).ConfigureAwait(false);
-
             pumpTasks?.Clear();
+
+            while (maxConcurrencySemaphore.CurrentCount != maxConcurrency)
+            {
+                await Task.Delay(50).ConfigureAwait(false);
+            }
+
             cancellationTokenSource?.Dispose();
-            maxConcurrencySempahore?.Dispose();
+            maxConcurrencySemaphore?.Dispose();
         }
 
         async Task ConsumeDelayedMessages(ReceiveMessageRequest request, CancellationToken token)
@@ -157,7 +160,7 @@
 
                         if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.DelaySeconds, out var delayAttribute))
                         {
-                            Int64.TryParse(delayAttribute.StringValue, out delaySeconds);
+                            long.TryParse(delayAttribute.StringValue, out delaySeconds);
                         }
 
                         var sent = UnixTimeConverter.FromUnixTimeMilliseconds(Convert.ToInt64(receivedMessage.Attributes["SentTimestamp"]));
@@ -204,7 +207,7 @@
 
                             if (remainingDelay > 0)
                             {
-                                sendMessageRequest.DelaySeconds = (int)remainingDelay;
+                                sendMessageRequest.DelaySeconds = Convert.ToInt32(remainingDelay);
                             }
                         }
 
@@ -247,17 +250,27 @@
 
         async Task ConsumeMessages(CancellationToken token)
         {
-            // cached and reused per receive loop
-            var concurrentReceiveOperations = new List<Task>(numberOfMessagesToFetch);
             while (!token.IsCancellationRequested)
             {
                 try
                 {
                     var receivedMessages = await sqsClient.ReceiveMessageAsync(receiveMessagesRequest, token).ConfigureAwait(false);
 
-                    ProcessMessages(receivedMessages.Messages, concurrentReceiveOperations, token);
+                    // ReSharper disable once LoopCanBeConvertedToQuery
+                    foreach (var receivedMessage in receivedMessages.Messages)
+                    {
+                        try
+                        {
+                            await maxConcurrencySemaphore.WaitAsync(token).ConfigureAwait(false);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            // shutting, semaphore doesn't need to be released because it was never acquired
+                            return;
+                        }
 
-                    await Task.WhenAll(concurrentReceiveOperations).ConfigureAwait(false);
+                        ProcessMessage(receivedMessage, token).Ignore();
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -267,47 +280,33 @@
                 {
                     Logger.Error("Exception thrown when consuming messages", ex);
                 }
-                finally
-                {
-                    concurrentReceiveOperations.Clear();
-                }
             } // while
-        }
-
-        // ReSharper disable once ParameterTypeCanBeEnumerable.Local
-        // ReSharper disable once SuggestBaseTypeForParameter
-        void ProcessMessages(List<Message> receivedMessages, List<Task> concurrentReceiveOperations, CancellationToken token)
-        {
-            // ReSharper disable once LoopCanBeConvertedToQuery
-            foreach (var receivedMessage in receivedMessages)
-            {
-                concurrentReceiveOperations.Add(ProcessMessage(receivedMessage, token));
-            }
         }
 
         async Task ProcessMessage(Message receivedMessage, CancellationToken token)
         {
             try
             {
-                await maxConcurrencySempahore.WaitAsync(token).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                // shutting, semaphore doesn't need to be released because it was never acquired
-                return;
-            }
-
-            try
-            {
-                IncomingMessage incomingMessage = null;
+                byte[] messageBody = null;
                 TransportMessage transportMessage = null;
-
+                Exception exception = null;
+                var nativeMessageId = receivedMessage.MessageId;
+                string messageId = null;
                 var isPoisonMessage = false;
+
                 try
                 {
-                    transportMessage = JsonConvert.DeserializeObject<TransportMessage>(receivedMessage.Body);
+                    if (receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
+                    {
+                        messageId = messageIdAttribute.StringValue;
+                    }
+                    else
+                    {
+                        messageId = nativeMessageId;
+                    }
 
-                    incomingMessage = await transportMessage.ToIncomingMessage(s3Client, configuration, token).ConfigureAwait(false);
+                    transportMessage = SimpleJson.DeserializeObject<TransportMessage>(receivedMessage.Body);
+                    messageBody = await transportMessage.RetrieveBody(s3Client, configuration, token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
@@ -317,39 +316,45 @@
                 catch (Exception ex)
                 {
                     // Can't deserialize. This is a poison message
-                    Logger.Warn($"Treating message with SQS Message Id {receivedMessage.MessageId} as a poison message due to exception {ex}. Moving to error queue.");
+                    exception = ex;
                     isPoisonMessage = true;
                 }
 
-                if (incomingMessage == null || transportMessage == null)
+                if (isPoisonMessage || messageBody == null || transportMessage == null)
                 {
-                    Logger.Warn($"Treating message with SQS Message Id {receivedMessage.MessageId} as a poison message because it could not be converted to an IncomingMessage. Moving to error queue.");
-                    isPoisonMessage = true;
-                }
+                    var logMessage = $"Treating message with {messageId} as a poison message. Moving to error queue.";
 
-                if (isPoisonMessage)
-                {
-                    await MovePoisonMessageToErrorQueue(receivedMessage).ConfigureAwait(false);
+                    if (exception != null)
+                    {
+                        Logger.Warn(logMessage, exception);
+                    }
+                    else
+                    {
+                        Logger.Warn(logMessage);
+                    }
+
+                    await MovePoisonMessageToErrorQueue(receivedMessage, messageId).ConfigureAwait(false);
                     return;
                 }
 
-                if (!IsMessageExpired(receivedMessage, incomingMessage, sqsClient.Config.ClockOffset))
+                if (!IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, sqsClient.Config.ClockOffset))
                 {
-                    await ProcessMessageWithInMemoryRetries(incomingMessage, token).ConfigureAwait(false);
+                    // here we also want to use the native message id because the core demands it like that
+                    await ProcessMessageWithInMemoryRetries(transportMessage.Headers, nativeMessageId, messageBody, token).ConfigureAwait(false);
                 }
 
                 // Always delete the message from the queue.
                 // If processing failed, the onError handler will have moved the message
                 // to a retry queue.
-                await DeleteMessageAndBodyIfRequired(receivedMessage, transportMessage, token).ConfigureAwait(false);
+                await DeleteMessageAndBodyIfRequired(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
             }
             finally
             {
-                maxConcurrencySempahore.Release();
+                maxConcurrencySemaphore.Release();
             }
         }
 
-        async Task ProcessMessageWithInMemoryRetries(IncomingMessage incomingMessage, CancellationToken token)
+        async Task ProcessMessageWithInMemoryRetries(Dictionary<string, string> headers, string nativeMessageId, byte[] body, CancellationToken token)
         {
             var immediateProcessingAttempts = 0;
             var messageProcessedOk = false;
@@ -362,9 +367,9 @@
                     using (var messageContextCancellationTokenSource = new CancellationTokenSource())
                     {
                         var messageContext = new MessageContext(
-                            incomingMessage.MessageId,
-                            incomingMessage.Headers,
-                            incomingMessage.Body,
+                            nativeMessageId,
+                            new Dictionary<string, string>(headers),
+                            body,
                             transportTransaction,
                             messageContextCancellationTokenSource,
                             new ContextBag());
@@ -383,9 +388,9 @@
                     try
                     {
                         errorHandlerResult = await onError(new ErrorContext(ex,
-                            incomingMessage.Headers,
-                            incomingMessage.MessageId,
-                            incomingMessage.Body,
+                            new Dictionary<string, string>(headers),
+                            nativeMessageId,
+                            body,
                             transportTransaction,
                             immediateProcessingAttempts)).ConfigureAwait(false);
                     }
@@ -398,14 +403,14 @@
             }
         }
 
-        static bool IsMessageExpired(Message receivedMessage, IncomingMessage incomingMessage, TimeSpan clockOffset)
+        static bool IsMessageExpired(Message receivedMessage, Dictionary<string, string> headers, string messageId, TimeSpan clockOffset)
         {
-            if (!incomingMessage.Headers.TryGetValue(TransportHeaders.TimeToBeReceived, out var rawTtbr))
+            if (!headers.TryGetValue(TransportHeaders.TimeToBeReceived, out var rawTtbr))
             {
                 return false;
             }
 
-            incomingMessage.Headers.Remove(TransportHeaders.TimeToBeReceived);
+            headers.Remove(TransportHeaders.TimeToBeReceived);
             var timeToBeReceived = TimeSpan.Parse(rawTtbr);
             if (timeToBeReceived == TimeSpan.MaxValue)
             {
@@ -420,11 +425,11 @@
                 return false;
             }
             // Message has expired.
-            Logger.Info($"Discarding expired message with Id {incomingMessage.MessageId}, expired {utcNow - expiresAt} ago at {expiresAt} utc.");
+            Logger.Info($"Discarding expired message with Id {messageId}, expired {utcNow - expiresAt} ago at {expiresAt} utc.");
             return true;
         }
 
-        async Task DeleteMessageAndBodyIfRequired(Message message, TransportMessage transportMessage, CancellationToken token)
+        async Task DeleteMessageAndBodyIfRequired(Message message, string s3BodyKey)
         {
             try
             {
@@ -437,20 +442,28 @@
                 return; // if another receiver fetches the data from S3
             }
 
-            if (!string.IsNullOrEmpty(transportMessage?.S3BodyKey))
+            if (!string.IsNullOrEmpty(s3BodyKey))
             {
-                Logger.Info($"Message body data with key '{transportMessage.S3BodyKey}' will be aged out by the S3 lifecycle policy when the TTL expires.");
+                Logger.Info($"Message body data with key '{s3BodyKey}' will be aged out by the S3 lifecycle policy when the TTL expires.");
             }
         }
 
-        async Task MovePoisonMessageToErrorQueue(Message message)
+        async Task MovePoisonMessageToErrorQueue(Message message, string messageId)
         {
             try
             {
                 await sqsClient.SendMessageAsync(new SendMessageRequest
                 {
                     QueueUrl = errorQueueUrl,
-                    MessageBody = message.Body
+                    MessageBody = message.Body,
+                    MessageAttributes =
+                    {
+                        [Headers.MessageId] = new MessageAttributeValue
+                        {
+                            StringValue = messageId,
+                            DataType = "String"
+                        }
+                    }
                 }, CancellationToken.None).ConfigureAwait(false);
                 // The MessageAttributes on message are read-only attributes provided by SQS
                 // and can't be re-sent. Unfortunately all the SQS metadata
@@ -522,7 +535,7 @@
         List<Task> pumpTasks;
         Func<ErrorContext, Task<ErrorHandleResult>> onError;
         Func<MessageContext, Task> onMessage;
-        SemaphoreSlim maxConcurrencySempahore;
+        SemaphoreSlim maxConcurrencySemaphore;
         string queueUrl;
         string delayedDeliveryQueueUrl;
         string errorQueueUrl;
