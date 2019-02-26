@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Text;
     using System.Threading.Tasks;
+    using Amazon.Runtime;
     using Amazon.S3;
     using Amazon.SQS;
     using AmazonSQS;
@@ -25,7 +26,7 @@
             {
                 sqsClient = configuration.SqsClientFactory();
             }
-            catch (Exception e) // ideally this would just raise AmazonClientException but the fullframework and .net core version behave different, see https://github.com/aws/aws-sdk-net/issues/1216
+            catch (AmazonClientException e)
             {
                 var message = "Unable to configure the SQS client. Make sure the environment variables for AWS_REGION, AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set or the client factory configures the created client accordingly";
                 Logger.Error(message, e);
@@ -39,7 +40,7 @@
                     s3Client = configuration.S3ClientFactory();
                 }
             }
-            catch (Exception e) // ideally this would just raise AmazonClientException but the fullframework and .net core version behave different, see https://github.com/aws/aws-sdk-net/issues/1216
+            catch (AmazonClientException e)
             {
                 var message = "Unable to configure the S3 client. Make sure the environment variables for AWS_REGION, AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set or the client factory configures the created client accordingly";
                 Logger.Error(message, e);
