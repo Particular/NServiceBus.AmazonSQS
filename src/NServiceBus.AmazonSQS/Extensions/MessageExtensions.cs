@@ -11,7 +11,7 @@
     static class MessageExtensions
     {
         public static async Task<IncomingMessage> ToIncomingMessage(this TransportMessage transportMessage,
-            IAmazonS3 amazonS3,
+            IAmazonS3 s3Client,
             TransportConfiguration transportConfiguration,
             CancellationToken cancellationToken)
         {
@@ -25,22 +25,14 @@
             }
             else
             {
-                var s3GetResponse = await amazonS3.GetObjectAsync(transportConfiguration.S3BucketForLargeMessages,
+                var s3GetResponse = await s3Client.GetObjectAsync(transportConfiguration.S3BucketForLargeMessages,
                     transportMessage.S3BodyKey,
                     cancellationToken).ConfigureAwait(false);
 
-                body = new byte[s3GetResponse.ResponseStream.Length];
-                using (var bufferedStream = new BufferedStream(s3GetResponse.ResponseStream))
+                using (var memoryStream = new MemoryStream())
                 {
-                    int count;
-                    var transferred = 0;
-                    const int maxChunkSize = 8 * 1024;
-                    var bytesToRead = Math.Min(maxChunkSize, body.Length - transferred);
-                    while ((count = await bufferedStream.ReadAsync(body, transferred, bytesToRead, cancellationToken).ConfigureAwait(false)) > 0)
-                    {
-                        transferred += count;
-                        bytesToRead = Math.Min(maxChunkSize, body.Length - transferred);
-                    }
+                    await s3GetResponse.ResponseStream.CopyToAsync(memoryStream).ConfigureAwait(false);
+                    body = memoryStream.ToArray();
                 }
             }
 
