@@ -26,18 +26,10 @@
                     transportMessage.S3BodyKey,
                     cancellationToken).ConfigureAwait(false);
 
-                body = new byte[s3GetResponse.ResponseStream.Length];
-                using (var bufferedStream = new BufferedStream(s3GetResponse.ResponseStream))
+                using (var memoryStream = new MemoryStream())
                 {
-                    int count;
-                    var transferred = 0;
-                    const int maxChunkSize = 8 * 1024;
-                    var bytesToRead = Math.Min(maxChunkSize, body.Length - transferred);
-                    while ((count = await bufferedStream.ReadAsync(body, transferred, bytesToRead, cancellationToken).ConfigureAwait(false)) > 0)
-                    {
-                        transferred += count;
-                        bytesToRead = Math.Min(maxChunkSize, body.Length - transferred);
-                    }
+                    s3GetResponse.ResponseStream.CopyTo(memoryStream);
+                    body = memoryStream.ToArray();
                 }
             }
 
