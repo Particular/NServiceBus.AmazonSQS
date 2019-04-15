@@ -5,7 +5,7 @@
     <AssemblyName>NServiceBus.AmazonSQS</AssemblyName>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>$(SolutionDir)NServiceBus.snk</AssemblyOriginatorKeyFile>
-    <NoWarn>CS0419</NoWarn>
+    <NoWarn>CS0419;NU5125</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="NServiceBus" Version="[6.0.0, 7.0.0)" />
