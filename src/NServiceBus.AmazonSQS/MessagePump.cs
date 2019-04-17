@@ -25,6 +25,8 @@
 
         public async Task Init(Func<MessageContext, Task> onMessage, Func<ErrorContext, Task<ErrorHandleResult>> onError, CriticalError criticalError, PushSettings settings)
         {
+            this.criticalError = criticalError;
+
             queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.InputQueue, configuration))
                 .ConfigureAwait(false);
             errorQueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.ErrorQueue, configuration))
@@ -396,8 +398,9 @@
                     }
                     catch (Exception onErrorEx)
                     {
-                        Logger.Error("Exception thrown from error handler", onErrorEx);
+                        criticalError.Raise($"Failed to execute recoverability policy for message with native ID: `{nativeMessageId}`", onErrorEx);
                     }
+
                     errorHandled = errorHandlerResult == ErrorHandleResult.Handled;
                 }
             }
@@ -546,8 +549,9 @@
         QueueUrlCache queueUrlCache;
         int numberOfMessagesToFetch;
         ReceiveMessageRequest receiveMessagesRequest;
-        static readonly TransportTransaction transportTransaction = new TransportTransaction();
+        CriticalError criticalError;
 
+        static readonly TransportTransaction transportTransaction = new TransportTransaction();
         static ILog Logger = LogManager.GetLogger(typeof(MessagePump));
     }
 }
