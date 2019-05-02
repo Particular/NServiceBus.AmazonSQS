@@ -23,6 +23,7 @@
   <!-- Flaky tests -->
   <ItemGroup>
     <Compile Remove="\**\NSB.AcceptanceTests\Routing\**\When_replying_to_message.cs" />
+    <Compile Remove="\**\NSB.AcceptanceTests\Pipeline\**\When_a_message_is_audited.cs" />
   </ItemGroup>
 
 </Project>
