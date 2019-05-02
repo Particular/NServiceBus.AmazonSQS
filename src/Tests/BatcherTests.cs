@@ -38,7 +38,7 @@ namespace Tests
             Assert.AreEqual("https://destination2", batches.ElementAt(1).BatchRequest.QueueUrl);
             Assert.AreEqual("https://destination3", batches.ElementAt(2).BatchRequest.QueueUrl);
         }
-        
+
         [Test]
         public void BatchPerDestination_case_sensitive()
         {
@@ -221,7 +221,7 @@ namespace Tests
         }
 
         [Test]
-        public void AppliesIdentity()
+        public void DoesntUseMessageIdentityAsBatchIdentity()
         {
             var messageId = Guid.NewGuid().ToString();
 
@@ -232,7 +232,7 @@ namespace Tests
 
             var batches = Batcher.Batch(preparedMessages);
 
-            Assert.AreEqual(messageId, batches.Single().BatchRequest.Entries.Single().Id);
+            Assert.AreNotEqual(messageId, batches.Single().BatchRequest.Entries.Single().Id);
         }
 
         [Test]
