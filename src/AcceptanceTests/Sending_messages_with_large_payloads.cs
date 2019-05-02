@@ -38,10 +38,7 @@
         public async Task Should_receive_messages_with_kms_encrypted_payload_correctly()
         {
             var kmsBucketName = $"{SqsTransportExtensions.S3BucketName}.kms";
-            var s3Client = SqsTransportExtensions.CreateS3Client();
-            
-            await IgnoreIfKMSNotEnabled(s3Client, kmsBucketName);
-
+           
             var payloadToSend = new byte[PayloadSize];
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<Sender>(b =>
@@ -60,21 +57,10 @@
                 .Done(c => c.ReceivedPayload != null)
                 .Run();
 
+            var s3Client = SqsTransportExtensions.CreateS3Client();
+
             Assert.AreEqual(payloadToSend, context.ReceivedPayload, "The large payload should be handled correctly using S3");
             Assert.DoesNotThrowAsync(async () => await s3Client.GetObjectAsync(kmsBucketName, $"{SqsTransportExtensions.S3Prefix}/{context.MessageId}"));
-        }
-
-        static async Task IgnoreIfKMSNotEnabled(IAmazonS3 s3Client, string kmsBucketName)
-        {
-            var encryptionResponse = await s3Client.GetBucketEncryptionAsync(new GetBucketEncryptionRequest
-            {
-                BucketName = kmsBucketName
-            });
-
-            if (encryptionResponse.ServerSideEncryptionConfiguration.ServerSideEncryptionRules.All(r => r.ServerSideEncryptionByDefault.ServerSideEncryptionAlgorithm.Value != ServerSideEncryptionMethod.AWSKMS))
-            {
-                Assert.Ignore($"Skipping KMS test because bucket '{kmsBucketName}' must have server side KMS encryption rule enabled.");
-            }
         }
 
         [Test]
