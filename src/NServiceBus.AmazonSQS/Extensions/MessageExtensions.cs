@@ -4,7 +4,6 @@
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Amazon;
     using Amazon.S3;
     using Amazon.SQS.Model;
     using Transport;
@@ -40,13 +39,13 @@
             return new IncomingMessage(messageId, transportMessage.Headers, body);
         }
 
-        public static DateTime GetSentDateTime(this Message message)
+        public static DateTime GetSentDateTime(this Message message, TimeSpan clockOffset)
         {
             var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
             var result = epoch.AddMilliseconds(long.Parse(message.Attributes["SentTimestamp"]));
             // Adjust for clock skew between this endpoint and aws.
             // https://aws.amazon.com/blogs/developer/clock-skew-correction/
-            return result + AWSConfigs.ClockOffset;
+            return result + clockOffset;
         }
     }
 }
