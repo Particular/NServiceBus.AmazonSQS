@@ -1,11 +1,10 @@
 ﻿namespace NServiceBus.AcceptanceTests
 {
     using System;
-    using NServiceBus;
-    using NUnit.Framework;
     using AcceptanceTesting;
     using Configuration.AdvancedExtensibility;
     using EndpointTemplates;
+    using NUnit.Framework;
 
     public class Sending_oversized_message_without_bucket_configured : NServiceBusAcceptanceTest
     {
@@ -16,9 +15,9 @@
             {
                 await Scenario.Define<Context>()
                     .WithEndpoint<Endpoint>(b => b.When(session => session.SendLocal(new MyMessageWithLargePayload
-                    {
-                        Payload = new byte[PayloadSize]
-                    }))
+                        {
+                            Payload = new byte[PayloadSize]
+                        }))
                     )
                     .Done(c => false)
                     .Run();

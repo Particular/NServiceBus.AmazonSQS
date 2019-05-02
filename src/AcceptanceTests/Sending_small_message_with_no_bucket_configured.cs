@@ -1,11 +1,10 @@
 ﻿namespace NServiceBus.AcceptanceTests
 {
-    using NServiceBus;
-    using NUnit.Framework;
     using System.Threading.Tasks;
     using AcceptanceTesting;
     using Configuration.AdvancedExtensibility;
     using EndpointTemplates;
+    using NUnit.Framework;
 
     public class Sending_small_message_with_no_bucket_configured : NServiceBusAcceptanceTest
     {
@@ -15,9 +14,9 @@
             var payloadToSend = new byte[10];
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<Endpoint>(b => b.When(session => session.SendLocal(new MyMessage
-                {
-                    Payload = payloadToSend
-                }))
+                    {
+                        Payload = payloadToSend
+                    }))
                 )
                 .Done(c => c.ReceivedPayload != null)
                 .Run();

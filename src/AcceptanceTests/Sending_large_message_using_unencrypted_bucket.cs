@@ -1,11 +1,10 @@
 ﻿namespace NServiceBus.AcceptanceTests
 {
-    using NServiceBus;
-    using NUnit.Framework;
     using System.Threading.Tasks;
     using AcceptanceTesting;
     using AmazonSQS.AcceptanceTests;
     using EndpointTemplates;
+    using NUnit.Framework;
 
     public class Sending_large_message_using_unencrypted_bucket : NServiceBusAcceptanceTest
     {
@@ -15,14 +14,14 @@
             var payloadToSend = new byte[PayloadSize];
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<Endpoint>(b => b.When(session => session.SendLocal(new MyMessageWithLargePayload
-                {
-                    Payload = payloadToSend
-                }))
+                    {
+                        Payload = payloadToSend
+                    }))
                 )
                 .Done(c => c.ReceivedPayload != null)
                 .Run();
 
-            Assert.AreEqual(payloadToSend, context.ReceivedPayload, "The large payload should be handled correctly using S3");
+            Assert.AreEqual(payloadToSend, context.ReceivedPayload, "The large payload should be handled correctly using the unencrypted S3 bucket");
 
             var s3Client = SqsTransportExtensions.CreateS3Client();
 
