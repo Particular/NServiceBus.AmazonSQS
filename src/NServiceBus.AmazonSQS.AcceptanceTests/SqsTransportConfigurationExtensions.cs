@@ -1,5 +1,7 @@
 ﻿namespace NServiceBus.AmazonSQS.AcceptanceTests
 {
+    using Amazon.Runtime;
+    using Amazon.S3;
     using NServiceBus.AcceptanceTests.ScenarioDescriptors;
 
     public static class SqsTransportConfigurationExtensions
@@ -28,6 +30,12 @@
             }
 
             return transportConfiguration;
+        }
+
+        public static IAmazonS3 CreateS3Client()
+        {
+            var credentials = new EnvironmentVariablesAWSCredentials();
+            return new AmazonS3Client(credentials);
         }
 
         const string RegionEnvironmentVariableName = "NServiceBus.AmazonSQS.Region";

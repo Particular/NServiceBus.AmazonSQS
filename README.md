@@ -18,7 +18,7 @@ To run the tests, the Access Key ID and Secret Access Key of an AWS IAM account 
 The transport can be configured using the following environment variables:
 
 * **NServiceBus.AmazonSQS.Region** corresponds to the [Region](https://docs.particular.net/transports/sqs/configuration-options#region) parameter. Default is "ap-southeast-2".
-* **NServiceBus.AmazonSQS.S3Bucket** corresponds to the [S3BucketForLargeMessages](https://docs.particular.net/transports/sqs/configuration-options#s3bucketforlargemessages) parameter. Default is no S3 bucket.
+* **NServiceBus.AmazonSQS.S3Bucket** corresponds to the [S3BucketForLargeMessages](https://docs.particular.net/transports/sqs/configuration-options#s3bucketforlargemessages) parameter. Default is no S3 bucket. The bucket should not have encryption enabled. An additional bucket `{NServiceBus_AmazonSQS_S3Bucket}.kms` with AWS KMS encryption enabled is required.
 * **NServiceBus.AmazonSQS.NativeDeferral** corresponds to the [NativeDeferral](https://docs.particular.net/transports/sqs/configuration-options#nativedeferral) parameter. Default is false.
 
 ### Queue Names in Acceptance Tests
