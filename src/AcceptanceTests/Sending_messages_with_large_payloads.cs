@@ -1,14 +1,11 @@
 ﻿namespace NServiceBus.AcceptanceTests
 {
     using System;
-    using System.Linq;
     using NServiceBus;
     using NUnit.Framework;
     using System.Threading.Tasks;
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
-    using Amazon.S3;
-    using Amazon.S3.Model;
     using AmazonSQS.AcceptanceTests;
     using EndpointTemplates;
     using Configuration.AdvancedExtensibility;
