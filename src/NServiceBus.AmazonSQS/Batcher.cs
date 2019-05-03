@@ -32,7 +32,8 @@ namespace NServiceBus.Transports.SQS
                     }
 
                     // we don't have to recheck payload size here because the support layer checks that a request can always fit 256 KB size limit
-                    currentDestinationBatches.Add(message.MessageId, message);
+                    // we can't take MessageId because batch request ID can only contain alphanumeric characters, hyphen and underscores, message id could be overloaded
+                    currentDestinationBatches.Add(Guid.NewGuid().ToString(), message);
 
                     var currentCount = currentDestinationBatches.Count;
                     if (currentCount != 0 && currentCount % TransportConfiguration.MaximumItemsInBatch == 0)

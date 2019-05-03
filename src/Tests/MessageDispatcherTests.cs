@@ -261,7 +261,8 @@
 
             mockSqsClient.BatchRequestResponse = req =>
             {
-                if (req.Entries.Any(x => x.Id == firstMessageIdThatWillFail))
+                var firstMessageMatch = req.Entries.SingleOrDefault(x => x.MessageAttributes[Headers.MessageId].StringValue == firstMessageIdThatWillFail);
+                if (firstMessageMatch != null)
                 {
                     return new SendMessageBatchResponse
                     {
@@ -269,14 +270,15 @@
                         {
                             new BatchResultErrorEntry
                             {
-                                Id = firstMessageIdThatWillFail,
+                                Id = firstMessageMatch.Id,
                                 Message = "You know why"
                             }
                         }
                     };
                 }
 
-                if (req.Entries.Any(x => x.Id == secondMessageIdThatWillFail))
+                var secondMessageMatch = req.Entries.SingleOrDefault(x => x.MessageAttributes[Headers.MessageId].StringValue == secondMessageIdThatWillFail);
+                if (secondMessageMatch != null)
                 {
                     return new SendMessageBatchResponse
                     {
@@ -284,7 +286,7 @@
                         {
                             new BatchResultErrorEntry
                             {
-                                Id = secondMessageIdThatWillFail,
+                                Id = secondMessageMatch.Id,
                                 Message = "You know why"
                             }
                         }
@@ -325,8 +327,8 @@
             Assert.AreEqual(secondMessageIdThatWillFail, mockSqsClient.RequestsSent.ElementAt(1).MessageAttributes[Headers.MessageId].StringValue);
 
             Assert.AreEqual(2, mockSqsClient.BatchRequestsSent.Count);
-            CollectionAssert.AreEquivalent(new[] { firstMessageIdThatWillFail, firstMessageThatWillBeSuccessful }, mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Select(x => x.Id));
-            CollectionAssert.AreEquivalent(new[] { secondMessageIdThatWillFail, secondMessageThatWillBeSuccessful }, mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Select(x => x.Id));
+            CollectionAssert.AreEquivalent(new[] { firstMessageIdThatWillFail, firstMessageThatWillBeSuccessful }, mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue));
+            CollectionAssert.AreEquivalent(new[] { secondMessageIdThatWillFail, secondMessageThatWillBeSuccessful }, mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue));
         }
     }
 }

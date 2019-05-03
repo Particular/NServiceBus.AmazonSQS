@@ -17,9 +17,9 @@ namespace NServiceBus.Transports.SQS
             };
         }
 
-        static SendMessageBatchRequestEntry ToBatchEntry(this PreparedMessage message)
+        static SendMessageBatchRequestEntry ToBatchEntry(this PreparedMessage message, string batchEntryId)
         {
-            return new SendMessageBatchRequestEntry(message.MessageId, message.Body)
+            return new SendMessageBatchRequestEntry(batchEntryId, message.Body)
             {
                 MessageAttributes = message.MessageAttributes,
                 MessageGroupId = message.MessageGroupId,
@@ -31,7 +31,12 @@ namespace NServiceBus.Transports.SQS
         public static BatchEntry ToBatchRequest(this PreparedMessage message, Dictionary<string, PreparedMessage> batchEntries)
         {
             var preparedMessagesBydId = batchEntries.ToDictionary(x => x.Key, x => x.Value);
-            var batchRequestEntries = new List<SendMessageBatchRequestEntry>(preparedMessagesBydId.Select(x => x.Value.ToBatchEntry()));
+
+            var batchRequestEntries = new List<SendMessageBatchRequestEntry>();
+            foreach (var kvp in preparedMessagesBydId)
+            {
+                batchRequestEntries.Add(kvp.Value.ToBatchEntry(kvp.Key));
+            }
 
             return new BatchEntry
             {
