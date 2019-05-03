@@ -102,7 +102,7 @@
                 {
                     var message = batch.PreparedMessagesBydId.Values.First();
 
-                    Logger.Debug($"Sending batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Keys)}' to destination {message.Destination}");
+                    Logger.Debug($"Sending batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
                 }
 
                 var result = await sqsClient.SendMessageBatchAsync(batch.BatchRequest).ConfigureAwait(false);
@@ -111,15 +111,16 @@
                 {
                     var message = batch.PreparedMessagesBydId.Values.First();
 
-                    Logger.Debug($"Sent batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Keys)}' to destination {message.Destination}");
+                    Logger.Debug($"Sent batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
                 }
 
                 List<Task> redispatchTasks = null;
                 foreach (var errorEntry in result.Failed)
                 {
                     redispatchTasks = redispatchTasks ?? new List<Task>(result.Failed.Count);
-                    Logger.Info($"Retrying message with MessageId {errorEntry.Id} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
-                    redispatchTasks.Add(SendMessageForBatch(batch.PreparedMessagesBydId[errorEntry.Id], batchNumber, totalBatches));
+                    var messageToRetry = batch.PreparedMessagesBydId[errorEntry.Id];
+                    Logger.Info($"Retrying message with MessageId {messageToRetry.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
+                    redispatchTasks.Add(SendMessageForBatch(messageToRetry, batchNumber, totalBatches));
                 }
 
                 if (redispatchTasks != null)
@@ -136,14 +137,14 @@
                     throw new QueueDoesNotExistException($"Unable to send batch '{batchNumber}/{totalBatches}'. Destination '{message.OriginalDestination}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(configuration.DelayedDeliveryQueueDelayTime)}. To enable support for longer delays, call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()' on the '{message.OriginalDestination}' endpoint.", e);
                 }
 
-                Logger.Error($"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Keys)}', to '{message.Destination}'. The destination does not exist.", e);
+                Logger.Error($"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'. The destination does not exist.", e);
                 throw;
             }
             catch (Exception ex)
             {
                 var message = batch.PreparedMessagesBydId.Values.First();
 
-                Logger.Error($"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Keys)}', to '{message.Destination}'", ex);
+                Logger.Error($"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'", ex);
                 throw;
             }
         }

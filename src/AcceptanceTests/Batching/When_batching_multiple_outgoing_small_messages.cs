@@ -24,6 +24,12 @@ namespace NServiceBus.AcceptanceTests.Batching
             {
                 listOfMessagesForBatching.Add(Guid.NewGuid().ToString());
             }
+            
+            var listOfMessagesForBatchingWithCustomIds = new List<string>();
+            for (var i = 0; i < 50; i++)
+            {
+                listOfMessagesForBatchingWithCustomIds.Add($"CustomMessageIdWithNonAlphanumericCharacters/{Guid.NewGuid()}");
+            }
 
             var listOfMessagesForImmediateDispatch = new List<string>();
             for (var i = 0; i < 10; i++)
@@ -38,6 +44,7 @@ namespace NServiceBus.AcceptanceTests.Batching
 
                     c.LogLevel = LogLevel.Debug;
                     c.MessageIdsForBatching = listOfMessagesForBatching;
+                    c.CustomMessageIdsForBatching = listOfMessagesForBatchingWithCustomIds;
                     c.MessageIdsForImmediateDispatch = listOfMessagesForImmediateDispatch;
                 })
                 .WithEndpoint<Sender>(b => b.When(session =>
@@ -56,11 +63,16 @@ namespace NServiceBus.AcceptanceTests.Batching
 
             StringAssert.Contains(kickOffMessageId, logoutput, "Kickoff message was not present in any of the batches");
             StringAssert.Contains("1/1", logoutput, "Should have used 1 batch for the initial kickoff message but didn't");
-            StringAssert.Contains("5/5", logoutput, "Should have used 5 batches for the batched message dispatch but didn't");
+            StringAssert.Contains("10/10", logoutput, "Should have used 10 batches for the batched message dispatch but didn't");
 
             foreach (var messageIdForBatching in listOfMessagesForBatching)
             {
                 StringAssert.Contains(messageIdForBatching, logoutput, $"{messageIdForBatching} not found in any of the batches. Output: {logoutput}");
+            }
+            
+            foreach (var messageWithCustomMessageId in listOfMessagesForBatchingWithCustomIds)
+            {
+                StringAssert.Contains(messageWithCustomMessageId, logoutput, $"{messageWithCustomMessageId} not found in any of the batches. Output: {logoutput}");
             }
 
             foreach (var messageIdForImmediateDispatch in listOfMessagesForImmediateDispatch)
@@ -89,6 +101,7 @@ namespace NServiceBus.AcceptanceTests.Batching
         public class Context : ScenarioContext
         {
             public List<string> MessageIdsForBatching { get; set; }
+            public List<string> CustomMessageIdsForBatching { get; set; }
             public List<string> MessageIdsForImmediateDispatch { get; set; }
             public ConcurrentBag<string> MessageIdsReceived { get; } = new ConcurrentBag<string>();
         }
@@ -110,6 +123,14 @@ namespace NServiceBus.AcceptanceTests.Batching
                 public async Task Handle(SendMessagesInBatches message, IMessageHandlerContext context)
                 {
                     foreach (var messageId in Context.MessageIdsForBatching)
+                    {
+                        var options = new SendOptions();
+                        options.SetMessageId(messageId);
+
+                        await context.Send(new MyMessage(), options);
+                    }
+                    
+                    foreach (var messageId in Context.CustomMessageIdsForBatching)
                     {
                         var options = new SendOptions();
                         options.SetMessageId(messageId);
