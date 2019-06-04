@@ -1,10 +1,13 @@
 assembly-versioning-scheme: Major
-next-version: 4.0
+next-version: 1.0
 branches:
-  develop:
-    tag: beta
+  master:
+    mode: ContinuousDeployment
+    tag: alpha
+    increment: Minor
+    tracks-release-branches: true
   release:
-    tag: rc
+    tag: ''
 ignore:
   sha:
     - 8fb53199be08755a13ac6c1f1445052f2472578d
