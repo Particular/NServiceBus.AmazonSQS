@@ -7,7 +7,6 @@
     using Amazon.S3;
     using Amazon.SQS;
     using Amazon.SQS.Model;
-    using Amazon.Util;
     using AmazonSQS;
     using Extensibility;
     using Logging;
