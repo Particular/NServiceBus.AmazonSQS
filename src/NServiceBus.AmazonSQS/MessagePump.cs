@@ -7,6 +7,7 @@
     using Amazon.S3;
     using Amazon.SQS;
     using Amazon.SQS.Model;
+    using Amazon.Util;
     using AmazonSQS;
     using Extensibility;
     using Logging;
@@ -339,7 +340,7 @@
                     return;
                 }
 
-                if (!IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, sqsClient.Config.ClockOffset))
+                if (!IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, sqsClient.Config.ClockOffset, sqsClient.Config.CorrectedUtcNow))
                 {
                     // here we also want to use the native message id because the core demands it like that
                     await ProcessMessageWithInMemoryRetries(transportMessage.Headers, nativeMessageId, messageBody, token).ConfigureAwait(false);
@@ -406,7 +407,7 @@
             }
         }
 
-        static bool IsMessageExpired(Message receivedMessage, Dictionary<string, string> headers, string messageId, TimeSpan clockOffset)
+        static bool IsMessageExpired(Message receivedMessage, Dictionary<string, string> headers, string messageId, TimeSpan clockOffset, DateTime correctedUtcNow)
         {
             if (!headers.TryGetValue(TransportHeaders.TimeToBeReceived, out var rawTtbr))
             {
@@ -421,14 +422,13 @@
             }
 
             var sentDateTime = receivedMessage.GetSentDateTime(clockOffset);
-            var utcNow = DateTime.UtcNow;
             var expiresAt = sentDateTime + timeToBeReceived;
-            if (expiresAt > utcNow)
+            if (expiresAt > correctedUtcNow)
             {
                 return false;
             }
             // Message has expired.
-            Logger.Info($"Discarding expired message with Id {messageId}, expired {utcNow - expiresAt} ago at {expiresAt} utc.");
+            Logger.Info($"Discarding expired message with Id {messageId}, expired {correctedUtcNow - expiresAt} ago at {expiresAt} utc.");
             return true;
         }
 
