@@ -18,11 +18,11 @@
 
     class MessageDispatcher : IDispatchMessages
     {
-        public MessageDispatcher(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
+        public MessageDispatcher(TransportConfiguration configuration, IAmazonS3 s3Client, RoundRobinBuffer<IAmazonSQS> clientPool, QueueUrlCache queueUrlCache)
         {
             this.configuration = configuration;
             this.s3Client = s3Client;
-            this.sqsClient = sqsClient;
+            this.clientPool = clientPool;
             this.queueUrlCache = queueUrlCache;
             serializerStrategy = configuration.UseV1CompatiblePayload ? SimpleJson.PocoJsonSerializerStrategy : ReducedPayloadSerializerStrategy.Instance;
         }
@@ -105,7 +105,7 @@
                     Logger.Debug($"Sending batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
                 }
 
-                var result = await sqsClient.SendMessageBatchAsync(batch.BatchRequest).ConfigureAwait(false);
+                var result = await clientPool.GetNext().SendMessageBatchAsync(batch.BatchRequest).ConfigureAwait(false);
 
                 if (Logger.IsDebugEnabled)
                 {
@@ -168,7 +168,7 @@
         {
             try
             {
-                await sqsClient.SendMessageAsync(message.ToRequest())
+                await clientPool.GetNext().SendMessageAsync(message.ToRequest())
                     .ConfigureAwait(false);
             }
             catch (QueueDoesNotExistException e) when (message.OriginalDestination != null)
@@ -277,7 +277,7 @@
         }
 
         TransportConfiguration configuration;
-        IAmazonSQS sqsClient;
+        RoundRobinBuffer<IAmazonSQS> clientPool;
         IAmazonS3 s3Client;
         QueueUrlCache queueUrlCache;
         IJsonSerializerStrategy serializerStrategy;

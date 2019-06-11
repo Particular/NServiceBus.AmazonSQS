@@ -18,11 +18,21 @@
 
     class TransportInfrastructure : Transport.TransportInfrastructure
     {
+        const int SenderClientPoolSize = 3;
+
         public TransportInfrastructure(ReadOnlySettings settings)
         {
             configuration = new TransportConfiguration(settings);
 
             sqsClient = CreateClient();
+
+            var senderClients = new IAmazonSQS[SenderClientPoolSize];
+            for (var i = 0; i < SenderClientPoolSize; i++)
+            {
+                senderClients[i] = CreateClient();
+            }
+
+            senderClientPool = new RoundRobinBuffer<IAmazonSQS>(senderClients);
 
             try
             {
@@ -81,7 +91,7 @@
 
         MessageDispatcher CreateMessageDispatcher()
         {
-            return new MessageDispatcher(configuration, s3Client, sqsClient, queueUrlCache);
+            return new MessageDispatcher(configuration, s3Client, senderClientPool, queueUrlCache);
         }
 
         public override TransportReceiveInfrastructure ConfigureReceiveInfrastructure()
@@ -103,6 +113,7 @@
         {
             sqsClient.Dispose();
             s3Client?.Dispose();
+            senderClientPool.Dispose();
             return base.Stop();
         }
 
@@ -135,6 +146,7 @@
 
         readonly IAmazonSQS sqsClient;
         readonly IAmazonS3 s3Client;
+        readonly RoundRobinBuffer<IAmazonSQS> senderClientPool;
         readonly QueueUrlCache queueUrlCache;
         readonly TransportConfiguration configuration;
         static ILog Logger = LogManager.GetLogger(typeof(TransportInfrastructure));

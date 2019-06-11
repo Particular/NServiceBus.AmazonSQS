@@ -5,6 +5,7 @@
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
+    using Amazon.SQS;
     using Amazon.SQS.Model;
     using DelayedDelivery;
     using DeliveryConstraints;
@@ -30,8 +31,9 @@
             settings.Set(SettingsKeys.V1CompatibilityMode, true);
 
             var mockSqsClient = new MockSqsClient();
+            var buffer = new RoundRobinBuffer<IAmazonSQS>(new [] { mockSqsClient });
 
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, new QueueUrlCache(mockSqsClient));
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, buffer, new QueueUrlCache(mockSqsClient));
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -68,8 +70,9 @@
             var settings = new SettingsHolder();
 
             var mockSqsClient = new MockSqsClient();
+            var buffer = new RoundRobinBuffer<IAmazonSQS>(new [] { mockSqsClient });
 
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, new QueueUrlCache(mockSqsClient));
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, buffer, new QueueUrlCache(mockSqsClient));
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -101,8 +104,9 @@
             var settings = new SettingsHolder();
 
             var mockSqsClient = new MockSqsClient();
+            var buffer = new RoundRobinBuffer<IAmazonSQS>(new [] { mockSqsClient });
 
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, new QueueUrlCache(mockSqsClient));
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, buffer, new QueueUrlCache(mockSqsClient));
 
             var expectedId = "1234";
 
@@ -127,8 +131,9 @@
             var settings = new SettingsHolder();
 
             var mockSqsClient = new MockSqsClient();
+            var buffer = new RoundRobinBuffer<IAmazonSQS>(new [] { mockSqsClient });
 
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, new QueueUrlCache(mockSqsClient));
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, buffer, new QueueUrlCache(mockSqsClient));
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -160,8 +165,9 @@
 
             var mockSqsClient = new MockSqsClient();
             mockSqsClient.RequestResponse = req => throw new QueueDoesNotExistException("Queue does not exist");
+            var buffer = new RoundRobinBuffer<IAmazonSQS>(new [] { mockSqsClient });
 
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, new QueueUrlCache(mockSqsClient));
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, buffer, new QueueUrlCache(mockSqsClient));
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -186,8 +192,9 @@
             var settings = new SettingsHolder();
 
             var mockSqsClient = new MockSqsClient();
+            var buffer = new RoundRobinBuffer<IAmazonSQS>(new [] { mockSqsClient });
 
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, new QueueUrlCache(mockSqsClient));
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, buffer, new QueueUrlCache(mockSqsClient));
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -219,8 +226,9 @@
 
             var mockSqsClient = new MockSqsClient();
             mockSqsClient.BatchRequestResponse = req => throw new QueueDoesNotExistException("Queue does not exist");
+            var buffer = new RoundRobinBuffer<IAmazonSQS>(new [] { mockSqsClient });
 
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, new QueueUrlCache(mockSqsClient));
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, buffer, new QueueUrlCache(mockSqsClient));
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -253,8 +261,9 @@
             var settings = new SettingsHolder();
 
             var mockSqsClient = new MockSqsClient();
+            var buffer = new RoundRobinBuffer<IAmazonSQS>(new [] { mockSqsClient });
 
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, new QueueUrlCache(mockSqsClient));
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, buffer, new QueueUrlCache(mockSqsClient));
 
             var firstMessageIdThatWillFail = Guid.NewGuid().ToString();
             var secondMessageIdThatWillFail = Guid.NewGuid().ToString();
