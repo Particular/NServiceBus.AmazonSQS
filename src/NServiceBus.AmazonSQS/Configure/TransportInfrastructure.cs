@@ -22,16 +22,7 @@
         {
             configuration = new TransportConfiguration(settings);
 
-            try
-            {
-                sqsClient = configuration.SqsClientFactory();
-            }
-            catch (AmazonClientException e)
-            {
-                var message = "Unable to configure the SQS client. Make sure the environment variables for AWS_REGION, AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set or the client factory configures the created client accordingly";
-                Logger.Error(message, e);
-                throw new Exception(message, e);
-            }
+            sqsClient = CreateClient();
 
             try
             {
@@ -50,6 +41,19 @@
             queueUrlCache = new QueueUrlCache(sqsClient);
         }
 
+        IAmazonSQS CreateClient()
+        {
+            try
+            {
+                return configuration.SqsClientFactory();
+            }
+            catch (AmazonClientException e)
+            {
+                var message = "Unable to configure the SQS client. Make sure the environment variables for AWS_REGION, AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set or the client factory configures the created client accordingly";
+                Logger.Error(message, e);
+                throw new Exception(message, e);
+            }
+        }
 
         public override IEnumerable<Type> DeliveryConstraints => new List<Type>
         {
@@ -67,7 +71,7 @@
 
         MessagePump CreateMessagePump()
         {
-            return new MessagePump(configuration, s3Client, sqsClient, queueUrlCache);
+            return new MessagePump(configuration, s3Client, CreateClient, queueUrlCache);
         }
 
         QueueCreator CreateQueueCreator()

@@ -15,11 +15,11 @@
 
     class MessagePump : IPushMessages
     {
-        public MessagePump(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
+        public MessagePump(TransportConfiguration configuration, IAmazonS3 s3Client, Func<IAmazonSQS> clientFactory, QueueUrlCache queueUrlCache)
         {
             this.configuration = configuration;
             this.s3Client = s3Client;
-            this.sqsClient = sqsClient;
+            this.clientFactory = clientFactory;
             this.queueUrlCache = queueUrlCache;
         }
 
@@ -32,13 +32,53 @@
             errorQueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.ErrorQueue, configuration))
                 .ConfigureAwait(false);
 
+            using (var sqsClient = clientFactory())
+            {
+                await InitDelayedDelivery(settings, sqsClient)
+                    .ConfigureAwait(false);
+
+                if (settings.PurgeOnStartup)
+                {
+                    await PurgeInputQueue(sqsClient)
+                        .ConfigureAwait(false);
+                }
+            }
+
+            this.onMessage = onMessage;
+            this.onError = onError;
+        }
+
+        async Task PurgeInputQueue(IAmazonSQS sqsClient)
+        {
+            // SQS only allows purging a queue once every 60 seconds or so.
+            // If you try to purge a queue twice in relatively quick succession,
+            // PurgeQueueInProgressException will be thrown.
+            // This will happen if you are trying to start an endpoint twice or more
+            // in that time.
+            try
+            {
+                await sqsClient.PurgeQueueAsync(queueUrl, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (PurgeQueueInProgressException ex)
+            {
+                Logger.Warn("Multiple queue purges within 60 seconds are not permitted by SQS.", ex);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Exception thrown from PurgeQueue.", ex);
+                throw;
+            }
+        }
+
+        async Task InitDelayedDelivery(PushSettings settings, IAmazonSQS sqsClient)
+        {
             if (configuration.IsDelayedDeliveryEnabled)
             {
                 var delayedDeliveryQueueName = settings.InputQueue + TransportConfiguration.DelayedDeliveryQueueSuffix;
                 delayedDeliveryQueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(delayedDeliveryQueueName, configuration))
                     .ConfigureAwait(false);
 
-                var queueAttributes = await GetQueueAttributesFromDelayedDeliveryQueueWithRetriesToWorkaroundSDKIssue()
+                var queueAttributes = await GetQueueAttributesFromDelayedDeliveryQueueWithRetriesToWorkaroundSDKIssue(sqsClient)
                     .ConfigureAwait(false);
 
                 if (queueAttributes.DelaySeconds < configuration.DelayedDeliveryQueueDelayTime)
@@ -56,31 +96,6 @@
                     throw new Exception($"Delayed delivery queue '{delayedDeliveryQueueName}' should not have Redrive Policy enabled.");
                 }
             }
-
-            if (settings.PurgeOnStartup)
-            {
-                // SQS only allows purging a queue once every 60 seconds or so.
-                // If you try to purge a queue twice in relatively quick succession,
-                // PurgeQueueInProgressException will be thrown.
-                // This will happen if you are trying to start an endpoint twice or more
-                // in that time.
-                try
-                {
-                    await sqsClient.PurgeQueueAsync(queueUrl, CancellationToken.None).ConfigureAwait(false);
-                }
-                catch (PurgeQueueInProgressException ex)
-                {
-                    Logger.Warn("Multiple queue purges within 60 seconds are not permitted by SQS.", ex);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error("Exception thrown from PurgeQueue.", ex);
-                    throw;
-                }
-            }
-
-            this.onMessage = onMessage;
-            this.onError = onError;
         }
 
         public void Start(PushRuntimeSettings limitations)
@@ -149,6 +164,14 @@
         }
 
         async Task ConsumeDelayedMessages(ReceiveMessageRequest request, CancellationToken token)
+        {
+            using (var sqsClient = clientFactory())
+            {
+                await ConsumeDelayedMessages(request, sqsClient, token).ConfigureAwait(false);
+            }
+        }
+
+        async Task ConsumeDelayedMessages(ReceiveMessageRequest request, IAmazonSQS sqsClient, CancellationToken token)
         {
             while (!token.IsCancellationRequested)
             {
@@ -252,6 +275,14 @@
 
         async Task ConsumeMessages(CancellationToken token)
         {
+            using (var sqsClient = clientFactory())
+            {
+                await ConsumeMessages(sqsClient, token).ConfigureAwait(false);
+            }
+        }
+
+        async Task ConsumeMessages(IAmazonSQS sqsClient, CancellationToken token)
+        {
             while (!token.IsCancellationRequested)
             {
                 try
@@ -271,7 +302,7 @@
                             return;
                         }
 
-                        ProcessMessage(receivedMessage, token).Ignore();
+                        ProcessMessage(sqsClient, receivedMessage, token).Ignore();
                     }
                 }
                 catch (OperationCanceledException)
@@ -285,7 +316,7 @@
             } // while
         }
 
-        async Task ProcessMessage(Message receivedMessage, CancellationToken token)
+        async Task ProcessMessage(IAmazonSQS sqsClient, Message receivedMessage, CancellationToken token)
         {
             try
             {
@@ -335,7 +366,7 @@
                         Logger.Warn(logMessage);
                     }
 
-                    await MovePoisonMessageToErrorQueue(receivedMessage, messageId).ConfigureAwait(false);
+                    await MovePoisonMessageToErrorQueue(sqsClient, receivedMessage, messageId).ConfigureAwait(false);
                     return;
                 }
 
@@ -348,7 +379,7 @@
                 // Always delete the message from the queue.
                 // If processing failed, the onError handler will have moved the message
                 // to a retry queue.
-                await DeleteMessageAndBodyIfRequired(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
+                await DeleteMessageAndBodyIfRequired(sqsClient, receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
             }
             finally
             {
@@ -432,7 +463,7 @@
             return true;
         }
 
-        async Task DeleteMessageAndBodyIfRequired(Message message, string s3BodyKey)
+        async Task DeleteMessageAndBodyIfRequired(IAmazonSQS sqsClient, Message message, string s3BodyKey)
         {
             try
             {
@@ -451,7 +482,7 @@
             }
         }
 
-        async Task MovePoisonMessageToErrorQueue(Message message, string messageId)
+        async Task MovePoisonMessageToErrorQueue(IAmazonSQS sqsClient, Message message, string messageId)
         {
             try
             {
@@ -506,7 +537,7 @@
             // If there is a message body in S3, simply leave it there
         }
 
-        async Task<GetQueueAttributesResponse> GetQueueAttributesFromDelayedDeliveryQueueWithRetriesToWorkaroundSDKIssue()
+        async Task<GetQueueAttributesResponse> GetQueueAttributesFromDelayedDeliveryQueueWithRetriesToWorkaroundSDKIssue(IAmazonSQS sqsClient)
         {
             var attributeNames = new List<string>
             {
@@ -545,7 +576,7 @@
         int maxConcurrency;
         TransportConfiguration configuration;
         IAmazonS3 s3Client;
-        IAmazonSQS sqsClient;
+        Func<IAmazonSQS> clientFactory;
         QueueUrlCache queueUrlCache;
         int numberOfMessagesToFetch;
         ReceiveMessageRequest receiveMessagesRequest;
