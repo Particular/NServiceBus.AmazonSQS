@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Amazon.Runtime;
     using Amazon.S3;
     using Amazon.SQS;
     using Amazon.SQS.Model;
@@ -21,6 +22,7 @@
             this.s3Client = s3Client;
             this.sqsClient = sqsClient;
             this.queueUrlCache = queueUrlCache;
+            awsEndpointUrl = sqsClient.Config.DetermineServiceURL();
         }
 
         public async Task Init(Func<MessageContext, Task> onMessage, Func<ErrorContext, Task<ErrorHandleResult>> onError, CriticalError criticalError, PushSettings settings)
@@ -170,7 +172,7 @@
 
                         if (Convert.ToInt32(receivedMessage.Attributes["ApproximateReceiveCount"]) > 1)
                         {
-                            received = DateTimeOffset.UtcNow;
+                            received = CorrectClockSkew.GetCorrectedUtcNowForEndpoint(awsEndpointUrl);
                         }
 
                         var elapsed = received - sent;
@@ -339,7 +341,7 @@
                     return;
                 }
 
-                if (!IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, sqsClient.Config.ClockOffset))
+                if (!IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, CorrectClockSkew.GetClockCorrectionForEndpoint(awsEndpointUrl), CorrectClockSkew.GetCorrectedUtcNowForEndpoint(awsEndpointUrl)))
                 {
                     // here we also want to use the native message id because the core demands it like that
                     await ProcessMessageWithInMemoryRetries(transportMessage.Headers, nativeMessageId, messageBody, token).ConfigureAwait(false);
@@ -406,7 +408,7 @@
             }
         }
 
-        static bool IsMessageExpired(Message receivedMessage, Dictionary<string, string> headers, string messageId, TimeSpan clockOffset)
+        static bool IsMessageExpired(Message receivedMessage, Dictionary<string, string> headers, string messageId, TimeSpan clockOffset, DateTime correctedUtcNow)
         {
             if (!headers.TryGetValue(TransportHeaders.TimeToBeReceived, out var rawTtbr))
             {
@@ -421,14 +423,13 @@
             }
 
             var sentDateTime = receivedMessage.GetSentDateTime(clockOffset);
-            var utcNow = DateTime.UtcNow;
             var expiresAt = sentDateTime + timeToBeReceived;
-            if (expiresAt > utcNow)
+            if (expiresAt > correctedUtcNow)
             {
                 return false;
             }
             // Message has expired.
-            Logger.Info($"Discarding expired message with Id {messageId}, expired {utcNow - expiresAt} ago at {expiresAt} utc.");
+            Logger.Info($"Discarding expired message with Id {messageId}, expired {correctedUtcNow - expiresAt} ago at {expiresAt} utc.");
             return true;
         }
 
@@ -550,6 +551,7 @@
         int numberOfMessagesToFetch;
         ReceiveMessageRequest receiveMessagesRequest;
         CriticalError criticalError;
+        string awsEndpointUrl;
 
         static readonly TransportTransaction transportTransaction = new TransportTransaction();
         static ILog Logger = LogManager.GetLogger(typeof(MessagePump));
