@@ -170,7 +170,7 @@
 
                         if (Convert.ToInt32(receivedMessage.Attributes["ApproximateReceiveCount"]) > 1)
                         {
-                            received = DateTimeOffset.UtcNow;
+                            received = sqsClient.Config.CorrectedUtcNow;
                         }
 
                         var elapsed = received - sent;
