@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Amazon.Runtime;
     using Amazon.S3;
     using Amazon.SQS;
     using Amazon.SQS.Model;
@@ -21,6 +22,7 @@
             this.s3Client = s3Client;
             this.sqsClient = sqsClient;
             this.queueUrlCache = queueUrlCache;
+            awsEndpointUrl = sqsClient.Config.DetermineServiceURL();
         }
 
         public async Task Init(Func<MessageContext, Task> onMessage, Func<ErrorContext, Task<ErrorHandleResult>> onError, CriticalError criticalError, PushSettings settings)
@@ -105,8 +107,8 @@
                 MaxNumberOfMessages = numberOfMessagesToFetch,
                 QueueUrl = queueUrl,
                 WaitTimeSeconds = 20,
-                AttributeNames = new List<string> { "SentTimestamp" },
-                MessageAttributeNames = new List<string> { Headers.MessageId }
+                AttributeNames = new List<string> {"SentTimestamp"},
+                MessageAttributeNames = new List<string> {Headers.MessageId}
             };
 
             maxConcurrencySemaphore = new SemaphoreSlim(maxConcurrency);
@@ -124,8 +126,8 @@
                     MaxNumberOfMessages = 10,
                     QueueUrl = delayedDeliveryQueueUrl,
                     WaitTimeSeconds = 20,
-                    AttributeNames = new List<string> { "MessageDeduplicationId", "SentTimestamp", "ApproximateFirstReceiveTimestamp", "ApproximateReceiveCount" },
-                    MessageAttributeNames = new List<string> { "All" }
+                    AttributeNames = new List<string> {"MessageDeduplicationId", "SentTimestamp", "ApproximateFirstReceiveTimestamp", "ApproximateReceiveCount"},
+                    MessageAttributeNames = new List<string> {"All"}
                 };
 
                 pumpTasks.Add(Task.Run(() => ConsumeDelayedMessages(receiveDelayedMessagesRequest, cancellationTokenSource.Token), CancellationToken.None));
@@ -155,6 +157,7 @@
                 try
                 {
                     var receivedMessages = await sqsClient.ReceiveMessageAsync(request, token).ConfigureAwait(false);
+                    var clockCorrection = CorrectClockSkew.GetClockCorrectionForEndpoint(awsEndpointUrl);
 
                     foreach (var receivedMessage in receivedMessages.Messages)
                     {
@@ -165,12 +168,12 @@
                             long.TryParse(delayAttribute.StringValue, out delaySeconds);
                         }
 
-                        var sent = UnixTimeConverter.FromUnixTimeMilliseconds(Convert.ToInt64(receivedMessage.Attributes["SentTimestamp"]));
-                        var received = UnixTimeConverter.FromUnixTimeMilliseconds(Convert.ToInt64(receivedMessage.Attributes["ApproximateFirstReceiveTimestamp"]));
+                        var sent = receivedMessage.GetAdjustedDateTimeFromServerSetAttributes("SentTimestamp", clockCorrection);
+                        var received = receivedMessage.GetAdjustedDateTimeFromServerSetAttributes("ApproximateFirstReceiveTimestamp", clockCorrection);
 
                         if (Convert.ToInt32(receivedMessage.Attributes["ApproximateReceiveCount"]) > 1)
                         {
-                            received = DateTimeOffset.UtcNow;
+                            received = DateTime.UtcNow;
                         }
 
                         var elapsed = received - sent;
@@ -339,7 +342,7 @@
                     return;
                 }
 
-                if (!IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, sqsClient.Config.ClockOffset))
+                if (!IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, CorrectClockSkew.GetClockCorrectionForEndpoint(awsEndpointUrl)))
                 {
                     // here we also want to use the native message id because the core demands it like that
                     await ProcessMessageWithInMemoryRetries(transportMessage.Headers, nativeMessageId, messageBody, token).ConfigureAwait(false);
@@ -420,13 +423,14 @@
                 return false;
             }
 
-            var sentDateTime = receivedMessage.GetSentDateTime(clockOffset);
-            var utcNow = DateTime.UtcNow;
+            var sentDateTime = receivedMessage.GetAdjustedDateTimeFromServerSetAttributes("SentTimestamp", clockOffset);
             var expiresAt = sentDateTime + timeToBeReceived;
+            var utcNow = DateTime.UtcNow;
             if (expiresAt > utcNow)
             {
                 return false;
             }
+
             // Message has expired.
             Logger.Info($"Discarding expired message with Id {messageId}, expired {utcNow - expiresAt} ago at {expiresAt} utc.");
             return true;
@@ -488,6 +492,7 @@
                 {
                     Logger.Warn($"Error returning poison message back to input queue at url {queueUrl}. Poison message will become available at the input queue again after the visibility timeout expires.", changeMessageVisibilityEx);
                 }
+
                 return;
             }
 
@@ -503,6 +508,7 @@
             {
                 Logger.Warn($"Error removing poison message from input queue {queueUrl}. This may cause duplicate poison messages in the error queue for this endpoint.", ex);
             }
+
             // If there is a message body in S3, simply leave it there
         }
 
@@ -550,6 +556,7 @@
         int numberOfMessagesToFetch;
         ReceiveMessageRequest receiveMessagesRequest;
         CriticalError criticalError;
+        string awsEndpointUrl;
 
         static readonly TransportTransaction transportTransaction = new TransportTransaction();
         static ILog Logger = LogManager.GetLogger(typeof(MessagePump));
