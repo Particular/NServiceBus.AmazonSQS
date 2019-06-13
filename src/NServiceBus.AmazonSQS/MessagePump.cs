@@ -425,13 +425,14 @@
 
             var sentDateTime = receivedMessage.GetAdjustedDateTimeFromServerSetAttributes("SentTimestamp", clockOffset);
             var expiresAt = sentDateTime + timeToBeReceived;
-            if (expiresAt > DateTime.UtcNow)
+            var utcNow = DateTime.UtcNow;
+            if (expiresAt > utcNow)
             {
                 return false;
             }
 
             // Message has expired.
-            Logger.Info($"Discarding expired message with Id {messageId}, expired {DateTime.UtcNow - expiresAt} ago at {expiresAt} utc.");
+            Logger.Info($"Discarding expired message with Id {messageId}, expired {utcNow - expiresAt} ago at {expiresAt} utc.");
             return true;
         }
 
