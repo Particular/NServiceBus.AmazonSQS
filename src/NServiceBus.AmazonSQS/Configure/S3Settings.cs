@@ -11,7 +11,7 @@ namespace NServiceBus
     /// </summary>
     public class S3Settings : ExposeSettings
     {
-        internal S3Settings(SettingsHolder settings, string bucketForLargeMessages, string keyPrefix, string encryption) : base(settings)
+        internal S3Settings(SettingsHolder settings, string bucketForLargeMessages, string keyPrefix, string encryptionMethod) : base(settings)
         {
             Guard.AgainstNull(nameof(bucketForLargeMessages), bucketForLargeMessages);
             Guard.AgainstNullAndEmpty(nameof(keyPrefix), keyPrefix);
@@ -55,7 +55,7 @@ namespace NServiceBus
 
             this.GetSettings().Set(SettingsKeys.S3BucketForLargeMessages, bucketForLargeMessages);
             this.GetSettings().Set(SettingsKeys.S3KeyPrefix, keyPrefix);
-            this.GetSettings().Set(SettingsKeys.S3Encryption, encryption);
+            this.GetSettings().Set(SettingsKeys.S3EncryptionMethod, encryptionMethod);
         }
 
         /// <summary>
