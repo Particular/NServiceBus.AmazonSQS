@@ -60,10 +60,11 @@
         /// <param name="transportExtensions">The transport extensions.</param>
         /// <param name="bucketForLargeMessages">The name of the S3 Bucket.</param>
         /// <param name="keyPrefix">The path within the specified S3 Bucket to store large message bodies.</param>
-        public static S3Settings S3(this TransportExtensions<SqsTransport> transportExtensions, string bucketForLargeMessages, string keyPrefix)
+        /// <param name="encryption">S3 storage encryption algorithm.</param>
+        public static S3Settings S3(this TransportExtensions<SqsTransport> transportExtensions, string bucketForLargeMessages, string keyPrefix, string encryption = null)
         {
             Guard.AgainstNull(nameof(transportExtensions), transportExtensions);
-            return new S3Settings(transportExtensions.GetSettings(), bucketForLargeMessages, keyPrefix);
+            return new S3Settings(transportExtensions.GetSettings(), bucketForLargeMessages, keyPrefix, encryption);
         }
 
         /// <summary>

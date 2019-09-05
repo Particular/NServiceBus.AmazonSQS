@@ -7,6 +7,7 @@
         public const string MaxTimeToLive = Prefix + nameof(MaxTimeToLive);
         public const string S3BucketForLargeMessages = Prefix + nameof(S3BucketForLargeMessages);
         public const string S3KeyPrefix = Prefix + nameof(S3KeyPrefix);
+        public const string S3EncryptionMethod = Prefix + nameof(S3EncryptionMethod);
         public const string S3ClientFactory = Prefix + nameof(S3ClientFactory);
         public const string QueueNamePrefix = Prefix + nameof(QueueNamePrefix);
         public const string CredentialSource = Prefix + nameof(CredentialSource);

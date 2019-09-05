@@ -50,6 +50,18 @@
             }
         }
 
+        public ServerSideEncryptionMethod S3EncryptionMethod
+        {
+            get
+            {
+                if (s3EncryptionMethod == null)
+                {
+                    s3EncryptionMethod = new ServerSideEncryptionMethod(settings.GetOrDefault<string>(SettingsKeys.S3EncryptionMethod));
+                }
+                return s3EncryptionMethod;
+            }
+        }
+
         public string S3BucketForLargeMessages
         {
             get
@@ -152,6 +164,7 @@
         bool? preTruncateQueueNames;
         bool? useV1CompatiblePayload;
         int? queueDelayTime;
+        ServerSideEncryptionMethod s3EncryptionMethod;
         Func<IAmazonS3> s3ClientFactory;
         Func<IAmazonSQS> sqsClientFactory;
     }

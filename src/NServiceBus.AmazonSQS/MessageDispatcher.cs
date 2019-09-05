@@ -223,7 +223,8 @@
                     {
                         BucketName = configuration.S3BucketForLargeMessages,
                         InputStream = bodyStream,
-                        Key = key
+                        Key = key,
+                        ServerSideEncryptionMethod = configuration.S3EncryptionMethod
                     }).ConfigureAwait(false);
                 }
 

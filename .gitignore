@@ -49,6 +49,7 @@ installer/ServiceControl-cache
 *.userosscache
 *.sln.docstates
 .vs/
+.vscode/
 
 # mac temp file ignore
 .DS_Store
