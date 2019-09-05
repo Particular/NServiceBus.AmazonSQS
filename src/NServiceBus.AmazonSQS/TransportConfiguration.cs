@@ -54,7 +54,7 @@
         {
             get
             {
-                if (s3EncryptionMethod == null)
+                if (s3EncryptionMethod == null && !string.IsNullOrEmpty(SettingsKeys.S3EncryptionMethod))
                 {
                     s3EncryptionMethod = new ServerSideEncryptionMethod(settings.GetOrDefault<string>(SettingsKeys.S3EncryptionMethod));
                 }

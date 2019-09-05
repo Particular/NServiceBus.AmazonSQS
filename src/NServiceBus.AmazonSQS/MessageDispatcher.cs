@@ -219,13 +219,19 @@
 
                 using (var bodyStream = new MemoryStream(transportOperation.Message.Body))
                 {
-                    await s3Client.PutObjectAsync(new PutObjectRequest
+                    var request = new PutObjectRequest
                     {
                         BucketName = configuration.S3BucketForLargeMessages,
                         InputStream = bodyStream,
-                        Key = key,
-                        ServerSideEncryptionMethod = configuration.S3EncryptionMethod
-                    }).ConfigureAwait(false);
+                        Key = key
+                    };
+
+                    if(configuration.S3EncryptionMethod != null)
+                    {
+                        request.ServerSideEncryptionMethod = configuration.S3EncryptionMethod;
+                    }
+
+                    await s3Client.PutObjectAsync(request).ConfigureAwait(false);
                 }
 
                 sqsTransportMessage.S3BodyKey = key;
