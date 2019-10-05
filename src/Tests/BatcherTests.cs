@@ -3,6 +3,7 @@ namespace Tests
     using System;
     using System.Linq;
     using Amazon.SQS.Model;
+    using NServiceBus.AmazonSQS;
     using NServiceBus.Transports.SQS;
     using NUnit.Framework;
 
@@ -291,6 +292,22 @@ namespace Tests
 
             Assert.AreEqual(150, firstEntry.DelaySeconds);
             Assert.AreEqual(0, secondEntry.DelaySeconds);
+        }
+
+        [Test]
+        public void PutsAsManyMessagesInBatchAsPossible()
+        {
+            var singleMessageBody = new string('x', TransportConfiguration.MaximumMessageSize / TransportConfiguration.MaximumItemsInBatch);
+
+            var preparedMessages = Enumerable
+                .Range(0, 2 * TransportConfiguration.MaximumItemsInBatch)
+                .Select(n => new PreparedMessage { MessageId = Guid.NewGuid().ToString(), Body = singleMessageBody, Destination = "destination", QueueUrl = "https://destination" });
+
+            var batches = Batcher.Batch(preparedMessages);
+
+            Assert.AreEqual(2, batches.Count);
+            Assert.AreEqual(TransportConfiguration.MaximumItemsInBatch, batches[0].BatchRequest.Entries.Count);
+            Assert.AreEqual(TransportConfiguration.MaximumItemsInBatch, batches[1].BatchRequest.Entries.Count);
         }
     }
 }
