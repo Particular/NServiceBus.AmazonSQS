@@ -40,7 +40,7 @@ namespace NServiceBus.Transports.SQS
                     {
                         allBatches.Add(message.ToBatchRequest(currentDestinationBatches));
                         currentDestinationBatches.Clear();
-                        payloadSize = bodyLength;
+                        payloadSize = 0;
                     }
                 }
 
