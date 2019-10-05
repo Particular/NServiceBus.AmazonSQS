@@ -140,7 +140,11 @@
         public const string DelayedDeliveryQueueSuffix = "-delay.fifo";
         public static readonly int AwsMaximumQueueDelayTime = (int)TimeSpan.FromMinutes(15).TotalSeconds;
         public static readonly TimeSpan DelayedDeliveryQueueMessageRetentionPeriod = TimeSpan.FromDays(4);
-        public const int MaximumMessageSize = 256 * 1024;
+
+        // Attributes are included in 256 KB limit https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-message-attributes.html
+        // reserve size to allow NServiceBus.MessageId attribute
+        public const int MessageAttributesReservedSize = 128;
+        public const int MaximumMessageSize = 256 * 1024 - MessageAttributesReservedSize;
         public const int MaximumItemsInBatch = 10;
 
         ReadOnlySettings settings;
