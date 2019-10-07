@@ -248,7 +248,8 @@
 
             preparedMessage.Body = serializedMessage;
             preparedMessage.MessageId = messageId;
-            if (preparedMessage.CalculateSize() <= TransportConfiguration.MaximumMessageSize)
+            preparedMessage.CalculateSize();
+            if (preparedMessage.Size <= TransportConfiguration.MaximumMessageSize)
             {
                 return preparedMessage;
             }
@@ -272,6 +273,7 @@
             sqsTransportMessage.S3BodyKey = key;
             sqsTransportMessage.Body = string.Empty;
             preparedMessage.Body = SimpleJson.SerializeObject(sqsTransportMessage, serializerStrategy);
+            preparedMessage.CalculateSize();
 
             return preparedMessage;
         }

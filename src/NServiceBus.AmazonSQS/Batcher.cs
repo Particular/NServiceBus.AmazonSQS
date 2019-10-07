@@ -16,19 +16,20 @@ namespace NServiceBus.Transports.SQS
             foreach (var group in groupByDestination)
             {
                 PreparedMessage firstMessage = null;
-                var payloadSize = 0;
+                var payloadSize = 0L;
                 foreach (var message in group)
                 {
                     firstMessage = firstMessage ?? message;
 
-                    var bodyLength = message.Body?.Length ?? 0;
-                    payloadSize += bodyLength;
+                    // Assumes the size was already calculated by the dispatcher
+                    var size = message.Size;
+                    payloadSize += size;
 
                     if (payloadSize > TransportConfiguration.MaximumMessageSize)
                     {
                         allBatches.Add(message.ToBatchRequest(currentDestinationBatches));
                         currentDestinationBatches.Clear();
-                        payloadSize = bodyLength;
+                        payloadSize = size;
                     }
 
                     // we don't have to recheck payload size here because the support layer checks that a request can always fit 256 KB size limit

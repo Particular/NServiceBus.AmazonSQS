@@ -1,9 +1,9 @@
-﻿namespace Tests
+﻿namespace NServiceBus.AmazonSQS.Tests
 {
     using System;
     using NServiceBus;
-    using NServiceBus.AmazonSQS;
-    using NServiceBus.Settings;
+    using AmazonSQS;
+    using Settings;
     using NUnit.Framework;
 
     [TestFixture]

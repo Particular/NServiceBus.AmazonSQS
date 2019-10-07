@@ -15,10 +15,11 @@ namespace NServiceBus.Transports.SQS
         public Dictionary<string, MessageAttributeValue> MessageAttributes { get; } = new Dictionary<string, MessageAttributeValue>();
         public string MessageGroupId { get; set; }
         public string MessageDeduplicationId { get; set; }
+        public long Size { get; private set; }
 
-        public long CalculateSize()
+        public void CalculateSize()
         {
-            long size = Body.Length;
+            long size = Body?.Length ?? 0;
             foreach (var messageAttributeValue in MessageAttributes)
             {
                 size += messageAttributeValue.Key.Length;
@@ -58,7 +59,7 @@ namespace NServiceBus.Transports.SQS
                 size += binaryValuesSum;
             }
 
-            return size;
+            Size = size;
         }
     }
 }
