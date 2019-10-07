@@ -208,32 +208,8 @@
             var serializedMessage = SimpleJson.SerializeObject(sqsTransportMessage, serializerStrategy);
 
             var messageId = transportOperation.Message.MessageId;
-            if (serializedMessage.Length > TransportConfiguration.MaximumMessageSize)
-            {
-                if (string.IsNullOrEmpty(configuration.S3BucketForLargeMessages))
-                {
-                    throw new Exception("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
-                }
-
-                var key = $"{configuration.S3KeyPrefix}/{messageId}";
-
-                using (var bodyStream = new MemoryStream(transportOperation.Message.Body))
-                {
-                    await s3Client.PutObjectAsync(new PutObjectRequest
-                    {
-                        BucketName = configuration.S3BucketForLargeMessages,
-                        InputStream = bodyStream,
-                        Key = key
-                    }).ConfigureAwait(false);
-                }
-
-                sqsTransportMessage.S3BodyKey = key;
-                sqsTransportMessage.Body = string.Empty;
-                serializedMessage = SimpleJson.SerializeObject(sqsTransportMessage, serializerStrategy);
-            }
 
             var preparedMessage = new PreparedMessage();
-
             var delayLongerThanConfiguredDelayedDeliveryQueueDelayTime = configuration.IsDelayedDeliveryEnabled && delaySeconds > configuration.DelayedDeliveryQueueDelayTime;
 
             if (delayLongerThanConfiguredDelayedDeliveryQueueDelayTime)
@@ -272,6 +248,30 @@
 
             preparedMessage.Body = serializedMessage;
             preparedMessage.MessageId = messageId;
+            if (preparedMessage.CalculateSize() <= TransportConfiguration.MaximumMessageSize)
+            {
+                return preparedMessage;
+            }
+
+            if (string.IsNullOrEmpty(configuration.S3BucketForLargeMessages))
+            {
+                throw new Exception("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
+            }
+
+            var key = $"{configuration.S3KeyPrefix}/{messageId}";
+            using (var bodyStream = new MemoryStream(transportOperation.Message.Body))
+            {
+                await s3Client.PutObjectAsync(new PutObjectRequest
+                {
+                    BucketName = configuration.S3BucketForLargeMessages,
+                    InputStream = bodyStream,
+                    Key = key
+                }).ConfigureAwait(false);
+            }
+
+            sqsTransportMessage.S3BodyKey = key;
+            sqsTransportMessage.Body = string.Empty;
+            preparedMessage.Body = SimpleJson.SerializeObject(sqsTransportMessage, serializerStrategy);
 
             return preparedMessage;
         }
