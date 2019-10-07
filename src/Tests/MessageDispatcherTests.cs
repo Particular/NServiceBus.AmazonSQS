@@ -332,7 +332,7 @@
         }
 
         [Test]
-        public async Task Should_upload_large__non_isolated_operations_to_s3()
+        public async Task Should_upload_large_non_isolated_operations_to_s3()
         {
             var settings = new SettingsHolder();
             var transportExtensions = new TransportExtensions<SqsTransport>(settings);
@@ -342,7 +342,7 @@
             var mockSqsClient = new MockSqsClient();
 
             var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), mockS3Client, mockSqsClient, new QueueUrlCache(new MockSqsClient()));
-            
+
             var transportOperations = new TransportOperations(
                 new TransportOperation(
                     new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes(new string('x', 256 * 1024))),
@@ -368,7 +368,7 @@
             var firstUpload = mockS3Client.PutObjectRequestsSent.ElementAt(0);
             var secondUpload = mockS3Client.PutObjectRequestsSent.ElementAt(1);
             var thirdUpload = mockS3Client.PutObjectRequestsSent.ElementAt(2);
-            
+
             Assert.AreEqual("someBucket", firstUpload.BucketName);
             Assert.AreEqual("someBucket", secondUpload.BucketName);
             Assert.AreEqual("someBucket", thirdUpload.BucketName);
@@ -376,7 +376,7 @@
             StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{secondUpload.Key}", mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.ElementAt(0).MessageBody);
             StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{thirdUpload.Key}", mockSqsClient.BatchRequestsSent.ElementAt(2).Entries.ElementAt(0).MessageBody);
         }
-        
+
         [Test]
         public async Task Should_upload_large_isolated_operations_request_to_s3()
         {
@@ -388,7 +388,7 @@
             var mockSqsClient = new MockSqsClient();
 
             var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), mockS3Client, mockSqsClient, new QueueUrlCache(new MockSqsClient()));
-            
+
             var transportOperations = new TransportOperations(
                 new TransportOperation(
                     new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes(new string('x', 256 * 1024))),
@@ -414,7 +414,7 @@
             var firstUpload = mockS3Client.PutObjectRequestsSent.ElementAt(0);
             var secondUpload = mockS3Client.PutObjectRequestsSent.ElementAt(1);
             var thirdUpload = mockS3Client.PutObjectRequestsSent.ElementAt(2);
-            
+
             Assert.AreEqual("someBucket", firstUpload.BucketName);
             Assert.AreEqual("someBucket", secondUpload.BucketName);
             Assert.AreEqual("someBucket", thirdUpload.BucketName);
