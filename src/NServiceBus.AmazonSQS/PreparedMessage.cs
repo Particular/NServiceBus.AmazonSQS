@@ -23,10 +23,12 @@ namespace NServiceBus.Transports.SQS
             foreach (var messageAttributeValue in MessageAttributes)
             {
                 size += messageAttributeValue.Key.Length;
-                size += messageAttributeValue.Value.StringValue?.Length ?? 0;
+                var attributeValue = messageAttributeValue.Value;
+                size += attributeValue.DataType?.Length ?? 0;
+                size += attributeValue.StringValue?.Length ?? 0;
                 var stringValuesSum = 0;
                 // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
-                foreach (var x in messageAttributeValue.Value.StringListValues)
+                foreach (var x in attributeValue.StringListValues)
                 {
                     stringValuesSum += x?.Length ?? 0;
                 }
@@ -35,7 +37,7 @@ namespace NServiceBus.Transports.SQS
 
                 try
                 {
-                    size += messageAttributeValue.Value.BinaryValue?.Length ?? 0;
+                    size += attributeValue.BinaryValue?.Length ?? 0;
                 }
                 catch (Exception)
                 {
@@ -44,7 +46,7 @@ namespace NServiceBus.Transports.SQS
 
                 var binaryValuesSum = 0L;
                 // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
-                foreach (var x in messageAttributeValue.Value.BinaryListValues)
+                foreach (var x in attributeValue.BinaryListValues)
                 {
                     try
                     {
