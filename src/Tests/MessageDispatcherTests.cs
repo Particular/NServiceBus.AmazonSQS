@@ -1,6 +1,7 @@
 ﻿namespace NServiceBus.AmazonSQS.Tests
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
@@ -95,10 +96,25 @@
             Assert.IsFalse(bodyJson.ContainsKey("ReplyToAddress"), "ReplyToAddress serialized");
         }
 
-        [Test]
-        public async Task Includes_message_id_in_message_attributes()
+        public static IEnumerable MessageIdConstraintsSource
+        {
+            get
+            {
+                yield return new TestCaseData(new List<DeliveryConstraint>
+                {
+                    new DelayDeliveryWith(TimeSpan.FromMinutes(30))
+                });
+                yield return new TestCaseData(new List<DeliveryConstraint>());
+            }
+        }
+
+        [Theory]
+        [TestCaseSource(nameof(MessageIdConstraintsSource))]
+        public async Task Includes_message_id_in_message_attributes(List<DeliveryConstraint> constraints)
         {
             var settings = new SettingsHolder();
+            var transportExtensions = new TransportExtensions<SqsTransport>(settings);
+            transportExtensions.UnrestrictedDurationDelayedDelivery();
 
             var mockSqsClient = new MockSqsClient();
 
@@ -110,7 +126,8 @@
                 new TransportOperation(
                     new OutgoingMessage(expectedId, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
                     new UnicastAddressTag("address"),
-                    DispatchConsistency.Isolated));
+                    DispatchConsistency.Isolated,
+                    constraints));
 
             var transportTransaction = new TransportTransaction();
             var context = new ContextBag();

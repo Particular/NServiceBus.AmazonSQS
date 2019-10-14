@@ -234,17 +234,19 @@
                 preparedMessage.QueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(preparedMessage.Destination, configuration))
                     .ConfigureAwait(false);
 
-                preparedMessage.MessageAttributes[Headers.MessageId] = new MessageAttributeValue
-                {
-                    StringValue = messageId,
-                    DataType = "String"
-                };
-
                 if (delaySeconds > 0)
                 {
                     preparedMessage.DelaySeconds = Convert.ToInt32(delaySeconds);
                 }
             }
+            
+            // because message attributes are part of the content size restriction we want to prevent message size from changing thus we add it 
+            // for native delayed deliver as well even though the information is slightly redundant (MessageId is assigned to MessageDeduplicationId for example)
+            preparedMessage.MessageAttributes[Headers.MessageId] = new MessageAttributeValue
+            {
+                StringValue = messageId,
+                DataType = "String"
+            };
 
             preparedMessage.Body = serializedMessage;
             preparedMessage.MessageId = messageId;

@@ -168,6 +168,12 @@
                             long.TryParse(delayAttribute.StringValue, out delaySeconds);
                         }
 
+                        string messageId = null;
+                        if (receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
+                        {
+                            messageId = messageIdAttribute.StringValue;
+                        }
+
                         var sent = receivedMessage.GetAdjustedDateTimeFromServerSetAttributes("SentTimestamp", clockCorrection);
                         var received = receivedMessage.GetAdjustedDateTimeFromServerSetAttributes("ApproximateFirstReceiveTimestamp", clockCorrection);
 
@@ -199,6 +205,7 @@
                             var deduplicationId = receivedMessage.Attributes["MessageDeduplicationId"];
 
                             // this is only here for acceptance testing purpose. In real prod code this is always false.
+                            // it allows us to fake multiple cycles over the FIFO queue without being subjected to deduplication
                             if (configuration.DelayedDeliveryQueueDelayTime < TransportConfiguration.AwsMaximumQueueDelayTime)
                             {
                                 deduplicationId = Guid.NewGuid().ToString();
@@ -215,6 +222,20 @@
                                 sendMessageRequest.DelaySeconds = Convert.ToInt32(remainingDelay);
                             }
                         }
+
+                        if (string.IsNullOrEmpty(messageId))
+                        {
+                            // for backward compatibility if we couldn't fetch the message id header from the attributes we use the message deduplication id
+                            messageId = receivedMessage.Attributes["MessageDeduplicationId"];
+                        }
+
+                        // because message attributes are part of the content size restriction we want to prevent message size from changing thus we add it 
+                        // for native delayed deliver as well
+                        sendMessageRequest.MessageAttributes[Headers.MessageId] = new MessageAttributeValue
+                        {
+                            StringValue = messageId,
+                            DataType = "String"
+                        };
 
                         try
                         {
