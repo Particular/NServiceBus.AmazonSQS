@@ -1,6 +1,7 @@
 ﻿namespace NServiceBus.AmazonSQS.Tests
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
@@ -95,10 +96,25 @@
             Assert.IsFalse(bodyJson.ContainsKey("ReplyToAddress"), "ReplyToAddress serialized");
         }
 
-        [Test]
-        public async Task Includes_message_id_in_message_attributes()
+        public static IEnumerable MessageIdConstraintsSource
+        {
+            get
+            {
+                yield return new TestCaseData(new List<DeliveryConstraint>
+                {
+                    new DelayDeliveryWith(TimeSpan.FromMinutes(30))
+                });
+                yield return new TestCaseData(new List<DeliveryConstraint>());
+            }
+        }
+
+        [Theory]
+        [TestCaseSource(nameof(MessageIdConstraintsSource))]
+        public async Task Includes_message_id_in_message_attributes(List<DeliveryConstraint> constraints)
         {
             var settings = new SettingsHolder();
+            var transportExtensions = new TransportExtensions<SqsTransport>(settings);
+            transportExtensions.UnrestrictedDurationDelayedDelivery();
 
             var mockSqsClient = new MockSqsClient();
 
@@ -110,7 +126,8 @@
                 new TransportOperation(
                     new OutgoingMessage(expectedId, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
                     new UnicastAddressTag("address"),
-                    DispatchConsistency.Isolated));
+                    DispatchConsistency.Isolated,
+                    constraints));
 
             var transportTransaction = new TransportTransaction();
             var context = new ContextBag();
@@ -329,6 +346,98 @@
             Assert.AreEqual(2, mockSqsClient.BatchRequestsSent.Count);
             CollectionAssert.AreEquivalent(new[] { firstMessageIdThatWillFail, firstMessageThatWillBeSuccessful }, mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue));
             CollectionAssert.AreEquivalent(new[] { secondMessageIdThatWillFail, secondMessageThatWillBeSuccessful }, mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue));
+        }
+
+        [Test]
+        public async Task Should_upload_large_non_isolated_operations_to_s3()
+        {
+            var settings = new SettingsHolder();
+            var transportExtensions = new TransportExtensions<SqsTransport>(settings);
+            transportExtensions.S3("someBucket", "somePrefix");
+
+            var mockS3Client = new MockS3Client();
+            var mockSqsClient = new MockSqsClient();
+
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), mockS3Client, mockSqsClient, new QueueUrlCache(new MockSqsClient()));
+
+            var transportOperations = new TransportOperations(
+                new TransportOperation(
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes(new string('x', 256 * 1024))),
+                    new UnicastAddressTag("address1"),
+                    DispatchConsistency.Default),
+                new TransportOperation(
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes(new string('x', 256 * 1024))),
+                    new UnicastAddressTag("address2"),
+                    DispatchConsistency.Default),
+                new TransportOperation( /* Crazy long message id will cause the message to go over limits because attributes count as well */
+                    new OutgoingMessage(new string('x', 256 * 1024), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new UnicastAddressTag("address2"),
+                    DispatchConsistency.Default)                );
+
+            var transportTransaction = new TransportTransaction();
+            var context = new ContextBag();
+
+            await dispatcher.Dispatch(transportOperations, transportTransaction, context);
+
+            Assert.AreEqual(3, mockSqsClient.BatchRequestsSent.Count);
+            Assert.AreEqual(3, mockS3Client.PutObjectRequestsSent.Count);
+
+            var firstUpload = mockS3Client.PutObjectRequestsSent.ElementAt(0);
+            var secondUpload = mockS3Client.PutObjectRequestsSent.ElementAt(1);
+            var thirdUpload = mockS3Client.PutObjectRequestsSent.ElementAt(2);
+
+            Assert.AreEqual("someBucket", firstUpload.BucketName);
+            Assert.AreEqual("someBucket", secondUpload.BucketName);
+            Assert.AreEqual("someBucket", thirdUpload.BucketName);
+            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{firstUpload.Key}", mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.ElementAt(0).MessageBody);
+            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{secondUpload.Key}", mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.ElementAt(0).MessageBody);
+            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{thirdUpload.Key}", mockSqsClient.BatchRequestsSent.ElementAt(2).Entries.ElementAt(0).MessageBody);
+        }
+
+        [Test]
+        public async Task Should_upload_large_isolated_operations_request_to_s3()
+        {
+            var settings = new SettingsHolder();
+            var transportExtensions = new TransportExtensions<SqsTransport>(settings);
+            transportExtensions.S3("someBucket", "somePrefix");
+
+            var mockS3Client = new MockS3Client();
+            var mockSqsClient = new MockSqsClient();
+
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), mockS3Client, mockSqsClient, new QueueUrlCache(new MockSqsClient()));
+
+            var transportOperations = new TransportOperations(
+                new TransportOperation(
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes(new string('x', 256 * 1024))),
+                    new UnicastAddressTag("address1"),
+                    DispatchConsistency.Isolated),
+                new TransportOperation(
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes(new string('x', 256 * 1024))),
+                    new UnicastAddressTag("address2"),
+                    DispatchConsistency.Isolated),
+                new TransportOperation( /* Crazy long message id will cause the message to go over limits because attributes count as well */
+                    new OutgoingMessage(new string('x', 256 * 1024), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new UnicastAddressTag("address2"),
+                    DispatchConsistency.Isolated)                );
+
+            var transportTransaction = new TransportTransaction();
+            var context = new ContextBag();
+
+            await dispatcher.Dispatch(transportOperations, transportTransaction, context);
+
+            Assert.AreEqual(3, mockSqsClient.RequestsSent.Count);
+            Assert.AreEqual(3, mockS3Client.PutObjectRequestsSent.Count);
+
+            var firstUpload = mockS3Client.PutObjectRequestsSent.ElementAt(0);
+            var secondUpload = mockS3Client.PutObjectRequestsSent.ElementAt(1);
+            var thirdUpload = mockS3Client.PutObjectRequestsSent.ElementAt(2);
+
+            Assert.AreEqual("someBucket", firstUpload.BucketName);
+            Assert.AreEqual("someBucket", secondUpload.BucketName);
+            Assert.AreEqual("someBucket", thirdUpload.BucketName);
+            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{firstUpload.Key}", mockSqsClient.RequestsSent.ElementAt(0).MessageBody);
+            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{secondUpload.Key}", mockSqsClient.RequestsSent.ElementAt(1).MessageBody);
+            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{thirdUpload.Key}", mockSqsClient.RequestsSent.ElementAt(2).MessageBody);
         }
     }
 }
