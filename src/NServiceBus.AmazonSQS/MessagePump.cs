@@ -203,10 +203,10 @@
                             };
 
                             var deduplicationId = messageId;
-                            if (string.IsNullOrEmpty(messageId))
+                            if (string.IsNullOrEmpty(deduplicationId))
                             {
                                 // for backwards compatibility because the dispatcher did not always send the message id attribute before
-                                deduplicationId = receivedMessage.Attributes["MessageDeduplicationId"];
+                                messageId = deduplicationId = receivedMessage.Attributes["MessageDeduplicationId"];
                             }
 
                             // this is only here for acceptance testing purpose. In real prod code this is always false.
