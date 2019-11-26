@@ -65,5 +65,40 @@ namespace NServiceBus
             Guard.AgainstNull(nameof(factory), factory);
             this.GetSettings().Set(SettingsKeys.S3ClientFactory, factory);
         }
+
+        /// <summary>
+        /// Configures the client to use the server side encryption method when putting objects to S3 with an optional provided key id.
+        /// </summary>
+        public void ServerSideEncryption(ServerSideEncryptionMethod encryptionMethod, string keyManagementServiceKeyId = null)
+        {
+            if (this.GetSettings().HasExplicitValue(SettingsKeys.ServerSideEncryptionCustomerMethod))
+            {
+                throw new ArgumentException("ServerSideEncryption cannot be combined with ServerSideCustomerEncryption.");
+            }
+            
+            this.GetSettings().Set(SettingsKeys.ServerSideEncryptionMethod, encryptionMethod);
+            this.GetSettings().Set(SettingsKeys.ServerSideEncryptionKeyManagementServiceKeyId, keyManagementServiceKeyId);
+        }
+        
+        /// <summary>
+        /// Configures the client to use the customer provided server side encryption method when putting and getting objects to and from S3 with an optional MD5 of the provided key.
+        /// </summary>
+        public void ServerSideCustomerEncryption(ServerSideEncryptionCustomerMethod encryptionMethod, string providedKey, string providedKeyMD5 = null)
+        {
+            if (this.GetSettings().HasExplicitValue(SettingsKeys.ServerSideEncryptionMethod))
+            {
+                throw new ArgumentException("ServerSideCustomerEncryption cannot be combined with ServerSideEncryption.");
+            }
+
+            if (string.IsNullOrEmpty(providedKey))
+            {
+                throw new ArgumentException("Specify a valid ServerSideCustomerProvidedKey", nameof(providedKey));
+            }
+            
+            this.GetSettings().Set(SettingsKeys.ServerSideEncryptionCustomerMethod, encryptionMethod);
+            this.GetSettings().Set(SettingsKeys.ServerSideEncryptionCustomerProvidedKey, providedKey);
+            this.GetSettings().Set(SettingsKeys.ServerSideEncryptionCustomerProvidedKeyMD5, providedKeyMD5);
+            
+        }
     }
 }
