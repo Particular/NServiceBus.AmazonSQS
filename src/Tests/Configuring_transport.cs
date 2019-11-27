@@ -1,6 +1,7 @@
 ﻿using NServiceBus;
 using NUnit.Framework;
 using System;
+using Amazon.S3;
 using NServiceBus.Configuration.AdvancedExtensibility;
 using NServiceBus.Settings;
 
@@ -22,6 +23,58 @@ public class Configuring_transport
         var extensions = new TransportExtensions<SqsTransport>(new SettingsHolder());
 
         Assert.Throws<ArgumentNullException>(() => extensions.S3("myTestBucket", string.Empty));
+    }
+
+    [Test]
+    public void Parsing_s3_server_side_settings_works()
+    {
+        var extensions = new TransportExtensions<SqsTransport>(new SettingsHolder());
+        var s3Settings = extensions.S3("myTestBucket", "blah\blah");
+        s3Settings.ServerSideEncryption(ServerSideEncryptionMethod.AES256, "SomeKey");
+
+        Assert.AreEqual(ServerSideEncryptionMethod.AES256, s3Settings.GetSettings().Get("NServiceBus.AmazonSQS.ServerSideEncryptionMethod"));
+        Assert.AreEqual("SomeKey", s3Settings.GetSettings().Get("NServiceBus.AmazonSQS.ServerSideEncryptionKeyManagementServiceKeyId"));
+    }
+
+    [Test]
+    public void Parsing_s3_server_side_customer_settings_works()
+    {
+        var extensions = new TransportExtensions<SqsTransport>(new SettingsHolder());
+        var s3Settings = extensions.S3("myTestBucket", "blah\blah");
+        s3Settings.ServerSideCustomerEncryption(ServerSideEncryptionCustomerMethod.AES256, "SomeKey", "SomeMD5");
+
+        Assert.AreEqual(ServerSideEncryptionCustomerMethod.AES256, s3Settings.GetSettings().Get("NServiceBus.AmazonSQS.ServerSideEncryptionCustomerMethod"));
+        Assert.AreEqual("SomeKey", s3Settings.GetSettings().Get("NServiceBus.AmazonSQS.ServerSideEncryptionCustomerProvidedKey"));
+        Assert.AreEqual("SomeMD5", s3Settings.GetSettings().Get("NServiceBus.AmazonSQS.ServerSideEncryptionCustomerProvidedKeyMD5"));
+    }
+
+    [Test]
+    public void S3_server_side_customer_settings_provided_key_not_empty()
+    {
+        var extensions = new TransportExtensions<SqsTransport>(new SettingsHolder());
+        var s3Settings = extensions.S3("myTestBucket", "blah\blah");
+
+        Assert.Throws<ArgumentException>(() => s3Settings.ServerSideCustomerEncryption(ServerSideEncryptionCustomerMethod.AES256, ""));
+    }
+
+    [Test]
+    public void S3_server_side_settings_cannot_be_used_with_customer_settings()
+    {
+        var extensions = new TransportExtensions<SqsTransport>(new SettingsHolder());
+        var s3Settings = extensions.S3("myTestBucket", "blah\blah");
+        s3Settings.ServerSideEncryption(ServerSideEncryptionMethod.AES256, "SomeKey");
+
+        Assert.Throws<InvalidOperationException>(() => s3Settings.ServerSideCustomerEncryption(ServerSideEncryptionCustomerMethod.AES256, "SomeKey"));
+    }
+
+    [Test]
+    public void S3_customer_settings_cannot_be_used_with_server_side_settings()
+    {
+        var extensions = new TransportExtensions<SqsTransport>(new SettingsHolder());
+        var s3Settings = extensions.S3("myTestBucket", "blah\blah");
+        s3Settings.ServerSideCustomerEncryption(ServerSideEncryptionCustomerMethod.AES256, "SomeKey");
+
+        Assert.Throws<InvalidOperationException>(() => s3Settings.ServerSideEncryption(ServerSideEncryptionMethod.AES256, "SomeKey"));
     }
 
     [Test]
