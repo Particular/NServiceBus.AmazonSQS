@@ -136,7 +136,77 @@
                 return queueDelayTime.Value;
             }
         }
+        
+        public ServerSideEncryptionMethod ServerSideEncryptionMethod
+        {
+            get
+            {
+                if (!serverSideEncryptionMethodInitialized)
+                {
+                    serverSideEncryptionMethod = settings.GetOrDefault<ServerSideEncryptionMethod>(SettingsKeys.ServerSideEncryptionMethod);
+                    serverSideEncryptionMethodInitialized = true;
+                }
 
+                return serverSideEncryptionMethod;
+            }
+        }
+        
+        public string ServerSideEncryptionKeyManagementServiceKeyId
+        {
+            get
+            {
+                if (!serverSideEncryptionKeyManagementServiceKeyIdInitialized)
+                {
+                    serverSideEncryptionKeyManagementServiceKeyId = settings.GetOrDefault<string>(SettingsKeys.ServerSideEncryptionKeyManagementServiceKeyId);
+                    serverSideEncryptionKeyManagementServiceKeyIdInitialized = true;
+                }
+
+                return serverSideEncryptionKeyManagementServiceKeyId;
+            }
+        }
+        
+        public ServerSideEncryptionCustomerMethod ServerSideEncryptionCustomerMethod
+        {
+            get
+            {
+                if (!serverSideEncryptionCustomerMethodInitialized)
+                {
+                    serverSideEncryptionCustomerMethod = settings.GetOrDefault<ServerSideEncryptionCustomerMethod>(SettingsKeys.ServerSideEncryptionCustomerMethod);
+                    serverSideEncryptionCustomerMethodInitialized = true;
+                }
+
+                return serverSideEncryptionCustomerMethod;
+            }
+        }
+
+        public string ServerSideEncryptionCustomerProvidedKey
+        {
+            get
+            {
+                if (!serverSideEncryptionCustomerProvidedKeyInitialized)
+                {
+                    serverSideEncryptionCustomerProvidedKey = settings.GetOrDefault<string>(SettingsKeys.ServerSideEncryptionCustomerProvidedKey);
+                    serverSideEncryptionCustomerProvidedKeyInitialized = true;
+                }
+
+                return serverSideEncryptionCustomerProvidedKey;
+            }
+        }
+        
+        public string ServerSideEncryptionCustomerProvidedKeyMD5
+        {
+            get
+            {
+                if (!serverSideEncryptionCustomerProvidedKeyMD5Initialized)
+                {
+                    serverSideEncryptionCustomerProvidedKeyMD5 = settings.GetOrDefault<string>(SettingsKeys.ServerSideEncryptionCustomerProvidedKeyMD5);
+                    serverSideEncryptionCustomerProvidedKeyMD5Initialized = true;
+                }
+
+                return serverSideEncryptionCustomerProvidedKeyMD5;
+            }
+        }
+        
         public const string DelayedDeliveryQueueSuffix = "-delay.fifo";
         public static readonly int AwsMaximumQueueDelayTime = (int)TimeSpan.FromMinutes(15).TotalSeconds;
         public static readonly TimeSpan DelayedDeliveryQueueMessageRetentionPeriod = TimeSpan.FromDays(4);
@@ -148,6 +218,16 @@
         string s3BucketForLargeMessages;
         string s3KeyPrefix;
         string queueNamePrefix;
+        ServerSideEncryptionMethod serverSideEncryptionMethod;
+        bool serverSideEncryptionMethodInitialized;
+        string serverSideEncryptionKeyManagementServiceKeyId;
+        bool serverSideEncryptionKeyManagementServiceKeyIdInitialized;
+        ServerSideEncryptionCustomerMethod serverSideEncryptionCustomerMethod;
+        bool serverSideEncryptionCustomerMethodInitialized;
+        string serverSideEncryptionCustomerProvidedKey;
+        bool serverSideEncryptionCustomerProvidedKeyInitialized;
+        string serverSideEncryptionCustomerProvidedKeyMD5;
+        bool serverSideEncryptionCustomerProvidedKeyMD5Initialized;
         bool? isDelayedDeliveryEnabled;
         bool? preTruncateQueueNames;
         bool? useV1CompatiblePayload;

@@ -264,12 +264,15 @@
             var key = $"{configuration.S3KeyPrefix}/{messageId}";
             using (var bodyStream = new MemoryStream(transportOperation.Message.Body))
             {
-                await s3Client.PutObjectAsync(new PutObjectRequest
+                var putObjectRequest = new PutObjectRequest
                 {
                     BucketName = configuration.S3BucketForLargeMessages,
                     InputStream = bodyStream,
-                    Key = key
-                }).ConfigureAwait(false);
+                    Key = key,
+                };
+                ApplyServerSideEncryptionConfiguration(putObjectRequest);
+                
+                await s3Client.PutObjectAsync(putObjectRequest).ConfigureAwait(false);
             }
 
             sqsTransportMessage.S3BodyKey = key;
@@ -278,6 +281,32 @@
             preparedMessage.CalculateSize();
 
             return preparedMessage;
+        }
+
+        void ApplyServerSideEncryptionConfiguration(PutObjectRequest putObjectRequest)
+        {
+            if (configuration.ServerSideEncryptionMethod != null)
+            {
+                putObjectRequest.ServerSideEncryptionMethod = configuration.ServerSideEncryptionMethod;
+
+                if (!string.IsNullOrEmpty(configuration.ServerSideEncryptionKeyManagementServiceKeyId))
+                {
+                    putObjectRequest.ServerSideEncryptionKeyManagementServiceKeyId = configuration.ServerSideEncryptionKeyManagementServiceKeyId;
+                }
+
+                return;
+            }
+
+            if (configuration.ServerSideEncryptionCustomerMethod != null)
+            {
+                putObjectRequest.ServerSideEncryptionCustomerMethod = configuration.ServerSideEncryptionCustomerMethod;
+                putObjectRequest.ServerSideEncryptionCustomerProvidedKey = configuration.ServerSideEncryptionCustomerProvidedKey;
+
+                if (!string.IsNullOrEmpty(configuration.ServerSideEncryptionCustomerProvidedKeyMD5))
+                {
+                    putObjectRequest.ServerSideEncryptionCustomerProvidedKeyMD5 = configuration.ServerSideEncryptionCustomerProvidedKeyMD5;
+                }
+            }
         }
 
         TransportConfiguration configuration;

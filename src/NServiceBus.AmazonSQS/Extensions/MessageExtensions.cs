@@ -6,6 +6,7 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.S3;
+    using Amazon.S3.Model;
     using Amazon.SQS.Model;
 
     static class MessageExtensions
@@ -20,9 +21,25 @@
                 return Convert.FromBase64String(transportMessage.Body);
             }
 
-            var s3GetResponse = await s3Client.GetObjectAsync(transportConfiguration.S3BucketForLargeMessages,
-                transportMessage.S3BodyKey,
-                cancellationToken).ConfigureAwait(false);
+            var getObjectRequest = new GetObjectRequest
+            {
+                BucketName = transportConfiguration.S3BucketForLargeMessages,
+                Key = transportMessage.S3BodyKey
+            };
+            
+            if (transportConfiguration.ServerSideEncryptionCustomerMethod != null)
+            {
+                getObjectRequest.ServerSideEncryptionCustomerMethod = transportConfiguration.ServerSideEncryptionCustomerMethod;
+                getObjectRequest.ServerSideEncryptionCustomerProvidedKey = transportConfiguration.ServerSideEncryptionCustomerProvidedKey;
+
+                if (!string.IsNullOrEmpty(transportConfiguration.ServerSideEncryptionCustomerProvidedKeyMD5))
+                {
+                    getObjectRequest.ServerSideEncryptionCustomerProvidedKeyMD5 = transportConfiguration.ServerSideEncryptionCustomerProvidedKeyMD5;
+                }
+            }
+            
+            var s3GetResponse = await s3Client.GetObjectAsync(getObjectRequest, cancellationToken)
+                .ConfigureAwait(false);
 
             using (var memoryStream = new MemoryStream())
             {

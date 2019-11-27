@@ -6,6 +6,8 @@ namespace NServiceBus
     public class S3Settings : NServiceBus.Configuration.AdvancedExtensibility.ExposeSettings
     {
         public void ClientFactory(System.Func<Amazon.S3.IAmazonS3> factory) { }
+        public void ServerSideCustomerEncryption(Amazon.S3.ServerSideEncryptionCustomerMethod encryptionMethod, string providedKey, string providedKeyMD5 = null) { }
+        public void ServerSideEncryption(Amazon.S3.ServerSideEncryptionMethod encryptionMethod, string keyManagementServiceKeyId = null) { }
     }
     [System.ObsoleteAttribute("Use `transport.ClientFactory(() => new AmazonSqsClient(customConfig))` instead. W" +
         "ill be removed in version 5.0.0.", true)]
