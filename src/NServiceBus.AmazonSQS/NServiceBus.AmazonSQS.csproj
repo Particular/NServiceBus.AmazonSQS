@@ -10,7 +10,7 @@
     <PackageReference Include="AWSSDK.SQS" Version="[3.3.3.10, 3.4)" />
     <PackageReference Include="NServiceBus" Version="[7.0.0, 8.0.0)" />
     <PackageReference Include="Fody" Version="4.2.1" PrivateAssets="All" />
-    <PackageReference Include="Obsolete.Fody" Version="4.4.1" PrivateAssets="All" />
+    <PackageReference Include="Obsolete.Fody" Version="4.4.3" PrivateAssets="All" />
     <PackageReference Include="Particular.CodeRules" Version="0.2.1" PrivateAssets="All" />
     <PackageReference Include="Particular.Packaging" Version="0.3.0" PrivateAssets="All" />
   </ItemGroup>
