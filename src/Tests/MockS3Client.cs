@@ -23,6 +23,36 @@
 
         #region NotImplemented
 
+        public PutObjectLegalHoldResponse PutObjectLegalHold(PutObjectLegalHoldRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<PutObjectLegalHoldResponse> PutObjectLegalHoldAsync(PutObjectLegalHoldRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            throw new NotImplementedException();
+        }
+
+        public PutObjectLockConfigurationResponse PutObjectLockConfiguration(PutObjectLockConfigurationRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<PutObjectLockConfigurationResponse> PutObjectLockConfigurationAsync(PutObjectLockConfigurationRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            throw new NotImplementedException();
+        }
+
+        public PutObjectRetentionResponse PutObjectRetention(PutObjectRetentionRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<PutObjectRetentionResponse> PutObjectRetentionAsync(PutObjectRetentionRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            throw new NotImplementedException();
+        }
+
         public void Dispose()
         {
             throw new NotImplementedException();
@@ -450,6 +480,16 @@
             throw new NotImplementedException();
         }
 
+        public DeletePublicAccessBlockResponse DeletePublicAccessBlock(DeletePublicAccessBlockRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<DeletePublicAccessBlockResponse> DeletePublicAccessBlockAsync(DeletePublicAccessBlockRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            throw new NotImplementedException();
+        }
+
         public GetACLResponse GetACL(string bucketName)
         {
             throw new NotImplementedException();
@@ -610,6 +650,16 @@
             throw new NotImplementedException();
         }
 
+        public GetBucketPolicyStatusResponse GetBucketPolicyStatus(GetBucketPolicyStatusRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<GetBucketPolicyStatusResponse> GetBucketPolicyStatusAsync(GetBucketPolicyStatusRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            throw new NotImplementedException();
+        }
+
         public GetBucketReplicationResponse GetBucketReplication(GetBucketReplicationRequest request)
         {
             throw new NotImplementedException();
@@ -760,6 +810,26 @@
             throw new NotImplementedException();
         }
 
+        public GetObjectLegalHoldResponse GetObjectLegalHold(GetObjectLegalHoldRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<GetObjectLegalHoldResponse> GetObjectLegalHoldAsync(GetObjectLegalHoldRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            throw new NotImplementedException();
+        }
+
+        public GetObjectLockConfigurationResponse GetObjectLockConfiguration(GetObjectLockConfigurationRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<GetObjectLockConfigurationResponse> GetObjectLockConfigurationAsync(GetObjectLockConfigurationRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            throw new NotImplementedException();
+        }
+
         public GetObjectMetadataResponse GetObjectMetadata(string bucketName, string key)
         {
             throw new NotImplementedException();
@@ -790,6 +860,16 @@
             throw new NotImplementedException();
         }
 
+        public GetObjectRetentionResponse GetObjectRetention(GetObjectRetentionRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<GetObjectRetentionResponse> GetObjectRetentionAsync(GetObjectRetentionRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            throw new NotImplementedException();
+        }
+
         public GetObjectTaggingResponse GetObjectTagging(GetObjectTaggingRequest request)
         {
             throw new NotImplementedException();
@@ -816,6 +896,16 @@
         }
 
         public Task<GetObjectTorrentResponse> GetObjectTorrentAsync(GetObjectTorrentRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            throw new NotImplementedException();
+        }
+
+        public GetPublicAccessBlockResponse GetPublicAccessBlock(GetPublicAccessBlockRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<GetPublicAccessBlockResponse> GetPublicAccessBlockAsync(GetPublicAccessBlockRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
         }
@@ -1275,6 +1365,16 @@
             throw new NotImplementedException();
         }
 
+        public PutPublicAccessBlockResponse PutPublicAccessBlock(PutPublicAccessBlockRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<PutPublicAccessBlockResponse> PutPublicAccessBlockAsync(PutPublicAccessBlockRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            throw new NotImplementedException();
+        }
+
         public RestoreObjectResponse RestoreObject(string bucketName, string key)
         {
             throw new NotImplementedException();
@@ -1321,6 +1421,16 @@
         }
 
         public Task<RestoreObjectResponse> RestoreObjectAsync(RestoreObjectRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            throw new NotImplementedException();
+        }
+
+        public SelectObjectContentResponse SelectObjectContent(SelectObjectContentRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<SelectObjectContentResponse> SelectObjectContentAsync(SelectObjectContentRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
         }
