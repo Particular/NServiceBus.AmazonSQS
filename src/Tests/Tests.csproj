@@ -10,7 +10,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="3.3.110.22" />
-    <PackageReference Include="AWSSDK.SQS" Version="3.3.102.63" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.3.102.64" />
     <PackageReference Include="NServiceBus" Version="7.2.2" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
     <PackageReference Include="NUnit" Version="3.12.0" />
