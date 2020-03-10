@@ -9,7 +9,7 @@
     <ProjectReference Include="..\NServiceBus.AmazonSQS\NServiceBus.AmazonSQS.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.3.110.29" />
+    <PackageReference Include="AWSSDK.S3" Version="3.3.110.32" />
     <PackageReference Include="AWSSDK.SQS" Version="3.3.102.73" />
     <PackageReference Include="NServiceBus.AcceptanceTests.Sources" Version="7.2.3" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
