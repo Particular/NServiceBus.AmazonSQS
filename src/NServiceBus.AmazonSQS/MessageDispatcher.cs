@@ -7,6 +7,7 @@
     using System.Threading.Tasks;
     using Amazon.S3;
     using Amazon.S3.Model;
+    using Amazon.SimpleNotificationService;
     using Amazon.SQS;
     using Amazon.SQS.Model;
     using AmazonSQS;
@@ -15,11 +16,15 @@
     using Logging;
     using SimpleJson;
     using Transport;
+    using Unicast.Messages;
+    using MessageAttributeValue = Amazon.SQS.Model.MessageAttributeValue;
 
     class MessageDispatcher : IDispatchMessages
     {
-        public MessageDispatcher(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
+        public MessageDispatcher(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, QueueUrlCache queueUrlCache, MessageMetadataRegistry messageMetadataRegistry)
         {
+            this.messageMetadataRegistry = messageMetadataRegistry;
+            this.snsClient = snsClient;
             this.configuration = configuration;
             this.s3Client = s3Client;
             this.sqsClient = sqsClient;
@@ -29,33 +34,48 @@
 
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
         {
-            List<Task> concurrentDispatchTasks = null;
+            var concurrentDispatchTasks =  new List<Task>(3);
             foreach (var dispatchConsistencyGroup in outgoingMessages.UnicastTransportOperations.GroupBy(o => o.RequiredDispatchConsistency))
             {
                 switch (dispatchConsistencyGroup.Key)
                 {
                     case DispatchConsistency.Isolated:
-                        concurrentDispatchTasks = concurrentDispatchTasks ?? new List<Task>();
                         concurrentDispatchTasks.Add(DispatchIsolated(dispatchConsistencyGroup));
                         break;
                     case DispatchConsistency.Default:
-                        concurrentDispatchTasks = concurrentDispatchTasks ?? new List<Task>();
                         concurrentDispatchTasks.Add(DispatchBatched(dispatchConsistencyGroup));
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
-
-                try
-                {
-                    await Task.WhenAll(concurrentDispatchTasks).ConfigureAwait(false);
-                }
-                catch (Exception e)
-                {
-                    Logger.Error("Exception from Send.", e);
-                    throw;
-                }
             }
+            
+            
+            concurrentDispatchTasks.Add(DispatchMulticast(outgoingMessages.MulticastTransportOperations));
+            
+            try
+            {
+                await Task.WhenAll(concurrentDispatchTasks).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                Logger.Error("Exception from Send.", e);
+                throw;
+            }
+        }
+
+        // ReSharper disable once SuggestBaseTypeForParameter
+        Task DispatchMulticast(List<MulticastTransportOperation> multicastTransportOperations)
+        {
+            List<Task> tasks = null;
+            // ReSharper disable once LoopCanBeConvertedToQuery
+            foreach (var operation in multicastTransportOperations)
+            {
+                tasks = tasks ?? new List<Task>(multicastTransportOperations.Count);
+                tasks.Add(Dispatch(operation));
+            }
+
+            return tasks != null ? Task.WhenAll(tasks) : TaskExtensions.Completed;
         }
 
         Task DispatchIsolated(IEnumerable<UnicastTransportOperation> isolatedTransportOperations)
@@ -148,7 +168,23 @@
                 throw;
             }
         }
+        
+        // ReSharper disable once SuggestBaseTypeForParameter
+        async Task Dispatch(MulticastTransportOperation transportOperation)
+        {
+            var message = await PrepareMessage(transportOperation)
+                .ConfigureAwait(false);
 
+            if (string.IsNullOrEmpty(message.Destination))
+            {
+                return;
+            }
+
+            await snsClient.PublishAsync(message.ToPublishRequest())
+                .ConfigureAwait(false);
+        }
+
+        // ReSharper disable once SuggestBaseTypeForParameter
         async Task Dispatch(UnicastTransportOperation transportOperation)
         {
             var message = await PrepareMessage(transportOperation)
@@ -181,8 +217,8 @@
                 throw;
             }
         }
-
-        async Task<PreparedMessage> PrepareMessage(UnicastTransportOperation transportOperation)
+      
+        async Task<PreparedMessage> PrepareMessage(IOutgoingTransportOperation transportOperation)
         {
             var delayDeliveryWith = transportOperation.DeliveryConstraints.OfType<DelayDeliveryWith>().SingleOrDefault();
             var doNotDeliverBefore = transportOperation.DeliveryConstraints.OfType<DoNotDeliverBefore>().SingleOrDefault();
@@ -210,36 +246,10 @@
             var messageId = transportOperation.Message.MessageId;
 
             var preparedMessage = new PreparedMessage();
-            var delayLongerThanConfiguredDelayedDeliveryQueueDelayTime = configuration.IsDelayedDeliveryEnabled && delaySeconds > configuration.DelayedDeliveryQueueDelayTime;
-
-            if (delayLongerThanConfiguredDelayedDeliveryQueueDelayTime)
-            {
-                preparedMessage.OriginalDestination = transportOperation.Destination;
-                preparedMessage.Destination = $"{transportOperation.Destination}{TransportConfiguration.DelayedDeliveryQueueSuffix}";
-                preparedMessage.QueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(preparedMessage.Destination, configuration))
-                    .ConfigureAwait(false);
-
-                preparedMessage.MessageDeduplicationId = messageId;
-                preparedMessage.MessageGroupId = messageId;
-
-                preparedMessage.MessageAttributes[TransportHeaders.DelaySeconds] = new MessageAttributeValue
-                {
-                    StringValue = delaySeconds.ToString(),
-                    DataType = "String"
-                };
-            }
-            else
-            {
-                preparedMessage.Destination = transportOperation.Destination;
-                preparedMessage.QueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(preparedMessage.Destination, configuration))
-                    .ConfigureAwait(false);
-
-                if (delaySeconds > 0)
-                {
-                    preparedMessage.DelaySeconds = Convert.ToInt32(delaySeconds);
-                }
-            }
             
+            await ApplyUnicastOperationMappingIfNecessary(transportOperation as UnicastTransportOperation, preparedMessage, delaySeconds, messageId).ConfigureAwait(false);
+            await ApplyMulticastOperationMappingIfNecessary(transportOperation as MulticastTransportOperation, preparedMessage).ConfigureAwait(false);
+
             // because message attributes are part of the content size restriction we want to prevent message size from changing thus we add it 
             // for native delayed deliver as well even though the information is slightly redundant (MessageId is assigned to MessageDeduplicationId for example)
             preparedMessage.MessageAttributes[Headers.MessageId] = new MessageAttributeValue
@@ -283,6 +293,59 @@
             return preparedMessage;
         }
 
+        async Task ApplyMulticastOperationMappingIfNecessary(MulticastTransportOperation transportOperation, PreparedMessage preparedMessage)
+        {
+            if (transportOperation == null)
+            {
+                return;
+            }
+
+            var mostConcreteEventType = messageMetadataRegistry.GetMessageMetadata(transportOperation.MessageType).MessageHierarchy[0];
+            var topicName = TopicName(mostConcreteEventType);
+            
+            // TODO: We need a cache
+            var existingTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
+            
+            preparedMessage.Destination = existingTopic?.TopicArn;
+        }
+        
+        async Task ApplyUnicastOperationMappingIfNecessary(UnicastTransportOperation transportOperation, PreparedMessage preparedMessage, long delaySeconds, string messageId)
+        {
+            if (transportOperation == null)
+            {
+                return;
+            }
+            
+            var delayLongerThanConfiguredDelayedDeliveryQueueDelayTime = configuration.IsDelayedDeliveryEnabled && delaySeconds > configuration.DelayedDeliveryQueueDelayTime;
+            if (delayLongerThanConfiguredDelayedDeliveryQueueDelayTime)
+            {
+                preparedMessage.OriginalDestination = transportOperation.Destination;
+                preparedMessage.Destination = $"{transportOperation.Destination}{TransportConfiguration.DelayedDeliveryQueueSuffix}";
+                preparedMessage.QueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(preparedMessage.Destination, configuration))
+                    .ConfigureAwait(false);
+
+                preparedMessage.MessageDeduplicationId = messageId;
+                preparedMessage.MessageGroupId = messageId;
+
+                preparedMessage.MessageAttributes[TransportHeaders.DelaySeconds] = new MessageAttributeValue
+                {
+                    StringValue = delaySeconds.ToString(),
+                    DataType = "String"
+                };
+            }
+            else
+            {
+                preparedMessage.Destination = transportOperation.Destination;
+                preparedMessage.QueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(preparedMessage.Destination, configuration))
+                    .ConfigureAwait(false);
+
+                if (delaySeconds > 0)
+                {
+                    preparedMessage.DelaySeconds = Convert.ToInt32(delaySeconds);
+                }
+            }
+        }
+
         void ApplyServerSideEncryptionConfiguration(PutObjectRequest putObjectRequest)
         {
             if (configuration.ServerSideEncryptionMethod != null)
@@ -308,6 +371,9 @@
                 }
             }
         }
+        
+        // we need a func for this that can be overloaded by users and by default throw if greater than 256
+        static string TopicName(Type type) => type.FullName?.Replace(".", "_").Replace("+", "-");
 
         TransportConfiguration configuration;
         IAmazonSQS sqsClient;
@@ -316,5 +382,7 @@
         IJsonSerializerStrategy serializerStrategy;
 
         static ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
+        readonly IAmazonSimpleNotificationService snsClient;
+        readonly MessageMetadataRegistry messageMetadataRegistry;
     }
 }
