@@ -17,7 +17,6 @@
     using SimpleJson;
     using Transport;
     using Unicast.Messages;
-    using MessageAttributeValue = Amazon.SQS.Model.MessageAttributeValue;
 
     class MessageDispatcher : IDispatchMessages
     {
@@ -34,7 +33,7 @@
 
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
         {
-            var concurrentDispatchTasks =  new List<Task>(3);
+            var concurrentDispatchTasks = new List<Task>(3);
             foreach (var dispatchConsistencyGroup in outgoingMessages.UnicastTransportOperations.GroupBy(o => o.RequiredDispatchConsistency))
             {
                 switch (dispatchConsistencyGroup.Key)
@@ -49,10 +48,10 @@
                         throw new ArgumentOutOfRangeException();
                 }
             }
-            
-            
+
+
             concurrentDispatchTasks.Add(DispatchMulticast(outgoingMessages.MulticastTransportOperations));
-            
+
             try
             {
                 await Task.WhenAll(concurrentDispatchTasks).ConfigureAwait(false);
@@ -168,7 +167,7 @@
                 throw;
             }
         }
-        
+
         // ReSharper disable once SuggestBaseTypeForParameter
         async Task Dispatch(MulticastTransportOperation transportOperation)
         {
@@ -217,7 +216,7 @@
                 throw;
             }
         }
-      
+
         async Task<PreparedMessage> PrepareMessage(IOutgoingTransportOperation transportOperation)
         {
             var delayDeliveryWith = transportOperation.DeliveryConstraints.OfType<DelayDeliveryWith>().SingleOrDefault();
@@ -246,7 +245,7 @@
             var messageId = transportOperation.Message.MessageId;
 
             var preparedMessage = new PreparedMessage();
-            
+
             await ApplyUnicastOperationMappingIfNecessary(transportOperation as UnicastTransportOperation, preparedMessage, delaySeconds, messageId).ConfigureAwait(false);
             await ApplyMulticastOperationMappingIfNecessary(transportOperation as MulticastTransportOperation, preparedMessage).ConfigureAwait(false);
 
@@ -278,10 +277,10 @@
                 {
                     BucketName = configuration.S3BucketForLargeMessages,
                     InputStream = bodyStream,
-                    Key = key,
+                    Key = key
                 };
                 ApplyServerSideEncryptionConfiguration(putObjectRequest);
-                
+
                 await s3Client.PutObjectAsync(putObjectRequest).ConfigureAwait(false);
             }
 
@@ -302,20 +301,20 @@
 
             var mostConcreteEventType = messageMetadataRegistry.GetMessageMetadata(transportOperation.MessageType).MessageHierarchy[0];
             var topicName = TopicName(mostConcreteEventType);
-            
+
             // TODO: We need a cache
             var existingTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
-            
+
             preparedMessage.Destination = existingTopic?.TopicArn;
         }
-        
+
         async Task ApplyUnicastOperationMappingIfNecessary(UnicastTransportOperation transportOperation, PreparedMessage preparedMessage, long delaySeconds, string messageId)
         {
             if (transportOperation == null)
             {
                 return;
             }
-            
+
             var delayLongerThanConfiguredDelayedDeliveryQueueDelayTime = configuration.IsDelayedDeliveryEnabled && delaySeconds > configuration.DelayedDeliveryQueueDelayTime;
             if (delayLongerThanConfiguredDelayedDeliveryQueueDelayTime)
             {
@@ -371,9 +370,11 @@
                 }
             }
         }
-        
+
         // we need a func for this that can be overloaded by users and by default throw if greater than 256
         static string TopicName(Type type) => type.FullName?.Replace(".", "_").Replace("+", "-");
+        readonly IAmazonSimpleNotificationService snsClient;
+        readonly MessageMetadataRegistry messageMetadataRegistry;
 
         TransportConfiguration configuration;
         IAmazonSQS sqsClient;
@@ -382,7 +383,5 @@
         IJsonSerializerStrategy serializerStrategy;
 
         static ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
-        readonly IAmazonSimpleNotificationService snsClient;
-        readonly MessageMetadataRegistry messageMetadataRegistry;
     }
 }
