@@ -372,7 +372,7 @@
                 // Always delete the message from the queue.
                 // If processing failed, the onError handler will have moved the message
                 // to a retry queue.
-                await DeleteMessageAndBodyIfRequired(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
+                await DeleteMessage(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
             }
             finally
             {
@@ -457,7 +457,7 @@
             return true;
         }
 
-        async Task DeleteMessageAndBodyIfRequired(Message message, string s3BodyKey)
+        async Task DeleteMessage(Message message, string s3BodyKey)
         {
             try
             {
