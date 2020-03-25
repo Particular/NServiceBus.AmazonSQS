@@ -74,7 +74,7 @@
 
         public override OutboundRoutingPolicy OutboundRoutingPolicy
             => new OutboundRoutingPolicy(OutboundRoutingType.Unicast,
-                OutboundRoutingType.Unicast,
+                OutboundRoutingType.Multicast,
                 OutboundRoutingType.Unicast);
 
         MessagePump CreateMessagePump()
@@ -117,7 +117,7 @@
 
         public override TransportSubscriptionInfrastructure ConfigureSubscriptionInfrastructure()
         {
-            throw new NotImplementedException("NServiceBus.AmazonSQS does not support native pub/sub.");
+            return new TransportSubscriptionInfrastructure(() => new SubscriptionManager());
         }
 
         public override EndpointInstance BindToLocalEndpoint(EndpointInstance instance)
