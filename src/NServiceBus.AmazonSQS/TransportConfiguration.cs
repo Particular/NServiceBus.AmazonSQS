@@ -2,6 +2,7 @@
 {
     using System;
     using Amazon.S3;
+    using Amazon.SimpleNotificationService;
     using Amazon.SQS;
     using Settings;
 
@@ -23,6 +24,18 @@
                     sqsClientFactory = settings.GetOrDefault<Func<IAmazonSQS>>(SettingsKeys.SqsClientFactory) ?? (() => new AmazonSQSClient());
                 }
                 return sqsClientFactory;
+            }
+        }
+        
+        public Func<IAmazonSimpleNotificationService> SnsClientFactory
+        {
+            get
+            {
+                if (snsClientFactory == null)
+                {
+                    snsClientFactory = settings.GetOrDefault<Func<IAmazonSimpleNotificationService>>(SettingsKeys.SnsClientFactory) ?? (() => new AmazonSimpleNotificationServiceClient());
+                }
+                return snsClientFactory;
             }
         }
 
@@ -234,5 +247,6 @@
         int? queueDelayTime;
         Func<IAmazonS3> s3ClientFactory;
         Func<IAmazonSQS> sqsClientFactory;
+        Func<IAmazonSimpleNotificationService> snsClientFactory;
     }
 }
