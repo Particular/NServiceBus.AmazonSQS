@@ -6,6 +6,7 @@
     using System.Threading.Tasks;
     using Amazon.Runtime;
     using Amazon.S3;
+    using Amazon.SimpleNotificationService;
     using Amazon.SQS;
     using AmazonSQS;
     using DelayedDelivery;
@@ -29,6 +30,17 @@
             catch (AmazonClientException e)
             {
                 var message = "Unable to configure the SQS client. Make sure the environment variables for AWS_REGION, AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set or the client factory configures the created client accordingly";
+                Logger.Error(message, e);
+                throw new Exception(message, e);
+            }
+            
+            try
+            {
+                snsClient = configuration.SnsClientFactory();
+            }
+            catch (AmazonClientException e)
+            {
+                var message = "Unable to configure the SNS client. Make sure the environment variables for AWS_REGION, AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set or the client factory configures the created client accordingly";
                 Logger.Error(message, e);
                 throw new Exception(message, e);
             }
@@ -98,6 +110,7 @@
         public override Task Stop()
         {
             sqsClient.Dispose();
+            snsClient.Dispose();
             s3Client?.Dispose();
             return base.Stop();
         }
@@ -130,6 +143,7 @@
         }
 
         readonly IAmazonSQS sqsClient;
+        readonly IAmazonSimpleNotificationService snsClient;
         readonly IAmazonS3 s3Client;
         readonly QueueUrlCache queueUrlCache;
         readonly TransportConfiguration configuration;
