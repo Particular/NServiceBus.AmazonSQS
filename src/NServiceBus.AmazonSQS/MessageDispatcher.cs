@@ -179,8 +179,20 @@
                 return;
             }
 
-            await snsClient.PublishAsync(message.ToPublishRequest())
+            var publishRequest = message.ToPublishRequest();
+
+            if (Logger.IsDebugEnabled)
+            {
+                Logger.Debug($"Publishing message with '{message.MessageId}' to topic '{publishRequest.TopicArn}'");
+            }
+
+            await snsClient.PublishAsync(publishRequest)
                 .ConfigureAwait(false);
+            
+            if (Logger.IsDebugEnabled)
+            {
+                Logger.Debug($"Published message with '{message.MessageId}' to topic '{publishRequest.TopicArn}'");
+            }
         }
 
         // ReSharper disable once SuggestBaseTypeForParameter

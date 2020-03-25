@@ -9,6 +9,7 @@ namespace NServiceBus
     using Amazon.SQS;
     using AmazonSQS;
     using Extensibility;
+    using Logging;
     using Transport;
     using Unicast.Messages;
 
@@ -88,6 +89,7 @@ namespace NServiceBus
             if (existingTopic == null)
             {
                 await snsClient.CreateTopicAsync(topicName).ConfigureAwait(false);
+                Logger.Debug($"Created topic '{topicName}'");
                 existingTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
             }
 
@@ -102,6 +104,8 @@ namespace NServiceBus
                 AttributeValue = "true"
             };
             await snsClient.SetSubscriptionAttributesAsync(setSubscriptionAttributesRequest).ConfigureAwait(false);
+            
+            Logger.Debug($"Created subscription for queue '{queueName}' to topic '{topicName}'");
         }
 
         void MarkTypeConfigured(Type eventType)
@@ -122,5 +126,7 @@ namespace NServiceBus
         IAmazonSimpleNotificationService snsClient;
         string queueName;
         MessageMetadataRegistry messageMetadataRegistry;
+        
+        static ILog Logger = LogManager.GetLogger(typeof(SubscriptionManager));
     }
 }
