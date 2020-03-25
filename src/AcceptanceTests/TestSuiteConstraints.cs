@@ -10,7 +10,7 @@ namespace NServiceBus.AcceptanceTests
 
         public bool SupportsNativeDeferral => true;
 
-        public bool SupportsNativePubSub => false;
+        public bool SupportsNativePubSub => true;
 
         public bool SupportsOutbox => false;
 
