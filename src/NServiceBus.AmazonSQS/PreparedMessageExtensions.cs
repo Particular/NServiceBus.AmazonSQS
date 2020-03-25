@@ -2,7 +2,9 @@ namespace NServiceBus.Transports.SQS
 {
     using System.Collections.Generic;
     using System.Linq;
+    using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS.Model;
+    using SnsMessageAttributeValue = Amazon.SimpleNotificationService.Model.MessageAttributeValue;
 
     static class PreparedMessageExtensions
     {
@@ -14,6 +16,19 @@ namespace NServiceBus.Transports.SQS
                 MessageDeduplicationId = message.MessageDeduplicationId,
                 MessageAttributes = message.MessageAttributes,
                 DelaySeconds = message.DelaySeconds
+            };
+        }
+        
+        public static PublishRequest ToPublishRequest(this PreparedMessage message)
+        {
+            return new PublishRequest(message.Destination, message.Body)
+            {
+                MessageAttributes = message.MessageAttributes.ToDictionary(x => x.Key, x => new SnsMessageAttributeValue
+                {
+                    DataType = x.Value.DataType,
+                    StringValue = x.Value.StringValue,
+                    BinaryValue = x.Value.BinaryValue,
+                })
             };
         }
 
