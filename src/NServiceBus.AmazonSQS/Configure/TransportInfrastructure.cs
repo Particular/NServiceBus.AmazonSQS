@@ -92,7 +92,7 @@
 
         MessageDispatcher CreateMessageDispatcher()
         {
-            return new MessageDispatcher(configuration, s3Client, sqsClient, queueUrlCache);
+            return new MessageDispatcher(configuration, s3Client, sqsClient, snsClient, queueUrlCache, messageMetadataRegistry);
         }
 
         public override TransportReceiveInfrastructure ConfigureReceiveInfrastructure()
