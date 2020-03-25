@@ -56,11 +56,12 @@ namespace NServiceBus
 
             // TODO: Turn this into a while loop with next token
             var upToAHundredSubscriptions = await snsClient.ListSubscriptionsByTopicAsync(existingTopic.TopicArn).ConfigureAwait(false);
+            var sqsQueueName = QueueNameHelper.GetSqsQueueName(queueName, configuration);
             foreach (var upToAHundredSubscription in upToAHundredSubscriptions.Subscriptions)
             {
                 // TODO: Make this a bit better, not use linq and allocate the array all the time to not make me hate myself
                 var last = upToAHundredSubscription.Endpoint.Split(new[] {":"}, StringSplitOptions.RemoveEmptyEntries).Last();
-                if (string.Equals(queueName, last, StringComparison.Ordinal))
+                if (string.Equals(sqsQueueName, last, StringComparison.Ordinal))
                 {
                     await snsClient.UnsubscribeAsync(upToAHundredSubscription.SubscriptionArn).ConfigureAwait(false);
                     break;
