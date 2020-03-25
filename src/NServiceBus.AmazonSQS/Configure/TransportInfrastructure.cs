@@ -16,11 +16,14 @@
     using Settings;
     using Transport;
     using Transports.SQS;
+    using Unicast.Messages;
 
     class TransportInfrastructure : Transport.TransportInfrastructure
     {
         public TransportInfrastructure(ReadOnlySettings settings)
         {
+            this.settings = settings;
+            messageMetadataRegistry = this.settings.Get<MessageMetadataRegistry>();
             configuration = new TransportConfiguration(settings);
 
             try
@@ -33,7 +36,7 @@
                 Logger.Error(message, e);
                 throw new Exception(message, e);
             }
-            
+
             try
             {
                 snsClient = configuration.SnsClientFactory();
@@ -117,7 +120,7 @@
 
         public override TransportSubscriptionInfrastructure ConfigureSubscriptionInfrastructure()
         {
-            return new TransportSubscriptionInfrastructure(() => new SubscriptionManager());
+            return new TransportSubscriptionInfrastructure(() => new SubscriptionManager(sqsClient, snsClient, settings.LocalAddress(), queueUrlCache, configuration, messageMetadataRegistry));
         }
 
         public override EndpointInstance BindToLocalEndpoint(EndpointInstance instance)
@@ -147,6 +150,8 @@
         readonly IAmazonS3 s3Client;
         readonly QueueUrlCache queueUrlCache;
         readonly TransportConfiguration configuration;
+        readonly ReadOnlySettings settings;
+        readonly MessageMetadataRegistry messageMetadataRegistry;
         static ILog Logger = LogManager.GetLogger(typeof(TransportInfrastructure));
     }
 }
