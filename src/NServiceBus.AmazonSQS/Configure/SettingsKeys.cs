@@ -4,6 +4,7 @@
     {
         const string Prefix = "NServiceBus.AmazonSQS.";
         public const string SqsClientFactory = Prefix + nameof(SqsClientFactory);
+        public const string SnsClientFactory = Prefix + nameof(SnsClientFactory);
         public const string MaxTimeToLive = Prefix + nameof(MaxTimeToLive);
         public const string S3BucketForLargeMessages = Prefix + nameof(S3BucketForLargeMessages);
         public const string S3KeyPrefix = Prefix + nameof(S3KeyPrefix);
