@@ -15,8 +15,10 @@
         public const string ServerSideEncryptionCustomerProvidedKey = Prefix + nameof(ServerSideEncryptionCustomerProvidedKey);
         public const string ServerSideEncryptionCustomerProvidedKeyMD5 = Prefix + nameof(ServerSideEncryptionCustomerProvidedKeyMD5);
         public const string QueueNamePrefix = Prefix + nameof(QueueNamePrefix);
+        public const string TopicNamePrefix = Prefix + nameof(TopicNamePrefix);
         public const string CredentialSource = Prefix + nameof(CredentialSource);
         public const string PreTruncateQueueNames = Prefix + nameof(PreTruncateQueueNames);
+        public const string PreTruncateTopicNames = Prefix + nameof(PreTruncateTopicNames);
         public const string UnrestrictedDurationDelayedDeliveryQueueDelayTime = Prefix + nameof(UnrestrictedDurationDelayedDeliveryQueueDelayTime);
         public const string V1CompatibilityMode = Prefix + nameof(V1CompatibilityMode);
         public const string DisableNativePubSub = Prefix + nameof(DisableNativePubSub);

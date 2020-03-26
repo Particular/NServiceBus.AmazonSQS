@@ -16,7 +16,8 @@
                 .ClientFactory(CreateSQSClient)
                 .ClientFactory(CreateSnsClient)
                 .QueueNamePrefix(queueNamePrefix)
-                .PreTruncateQueueNamesForAcceptanceTests();
+                .PreTruncateQueueNamesForAcceptanceTests()
+                .PreTruncateTopicNamesForAcceptanceTests();
 
             S3BucketName = EnvironmentHelper.GetEnvironmentVariable(S3BucketEnvironmentVariableName);
 

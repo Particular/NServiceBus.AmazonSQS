@@ -42,7 +42,7 @@ namespace NServiceBus
                 return;
             }
 
-            await DeleteSubscription(TopicName(mostConcreteEventType)).ConfigureAwait(false);
+            await DeleteSubscription(TopicNameHelper.GetSnsTopicName(mostConcreteEventType.FullName, configuration)).ConfigureAwait(false);
 
             MarkTypeConfigured(eventType);
         }
@@ -78,7 +78,7 @@ namespace NServiceBus
                 return;
             }
 
-            await CreateTopicAndSubscribe(TopicName(mostConcreteEventType), queueUrl).ConfigureAwait(false);
+            await CreateTopicAndSubscribe(TopicNameHelper.GetSnsTopicName(mostConcreteEventType.FullName, configuration), queueUrl).ConfigureAwait(false);
 
             MarkTypeConfigured(eventType);
         }
@@ -112,9 +112,6 @@ namespace NServiceBus
         {
             typeTopologyConfiguredSet[eventType] = null;
         }
-
-        // we need a func for this that can be overloaded by users and by default throw if greater than 256
-        static string TopicName(Type type) => type.FullName?.Replace(".", "_").Replace("+", "-");
 
         bool IsTypeTopologyKnownConfigured(Type eventType) => typeTopologyConfiguredSet.ContainsKey(eventType);
 
