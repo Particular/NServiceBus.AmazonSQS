@@ -91,22 +91,22 @@ namespace NServiceBus.AmazonSQS.Tests
             throw new NotImplementedException();
         }
 
-        public Amazon.SimpleNotificationService.Model.AddPermissionResponse AddPermission(string topicArn, string label, List<string> awsAccountId, List<string> actionName)
+        public AddPermissionResponse AddPermission(string topicArn, string label, List<string> awsAccountId, List<string> actionName)
         {
             throw new NotImplementedException();
         }
 
-        public Amazon.SimpleNotificationService.Model.AddPermissionResponse AddPermission(Amazon.SimpleNotificationService.Model.AddPermissionRequest request)
+        public AddPermissionResponse AddPermission(AddPermissionRequest request)
         {
             throw new NotImplementedException();
         }
 
-        public Task<Amazon.SimpleNotificationService.Model.AddPermissionResponse> AddPermissionAsync(string topicArn, string label, List<string> awsAccountId, List<string> actionName, CancellationToken cancellationToken = new CancellationToken())
+        public Task<AddPermissionResponse> AddPermissionAsync(string topicArn, string label, List<string> awsAccountId, List<string> actionName, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
         }
 
-        public Task<Amazon.SimpleNotificationService.Model.AddPermissionResponse> AddPermissionAsync(Amazon.SimpleNotificationService.Model.AddPermissionRequest request, CancellationToken cancellationToken = new CancellationToken())
+        public Task<AddPermissionResponse> AddPermissionAsync(AddPermissionRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
         }
@@ -466,22 +466,22 @@ namespace NServiceBus.AmazonSQS.Tests
             throw new NotImplementedException();
         }
 
-        public Amazon.SimpleNotificationService.Model.RemovePermissionResponse RemovePermission(string topicArn, string label)
+        public RemovePermissionResponse RemovePermission(string topicArn, string label)
         {
             throw new NotImplementedException();
         }
 
-        public Amazon.SimpleNotificationService.Model.RemovePermissionResponse RemovePermission(Amazon.SimpleNotificationService.Model.RemovePermissionRequest request)
+        public RemovePermissionResponse RemovePermission(RemovePermissionRequest request)
         {
             throw new NotImplementedException();
         }
 
-        public Task<Amazon.SimpleNotificationService.Model.RemovePermissionResponse> RemovePermissionAsync(string topicArn, string label, CancellationToken cancellationToken = new CancellationToken())
+        public Task<RemovePermissionResponse> RemovePermissionAsync(string topicArn, string label, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
         }
 
-        public Task<Amazon.SimpleNotificationService.Model.RemovePermissionResponse> RemovePermissionAsync(Amazon.SimpleNotificationService.Model.RemovePermissionRequest request, CancellationToken cancellationToken = new CancellationToken())
+        public Task<RemovePermissionResponse> RemovePermissionAsync(RemovePermissionRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
         }
