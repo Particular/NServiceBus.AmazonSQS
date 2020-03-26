@@ -28,6 +28,7 @@
             settings.SetDefault(SettingsKeys.S3KeyPrefix, string.Empty);
             settings.SetDefault(SettingsKeys.MaxTimeToLive, TimeSpan.FromDays(4));
             settings.SetDefault(SettingsKeys.QueueNamePrefix, string.Empty);
+            settings.SetDefault(SettingsKeys.TopicNamePrefix, string.Empty);
 
             return new TransportInfrastructure(settings);
         }
