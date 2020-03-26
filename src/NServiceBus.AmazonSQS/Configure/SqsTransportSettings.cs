@@ -1,6 +1,7 @@
 ﻿namespace NServiceBus
 {
     using System;
+    using Amazon.SimpleNotificationService;
     using Amazon.SQS;
     using Configuration.AdvancedExtensibility;
 
@@ -31,6 +32,18 @@
             transportExtensions.GetSettings().Set(SettingsKeys.SqsClientFactory, factory);
             return transportExtensions;
         }
+        
+        /// <summary>
+        /// Configures a client factory for the SNS client. The default client factory creates a SNS client with the default
+        /// constructor.
+        /// </summary>
+        public static TransportExtensions<SqsTransport> ClientFactory(this TransportExtensions<SqsTransport> transportExtensions, Func<IAmazonSimpleNotificationService> factory)
+        {
+            Guard.AgainstNull(nameof(transportExtensions), transportExtensions);
+            Guard.AgainstNull(nameof(factory), factory);
+            transportExtensions.GetSettings().Set(SettingsKeys.SnsClientFactory, factory);
+            return transportExtensions;
+        }        
 
         /// <summary>
         /// This is the maximum time that a message will be retained within SQS
