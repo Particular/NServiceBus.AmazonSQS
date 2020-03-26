@@ -26,6 +26,7 @@ namespace NServiceBus
     public class static SqsTransportSettings
     {
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> ClientFactory(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Func<Amazon.SQS.IAmazonSQS> factory) { }
+        public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> ClientFactory(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Func<Amazon.SimpleNotificationService.IAmazonSimpleNotificationService> factory) { }
         [System.ObsoleteAttribute("Use `transport.ClientFactory(() => new AmazonSqsClient(customConfig))` instead. T" +
             "he member currently throws a NotImplementedException. Will be removed in version" +
             " 5.0.0.", true)]

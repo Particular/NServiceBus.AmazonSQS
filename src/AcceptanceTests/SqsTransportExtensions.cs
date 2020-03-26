@@ -2,6 +2,7 @@
 {
     using Amazon.Runtime;
     using Amazon.S3;
+    using Amazon.SimpleNotificationService;
     using Amazon.SQS;
     using NServiceBus.AcceptanceTests.ScenarioDescriptors;
 
@@ -13,6 +14,7 @@
         {
             transportConfiguration
                 .ClientFactory(CreateSQSClient)
+                .ClientFactory(CreateSnsClient)
                 .QueueNamePrefix(queueNamePrefix)
                 .PreTruncateQueueNamesForAcceptanceTests();
 
@@ -34,6 +36,12 @@
         {
             var credentials = new EnvironmentVariablesAWSCredentials();
             return new AmazonSQSClient(credentials);
+        }
+        
+        public static IAmazonSimpleNotificationService CreateSnsClient()
+        {
+            var credentials = new EnvironmentVariablesAWSCredentials();
+            return new AmazonSimpleNotificationServiceClient(credentials);
         }
 
         public static IAmazonS3 CreateS3Client()
