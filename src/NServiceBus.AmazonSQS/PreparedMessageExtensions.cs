@@ -8,7 +8,7 @@ namespace NServiceBus.Transports.SQS
 
     static class PreparedMessageExtensions
     {
-        public static SendMessageRequest ToRequest(this PreparedMessage message)
+        public static SendMessageRequest ToRequest(this SqsPreparedMessage message)
         {
             return new SendMessageRequest(message.QueueUrl, message.Body)
             {
@@ -19,7 +19,7 @@ namespace NServiceBus.Transports.SQS
             };
         }
         
-        public static PublishRequest ToPublishRequest(this PreparedMessage message)
+        public static PublishRequest ToPublishRequest(this SnsPreparedMessage message)
         {
             return new PublishRequest(message.Destination, message.Body)
             {
@@ -32,7 +32,7 @@ namespace NServiceBus.Transports.SQS
             };
         }
 
-        static SendMessageBatchRequestEntry ToBatchEntry(this PreparedMessage message, string batchEntryId)
+        static SendMessageBatchRequestEntry ToBatchEntry(this SqsPreparedMessage message, string batchEntryId)
         {
             return new SendMessageBatchRequestEntry(batchEntryId, message.Body)
             {
@@ -43,7 +43,7 @@ namespace NServiceBus.Transports.SQS
             };
         }
 
-        public static BatchEntry ToBatchRequest(this PreparedMessage message, Dictionary<string, PreparedMessage> batchEntries)
+        public static BatchEntry ToBatchRequest(this SqsPreparedMessage message, Dictionary<string, SqsPreparedMessage> batchEntries)
         {
             var preparedMessagesBydId = batchEntries.ToDictionary(x => x.Key, x => x.Value);
 
