@@ -92,11 +92,11 @@
 
         async Task DispatchBatched(IEnumerable<UnicastTransportOperation> toBeBatchedTransportOperations)
         {
-            var tasks = new List<Task<PreparedMessage>>();
+            var tasks = new List<Task<SqsPreparedMessage>>();
             // ReSharper disable once LoopCanBeConvertedToQuery
             foreach (var operation in toBeBatchedTransportOperations)
             {
-                tasks.Add(PrepareMessage(operation));
+                tasks.Add(PrepareMessage<SqsPreparedMessage>(operation));
             }
 
             await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -171,7 +171,7 @@
         // ReSharper disable once SuggestBaseTypeForParameter
         async Task Dispatch(MulticastTransportOperation transportOperation)
         {
-            var message = await PrepareMessage(transportOperation)
+            var message = await PrepareMessage<SnsPreparedMessage>(transportOperation)
                 .ConfigureAwait(false);
 
             if (string.IsNullOrEmpty(message.Destination))
@@ -188,7 +188,7 @@
 
             await snsClient.PublishAsync(publishRequest)
                 .ConfigureAwait(false);
-            
+
             if (Logger.IsDebugEnabled)
             {
                 Logger.Debug($"Published message with '{message.MessageId}' to topic '{publishRequest.TopicArn}'");
@@ -198,20 +198,20 @@
         // ReSharper disable once SuggestBaseTypeForParameter
         async Task Dispatch(UnicastTransportOperation transportOperation)
         {
-            var message = await PrepareMessage(transportOperation)
+            var message = await PrepareMessage<SqsPreparedMessage>(transportOperation)
                 .ConfigureAwait(false);
 
             await SendMessage(message)
                 .ConfigureAwait(false);
         }
 
-        async Task SendMessageForBatch(PreparedMessage message, int batchNumber, int totalBatches)
+        async Task SendMessageForBatch(SqsPreparedMessage message, int batchNumber, int totalBatches)
         {
             await SendMessage(message).ConfigureAwait(false);
             Logger.Info($"Retried message with MessageId {message.MessageId} that failed in batch '{batchNumber}/{totalBatches}'.");
         }
 
-        async Task SendMessage(PreparedMessage message)
+        async Task SendMessage(SqsPreparedMessage message)
         {
             try
             {
@@ -229,7 +229,8 @@
             }
         }
 
-        async Task<PreparedMessage> PrepareMessage(IOutgoingTransportOperation transportOperation)
+        async Task<TMessage> PrepareMessage<TMessage>(IOutgoingTransportOperation transportOperation) 
+            where TMessage : PreparedMessage, new()
         {
             var delayDeliveryWith = transportOperation.DeliveryConstraints.OfType<DelayDeliveryWith>().SingleOrDefault();
             var doNotDeliverBefore = transportOperation.DeliveryConstraints.OfType<DoNotDeliverBefore>().SingleOrDefault();
@@ -256,18 +257,10 @@
 
             var messageId = transportOperation.Message.MessageId;
 
-            var preparedMessage = new PreparedMessage();
+            var preparedMessage = new TMessage();
 
-            await ApplyUnicastOperationMappingIfNecessary(transportOperation as UnicastTransportOperation, preparedMessage, delaySeconds, messageId).ConfigureAwait(false);
-            await ApplyMulticastOperationMappingIfNecessary(transportOperation as MulticastTransportOperation, preparedMessage).ConfigureAwait(false);
-
-            // because message attributes are part of the content size restriction we want to prevent message size from changing thus we add it 
-            // for native delayed deliver as well even though the information is slightly redundant (MessageId is assigned to MessageDeduplicationId for example)
-            preparedMessage.MessageAttributes[Headers.MessageId] = new MessageAttributeValue
-            {
-                StringValue = messageId,
-                DataType = "String"
-            };
+            await ApplyUnicastOperationMappingIfNecessary(transportOperation as UnicastTransportOperation, preparedMessage as SqsPreparedMessage, delaySeconds, messageId).ConfigureAwait(false);
+            await ApplyMulticastOperationMappingIfNecessary(transportOperation as MulticastTransportOperation, preparedMessage as SnsPreparedMessage).ConfigureAwait(false);
 
             preparedMessage.Body = serializedMessage;
             preparedMessage.MessageId = messageId;
@@ -304,9 +297,9 @@
             return preparedMessage;
         }
 
-        async Task ApplyMulticastOperationMappingIfNecessary(MulticastTransportOperation transportOperation, PreparedMessage preparedMessage)
+        async Task ApplyMulticastOperationMappingIfNecessary(MulticastTransportOperation transportOperation, SnsPreparedMessage snsPreparedMessage)
         {
-            if (transportOperation == null)
+            if (transportOperation == null || snsPreparedMessage == null)
             {
                 return;
             }
@@ -317,12 +310,12 @@
             // TODO: We need a cache
             var existingTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
 
-            preparedMessage.Destination = existingTopic?.TopicArn;
+            snsPreparedMessage.Destination = existingTopic?.TopicArn;
         }
 
-        async Task ApplyUnicastOperationMappingIfNecessary(UnicastTransportOperation transportOperation, PreparedMessage preparedMessage, long delaySeconds, string messageId)
+        async Task ApplyUnicastOperationMappingIfNecessary(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, string messageId)
         {
-            if (transportOperation == null)
+            if (transportOperation == null || sqsPreparedMessage == null)
             {
                 return;
             }
@@ -330,15 +323,15 @@
             var delayLongerThanConfiguredDelayedDeliveryQueueDelayTime = configuration.IsDelayedDeliveryEnabled && delaySeconds > configuration.DelayedDeliveryQueueDelayTime;
             if (delayLongerThanConfiguredDelayedDeliveryQueueDelayTime)
             {
-                preparedMessage.OriginalDestination = transportOperation.Destination;
-                preparedMessage.Destination = $"{transportOperation.Destination}{TransportConfiguration.DelayedDeliveryQueueSuffix}";
-                preparedMessage.QueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(preparedMessage.Destination, configuration))
+                sqsPreparedMessage.OriginalDestination = transportOperation.Destination;
+                sqsPreparedMessage.Destination = $"{transportOperation.Destination}{TransportConfiguration.DelayedDeliveryQueueSuffix}";
+                sqsPreparedMessage.QueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(sqsPreparedMessage.Destination, configuration))
                     .ConfigureAwait(false);
 
-                preparedMessage.MessageDeduplicationId = messageId;
-                preparedMessage.MessageGroupId = messageId;
+                sqsPreparedMessage.MessageDeduplicationId = messageId;
+                sqsPreparedMessage.MessageGroupId = messageId;
 
-                preparedMessage.MessageAttributes[TransportHeaders.DelaySeconds] = new MessageAttributeValue
+                sqsPreparedMessage.MessageAttributes[TransportHeaders.DelaySeconds] = new MessageAttributeValue
                 {
                     StringValue = delaySeconds.ToString(),
                     DataType = "String"
@@ -346,13 +339,13 @@
             }
             else
             {
-                preparedMessage.Destination = transportOperation.Destination;
-                preparedMessage.QueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(preparedMessage.Destination, configuration))
+                sqsPreparedMessage.Destination = transportOperation.Destination;
+                sqsPreparedMessage.QueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(sqsPreparedMessage.Destination, configuration))
                     .ConfigureAwait(false);
 
                 if (delaySeconds > 0)
                 {
-                    preparedMessage.DelaySeconds = Convert.ToInt32(delaySeconds);
+                    sqsPreparedMessage.DelaySeconds = Convert.ToInt32(delaySeconds);
                 }
             }
         }

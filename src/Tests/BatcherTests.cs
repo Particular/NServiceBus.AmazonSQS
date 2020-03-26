@@ -14,7 +14,7 @@ namespace NServiceBus.AmazonSQS.Tests
         [Test]
         public void NoBatchesIfNothingToBatch()
         {
-            var preparedMessages = new PreparedMessage[0]
+            var preparedMessages = new SqsPreparedMessage[0]
             {
             };
             PrecalculateSize(preparedMessages);
@@ -29,9 +29,9 @@ namespace NServiceBus.AmazonSQS.Tests
         {
             var preparedMessages = new[]
             {
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination3", QueueUrl = "https://destination3" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination3", QueueUrl = "https://destination3" },
             };
             PrecalculateSize(preparedMessages);
 
@@ -48,8 +48,8 @@ namespace NServiceBus.AmazonSQS.Tests
         {
             var preparedMessages = new[]
             {
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "Destination1", QueueUrl = "https://Destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "Destination1", QueueUrl = "https://Destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
             };
             PrecalculateSize(preparedMessages);
 
@@ -65,16 +65,16 @@ namespace NServiceBus.AmazonSQS.Tests
         {
             var preparedMessages = new[]
             {
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
             };
             PrecalculateSize(preparedMessages);
 
@@ -89,20 +89,20 @@ namespace NServiceBus.AmazonSQS.Tests
         {
             var preparedMessages = new[]
             {
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
 
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
             };
             PrecalculateSize(preparedMessages);
 
@@ -118,54 +118,54 @@ namespace NServiceBus.AmazonSQS.Tests
         {
             var preparedMessages = new[]
             {
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(256)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(256)},
 
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(256)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(256)},
 
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(64)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(64)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(64)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(64)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(64)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(64)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(64)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(64)},
 
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(200)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(200)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
 
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
 
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
 
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
             };
             PrecalculateSize(preparedMessages);
 
@@ -191,32 +191,32 @@ namespace NServiceBus.AmazonSQS.Tests
         {
             var preparedMessages = new[]
             {
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination2", QueueUrl = "https://destination2" },
             };
             PrecalculateSize(preparedMessages);
 
@@ -236,7 +236,7 @@ namespace NServiceBus.AmazonSQS.Tests
 
             var preparedMessages = new[]
             {
-                new PreparedMessage{ MessageId = messageId, Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = messageId, Destination = "destination1", QueueUrl = "https://destination1" },
             };
             PrecalculateSize(preparedMessages);
 
@@ -250,7 +250,7 @@ namespace NServiceBus.AmazonSQS.Tests
         {
             var preparedMessages = new[]
             {
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", MessageAttributes = {
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", MessageAttributes = {
                     ["SomeKey"] = new MessageAttributeValue { StringValue = "SomeValue" }
                 }},
             };
@@ -269,8 +269,8 @@ namespace NServiceBus.AmazonSQS.Tests
 
             var preparedMessages = new[]
             {
-                new PreparedMessage{ MessageId = messageId, Destination = "destination1", QueueUrl = "https://destination1", MessageGroupId = messageId, MessageDeduplicationId = messageId },
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = messageId, Destination = "destination1", QueueUrl = "https://destination1", MessageGroupId = messageId, MessageDeduplicationId = messageId },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
             };
             PrecalculateSize(preparedMessages);
 
@@ -291,8 +291,8 @@ namespace NServiceBus.AmazonSQS.Tests
         {
             var preparedMessages = new[]
             {
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", DelaySeconds = 150},
-                new PreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", DelaySeconds = 150},
+                new SqsPreparedMessage{ MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1" },
             };
             PrecalculateSize(preparedMessages);
 
@@ -313,7 +313,7 @@ namespace NServiceBus.AmazonSQS.Tests
 
             var preparedMessages = Enumerable
                 .Range(0, 2 * TransportConfiguration.MaximumItemsInBatch)
-                .Select(n => new PreparedMessage { MessageId = Guid.NewGuid().ToString(), Body = singleMessageBody, Destination = "destination", QueueUrl = "https://destination" })
+                .Select(n => new SqsPreparedMessage { MessageId = Guid.NewGuid().ToString(), Body = singleMessageBody, Destination = "destination", QueueUrl = "https://destination" })
                 .ToArray();
 
             PrecalculateSize(preparedMessages);
