@@ -6,6 +6,6 @@ namespace NServiceBus.Transports.SQS
     struct BatchEntry
     {
         public SendMessageBatchRequest BatchRequest;
-        public Dictionary<string, PreparedMessage> PreparedMessagesBydId;
+        public Dictionary<string, SqsPreparedMessage> PreparedMessagesBydId;
     }
 }
