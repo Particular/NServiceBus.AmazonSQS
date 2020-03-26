@@ -358,7 +358,7 @@
             var mockS3Client = new MockS3Client();
             var mockSqsClient = new MockSqsClient();
 
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, null, new QueueUrlCache(mockSqsClient), null);
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), mockS3Client, mockSqsClient, null, new QueueUrlCache(mockSqsClient), null);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -404,7 +404,7 @@
             var mockS3Client = new MockS3Client();
             var mockSqsClient = new MockSqsClient();
 
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, null, new QueueUrlCache(mockSqsClient), null);
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), mockS3Client, mockSqsClient, null, new QueueUrlCache(mockSqsClient), null);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
