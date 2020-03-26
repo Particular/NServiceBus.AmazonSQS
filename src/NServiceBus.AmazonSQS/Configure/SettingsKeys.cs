@@ -19,5 +19,6 @@
         public const string PreTruncateQueueNames = Prefix + nameof(PreTruncateQueueNames);
         public const string UnrestrictedDurationDelayedDeliveryQueueDelayTime = Prefix + nameof(UnrestrictedDurationDelayedDeliveryQueueDelayTime);
         public const string V1CompatibilityMode = Prefix + nameof(V1CompatibilityMode);
+        public const string DisableNativePubSub = Prefix + nameof(DisableNativePubSub);
     }
 }
