@@ -104,4 +104,14 @@ public class Configuring_transport
 
         Assert.AreEqual("DEV", result.GetSettings().Get("NServiceBus.AmazonSQS.QueueNamePrefix"));
     }
+    
+    [Test]
+    public void PubSubCompatibilityModeWorks()
+    {
+        var extensions = new TransportExtensions<SqsTransport>(new SettingsHolder());
+
+        var result = extensions.EnableMessageDrivenPubSubCompatibilityMode();
+
+        Assert.IsTrue( result.GetSettings().Get<bool>("NServiceBus.Subscriptions.EnableMigrationMode"));
+    }
 }
