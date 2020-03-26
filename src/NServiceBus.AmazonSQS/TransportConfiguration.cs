@@ -97,7 +97,7 @@
                 }
                 return queueNamePrefix;
             }
-        }
+        }       
 
         public bool PreTruncateQueueNames
         {
@@ -108,6 +108,30 @@
                     preTruncateQueueNames = settings.GetOrDefault<bool>(SettingsKeys.PreTruncateQueueNames);
                 }
                 return preTruncateQueueNames.Value;
+            }
+        }
+
+        public string TopicNamePrefix
+        {
+            get
+            {
+                if (topicNamePrefix == null)
+                {
+                    topicNamePrefix = settings.GetOrDefault<string>(SettingsKeys.TopicNamePrefix);
+                }
+                return topicNamePrefix;
+            }
+        }
+
+        public bool PreTruncateTopicNames
+        {
+            get
+            {
+                if (!preTruncateTopicNames.HasValue)
+                {
+                    preTruncateTopicNames = settings.GetOrDefault<bool>(SettingsKeys.PreTruncateTopicNames);
+                }
+                return preTruncateTopicNames.Value;
             }
         }
 
@@ -231,6 +255,7 @@
         string s3BucketForLargeMessages;
         string s3KeyPrefix;
         string queueNamePrefix;
+        string topicNamePrefix;
         ServerSideEncryptionMethod serverSideEncryptionMethod;
         bool serverSideEncryptionMethodInitialized;
         string serverSideEncryptionKeyManagementServiceKeyId;
@@ -243,6 +268,7 @@
         bool serverSideEncryptionCustomerProvidedKeyMD5Initialized;
         bool? isDelayedDeliveryEnabled;
         bool? preTruncateQueueNames;
+        bool? preTruncateTopicNames;
         bool? useV1CompatiblePayload;
         int? queueDelayTime;
         Func<IAmazonS3> s3ClientFactory;
