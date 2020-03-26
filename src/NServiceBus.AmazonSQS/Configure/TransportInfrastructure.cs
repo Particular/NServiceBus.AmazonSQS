@@ -25,6 +25,15 @@
             this.settings = settings;
             messageMetadataRegistry = this.settings.Get<MessageMetadataRegistry>();
             configuration = new TransportConfiguration(settings);
+            
+            if (settings.HasSetting(SettingsKeys.DisableNativePubSub))
+            {
+                OutboundRoutingPolicy = new OutboundRoutingPolicy(OutboundRoutingType.Unicast, OutboundRoutingType.Unicast, OutboundRoutingType.Unicast);
+            }
+            else
+            {
+                OutboundRoutingPolicy = new OutboundRoutingPolicy(OutboundRoutingType.Unicast, OutboundRoutingType.Multicast, OutboundRoutingType.Unicast);
+            }
 
             try
             {
@@ -75,10 +84,7 @@
 
         public override TransportTransactionMode TransactionMode => TransportTransactionMode.ReceiveOnly;
 
-        public override OutboundRoutingPolicy OutboundRoutingPolicy
-            => new OutboundRoutingPolicy(OutboundRoutingType.Unicast,
-                OutboundRoutingType.Multicast,
-                OutboundRoutingType.Unicast);
+        public override OutboundRoutingPolicy OutboundRoutingPolicy { get; }
 
         MessagePump CreateMessagePump()
         {
