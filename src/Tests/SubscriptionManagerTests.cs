@@ -1,6 +1,10 @@
 namespace NServiceBus.AmazonSQS.Tests
 {
+    using System;
+    using System.Collections.Generic;
     using System.Threading.Tasks;
+    using Amazon.Runtime.SharedInterfaces;
+    using Amazon.SimpleNotificationService.Model;
     using NUnit.Framework;
     using Settings;
     using Unicast.Messages;
@@ -38,12 +42,31 @@ namespace NServiceBus.AmazonSQS.Tests
             messageMetadataRegistry.GetMessageMetadata(eventType);
             
             await manager.Subscribe(eventType, null);
-            
+
+            var initialSubscribeRequests = new List<(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)>(snsClient.SubscribeQueueRequests);
             snsClient.SubscribeQueueRequests.Clear();
 
             await manager.Subscribe(eventType, null);
             
+            Assert.IsNotEmpty(initialSubscribeRequests);
             Assert.IsEmpty(snsClient.SubscribeQueueRequests);
+        }
+
+        [Test]
+        public async Task Subscribe_creates_topic_if_not_exists()
+        {
+            // cache
+            var eventType = typeof(Event);
+            messageMetadataRegistry.GetMessageMetadata(eventType);
+
+            var responses = new Queue<Func<string, Topic>>();
+            responses.Enqueue(t => null);
+            responses.Enqueue(t => new Topic { TopicArn = t });
+            snsClient.FindTopicAsyncResponse = topic => responses.Dequeue()(topic);
+            
+            await manager.Subscribe(eventType, null);
+            
+            CollectionAssert.AreEquivalent(new List<string> { "NServiceBus_AmazonSQS_Tests_SubscriptionManagerTests-Event" }, snsClient.CreateTopicRequests);
         }
 
         interface IEvent { }

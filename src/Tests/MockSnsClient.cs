@@ -21,10 +21,8 @@ namespace NServiceBus.AmazonSQS.Tests
             SubscribeQueueRequests.Add((topicArn, sqsClient, sqsQueueUrl));
             return Task.FromResult(SubscribeQueueAsyncResponse(topicArn, sqsClient, sqsQueueUrl));
         }
-
-        public delegate Topic FindTopicResponse(string topic);
         
-        public FindTopicResponse FindTopicAsyncResponse { get; set; } = topic => new Topic { TopicArn = $"arn:aws:sns:us-west-2:123456789012:{topic}"};
+        public Func<string, Topic> FindTopicAsyncResponse { get; set; } = topic => new Topic { TopicArn = $"arn:aws:sns:us-west-2:123456789012:{topic}"};
         public List<string> FindTopicRequests { get; } = new List<string>();
         
         public Task<Topic> FindTopicAsync(string topicName)
@@ -40,6 +38,18 @@ namespace NServiceBus.AmazonSQS.Tests
         {
             SetSubscriptionAttributesRequests.Add(request);
             return Task.FromResult(SetSubscriptionAttributesResponse(request));
+        }
+
+        public Func<string, CreateTopicResponse> CreateTopicResponse { get; set; } = topic => new CreateTopicResponse
+        {
+            TopicArn = $"arn:aws:sns:us-west-2:123456789012:{topic}"
+        };
+        public List<string> CreateTopicRequests { get; } = new List<string>();
+        
+        public Task<CreateTopicResponse> CreateTopicAsync(string name, CancellationToken cancellationToken = new CancellationToken())
+        {
+            CreateTopicRequests.Add(name);
+            return Task.FromResult(CreateTopicResponse(name));
         }
 
         #region NotImplemented
@@ -167,11 +177,6 @@ namespace NServiceBus.AmazonSQS.Tests
         }
 
         public CreateTopicResponse CreateTopic(CreateTopicRequest request)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<CreateTopicResponse> CreateTopicAsync(string name, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
         }
