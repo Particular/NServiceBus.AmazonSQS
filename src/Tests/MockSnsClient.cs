@@ -11,19 +11,47 @@ namespace NServiceBus.AmazonSQS.Tests
 
     class MockSnsClient : IAmazonSimpleNotificationService
     {
+        public delegate string SubscribeQueueResponse(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl);
+
+        public SubscribeQueueResponse SubscribeQueueAsyncResponse { get; set; } = (arn, client, url) => $"arn:aws:sns:us-west-2:123456789012:{arn}:6b0e71bd-7e97-4d97-80ce-4a0994e55286"; 
+        public List<(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)> SubscribeQueueRequests { get; } = new List<(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)>();
+
+        public Task<string> SubscribeQueueAsync(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)
+        {
+            SubscribeQueueRequests.Add((topicArn, sqsClient, sqsQueueUrl));
+            return Task.FromResult(SubscribeQueueAsyncResponse(topicArn, sqsClient, sqsQueueUrl));
+        }
+
+        public delegate Topic FindTopicResponse(string topic);
+        
+        public FindTopicResponse FindTopicAsyncResponse { get; set; } = topic => new Topic { TopicArn = $"arn:aws:sns:us-west-2:123456789012:{topic}"};
+        public List<string> FindTopicRequests { get; } = new List<string>();
+        
+        public Task<Topic> FindTopicAsync(string topicName)
+        {
+            FindTopicRequests.Add(topicName);
+            return Task.FromResult(FindTopicAsyncResponse(topicName));
+        }
+        
+        public Func<SetSubscriptionAttributesRequest, SetSubscriptionAttributesResponse> SetSubscriptionAttributesResponse { get; set; } = request => new SetSubscriptionAttributesResponse();
+        public List<SetSubscriptionAttributesRequest> SetSubscriptionAttributesRequests { get; } = new List<SetSubscriptionAttributesRequest>();
+
+        public Task<SetSubscriptionAttributesResponse> SetSubscriptionAttributesAsync(SetSubscriptionAttributesRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            SetSubscriptionAttributesRequests.Add(request);
+            return Task.FromResult(SetSubscriptionAttributesResponse(request));
+        }
+
         #region NotImplemented
+
         public void Dispose()
         {
             throw new NotImplementedException();
         }
 
         public IClientConfig Config { get; }
-        public string SubscribeQueue(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)
-        {
-            throw new NotImplementedException();
-        }
 
-        public Task<string> SubscribeQueueAsync(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)
+        public string SubscribeQueue(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)
         {
             throw new NotImplementedException();
         }
@@ -39,11 +67,6 @@ namespace NServiceBus.AmazonSQS.Tests
         }
 
         public Topic FindTopic(string topicName)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Topic> FindTopicAsync(string topicName)
         {
             throw new NotImplementedException();
         }
@@ -499,11 +522,6 @@ namespace NServiceBus.AmazonSQS.Tests
         }
 
         public Task<SetSubscriptionAttributesResponse> SetSubscriptionAttributesAsync(string subscriptionArn, string attributeName, string attributeValue, CancellationToken cancellationToken = new CancellationToken())
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<SetSubscriptionAttributesResponse> SetSubscriptionAttributesAsync(SetSubscriptionAttributesRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
         }
