@@ -10,6 +10,17 @@
     public static partial class SqsTransportSettings
     {
         /// <summary>
+        /// Enables compatibility with endpoints running on message-driven pub-sub
+        /// </summary>
+        /// <param name="transportExtensions">The transport to enable pub-sub compatibility on</param>
+        public static SubscriptionMigrationModeSettings EnableMessageDrivenPubSubCompatibilityMode(this TransportExtensions<SqsTransport> transportExtensions)
+        {
+            var settings = transportExtensions.GetSettings();
+            settings.Set("NServiceBus.Subscriptions.EnableMigrationMode", true);
+            return new SubscriptionMigrationModeSettings(settings);
+        }
+        
+        /// <summary>
         /// Configures a client factory for the SQS client. The default client factory creates a SQS client with the default
         /// constructor.
         /// </summary>
