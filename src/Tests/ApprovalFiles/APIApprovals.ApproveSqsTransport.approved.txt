@@ -55,6 +55,7 @@ namespace NServiceBus
             "member currently throws a NotImplementedException. Will be removed in version 5." +
             "0.0.", true)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> S3BucketForLargeMessages(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string s3BucketForLargeMessages, string s3KeyPrefix) { }
+        public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> TopicNamePrefix(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string topicNamePrefix) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> UnrestrictedDurationDelayedDelivery(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
     }
 }
