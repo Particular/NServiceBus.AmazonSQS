@@ -31,8 +31,7 @@
             using (var sqsClient = SqsTransportExtensions.CreateSQSClient())
             using (var snsClient = SqsTransportExtensions.CreateSnsClient())
             {
-                await Cleanup.DeleteAllQueuesWithPrefix(sqsClient, NamePrefix);
-                await Cleanup.DeleteAllTopicsWithPrefix(snsClient, NamePrefix);
+                await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, NamePrefix).ConfigureAwait(false);
             }
         }
     }
