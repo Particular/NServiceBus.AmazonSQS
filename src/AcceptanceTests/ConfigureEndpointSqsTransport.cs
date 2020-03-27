@@ -16,7 +16,7 @@
 
             var transportConfig = configuration.UseTransport<SqsTransport>();
 
-            transportConfig.ConfigureSqsTransport(SetupFixture.SqsNamePrefix);
+            transportConfig.ConfigureSqsTransport(SetupFixture.NamePrefix);
 
             var routingConfig = transportConfig.Routing();
             foreach (var publisher in publisherMetadata.Publishers)
