@@ -17,7 +17,7 @@ public class ConfigureSqsTransportInfrastructure : IConfigureTransportInfrastruc
         var sqsTransport = new SqsTransport();
         var sqsConfig = new TransportExtensions<SqsTransport>(settings);
 
-        sqsConfig.ConfigureSqsTransport(SetupFixture.SqsQueueNamePrefix);
+        sqsConfig.ConfigureSqsTransport(SetupFixture.NamePrefix);
 
         settings.SetupMessageMetadataRegistry();
 
