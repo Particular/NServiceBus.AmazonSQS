@@ -69,6 +69,27 @@ namespace NServiceBus.AmazonSQS.Tests
             CollectionAssert.AreEquivalent(new List<string> { "NServiceBus_AmazonSQS_Tests_SubscriptionManagerTests-Event" }, snsClient.CreateTopicRequests);
         }
 
+        // Apparently we can only set the raw mode by doing it that way so let's enforce via test
+        [Test]
+        public async Task Subscribe_creates_subscription_with_passed_sqs_client_and_raw_message()
+        {
+            var eventType = typeof(Event);
+            messageMetadataRegistry.GetMessageMetadata(eventType);
+            
+            await manager.Subscribe(eventType, null);
+            
+            CollectionAssert.AreEqual(new List<(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)>
+            {
+                ("arn:aws:sns:us-west-2:123456789012:NServiceBus_AmazonSQS_Tests_SubscriptionManagerTests-Event", sqsClient, queueName)
+            }, snsClient.SubscribeQueueRequests);
+            
+            Assert.AreEqual(1, snsClient.SetSubscriptionAttributesRequests.Count);
+            var firstElement = snsClient.SetSubscriptionAttributesRequests[0];
+            Assert.AreEqual("RawMessageDelivery", firstElement.AttributeName);
+            Assert.AreEqual("true", firstElement.AttributeValue);
+            Assert.AreEqual("arn:aws:sns:us-west-2:123456789012:arn:aws:sns:us-west-2:123456789012:NServiceBus_AmazonSQS_Tests_SubscriptionManagerTests-Event:6b0e71bd-7e97-4d97-80ce-4a0994e55286", firstElement.SubscriptionArn);
+        }
+
         interface IEvent { }
         
         interface IMyEvent : IEvent { }
