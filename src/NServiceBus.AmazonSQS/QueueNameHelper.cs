@@ -4,7 +4,7 @@
     using System.Linq;
     using System.Text;
 
-    static partial class QueueNameHelper
+    static class QueueNameHelper
     {
         public static string GetSqsQueueName(string destination, TransportConfiguration transportConfiguration)
         {
