@@ -15,8 +15,6 @@ namespace NServiceBus.AmazonSQS.Tests
 
         public SubscribeQueueResponse SubscribeQueueAsyncResponse { get; set; } = (arn, client, url) => $"arn:aws:sns:us-west-2:123456789012:{arn}:6b0e71bd-7e97-4d97-80ce-4a0994e55286"; 
         public List<(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)> SubscribeQueueRequests { get; } = new List<(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)>();
-        public List<PublishRequest> PublishedEvents { get; } = new List<PublishRequest>();
-
         public Task<string> SubscribeQueueAsync(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)
         {
             SubscribeQueueRequests.Add((topicArn, sqsClient, sqsQueueUrl));
@@ -55,10 +53,25 @@ namespace NServiceBus.AmazonSQS.Tests
             return Task.FromResult(CreateTopicResponse(name));
         }
 
+        public List<PublishRequest> PublishedEvents { get; } = new List<PublishRequest>();
+        
         public Task<PublishResponse> PublishAsync(PublishRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             PublishedEvents.Add(request);
             return Task.FromResult((new PublishResponse()));
+        }
+        
+        public Func<string, ListSubscriptionsByTopicResponse> ListSubscriptionsByTopicResponse = topic => new ListSubscriptionsByTopicResponse
+        {
+            Subscriptions = new List<Subscription>(),
+        };
+        
+        public List<string> ListSubscriptionsByTopicRequests { get; } = new List<string>();
+        
+        public Task<ListSubscriptionsByTopicResponse> ListSubscriptionsByTopicAsync(string topicArn, string nextToken, CancellationToken cancellationToken = new CancellationToken())
+        {
+            ListSubscriptionsByTopicRequests.Add(topicArn);
+            return Task.FromResult(ListSubscriptionsByTopicResponse(topicArn));
         }
 
         #region NotImplemented
@@ -391,11 +404,6 @@ namespace NServiceBus.AmazonSQS.Tests
         }
 
         public ListSubscriptionsByTopicResponse ListSubscriptionsByTopic(ListSubscriptionsByTopicRequest request)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<ListSubscriptionsByTopicResponse> ListSubscriptionsByTopicAsync(string topicArn, string nextToken, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
         }
