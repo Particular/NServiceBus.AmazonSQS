@@ -109,6 +109,7 @@
                     b.CustomConfig(c =>
                     {
                         var compatModeSettings = c.ConfigureSqsTransport().EnableMessageDrivenPubSubCompatibilityMode();
+                        // not needed but left here to enforce duplicates
                         compatModeSettings.RegisterPublisher(typeof(MyEvent), PublisherEndpoint);
                     });
                     b.When(async (session, ctx) =>
