@@ -10,12 +10,13 @@
     {
         const string S3BucketEnvironmentVariableName = "NServiceBus_AmazonSQS_S3Bucket";
 
-        public static TransportExtensions<SqsTransport> ConfigureSqsTransport(this TransportExtensions<SqsTransport> transportConfiguration, string queueNamePrefix)
+        public static TransportExtensions<SqsTransport> ConfigureSqsTransport(this TransportExtensions<SqsTransport> transportConfiguration, string namePrefix)
         {
             transportConfiguration
                 .ClientFactory(CreateSQSClient)
                 .ClientFactory(CreateSnsClient)
-                .QueueNamePrefix(queueNamePrefix)
+                .QueueNamePrefix(namePrefix)
+                .TopicNamePrefix(namePrefix)
                 .PreTruncateQueueNamesForAcceptanceTests()
                 .PreTruncateTopicNamesForAcceptanceTests();
 
