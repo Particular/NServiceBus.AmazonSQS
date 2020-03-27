@@ -15,6 +15,7 @@ namespace NServiceBus.AmazonSQS.Tests
 
         public SubscribeQueueResponse SubscribeQueueAsyncResponse { get; set; } = (arn, client, url) => $"arn:aws:sns:us-west-2:123456789012:{arn}:6b0e71bd-7e97-4d97-80ce-4a0994e55286"; 
         public List<(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)> SubscribeQueueRequests { get; } = new List<(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)>();
+        public List<PublishRequest> PublishedEvents { get; } = new List<PublishRequest>();
 
         public Task<string> SubscribeQueueAsync(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)
         {
@@ -32,6 +33,7 @@ namespace NServiceBus.AmazonSQS.Tests
         }
         
         public Func<SetSubscriptionAttributesRequest, SetSubscriptionAttributesResponse> SetSubscriptionAttributesResponse { get; set; } = request => new SetSubscriptionAttributesResponse();
+
         public List<SetSubscriptionAttributesRequest> SetSubscriptionAttributesRequests { get; } = new List<SetSubscriptionAttributesRequest>();
 
         public Task<SetSubscriptionAttributesResponse> SetSubscriptionAttributesAsync(SetSubscriptionAttributesRequest request, CancellationToken cancellationToken = new CancellationToken())
@@ -44,15 +46,27 @@ namespace NServiceBus.AmazonSQS.Tests
         {
             TopicArn = $"arn:aws:sns:us-west-2:123456789012:{topic}"
         };
+
         public List<string> CreateTopicRequests { get; } = new List<string>();
-        
+
         public Task<CreateTopicResponse> CreateTopicAsync(string name, CancellationToken cancellationToken = new CancellationToken())
         {
             CreateTopicRequests.Add(name);
             return Task.FromResult(CreateTopicResponse(name));
         }
 
+        public Task<PublishResponse> PublishAsync(PublishRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            PublishedEvents.Add(request);
+            return Task.FromResult((new PublishResponse()));
+        }
+
         #region NotImplemented
+        
+        public Task<PublishResponse> PublishAsync(string topicArn, string message, CancellationToken cancellationToken = new CancellationToken())
+        {
+            throw new NotImplementedException();            
+        }
 
         public void Dispose()
         {
@@ -451,17 +465,7 @@ namespace NServiceBus.AmazonSQS.Tests
             throw new NotImplementedException();
         }
 
-        public Task<PublishResponse> PublishAsync(string topicArn, string message, CancellationToken cancellationToken = new CancellationToken())
-        {
-            throw new NotImplementedException();
-        }
-
         public Task<PublishResponse> PublishAsync(string topicArn, string message, string subject, CancellationToken cancellationToken = new CancellationToken())
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<PublishResponse> PublishAsync(PublishRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
         }
