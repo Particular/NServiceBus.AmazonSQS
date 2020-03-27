@@ -6,7 +6,6 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AcceptanceTests\AcceptanceTests.csproj" />
     <ProjectReference Include="..\NServiceBus.AmazonSQS\NServiceBus.AmazonSQS.csproj" />
   </ItemGroup>
   <ItemGroup>
@@ -20,6 +19,9 @@
   <ItemGroup>
     <Compile Include="..\Tests\Cleanup.cs">
       <Link>Cleanup.cs</Link>
+    </Compile>
+    <Compile Include="..\AcceptanceTests\SqsTransportExtensions.cs">
+      <Link>SqsTransportExtensions.cs</Link>
     </Compile>
     <Compile Include="..\Tests\SettingsHolderExtensions.cs">
       <Link>SettingsHolderExtensions.cs</Link>
