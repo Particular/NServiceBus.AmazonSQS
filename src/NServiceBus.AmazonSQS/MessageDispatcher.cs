@@ -305,7 +305,7 @@
             }
 
             var mostConcreteEventType = messageMetadataRegistry.GetMessageMetadata(transportOperation.MessageType).MessageHierarchy[0];
-            var topicName = TopicName(mostConcreteEventType);
+            var topicName = TopicNameHelper.GetSnsTopicName(mostConcreteEventType.FullName, this.configuration);
 
             // TODO: We need a cache
             var existingTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
@@ -376,8 +376,6 @@
             }
         }
 
-        // we need a func for this that can be overloaded by users and by default throw if greater than 256
-        static string TopicName(Type type) => type.FullName?.Replace(".", "_").Replace("+", "-");
         readonly IAmazonSimpleNotificationService snsClient;
         readonly MessageMetadataRegistry messageMetadataRegistry;
 
