@@ -6,6 +6,7 @@
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
+    using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS.Model;
     using DelayedDelivery;
     using DeliveryConstraints;
@@ -196,8 +197,8 @@
             Assert.AreEqual("arn:aws:sns:us-west-2:123456789012:NServiceBus-AmazonSQS-Tests-MessageDispatcherTests-AnotherEvent", mockSnsClient.PublishedEvents.ElementAt(1).TopicArn);
         }
         
-        [Test, Ignore("Not implemented yet")]
-        public async Task Should_deduplicate_if_compatibility_mode_is_enabled()
+        [Test]
+        public async Task Should_deduplicate_if_compatibility_mode_is_enabled_and_subscription_found()
         {
             var settings = new SettingsHolder();
 
@@ -205,6 +206,14 @@
             var mockSqsClient = new MockSqsClient();
 
             var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, mockSnsClient, new QueueUrlCache(mockSqsClient), settings.SetupMessageMetadataRegistry());
+            
+            mockSnsClient.ListSubscriptionsByTopicResponse = topic => new ListSubscriptionsByTopicResponse
+            {
+                Subscriptions = new List<Subscription>
+                {
+                    new Subscription { Endpoint = "arn:abc", SubscriptionArn = "arn:subscription" }
+                }
+            };
 
             var messageId = Guid.NewGuid().ToString();
             var headers = new Dictionary<string, string>()
@@ -228,6 +237,39 @@
             Assert.AreEqual(1, mockSnsClient.PublishedEvents.Count);
             Assert.IsEmpty(mockSqsClient.RequestsSent);
             Assert.IsEmpty(mockSqsClient.BatchRequestsSent);
+        }
+        
+        [Test]
+        public async Task Should_not_deduplicate_if_compatibility_mode_is_enabled_and_no_subscription_found()
+        {
+            var settings = new SettingsHolder();
+
+            var mockSnsClient = new MockSnsClient();
+            var mockSqsClient = new MockSqsClient();
+            
+            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, mockSnsClient, new QueueUrlCache(mockSqsClient), settings.SetupMessageMetadataRegistry());
+
+            var messageId = Guid.NewGuid().ToString();
+            var headers = new Dictionary<string, string>()
+            {
+                {Headers.EnclosedMessageTypes, typeof(Event).AssemblyQualifiedName}
+            };
+            var transportOperations = new TransportOperations(
+                new TransportOperation(
+                    new OutgoingMessage(messageId, headers, Encoding.Default.GetBytes("{}")),
+                    new MulticastAddressTag(typeof(Event))),
+                new TransportOperation(
+                    new OutgoingMessage(messageId, headers, Encoding.Default.GetBytes("{}")),
+                    new UnicastAddressTag("abc"))
+            );
+
+            var transportTransaction = new TransportTransaction();
+            var context = new ContextBag();
+
+            await dispatcher.Dispatch(transportOperations, transportTransaction, context);
+            
+            Assert.AreEqual(1, mockSnsClient.PublishedEvents.Count);
+            Assert.AreEqual(1, mockSqsClient.BatchRequestsSent.Count);
         }
         
         [Test]
