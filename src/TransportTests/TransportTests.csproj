@@ -18,6 +18,9 @@
     <PackageReference Include="NUnit3TestAdapter" Version="3.16.1" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\Tests\Cleanup.cs">
+      <Link>Cleanup.cs</Link>
+    </Compile>
     <Compile Include="..\Tests\SettingsHolderExtensions.cs">
       <Link>SettingsHolderExtensions.cs</Link>
     </Compile>

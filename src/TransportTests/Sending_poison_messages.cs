@@ -48,7 +48,7 @@ public class Sending_poison_messages : NServiceBusTransportTest
     async Task SendPoisonMessage(string inputQueueName)
     {
         var transport = new TransportExtensions<SqsTransport>(new SettingsHolder());
-        transport = transport.ConfigureSqsTransport(SetupFixture.SqsQueueNamePrefix);
+        transport = transport.ConfigureSqsTransport(SetupFixture.NamePrefix);
         var transportConfiguration = new TransportConfiguration(transport.GetSettings());
         using (var sqsClient = SqsTransportExtensions.CreateSQSClient())
         {
@@ -68,7 +68,7 @@ public class Sending_poison_messages : NServiceBusTransportTest
     async Task CheckErrorQueue(string errorQueueName, CancellationToken cancellationToken)
     {
         var transport = new TransportExtensions<SqsTransport>(new SettingsHolder());
-        transport = transport.ConfigureSqsTransport(SetupFixture.SqsQueueNamePrefix);
+        transport = transport.ConfigureSqsTransport(SetupFixture.NamePrefix);
         var transportConfiguration = new TransportConfiguration(transport.GetSettings());
         using (var sqsClient = SqsTransportExtensions.CreateSQSClient())
         {
