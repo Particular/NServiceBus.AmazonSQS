@@ -13,23 +13,31 @@ namespace NServiceBus.AmazonSQS.Tests
     {
         public delegate string SubscribeQueueResponse(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl);
 
-        public SubscribeQueueResponse SubscribeQueueAsyncResponse { get; set; } = (arn, client, url) => $"arn:aws:sns:us-west-2:123456789012:{arn}:6b0e71bd-7e97-4d97-80ce-4a0994e55286"; 
+        public SubscribeQueueResponse SubscribeQueueAsyncResponse { get; set; } = (arn, client, url) => $"arn:aws:sns:us-west-2:123456789012:{arn}:6b0e71bd-7e97-4d97-80ce-4a0994e55286";
         public List<(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)> SubscribeQueueRequests { get; } = new List<(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)>();
         public Task<string> SubscribeQueueAsync(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)
         {
             SubscribeQueueRequests.Add((topicArn, sqsClient, sqsQueueUrl));
             return Task.FromResult(SubscribeQueueAsyncResponse(topicArn, sqsClient, sqsQueueUrl));
         }
-        
+
+        public List<string> UnsubscribeRequests = new List<string>();
+
+        public Task<UnsubscribeResponse> UnsubscribeAsync(string subscriptionArn, CancellationToken cancellationToken = new CancellationToken())
+        {
+            UnsubscribeRequests.Add(subscriptionArn);
+            return Task.FromResult(new UnsubscribeResponse());
+        }
+
         public Func<string, Topic> FindTopicAsyncResponse { get; set; } = topic => new Topic { TopicArn = $"arn:aws:sns:us-west-2:123456789012:{topic}"};
         public List<string> FindTopicRequests { get; } = new List<string>();
-        
+
         public Task<Topic> FindTopicAsync(string topicName)
         {
             FindTopicRequests.Add(topicName);
             return Task.FromResult(FindTopicAsyncResponse(topicName));
         }
-        
+
         public Func<SetSubscriptionAttributesRequest, SetSubscriptionAttributesResponse> SetSubscriptionAttributesResponse { get; set; } = request => new SetSubscriptionAttributesResponse();
 
         public List<SetSubscriptionAttributesRequest> SetSubscriptionAttributesRequests { get; } = new List<SetSubscriptionAttributesRequest>();
@@ -54,20 +62,20 @@ namespace NServiceBus.AmazonSQS.Tests
         }
 
         public List<PublishRequest> PublishedEvents { get; } = new List<PublishRequest>();
-        
+
         public Task<PublishResponse> PublishAsync(PublishRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             PublishedEvents.Add(request);
             return Task.FromResult((new PublishResponse()));
         }
-        
+
         public Func<string, ListSubscriptionsByTopicResponse> ListSubscriptionsByTopicResponse = topic => new ListSubscriptionsByTopicResponse
         {
             Subscriptions = new List<Subscription>(),
         };
-        
+
         public List<string> ListSubscriptionsByTopicRequests { get; } = new List<string>();
-        
+
         public Task<ListSubscriptionsByTopicResponse> ListSubscriptionsByTopicAsync(string topicArn, string nextToken, CancellationToken cancellationToken = new CancellationToken())
         {
             ListSubscriptionsByTopicRequests.Add(topicArn);
@@ -75,10 +83,10 @@ namespace NServiceBus.AmazonSQS.Tests
         }
 
         #region NotImplemented
-        
+
         public Task<PublishResponse> PublishAsync(string topicArn, string message, CancellationToken cancellationToken = new CancellationToken())
         {
-            throw new NotImplementedException();            
+            throw new NotImplementedException();
         }
 
         public void Dispose()
@@ -589,11 +597,6 @@ namespace NServiceBus.AmazonSQS.Tests
         }
 
         public UnsubscribeResponse Unsubscribe(UnsubscribeRequest request)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<UnsubscribeResponse> UnsubscribeAsync(string subscriptionArn, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
         }
