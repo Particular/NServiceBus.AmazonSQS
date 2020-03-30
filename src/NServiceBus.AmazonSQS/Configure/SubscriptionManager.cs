@@ -23,6 +23,7 @@ namespace NServiceBus
             this.sqsClient = sqsClient;
             this.snsClient = snsClient;
             this.queueName = queueName;
+            this.customMappings = configuration.CustomSubscriptionsMappings ?? new EventToTopicsMappings();
         }
 
         public async Task Subscribe(Type eventType, ContextBag context)
@@ -59,6 +60,20 @@ namespace NServiceBus
 
         async Task SetupTypeSubscriptions(Type eventType, string queueUrl)
         {
+            if (customMappings.HasMappingsFor(eventType))
+            {
+                var mappedTopicsNames = customMappings.GetMappedTopicsNames(eventType);
+                foreach (var mappedTopic in mappedTopicsNames)
+                {
+                    //we skip the topic name generation assuming the topic name is already good
+                    //TODO: should we still use the prefix though?
+                    await CreateTopicAndSubscribe(mappedTopic, queueUrl).ConfigureAwait(false);
+
+                    MarkTypeConfigured(eventType);
+                }
+            }
+            
+            //TODO: if there are custom mappings for a message type should we look for the most concrete type and subscribe anyway or the custom mapping overrides the whole process?   
             var metadata = messageMetadataRegistry.GetMessageMetadata(eventType);
             if (metadata.MessageType == typeof(object) || IsTypeTopologyKnownConfigured(metadata.MessageType))
             {
@@ -129,5 +144,6 @@ namespace NServiceBus
         readonly SemaphoreSlim subscribeQueueLimiter = new SemaphoreSlim(1);
 
         static ILog Logger = LogManager.GetLogger(typeof(SubscriptionManager));
+        EventToTopicsMappings customMappings;
     }
 }
