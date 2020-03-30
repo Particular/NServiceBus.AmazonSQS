@@ -162,19 +162,45 @@
         /// Maps a specific message type to a set of topics. The transport will automatically map the most concrete type to a topic.
         /// In case a subscriber needs to subscribe to a type up in the message inheritance chain a custom mapping needs to be defined.
         /// </summary>
-        public static EventToTopicsMapper MapEvent<TEvent>(this TransportExtensions<SqsTransport> transportExtensions)
+        public static void MapEvent<TEvent>(this TransportExtensions<SqsTransport> transportExtensions, string customTopicName)
         {
+            MapEvent(transportExtensions, typeof(TEvent), new []{ customTopicName});
+        }
+        
+        /// <summary>
+        /// Maps a specific message type to a set of topics. The transport will automatically map the most concrete type to a topic.
+        /// In case a subscriber needs to subscribe to a type up in the message inheritance chain a custom mapping needs to be defined.
+        /// </summary>
+        public static void MapEvent(this TransportExtensions<SqsTransport> transportExtensions, Type eventType, string customTopicName)
+        {
+            MapEvent(transportExtensions, eventType, new []{ customTopicName});
+        }
+        
+        /// <summary>
+        /// Maps a specific message type to a set of topics. The transport will automatically map the most concrete type to a topic.
+        /// In case a subscriber needs to subscribe to a type up in the message inheritance chain a custom mapping needs to be defined.
+        /// </summary>
+        public static void MapEvent<TEvent>(this TransportExtensions<SqsTransport> transportExtensions, string[] customTopicsNames)
+        {
+            MapEvent(transportExtensions, typeof(TEvent), customTopicsNames);
+        }
+        
+        /// <summary>
+        /// Maps a specific message type to a set of topics. The transport will automatically map the most concrete type to a topic.
+        /// In case a subscriber needs to subscribe to a type up in the message inheritance chain a custom mapping needs to be defined.
+        /// </summary>
+        public static void MapEvent(this TransportExtensions<SqsTransport> transportExtensions, Type eventType, string[] customTopicsNames)
+        {
+            Guard.AgainstNull(nameof(customTopicsNames), customTopicsNames);
+            
             var settings = transportExtensions.GetSettings();
-            var mappings = settings.Get<EventToTopicsMappings>();
-            if (mappings == null)
+            if (!settings.TryGet<EventToTopicsMappings>(out var mappings))
             {
                 mappings = new EventToTopicsMappings();
                 settings.Set(mappings);
             }
             
-            var mapper = new EventToTopicsMapper(typeof(TEvent), mappings);
-
-            return mapper;
+            mappings.Add(eventType, customTopicsNames);
         }
 
         /// <summary>
