@@ -253,7 +253,7 @@
             {
                 var mostConcreteTypeFullName = unicastTransportOperation.Message.Headers[Headers.EnclosedMessageTypes].Split(new[] {";"}, StringSplitOptions.RemoveEmptyEntries)[0];
                 var metadata = messageMetadataRegistry.GetMessageMetadata(mostConcreteTypeFullName);
-                var topicName = TopicNameHelper.GetSnsTopicName(metadata.MessageType.FullName, configuration);
+                var topicName = configuration.TopicNameGenerator(metadata.MessageType, configuration.TopicNamePrefix);
 
                 var existingTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
                 if (existingTopic != null)
@@ -340,7 +340,7 @@
             }
 
             var mostConcreteEventType = messageMetadataRegistry.GetMessageMetadata(transportOperation.MessageType).MessageHierarchy[0];
-            var topicName = TopicNameHelper.GetSnsTopicName(mostConcreteEventType.FullName, configuration);
+            var topicName = configuration.TopicNameGenerator(mostConcreteEventType, configuration.TopicNamePrefix);
 
             // TODO: We need a cache
             var existingTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
