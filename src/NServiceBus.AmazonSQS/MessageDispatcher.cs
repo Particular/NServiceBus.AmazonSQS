@@ -247,10 +247,10 @@
         {
             var unicastTransportOperation = transportOperation as UnicastTransportOperation;
 
+            // these conditions are carefully chosen to only execute the code if really necessary
             if (unicastTransportOperation != null
                 && messageIdsOfMulticastedEvents.Contains(unicastTransportOperation.Message.MessageId)
-                && unicastTransportOperation.Message.Headers.ContainsKey(Headers.MessageIntent)
-                && (MessageIntentEnum)Enum.Parse(typeof(MessageIntentEnum), unicastTransportOperation.Message.Headers[Headers.MessageIntent]) == MessageIntentEnum.Publish
+                && unicastTransportOperation.Message.GetMessageIntent() == MessageIntentEnum.Publish
                 && unicastTransportOperation.Message.Headers.ContainsKey(Headers.EnclosedMessageTypes))
             {
                 var mostConcreteTypeFullName = unicastTransportOperation.Message.Headers[Headers.EnclosedMessageTypes].Split(new[] {";"}, StringSplitOptions.RemoveEmptyEntries)[0];
