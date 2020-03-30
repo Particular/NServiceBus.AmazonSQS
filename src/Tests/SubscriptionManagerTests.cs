@@ -18,6 +18,10 @@ namespace NServiceBus.AmazonSQS.Tests
             sqsClient = new MockSqsClient();
             snsClient = new MockSnsClient();
             settings = new SettingsHolder();
+            
+            customSubscriptionsMappings = new EventToTopicsMappings();
+            settings.Set(customSubscriptionsMappings);
+            
             messageMetadataRegistry = settings.SetupMessageMetadataRegistry();
             queueName = "fakeQueue";
 
@@ -83,6 +87,24 @@ namespace NServiceBus.AmazonSQS.Tests
             await manager.Subscribe(eventType, null);
 
             CollectionAssert.AreEquivalent(new List<string> { "NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-Event" }, snsClient.CreateTopicRequests);
+        }
+        
+        [Test]
+        public async Task Subscribe_creates_custom_defined_topic_if_not_exists()
+        {
+            // cache
+            var eventType = typeof(Event);
+            customSubscriptionsMappings.Add(eventType, new []{"custom-topic-name"});
+            messageMetadataRegistry.GetMessageMetadata(eventType);
+
+            var responses = new Queue<Func<string, Topic>>();
+            responses.Enqueue(t => null);
+            responses.Enqueue(t => new Topic { TopicArn = t });
+            snsClient.FindTopicAsyncResponse = topic => responses.Dequeue()(topic);
+
+            await manager.Subscribe(eventType, null);
+
+            CollectionAssert.AreEquivalent(new List<string> { "custom-topic-name" }, snsClient.CreateTopicRequests);
         }
 
         // Apparently we can only set the raw mode by doing it that way so let's enforce via test
@@ -168,5 +190,6 @@ namespace NServiceBus.AmazonSQS.Tests
         MessageMetadataRegistry messageMetadataRegistry;
         SettingsHolder settings;
         string queueName;
+        EventToTopicsMappings customSubscriptionsMappings;
     }
 }
