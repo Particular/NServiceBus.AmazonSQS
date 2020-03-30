@@ -15,5 +15,12 @@ namespace NServiceBus.AmazonSQS
 
             return messageIntent;
         }
+
+        public static string[] GetEnclosedMessageTypes(this OutgoingMessage message)
+        {
+            return message.Headers[Headers.EnclosedMessageTypes].Split(EnclosedMessageTypesSeparator, StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        static readonly string[] EnclosedMessageTypesSeparator = {";"};
     }
 }
