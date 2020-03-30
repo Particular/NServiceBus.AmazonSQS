@@ -121,6 +121,23 @@
         }
 
         /// <summary>
+        /// Specifies a lambda function that allows to take control of the topic generation logic.
+        /// This is usefull to overcome any limitations imposed by SNS, e.g. maximum topic name length.
+        /// </summary>
+        /// <param name="transportExtensions">The transport extensions.</param>
+        /// <param name="topicNameGenerator">A Func that receives the event type and the topic name prefix and returns a topic name.</param>
+        /// <returns></returns>
+        public static TransportExtensions<SqsTransport> TopicNameGenerator(this TransportExtensions<SqsTransport> transportExtensions, Func<Type, string, string> topicNameGenerator)
+        {
+            Guard.AgainstNull(nameof(transportExtensions), transportExtensions);
+            Guard.AgainstNull(nameof(topicNameGenerator), topicNameGenerator);
+
+            transportExtensions.GetSettings().Set(SettingsKeys.TopicNameGenerator, topicNameGenerator);
+
+            return transportExtensions;
+        }
+
+        /// <summary>
         /// Configures the SQS transport to support delayed messages of any duration.
         /// Without calling this API, delayed messages are subject to SQS Delivery Delay duration restrictions.
         /// </summary>
