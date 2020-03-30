@@ -249,6 +249,8 @@
 
             if (unicastTransportOperation != null
                 && messageIdsOfMulticastedEvents.Contains(unicastTransportOperation.Message.MessageId)
+                && unicastTransportOperation.Message.Headers.ContainsKey(Headers.MessageIntent)
+                && (MessageIntentEnum)Enum.Parse(typeof(MessageIntentEnum), unicastTransportOperation.Message.Headers[Headers.MessageIntent]) == MessageIntentEnum.Publish
                 && unicastTransportOperation.Message.Headers.ContainsKey(Headers.EnclosedMessageTypes))
             {
                 var mostConcreteTypeFullName = unicastTransportOperation.Message.Headers[Headers.EnclosedMessageTypes].Split(new[] {";"}, StringSplitOptions.RemoveEmptyEntries)[0];
