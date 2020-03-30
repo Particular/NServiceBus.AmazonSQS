@@ -253,8 +253,8 @@
                 && unicastTransportOperation.Message.GetMessageIntent() == MessageIntentEnum.Publish
                 && unicastTransportOperation.Message.Headers.ContainsKey(Headers.EnclosedMessageTypes))
             {
-                var mostConcreteTypeFullName = unicastTransportOperation.Message.Headers[Headers.EnclosedMessageTypes].Split(new[] {";"}, StringSplitOptions.RemoveEmptyEntries)[0];
-                var metadata = messageMetadataRegistry.GetMessageMetadata(mostConcreteTypeFullName);
+                var mostConcreteEnclosedMessageType = unicastTransportOperation.Message.GetEnclosedMessageTypes()[0];
+                var metadata = messageMetadataRegistry.GetMessageMetadata(mostConcreteEnclosedMessageType);
                 var topicName = configuration.TopicNameGenerator(metadata.MessageType, configuration.TopicNamePrefix);
 
                 var existingTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
