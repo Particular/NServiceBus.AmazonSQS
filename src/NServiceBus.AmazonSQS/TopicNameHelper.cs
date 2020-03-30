@@ -13,7 +13,7 @@
                 throw new ArgumentNullException(nameof(eventType));
             }
 
-            string destination = eventType.FullName;
+            var destination = eventType.FullName;
 
             var s = transportConfiguration.TopicNamePrefix + destination;
 
