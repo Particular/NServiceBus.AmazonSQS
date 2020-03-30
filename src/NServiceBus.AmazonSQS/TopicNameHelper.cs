@@ -6,12 +6,14 @@
 
     static class TopicNameHelper
     {
-        public static string GetSnsTopicName(string destination, TransportConfiguration transportConfiguration)
+        public static string GetSnsTopicName(Type eventType, TransportConfiguration transportConfiguration)
         {
-            if (string.IsNullOrWhiteSpace(destination))
+            if (eventType == null)
             {
-                throw new ArgumentNullException(nameof(destination));
+                throw new ArgumentNullException(nameof(eventType));
             }
+
+            string destination = eventType.FullName;
 
             var s = transportConfiguration.TopicNamePrefix + destination;
 

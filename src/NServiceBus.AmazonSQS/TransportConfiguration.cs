@@ -123,6 +123,18 @@
             }
         }
 
+        public Func<Type, string, string> TopicNameGenerator
+        {
+            get
+            {
+                if (topicNameGenerator == null)
+                {
+                    topicNameGenerator = settings.GetOrDefault<Func<Type, string, string>>(SettingsKeys.TopicNameGenerator) ?? ((eventType, prefix) => TopicNameHelper.GetSnsTopicName(eventType, this) );
+                }
+                return topicNameGenerator;
+            }
+        }
+
         public bool PreTruncateTopicNames
         {
             get
@@ -256,6 +268,7 @@
         string s3KeyPrefix;
         string queueNamePrefix;
         string topicNamePrefix;
+        Func<Type, string, string> topicNameGenerator;
         ServerSideEncryptionMethod serverSideEncryptionMethod;
         bool serverSideEncryptionMethodInitialized;
         string serverSideEncryptionKeyManagementServiceKeyId;

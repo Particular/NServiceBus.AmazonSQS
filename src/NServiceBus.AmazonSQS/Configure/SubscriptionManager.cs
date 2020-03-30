@@ -41,7 +41,7 @@ namespace NServiceBus
                 return;
             }
 
-            await DeleteSubscription(TopicNameHelper.GetSnsTopicName(mostConcreteEventType.FullName, configuration)).ConfigureAwait(false);
+            await DeleteSubscription(configuration.TopicNameGenerator(mostConcreteEventType, configuration.TopicNamePrefix)).ConfigureAwait(false);
 
             MarkTypeConfigured(eventType);
         }
@@ -64,7 +64,7 @@ namespace NServiceBus
                 return;
             }
 
-            await CreateTopicAndSubscribe(TopicNameHelper.GetSnsTopicName(mostConcreteEventType.FullName, configuration), queueUrl).ConfigureAwait(false);
+            await CreateTopicAndSubscribe(configuration.TopicNameGenerator(mostConcreteEventType, configuration.TopicNamePrefix), queueUrl).ConfigureAwait(false);
 
             MarkTypeConfigured(eventType);
         }
