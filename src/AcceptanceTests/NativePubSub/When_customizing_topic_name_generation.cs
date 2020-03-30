@@ -1,9 +1,7 @@
 ﻿namespace NServiceBus.AcceptanceTests.NativePubSub
 {
-    using System;
     using System.Threading.Tasks;
     using AcceptanceTesting;
-    using AcceptanceTesting.Customization;
     using EndpointTemplates;
     using NUnit.Framework;
 
@@ -19,7 +17,7 @@
                     ctx.Subscribed = true;
                 }))
                 .Done(c => c.GotTheEvent)
-                .Run(TimeSpan.FromSeconds(30));
+                .Run();
 
             Assert.True(context.GotTheEvent);
         }
