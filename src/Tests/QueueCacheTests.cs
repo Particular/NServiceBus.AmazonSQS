@@ -7,7 +7,7 @@
     using NUnit.Framework;
 
     [TestFixture]
-    public class QueueNameHelperTests
+    public class QueueCacheTests
     {
         [Test]
         [TestCase("destination-delay.fifo", "destination-delay.fifo")]
@@ -18,7 +18,7 @@
         {
             var configuration = new TransportConfiguration(new SettingsHolder());
 
-            var result = QueueNameHelper.GetSqsQueueName(destination, configuration);
+            var result = QueueCache.GetSqsQueueName(destination, configuration);
             Assert.AreEqual(expected, result);
         }
 
@@ -35,7 +35,7 @@
 
             var configuration = new TransportConfiguration(settings);
 
-            var result = QueueNameHelper.GetSqsQueueName(destination, configuration);
+            var result = QueueCache.GetSqsQueueName(destination, configuration);
             Console.WriteLine(result);
             Assert.AreEqual(expected, result);
         }

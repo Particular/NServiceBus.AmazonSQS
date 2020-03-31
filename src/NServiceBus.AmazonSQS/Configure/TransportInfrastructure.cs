@@ -71,7 +71,7 @@
                 throw new Exception(message, e);
             }
 
-            queueUrlCache = new QueueUrlCache(sqsClient);
+            queueCache = new QueueCache(sqsClient, configuration);
         }
 
 
@@ -88,17 +88,17 @@
 
         MessagePump CreateMessagePump()
         {
-            return new MessagePump(configuration, s3Client, sqsClient, queueUrlCache);
+            return new MessagePump(configuration, s3Client, sqsClient, queueCache);
         }
 
         QueueCreator CreateQueueCreator()
         {
-            return new QueueCreator(configuration, s3Client, sqsClient, queueUrlCache);
+            return new QueueCreator(configuration, s3Client, sqsClient, queueCache);
         }
 
         MessageDispatcher CreateMessageDispatcher()
         {
-            return new MessageDispatcher(configuration, s3Client, sqsClient, snsClient, queueUrlCache, messageMetadataRegistry);
+            return new MessageDispatcher(configuration, s3Client, sqsClient, snsClient, queueCache, messageMetadataRegistry);
         }
 
         public override TransportReceiveInfrastructure ConfigureReceiveInfrastructure()
@@ -126,7 +126,7 @@
 
         public override TransportSubscriptionInfrastructure ConfigureSubscriptionInfrastructure()
         {
-            return new TransportSubscriptionInfrastructure(() => new SubscriptionManager(sqsClient, snsClient, settings.LocalAddress(), queueUrlCache, configuration, messageMetadataRegistry));
+            return new TransportSubscriptionInfrastructure(() => new SubscriptionManager(sqsClient, snsClient, settings.LocalAddress(), queueCache, configuration, messageMetadataRegistry));
         }
 
         public override EndpointInstance BindToLocalEndpoint(EndpointInstance instance)
@@ -154,7 +154,7 @@
         readonly IAmazonSQS sqsClient;
         readonly IAmazonSimpleNotificationService snsClient;
         readonly IAmazonS3 s3Client;
-        readonly QueueUrlCache queueUrlCache;
+        readonly QueueCache queueCache;
         readonly TransportConfiguration configuration;
         readonly ReadOnlySettings settings;
         readonly MessageMetadataRegistry messageMetadataRegistry;
