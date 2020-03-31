@@ -10,16 +10,17 @@
 
     class MockSqsClient : IAmazonSQS
     {
-        public List<SendMessageRequest> RequestsSent { get; } = new List<SendMessageRequest>();
-        public Func<SendMessageRequest, SendMessageResponse> RequestResponse = req => new SendMessageResponse();
+        public List<string> QueueUrlRequestsSent { get; } = new List<string>();
+        
+        public Task<GetQueueUrlResponse> GetQueueUrlAsync(string queueName, CancellationToken cancellationToken = new CancellationToken())
+        {
+            QueueUrlRequestsSent.Add(queueName);
+            return Task.FromResult(new GetQueueUrlResponse {QueueUrl = queueName});
+        }
+        
         public List<SendMessageBatchRequest> BatchRequestsSent { get; } = new List<SendMessageBatchRequest>();
 
         public Func<SendMessageBatchRequest, SendMessageBatchResponse> BatchRequestResponse = req => new SendMessageBatchResponse();
-
-        public Task<GetQueueUrlResponse> GetQueueUrlAsync(string queueName, CancellationToken cancellationToken = new CancellationToken())
-        {
-            return Task.FromResult(new GetQueueUrlResponse {QueueUrl = queueName});
-        }
 
         public Task<SendMessageBatchResponse> SendMessageBatchAsync(SendMessageBatchRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
@@ -27,6 +28,9 @@
             return Task.FromResult(BatchRequestResponse(request));
         }
 
+        public List<SendMessageRequest> RequestsSent { get; } = new List<SendMessageRequest>();
+        public Func<SendMessageRequest, SendMessageResponse> RequestResponse = req => new SendMessageResponse();
+        
         public Task<SendMessageResponse> SendMessageAsync(SendMessageRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             RequestsSent.Add(request);
