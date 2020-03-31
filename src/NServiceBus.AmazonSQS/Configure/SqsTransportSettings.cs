@@ -1,6 +1,7 @@
 ﻿namespace NServiceBus
 {
     using System;
+    using System.Collections.Generic;
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
     using Configuration.AdvancedExtensibility;
@@ -180,7 +181,7 @@
         /// Maps a specific message type to a set of topics. The transport will automatically map the most concrete type to a topic.
         /// In case a subscriber needs to subscribe to a type up in the message inheritance chain a custom mapping needs to be defined.
         /// </summary>
-        public static void MapEvent<TEvent>(this TransportExtensions<SqsTransport> transportExtensions, string[] customTopicsNames)
+        public static void MapEvent<TEvent>(this TransportExtensions<SqsTransport> transportExtensions, IEnumerable<string> customTopicsNames)
         {
             MapEvent(transportExtensions, typeof(TEvent), customTopicsNames);
         }
@@ -189,7 +190,7 @@
         /// Maps a specific message type to a set of topics. The transport will automatically map the most concrete type to a topic.
         /// In case a subscriber needs to subscribe to a type up in the message inheritance chain a custom mapping needs to be defined.
         /// </summary>
-        public static void MapEvent(this TransportExtensions<SqsTransport> transportExtensions, Type eventType, string[] customTopicsNames)
+        public static void MapEvent(this TransportExtensions<SqsTransport> transportExtensions, Type eventType, IEnumerable<string> customTopicsNames)
         {
             Guard.AgainstNull(nameof(customTopicsNames), customTopicsNames);
             

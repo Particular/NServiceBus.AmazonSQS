@@ -6,7 +6,7 @@
 
     class EventToTopicsMappings
     {
-        public void Add(Type eventType, string[] topicsNames)
+        public void Add(Type eventType, IEnumerable<string> topicsNames)
         {
             if (!eventsToTopicsMappings.TryGetValue(eventType, out var mapping))
             {
