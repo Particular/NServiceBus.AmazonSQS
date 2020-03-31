@@ -42,7 +42,7 @@ namespace NServiceBus
             }
 
             await DeleteSubscription(configuration.TopicNameGenerator(mostConcreteEventType, configuration.TopicNamePrefix)).ConfigureAwait(false);
-            
+
             MarkTypeNotConfigured(mostConcreteEventType);
         }
 
@@ -90,7 +90,7 @@ namespace NServiceBus
                 AttributeValue = "true"
             };
             await snsClient.SetSubscriptionAttributesAsync(setSubscriptionAttributesRequest).ConfigureAwait(false);
-            
+
             Logger.Debug($"Created subscription for queue '{queueName}' to topic '{topicName}'");
         }
 
@@ -98,7 +98,7 @@ namespace NServiceBus
         {
             typeTopologyConfiguredSet[eventType] = null;
         }
-        
+
         void MarkTypeNotConfigured(Type eventType)
         {
             typeTopologyConfiguredSet.TryRemove(eventType, out _);
@@ -114,7 +114,7 @@ namespace NServiceBus
         IAmazonSimpleNotificationService snsClient;
         string queueName;
         MessageMetadataRegistry messageMetadataRegistry;
-        
+
         static ILog Logger = LogManager.GetLogger(typeof(SubscriptionManager));
     }
 }
