@@ -218,7 +218,8 @@
             var messageId = Guid.NewGuid().ToString();
             var headers = new Dictionary<string, string>()
             {
-                {Headers.EnclosedMessageTypes, typeof(Event).AssemblyQualifiedName}
+                {Headers.EnclosedMessageTypes, typeof(Event).AssemblyQualifiedName},
+                {Headers.MessageIntent, MessageIntentEnum.Publish.ToString() }
             };
             var transportOperations = new TransportOperations(
                 new TransportOperation(
