@@ -48,7 +48,11 @@
                 throw new ArgumentNullException(nameof(destination));
             }
 
-            var s = transportConfiguration.QueueNamePrefix + destination;
+            // we need to process again because of the way we handle fifo queues
+            var s = !string.IsNullOrEmpty(transportConfiguration.QueueNamePrefix) && 
+                    destination.StartsWith(transportConfiguration.QueueNamePrefix, StringComparison.Ordinal) ? 
+                destination : 
+                $"{transportConfiguration.QueueNamePrefix}{destination}";
 
             if (transportConfiguration.PreTruncateQueueNames && s.Length > 80)
             {
@@ -75,7 +79,7 @@
             for (var i = 0; i < queueNameBuilder.Length - skipCharacters; ++i)
             {
                 var c = queueNameBuilder[i];
-                if (!Char.IsLetterOrDigit(c)
+                if (!char.IsLetterOrDigit(c)
                     && c != '-'
                     && c != '_')
                 {
