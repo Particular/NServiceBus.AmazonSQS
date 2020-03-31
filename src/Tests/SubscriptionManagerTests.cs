@@ -52,6 +52,21 @@ namespace NServiceBus.AmazonSQS.Tests
             Assert.IsNotEmpty(initialSubscribeRequests);
             Assert.IsEmpty(snsClient.SubscribeQueueRequests);
         }
+        
+        [Test]
+        public async Task Subscribe_Unsubscribe_and_Subscribe_again()
+        {
+            // cache
+            var eventType = typeof(Event);
+            messageMetadataRegistry.GetMessageMetadata(eventType);
+
+            await manager.Subscribe(eventType, null);
+            await manager.Unsubscribe(eventType, null);
+            
+            await manager.Subscribe(eventType, null);
+
+            Assert.AreEqual(2, snsClient.SubscribeQueueRequests.Count);
+        }
 
         [Test]
         public async Task Subscribe_creates_topic_if_not_exists()

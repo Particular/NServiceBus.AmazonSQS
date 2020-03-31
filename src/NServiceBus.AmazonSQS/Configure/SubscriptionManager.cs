@@ -42,8 +42,8 @@ namespace NServiceBus
             }
 
             await DeleteSubscription(configuration.TopicNameGenerator(mostConcreteEventType, configuration.TopicNamePrefix)).ConfigureAwait(false);
-
-            MarkTypeConfigured(eventType);
+            
+            MarkTypeNotConfigured(mostConcreteEventType);
         }
 
         async Task DeleteSubscription(string topicName)
@@ -66,7 +66,7 @@ namespace NServiceBus
 
             await CreateTopicAndSubscribe(configuration.TopicNameGenerator(mostConcreteEventType, configuration.TopicNamePrefix), queueUrl).ConfigureAwait(false);
 
-            MarkTypeConfigured(eventType);
+            MarkTypeConfigured(mostConcreteEventType);
         }
 
         async Task CreateTopicAndSubscribe(string topicName, string queueUrl)
@@ -97,6 +97,11 @@ namespace NServiceBus
         void MarkTypeConfigured(Type eventType)
         {
             typeTopologyConfiguredSet[eventType] = null;
+        }
+        
+        void MarkTypeNotConfigured(Type eventType)
+        {
+            typeTopologyConfiguredSet.TryRemove(eventType, out _);
         }
 
         bool IsTypeTopologyKnownConfigured(Type eventType) => typeTopologyConfiguredSet.ContainsKey(eventType);
