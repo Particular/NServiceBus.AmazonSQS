@@ -16,12 +16,12 @@
 
     class MessagePump : IPushMessages
     {
-        public MessagePump(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
+        public MessagePump(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueCache queueCache)
         {
             this.configuration = configuration;
             this.s3Client = s3Client;
             this.sqsClient = sqsClient;
-            this.queueUrlCache = queueUrlCache;
+            this.queueCache = queueCache;
             awsEndpointUrl = sqsClient.Config.DetermineServiceURL();
         }
 
@@ -29,15 +29,15 @@
         {
             this.criticalError = criticalError;
 
-            queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.InputQueue, configuration))
+            queueUrl = await queueCache.GetQueueUrl(settings.InputQueue)
                 .ConfigureAwait(false);
-            errorQueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(settings.ErrorQueue, configuration))
+            errorQueueUrl = await queueCache.GetQueueUrl(settings.ErrorQueue)
                 .ConfigureAwait(false);
 
             if (configuration.IsDelayedDeliveryEnabled)
             {
                 var delayedDeliveryQueueName = settings.InputQueue + TransportConfiguration.DelayedDeliveryQueueSuffix;
-                delayedDeliveryQueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(delayedDeliveryQueueName, configuration))
+                delayedDeliveryQueueUrl = await queueCache.GetQueueUrl(delayedDeliveryQueueName)
                     .ConfigureAwait(false);
 
                 var queueAttributes = await GetQueueAttributesFromDelayedDeliveryQueueWithRetriesToWorkaroundSDKIssue()
@@ -573,7 +573,7 @@
         TransportConfiguration configuration;
         IAmazonS3 s3Client;
         IAmazonSQS sqsClient;
-        QueueUrlCache queueUrlCache;
+        QueueCache queueCache;
         int numberOfMessagesToFetch;
         ReceiveMessageRequest receiveMessagesRequest;
         CriticalError criticalError;
