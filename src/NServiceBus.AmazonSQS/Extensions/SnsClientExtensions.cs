@@ -7,7 +7,7 @@ namespace NServiceBus.AmazonSQS
 
     static class SnsClientExtensions
     {
-        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, TransportConfiguration configuration, string topicName, string queueName)
+        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, string topicName, string queueName)
         {
             var existingTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
             if (existingTopic == null)
@@ -15,13 +15,13 @@ namespace NServiceBus.AmazonSQS
                 return null;
             }
 
-            return await snsClient.FindMatchingSubscription(configuration, existingTopic, queueName)
+            return await snsClient.FindMatchingSubscription(queueCache, existingTopic, queueName)
                 .ConfigureAwait(false);
         }
 
-        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, TransportConfiguration configuration, Topic topic, string queueName)
+        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, Topic topic, string queueName)
         {
-            var sqsQueueName = QueueNameHelper.GetSqsQueueName(queueName, configuration);
+            var physicalQueueName = queueCache.GetPhysicalQueueName(queueName);
 
             ListSubscriptionsByTopicResponse upToAHundredSubscriptions = null;
 
@@ -33,7 +33,7 @@ namespace NServiceBus.AmazonSQS
                 // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
                 foreach (var upToAHundredSubscription in upToAHundredSubscriptions.Subscriptions)
                 {
-                    if (upToAHundredSubscription.Endpoint.EndsWith($":{sqsQueueName}", StringComparison.Ordinal))
+                    if (upToAHundredSubscription.Endpoint.EndsWith($":{physicalQueueName}", StringComparison.Ordinal))
                     {
                         return upToAHundredSubscription.SubscriptionArn;
                     }

@@ -32,8 +32,9 @@
             settings.Set(SettingsKeys.V1CompatibilityMode, true);
 
             var mockSqsClient = new MockSqsClient();
-
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, null, new QueueUrlCache(mockSqsClient), null);
+            var transportConfiguration = new TransportConfiguration(settings);
+            
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, null, new QueueCache(mockSqsClient, transportConfiguration), null);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -71,7 +72,9 @@
 
             var mockSqsClient = new MockSqsClient();
 
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, null, new QueueUrlCache(mockSqsClient), null);
+            var transportConfiguration = new TransportConfiguration(settings);
+            
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, null, new QueueCache(mockSqsClient, transportConfiguration), null);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -119,7 +122,9 @@
 
             var mockSqsClient = new MockSqsClient();
 
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, null, new QueueUrlCache(mockSqsClient), null);
+            var transportConfiguration = new TransportConfiguration(settings);
+            
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, null, new QueueCache(mockSqsClient, transportConfiguration), null);
 
             var expectedId = "1234";
 
@@ -146,7 +151,8 @@
 
             var mockSqsClient = new MockSqsClient();
 
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, null, new QueueUrlCache(mockSqsClient), null);
+            var transportConfiguration = new TransportConfiguration(settings);
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, null, new QueueCache(mockSqsClient, transportConfiguration), null);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -176,7 +182,9 @@
 
             var mockSnsClient = new MockSnsClient();
 
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, null, mockSnsClient, new QueueUrlCache(null), settings.SetupMessageMetadataRegistry());
+            var transportConfiguration = new TransportConfiguration(settings);
+            
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, null, mockSnsClient, new QueueCache(null, transportConfiguration), settings.SetupMessageMetadataRegistry());
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -205,7 +213,8 @@
             var mockSnsClient = new MockSnsClient();
             var mockSqsClient = new MockSqsClient();
 
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, mockSnsClient, new QueueUrlCache(mockSqsClient), settings.SetupMessageMetadataRegistry());
+            var transportConfiguration = new TransportConfiguration(settings);
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, mockSnsClient, new QueueCache(mockSqsClient, transportConfiguration), settings.SetupMessageMetadataRegistry());
             
             mockSnsClient.ListSubscriptionsByTopicResponse = topic => new ListSubscriptionsByTopicResponse
             {
@@ -247,8 +256,9 @@
 
             var mockSnsClient = new MockSnsClient();
             var mockSqsClient = new MockSqsClient();
-            
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, mockSnsClient, new QueueUrlCache(mockSqsClient), settings.SetupMessageMetadataRegistry());
+
+            var transportConfiguration = new TransportConfiguration(settings);
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, mockSnsClient, new QueueCache(mockSqsClient, transportConfiguration), settings.SetupMessageMetadataRegistry());
 
             var messageId = Guid.NewGuid().ToString();
             var headers = new Dictionary<string, string>()
@@ -280,8 +290,9 @@
 
             var mockSnsClient = new MockSnsClient();
             mockSnsClient.FindTopicAsyncResponse = topic => null;
-            
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, null, mockSnsClient, new QueueUrlCache(null), settings.SetupMessageMetadataRegistry());
+
+            var transportConfiguration = new TransportConfiguration(settings);
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, null, mockSnsClient, new QueueCache(null, transportConfiguration), settings.SetupMessageMetadataRegistry());
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -307,7 +318,8 @@
             //given that a subscriber never sets up a topic for object this has to return null
             mockSnsClient.FindTopicAsyncResponse = topic => null;
 
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, null, mockSnsClient, new QueueUrlCache(null), settings.SetupMessageMetadataRegistry());
+            var transportConfiguration = new TransportConfiguration(settings);
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, null, mockSnsClient, new QueueCache(null, transportConfiguration), settings.SetupMessageMetadataRegistry());
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -333,7 +345,8 @@
             var mockS3Client = new MockS3Client();
             var mockSnsClient = new MockSnsClient();
 
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), mockS3Client, null, mockSnsClient, new QueueUrlCache(null), settings.SetupMessageMetadataRegistry());
+            var transportConfiguration = new TransportConfiguration(settings);
+            var dispatcher = new MessageDispatcher(transportConfiguration, mockS3Client, null, mockSnsClient, new QueueCache(null, transportConfiguration), settings.SetupMessageMetadataRegistry());
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -372,7 +385,8 @@
             var mockSqsClient = new MockSqsClient();
             mockSqsClient.RequestResponse = req => throw new QueueDoesNotExistException("Queue does not exist");
 
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, null, new QueueUrlCache(mockSqsClient), null);
+            var transportConfiguration = new TransportConfiguration(settings);
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, null, new QueueCache(mockSqsClient, transportConfiguration), null);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -398,7 +412,8 @@
 
             var mockSqsClient = new MockSqsClient();
 
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, null, new QueueUrlCache(mockSqsClient), null);
+            var transportConfiguration = new TransportConfiguration(settings);
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, null, new QueueCache(mockSqsClient, transportConfiguration), null);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -431,7 +446,8 @@
             var mockSqsClient = new MockSqsClient();
             mockSqsClient.BatchRequestResponse = req => throw new QueueDoesNotExistException("Queue does not exist");
 
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, null, new QueueUrlCache(mockSqsClient), null);
+            var transportConfiguration = new TransportConfiguration(settings);
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, null, new QueueCache(mockSqsClient, transportConfiguration), null);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -465,7 +481,8 @@
 
             var mockSqsClient = new MockSqsClient();
 
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), null, mockSqsClient, null, new QueueUrlCache(mockSqsClient), null);
+            var transportConfiguration = new TransportConfiguration(settings);
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, null, new QueueCache(mockSqsClient, transportConfiguration), null);
 
             var firstMessageIdThatWillFail = Guid.NewGuid().ToString();
             var secondMessageIdThatWillFail = Guid.NewGuid().ToString();
@@ -552,7 +569,8 @@
             var mockS3Client = new MockS3Client();
             var mockSqsClient = new MockSqsClient();
 
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), mockS3Client, mockSqsClient, null, new QueueUrlCache(mockSqsClient), null);
+            var transportConfiguration = new TransportConfiguration(settings);
+            var dispatcher = new MessageDispatcher(transportConfiguration, mockS3Client, mockSqsClient, null, new QueueCache(mockSqsClient, transportConfiguration), null);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -598,7 +616,8 @@
             var mockS3Client = new MockS3Client();
             var mockSqsClient = new MockSqsClient();
 
-            var dispatcher = new MessageDispatcher(new TransportConfiguration(settings), mockS3Client, mockSqsClient, null, new QueueUrlCache(mockSqsClient), null);
+            var transportConfiguration = new TransportConfiguration(settings);
+            var dispatcher = new MessageDispatcher(transportConfiguration, mockS3Client, mockSqsClient, null, new QueueCache(mockSqsClient, transportConfiguration), null);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(

@@ -1,11 +1,46 @@
 ﻿namespace NServiceBus.AmazonSQS
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Linq;
     using System.Text;
+    using System.Threading.Tasks;
+    using Amazon.SQS;
 
-    static class QueueNameHelper
+    class QueueCache
     {
+        public QueueCache(IAmazonSQS sqsClient, TransportConfiguration configuration)
+        {
+            this.configuration = configuration;
+            queueNameToUrlCache = new ConcurrentDictionary<string, string>();
+            queueNameToPhysicalAddressCache = new ConcurrentDictionary<string, string>();
+            this.sqsClient = sqsClient;
+        }
+
+        public void SetQueueUrl(string queueName, string queueUrl)
+        {
+            queueNameToUrlCache.TryAdd(queueName, queueUrl);
+        }
+
+        public string GetPhysicalQueueName(string queueName)
+        {
+            return queueNameToPhysicalAddressCache.GetOrAdd(queueName, name => GetSqsQueueName(name, configuration));
+        }
+
+        public async Task<string> GetQueueUrl(string queueName)
+        {
+            if (queueNameToUrlCache.TryGetValue(queueName, out var queueUrl))
+            {
+                return queueUrl;
+            }
+
+            var physicalQueueName = GetPhysicalQueueName(queueName);
+            var response = await sqsClient.GetQueueUrlAsync(physicalQueueName)
+                .ConfigureAwait(false);
+            queueUrl = response.QueueUrl;
+            return queueNameToUrlCache.AddOrUpdate(queueName, queueUrl, (key, value) => value);
+        }
+
         public static string GetSqsQueueName(string destination, TransportConfiguration transportConfiguration)
         {
             if (string.IsNullOrWhiteSpace(destination))
@@ -32,7 +67,7 @@
             return GetSanitizedQueueName(queueNameBuilder, s);
         }
 
-        public static string GetSanitizedQueueName(StringBuilder queueNameBuilder, string queueName)
+        static string GetSanitizedQueueName(StringBuilder queueNameBuilder, string queueName)
         {
             var skipCharacters = queueName.EndsWith(".fifo") ? 5 : 0;
             // SQS queue names can only have alphanumeric characters, hyphens and underscores.
@@ -40,7 +75,7 @@
             for (var i = 0; i < queueNameBuilder.Length - skipCharacters; ++i)
             {
                 var c = queueNameBuilder[i];
-                if (!char.IsLetterOrDigit(c)
+                if (!Char.IsLetterOrDigit(c)
                     && c != '-'
                     && c != '_')
                 {
@@ -50,5 +85,10 @@
 
             return queueNameBuilder.ToString();
         }
+
+        ConcurrentDictionary<string, string> queueNameToUrlCache;
+        ConcurrentDictionary<string, string> queueNameToPhysicalAddressCache;
+        IAmazonSQS sqsClient;
+        TransportConfiguration configuration;
     }
 }

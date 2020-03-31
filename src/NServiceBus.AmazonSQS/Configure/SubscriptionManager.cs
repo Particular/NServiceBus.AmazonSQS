@@ -14,11 +14,11 @@ namespace NServiceBus
 
     class SubscriptionManager : IManageSubscriptions
     {
-        public SubscriptionManager(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueUrlCache queueUrlCache, TransportConfiguration configuration, MessageMetadataRegistry messageMetadataRegistry)
+        public SubscriptionManager(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, TransportConfiguration configuration, MessageMetadataRegistry messageMetadataRegistry)
         {
             this.messageMetadataRegistry = messageMetadataRegistry;
             this.configuration = configuration;
-            this.queueUrlCache = queueUrlCache;
+            this.queueCache = queueCache;
             this.sqsClient = sqsClient;
             this.snsClient = snsClient;
             this.queueName = queueName;
@@ -26,7 +26,7 @@ namespace NServiceBus
 
         public async Task Subscribe(Type eventType, ContextBag context)
         {
-            var queueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(queueName, configuration))
+            var queueUrl = await queueCache.GetQueueUrl(queueName)
                 .ConfigureAwait(false);
 
             await SetupTypeSubscriptions(eventType, queueUrl).ConfigureAwait(false);
@@ -48,7 +48,7 @@ namespace NServiceBus
 
         async Task DeleteSubscription(string topicName)
         {
-            var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(configuration, topicName, queueName)
+            var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, topicName, queueName)
                 .ConfigureAwait(false);
             if (matchingSubscriptionArn != null)
             {
@@ -104,7 +104,7 @@ namespace NServiceBus
         readonly ConcurrentDictionary<Type, string> typeTopologyConfiguredSet = new ConcurrentDictionary<Type, string>();
 
         TransportConfiguration configuration;
-        QueueUrlCache queueUrlCache;
+        QueueCache queueCache;
         IAmazonSQS sqsClient;
         IAmazonSimpleNotificationService snsClient;
         string queueName;

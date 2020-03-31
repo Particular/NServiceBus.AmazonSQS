@@ -15,12 +15,12 @@
 
     class QueueCreator : ICreateQueues
     {
-        public QueueCreator(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueUrlCache queueUrlCache)
+        public QueueCreator(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueCache queueCache)
         {
             this.configuration = configuration;
             this.s3Client = s3Client;
             this.sqsClient = sqsClient;
-            this.queueUrlCache = queueUrlCache;
+            this.queueCache = queueCache;
         }
 
         public Task CreateQueueIfNecessary(QueueBindings queueBindings, string identity)
@@ -42,16 +42,17 @@
         {
             try
             {
-                var queueName = QueueNameHelper.GetSqsQueueName(address, configuration);
+                var queueName = address;
+                var physicalAddress = queueCache.GetPhysicalQueueName(queueName);
                 var sqsRequest = new CreateQueueRequest
                 {
-                    QueueName = queueName
+                    QueueName = physicalAddress
                 };
 
-                Logger.Info($"Creating SQS Queue with name '{sqsRequest.QueueName}' for address '{address}'.");
+                Logger.Info($"Creating SQS Queue with name '{sqsRequest.QueueName}' for address '{queueName}'.");
                 var createQueueResponse = await sqsClient.CreateQueueAsync(sqsRequest).ConfigureAwait(false);
 
-                queueUrlCache.SetQueueUrl(queueName, createQueueResponse.QueueUrl);
+                queueCache.SetQueueUrl(queueName, createQueueResponse.QueueUrl);
 
                 // Set the queue attributes in a separate call.
                 // If you call CreateQueue with a queue name that already exists, and with a different
@@ -68,17 +69,18 @@
 
                 if (createDelayedDeliveryQueue)
                 {
-                    queueName = QueueNameHelper.GetSqsQueueName(address + TransportConfiguration.DelayedDeliveryQueueSuffix, configuration);
+                    var delayedDeliveryQueueName = $"{queueName}{TransportConfiguration.DelayedDeliveryQueueSuffix}";
+                    physicalAddress = queueCache.GetPhysicalQueueName(delayedDeliveryQueueName);
                     sqsRequest = new CreateQueueRequest
                     {
-                        QueueName = queueName,
+                        QueueName = physicalAddress,
                         Attributes = new Dictionary<string, string> { { "FifoQueue", "true" } }
                     };
 
                     Logger.Info($"Creating SQS delayed delivery queue with name '{sqsRequest.QueueName}' for address '{address}'.");
                     createQueueResponse = await sqsClient.CreateQueueAsync(sqsRequest).ConfigureAwait(false);
 
-                    queueUrlCache.SetQueueUrl(queueName, createQueueResponse.QueueUrl);
+                    queueCache.SetQueueUrl(delayedDeliveryQueueName, createQueueResponse.QueueUrl);
 
                     sqsAttributesRequest = new SetQueueAttributesRequest
                     {
@@ -153,6 +155,6 @@
         TransportConfiguration configuration;
         IAmazonS3 s3Client;
         IAmazonSQS sqsClient;
-        QueueUrlCache queueUrlCache;
+        QueueCache queueCache;
     }
 }

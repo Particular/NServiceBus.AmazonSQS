@@ -54,7 +54,7 @@ public class Sending_poison_messages : NServiceBusTransportTest
         {
             var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
             {
-                QueueName = QueueNameHelper.GetSqsQueueName(inputQueueName, transportConfiguration)
+                QueueName = QueueCache.GetSqsQueueName(inputQueueName, transportConfiguration)
             }).ConfigureAwait(false);
 
             await sqsClient.SendMessageAsync(new SendMessageRequest
@@ -74,7 +74,7 @@ public class Sending_poison_messages : NServiceBusTransportTest
         {
             var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
             {
-                QueueName = QueueNameHelper.GetSqsQueueName(errorQueueName, transportConfiguration)
+                QueueName = QueueCache.GetSqsQueueName(errorQueueName, transportConfiguration)
             }, cancellationToken).ConfigureAwait(false);
 
             var messageReceived = false;
