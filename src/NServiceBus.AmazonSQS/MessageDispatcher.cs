@@ -35,6 +35,7 @@
         {
             var concurrentDispatchTasks = new List<Task>(3);
 
+            // in order to not enumerate multi cast operations multiple times this code assumes the hashset is filled on the synchronous path of the async method!
             var messageIdsOfMulticastEvents = new HashSet<string>();
             concurrentDispatchTasks.Add(DispatchMulticast(outgoingMessages.MulticastTransportOperations, messageIdsOfMulticastEvents));
 
