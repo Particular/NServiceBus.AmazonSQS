@@ -9,8 +9,3 @@ branches:
   release:
     increment: Patch
     tag: ''
-ignore:
-  sha:
-    - 8fb53199be08755a13ac6c1f1445052f2472578d
-    - cb61cb1c92bbf373671f39984d8bdd470301f905
-    - 230b13ed7e57e90e31dca923c42af82fa6901a22
