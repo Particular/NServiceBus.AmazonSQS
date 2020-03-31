@@ -148,7 +148,7 @@
                 queue.Append("-" + logicalAddress.Qualifier);
             }
 
-            return QueueNameHelper.GetSanitizedQueueName(queue, queueName);
+            return queueCache.GetPhysicalQueueName(queue.ToString());
         }
 
         readonly IAmazonSQS sqsClient;
