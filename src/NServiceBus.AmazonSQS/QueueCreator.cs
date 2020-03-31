@@ -43,10 +43,10 @@
             try
             {
                 var queueName = address;
-                var physicalAddress = queueCache.GetPhysicalQueueName(queueName);
+                var delayDeliveryQueuePhysicalAddress = queueCache.GetPhysicalQueueName(queueName);
                 var sqsRequest = new CreateQueueRequest
                 {
-                    QueueName = physicalAddress
+                    QueueName = delayDeliveryQueuePhysicalAddress
                 };
 
                 Logger.Info($"Creating SQS Queue with name '{sqsRequest.QueueName}' for address '{queueName}'.");
@@ -70,10 +70,10 @@
                 if (createDelayedDeliveryQueue)
                 {
                     var delayedDeliveryQueueName = $"{queueName}{TransportConfiguration.DelayedDeliveryQueueSuffix}";
-                    physicalAddress = queueCache.GetPhysicalQueueName(delayedDeliveryQueueName);
+                    delayDeliveryQueuePhysicalAddress = queueCache.GetPhysicalQueueName(delayedDeliveryQueueName);
                     sqsRequest = new CreateQueueRequest
                     {
-                        QueueName = physicalAddress,
+                        QueueName = delayDeliveryQueuePhysicalAddress,
                         Attributes = new Dictionary<string, string> { { "FifoQueue", "true" } }
                     };
 
