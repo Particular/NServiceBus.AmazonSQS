@@ -20,14 +20,14 @@
 
     class MessageDispatcher : IDispatchMessages
     {
-        public MessageDispatcher(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, QueueUrlCache queueUrlCache, MessageMetadataRegistry messageMetadataRegistry)
+        public MessageDispatcher(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, QueueCache queueCache, MessageMetadataRegistry messageMetadataRegistry)
         {
             this.messageMetadataRegistry = messageMetadataRegistry;
             this.snsClient = snsClient;
             this.configuration = configuration;
             this.s3Client = s3Client;
             this.sqsClient = sqsClient;
-            this.queueUrlCache = queueUrlCache;
+            this.queueCache = queueCache;
             serializerStrategy = configuration.UseV1CompatiblePayload ? SimpleJson.PocoJsonSerializerStrategy : ReducedPayloadSerializerStrategy.Instance;
         }
 
@@ -261,7 +261,7 @@
                 var existingTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
                 if (existingTopic != null)
                 {
-                    var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(configuration, existingTopic, unicastTransportOperation.Destination)
+                    var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination)
                         .ConfigureAwait(false);
                     if (matchingSubscriptionArn != null)
                     {
@@ -363,7 +363,7 @@
             {
                 sqsPreparedMessage.OriginalDestination = transportOperation.Destination;
                 sqsPreparedMessage.Destination = $"{transportOperation.Destination}{TransportConfiguration.DelayedDeliveryQueueSuffix}";
-                sqsPreparedMessage.QueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(sqsPreparedMessage.Destination, configuration))
+                sqsPreparedMessage.QueueUrl = await queueCache.GetQueueUrl(sqsPreparedMessage.Destination)
                     .ConfigureAwait(false);
 
                 sqsPreparedMessage.MessageDeduplicationId = messageId;
@@ -378,7 +378,7 @@
             else
             {
                 sqsPreparedMessage.Destination = transportOperation.Destination;
-                sqsPreparedMessage.QueueUrl = await queueUrlCache.GetQueueUrl(QueueNameHelper.GetSqsQueueName(sqsPreparedMessage.Destination, configuration))
+                sqsPreparedMessage.QueueUrl = await queueCache.GetQueueUrl(sqsPreparedMessage.Destination)
                     .ConfigureAwait(false);
 
                 if (delaySeconds > 0)
@@ -420,7 +420,7 @@
         TransportConfiguration configuration;
         IAmazonSQS sqsClient;
         IAmazonS3 s3Client;
-        QueueUrlCache queueUrlCache;
+        QueueCache queueCache;
         IJsonSerializerStrategy serializerStrategy;
         static readonly HashSet<string> emptyHashset = new HashSet<string>();
 

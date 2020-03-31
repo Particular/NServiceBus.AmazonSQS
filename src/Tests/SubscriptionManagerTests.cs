@@ -21,7 +21,8 @@ namespace NServiceBus.AmazonSQS.Tests
             messageMetadataRegistry = settings.SetupMessageMetadataRegistry();
             queueName = "fakeQueue";
 
-            manager = new SubscriptionManager(sqsClient, snsClient, queueName, new QueueUrlCache(sqsClient), new TransportConfiguration(settings), messageMetadataRegistry);
+            var transportConfiguration = new TransportConfiguration(settings);
+            manager = new SubscriptionManager(sqsClient, snsClient, queueName, new QueueCache(sqsClient, transportConfiguration), transportConfiguration, messageMetadataRegistry);
         }
 
         [Test]
