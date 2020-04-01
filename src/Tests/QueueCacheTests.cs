@@ -117,22 +117,39 @@
         {
             var settings = new SettingsHolder();
             settings.Set(SettingsKeys.QueueNamePrefix, "PREFIX");
-            
+
             var configuration = new TransportConfiguration(settings);
             var sqsClient = new MockSqsClient();
-            
+
             var cache = new QueueCache(sqsClient, configuration);
 
             await cache.GetQueueUrl("fakeQueueName");
 
             var requestsSent = new List<string>(sqsClient.QueueUrlRequestsSent);
-            
+
             sqsClient.QueueUrlRequestsSent.Clear();
-            
+
             await cache.GetQueueUrl("fakeQueueName");
-            
+
             Assert.IsEmpty(sqsClient.QueueUrlRequestsSent);
             CollectionAssert.AreEqual(new List<string> { "PREFIXfakeQueueName" }, requestsSent);
+        }
+
+        [Test]
+        public async Task SetQueueUrl_caches()
+        {
+            var settings = new SettingsHolder();
+
+            var configuration = new TransportConfiguration(settings);
+            var sqsClient = new MockSqsClient();
+
+            var cache = new QueueCache(sqsClient, configuration);
+
+            cache.SetQueueUrl("fakeQueueName", "http://fakeQueueName");
+
+            await cache.GetQueueUrl("fakeQueueName");
+
+            Assert.IsEmpty(sqsClient.QueueUrlRequestsSent);
         }
     }
 }
