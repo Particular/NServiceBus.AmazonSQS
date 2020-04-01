@@ -342,8 +342,8 @@
                 return;
             }
 
-            var mostConcreteEventType = messageMetadataRegistry.GetMessageMetadata(transportOperation.MessageType).MessageHierarchy[0];
-            var topicName = configuration.TopicNameGenerator(mostConcreteEventType, configuration.TopicNamePrefix);
+            var metadata = messageMetadataRegistry.GetMessageMetadata(transportOperation.MessageType);
+            var topicName = configuration.TopicNameGenerator(metadata.MessageType, configuration.TopicNamePrefix);
 
             // TODO: We need a cache
             var existingTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);

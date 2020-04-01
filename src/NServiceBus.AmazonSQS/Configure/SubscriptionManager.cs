@@ -34,16 +34,16 @@ namespace NServiceBus
 
         public async Task Unsubscribe(Type eventType, ContextBag context)
         {
-            var mostConcreteEventType = messageMetadataRegistry.GetMessageMetadata(eventType).MessageHierarchy[0];
+            var metadata = messageMetadataRegistry.GetMessageMetadata(eventType);
             // not checking the topology cache
-            if (mostConcreteEventType == typeof(object))
+            if (metadata.MessageType == typeof(object))
             {
                 return;
             }
 
-            await DeleteSubscription(configuration.TopicNameGenerator(mostConcreteEventType, configuration.TopicNamePrefix)).ConfigureAwait(false);
+            await DeleteSubscription(configuration.TopicNameGenerator(metadata.MessageType, configuration.TopicNamePrefix)).ConfigureAwait(false);
 
-            MarkTypeNotConfigured(mostConcreteEventType);
+            MarkTypeNotConfigured(metadata.MessageType);
         }
 
         async Task DeleteSubscription(string topicName)
@@ -58,15 +58,15 @@ namespace NServiceBus
 
         async Task SetupTypeSubscriptions(Type eventType, string queueUrl)
         {
-            var mostConcreteEventType = messageMetadataRegistry.GetMessageMetadata(eventType).MessageHierarchy[0];
-            if (mostConcreteEventType == typeof(object) || IsTypeTopologyKnownConfigured(mostConcreteEventType))
+            var metadata = messageMetadataRegistry.GetMessageMetadata(eventType);
+            if (metadata.MessageType == typeof(object) || IsTypeTopologyKnownConfigured(metadata.MessageType))
             {
                 return;
             }
 
-            await CreateTopicAndSubscribe(configuration.TopicNameGenerator(mostConcreteEventType, configuration.TopicNamePrefix), queueUrl).ConfigureAwait(false);
+            await CreateTopicAndSubscribe(configuration.TopicNameGenerator(metadata.MessageType, configuration.TopicNamePrefix), queueUrl).ConfigureAwait(false);
 
-            MarkTypeConfigured(mostConcreteEventType);
+            MarkTypeConfigured(metadata.MessageType);
         }
 
         async Task CreateTopicAndSubscribe(string topicName, string queueUrl)
