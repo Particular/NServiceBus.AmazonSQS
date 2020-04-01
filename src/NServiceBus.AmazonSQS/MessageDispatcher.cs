@@ -16,13 +16,12 @@
     using Logging;
     using SimpleJson;
     using Transport;
-    using Unicast.Messages;
 
     class MessageDispatcher : IDispatchMessages
     {
-        public MessageDispatcher(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, QueueCache queueCache, MessageMetadataRegistry messageMetadataRegistry)
+        public MessageDispatcher(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache)
         {
-            this.messageMetadataRegistry = messageMetadataRegistry;
+            this.topicCache = topicCache;
             this.snsClient = snsClient;
             this.configuration = configuration;
             this.s3Client = s3Client;
@@ -255,10 +254,7 @@
                 && unicastTransportOperation.Message.Headers.ContainsKey(Headers.EnclosedMessageTypes))
             {
                 var mostConcreteEnclosedMessageType = unicastTransportOperation.Message.GetEnclosedMessageTypes()[0];
-                var metadata = messageMetadataRegistry.GetMessageMetadata(mostConcreteEnclosedMessageType);
-                var topicName = configuration.TopicNameGenerator(metadata.MessageType, configuration.TopicNamePrefix);
-
-                var existingTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
+                var existingTopic = await topicCache.GetTopic(mostConcreteEnclosedMessageType).ConfigureAwait(false);
                 if (existingTopic != null)
                 {
                     var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination)
@@ -342,12 +338,7 @@
                 return;
             }
 
-            var metadata = messageMetadataRegistry.GetMessageMetadata(transportOperation.MessageType);
-            var topicName = configuration.TopicNameGenerator(metadata.MessageType, configuration.TopicNamePrefix);
-
-            // TODO: We need a cache
-            var existingTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
-
+            var existingTopic = await topicCache.GetTopic(transportOperation.MessageType).ConfigureAwait(false);
             snsPreparedMessage.Destination = existingTopic?.TopicArn;
         }
 
@@ -415,8 +406,7 @@
         }
 
         readonly IAmazonSimpleNotificationService snsClient;
-        readonly MessageMetadataRegistry messageMetadataRegistry;
-
+        readonly TopicCache topicCache;
         TransportConfiguration configuration;
         IAmazonSQS sqsClient;
         IAmazonS3 s3Client;

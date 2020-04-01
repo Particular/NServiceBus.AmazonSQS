@@ -14,10 +14,10 @@ namespace NServiceBus
 
     class SubscriptionManager : IManageSubscriptions
     {
-        public SubscriptionManager(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, TransportConfiguration configuration, MessageMetadataRegistry messageMetadataRegistry)
+        public SubscriptionManager(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, MessageMetadataRegistry messageMetadataRegistry, TopicCache topicCache)
         {
+            this.topicCache = topicCache;
             this.messageMetadataRegistry = messageMetadataRegistry;
-            this.configuration = configuration;
             this.queueCache = queueCache;
             this.sqsClient = sqsClient;
             this.snsClient = snsClient;
@@ -41,14 +41,14 @@ namespace NServiceBus
                 return;
             }
 
-            await DeleteSubscription(configuration.TopicNameGenerator(metadata.MessageType, configuration.TopicNamePrefix)).ConfigureAwait(false);
+            await DeleteSubscription(metadata).ConfigureAwait(false);
 
             MarkTypeNotConfigured(metadata.MessageType);
         }
 
-        async Task DeleteSubscription(string topicName)
+        async Task DeleteSubscription(MessageMetadata metadata)
         {
-            var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, topicName, queueName)
+            var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, topicCache, metadata, queueName)
                 .ConfigureAwait(false);
             if (matchingSubscriptionArn != null)
             {
@@ -64,25 +64,25 @@ namespace NServiceBus
                 return;
             }
 
-            await CreateTopicAndSubscribe(configuration.TopicNameGenerator(metadata.MessageType, configuration.TopicNamePrefix), queueUrl).ConfigureAwait(false);
+            await CreateTopicAndSubscribe(metadata, queueUrl).ConfigureAwait(false);
 
             MarkTypeConfigured(metadata.MessageType);
         }
 
-        async Task CreateTopicAndSubscribe(string topicName, string queueUrl)
+        async Task CreateTopicAndSubscribe(MessageMetadata metadata, string queueUrl)
         {
-            var existingTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
-            if (existingTopic == null)
+            string topicName = null;
+            var topic = await topicCache.CreateIfNotExistent(metadata, name =>
             {
-                await snsClient.CreateTopicAsync(topicName).ConfigureAwait(false);
-                Logger.Debug($"Created topic '{topicName}'");
-                existingTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
-            }
+                topicName = name;
+                Logger.Debug($"Created topic topic '{topicName}'");
+            }).ConfigureAwait(false);
+
+            topicName = topicName ?? topicCache.GetTopicName(metadata);
 
             // SNS dedups subscriptions based on the endpoint name
             // only the overload that takes the sqs client properly works with raw mode
-
-            var createdSubscription = await snsClient.SubscribeQueueAsync(existingTopic.TopicArn, sqsClient, queueUrl).ConfigureAwait(false);
+            var createdSubscription = await snsClient.SubscribeQueueAsync(topic.TopicArn, sqsClient, queueUrl).ConfigureAwait(false);
             var setSubscriptionAttributesRequest = new SetSubscriptionAttributesRequest
             {
                 SubscriptionArn = createdSubscription,
@@ -107,13 +107,12 @@ namespace NServiceBus
         bool IsTypeTopologyKnownConfigured(Type eventType) => typeTopologyConfiguredSet.ContainsKey(eventType);
 
         readonly ConcurrentDictionary<Type, string> typeTopologyConfiguredSet = new ConcurrentDictionary<Type, string>();
-
-        TransportConfiguration configuration;
-        QueueCache queueCache;
-        IAmazonSQS sqsClient;
-        IAmazonSimpleNotificationService snsClient;
-        string queueName;
-        MessageMetadataRegistry messageMetadataRegistry;
+        readonly QueueCache queueCache;
+        readonly IAmazonSQS sqsClient;
+        readonly IAmazonSimpleNotificationService snsClient;
+        readonly string queueName;
+        readonly MessageMetadataRegistry messageMetadataRegistry;
+        readonly TopicCache topicCache;
 
         static ILog Logger = LogManager.GetLogger(typeof(SubscriptionManager));
     }

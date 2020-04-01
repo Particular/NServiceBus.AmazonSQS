@@ -33,7 +33,7 @@
 
             var mockSqsClient = new MockSqsClient();
             var transportConfiguration = new TransportConfiguration(settings);
-            
+
             var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, null, new QueueCache(mockSqsClient, transportConfiguration), null);
 
             var transportOperations = new TransportOperations(
@@ -73,7 +73,7 @@
             var mockSqsClient = new MockSqsClient();
 
             var transportConfiguration = new TransportConfiguration(settings);
-            
+
             var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, null, new QueueCache(mockSqsClient, transportConfiguration), null);
 
             var transportOperations = new TransportOperations(
@@ -123,7 +123,7 @@
             var mockSqsClient = new MockSqsClient();
 
             var transportConfiguration = new TransportConfiguration(settings);
-            
+
             var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, null, new QueueCache(mockSqsClient, transportConfiguration), null);
 
             var expectedId = "1234";
@@ -174,7 +174,7 @@
             Assert.AreEqual("address1", mockSqsClient.RequestsSent.ElementAt(0).QueueUrl);
             Assert.AreEqual("address2", mockSqsClient.RequestsSent.ElementAt(1).QueueUrl);
         }
-        
+
         [Test]
         public async Task Should_dispatch_multicast_operations()
         {
@@ -183,8 +183,8 @@
             var mockSnsClient = new MockSnsClient();
 
             var transportConfiguration = new TransportConfiguration(settings);
-            
-            var dispatcher = new MessageDispatcher(transportConfiguration, null, null, mockSnsClient, new QueueCache(null, transportConfiguration), settings.SetupMessageMetadataRegistry());
+
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, null, mockSnsClient, new QueueCache(null, transportConfiguration), new TopicCache(mockSnsClient, settings.SetupMessageMetadataRegistry(), transportConfiguration));
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -199,12 +199,12 @@
             var context = new ContextBag();
 
             await dispatcher.Dispatch(transportOperations, transportTransaction, context);
-            
+
             Assert.AreEqual(2, mockSnsClient.PublishedEvents.Count);
             Assert.AreEqual("arn:aws:sns:us-west-2:123456789012:NServiceBus-AmazonSQS-Tests-MessageDispatcherTests-Event", mockSnsClient.PublishedEvents.ElementAt(0).TopicArn);
             Assert.AreEqual("arn:aws:sns:us-west-2:123456789012:NServiceBus-AmazonSQS-Tests-MessageDispatcherTests-AnotherEvent", mockSnsClient.PublishedEvents.ElementAt(1).TopicArn);
         }
-        
+
         [Test]
         public async Task Should_deduplicate_if_compatibility_mode_is_enabled_and_subscription_found()
         {
@@ -214,8 +214,8 @@
             var mockSqsClient = new MockSqsClient();
 
             var transportConfiguration = new TransportConfiguration(settings);
-            var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, mockSnsClient, new QueueCache(mockSqsClient, transportConfiguration), settings.SetupMessageMetadataRegistry());
-            
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, mockSnsClient, new QueueCache(mockSqsClient, transportConfiguration), new TopicCache(mockSnsClient, settings.SetupMessageMetadataRegistry(), transportConfiguration));
+
             mockSnsClient.ListSubscriptionsByTopicResponse = topic => new ListSubscriptionsByTopicResponse
             {
                 Subscriptions = new List<Subscription>
@@ -243,12 +243,12 @@
             var context = new ContextBag();
 
             await dispatcher.Dispatch(transportOperations, transportTransaction, context);
-            
+
             Assert.AreEqual(1, mockSnsClient.PublishedEvents.Count);
             Assert.IsEmpty(mockSqsClient.RequestsSent);
             Assert.IsEmpty(mockSqsClient.BatchRequestsSent);
         }
-        
+
         [Test]
         public async Task Should_not_deduplicate_if_compatibility_mode_is_enabled_and_no_subscription_found()
         {
@@ -258,7 +258,7 @@
             var mockSqsClient = new MockSqsClient();
 
             var transportConfiguration = new TransportConfiguration(settings);
-            var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, mockSnsClient, new QueueCache(mockSqsClient, transportConfiguration), settings.SetupMessageMetadataRegistry());
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, mockSnsClient, new QueueCache(mockSqsClient, transportConfiguration), new TopicCache(mockSnsClient, settings.SetupMessageMetadataRegistry(), transportConfiguration));
 
             var messageId = Guid.NewGuid().ToString();
             var headers = new Dictionary<string, string>()
@@ -278,11 +278,11 @@
             var context = new ContextBag();
 
             await dispatcher.Dispatch(transportOperations, transportTransaction, context);
-            
+
             Assert.AreEqual(1, mockSnsClient.PublishedEvents.Count);
             Assert.AreEqual(1, mockSqsClient.BatchRequestsSent.Count);
         }
-        
+
         [Test]
         public async Task Should_not_dispatch_multicast_operation_if_topic_doesnt_exist()
         {
@@ -292,7 +292,7 @@
             mockSnsClient.FindTopicAsyncResponse = topic => null;
 
             var transportConfiguration = new TransportConfiguration(settings);
-            var dispatcher = new MessageDispatcher(transportConfiguration, null, null, mockSnsClient, new QueueCache(null, transportConfiguration), settings.SetupMessageMetadataRegistry());
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, null, mockSnsClient, new QueueCache(null, transportConfiguration), new TopicCache(mockSnsClient, settings.SetupMessageMetadataRegistry(), transportConfiguration));
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -302,13 +302,13 @@
 
             var transportTransaction = new TransportTransaction();
             var context = new ContextBag();
-            
+
             await dispatcher.Dispatch(transportOperations, transportTransaction, context);
-            
+
             Assert.IsEmpty(mockSnsClient.PublishedEvents);
             Assert.IsEmpty(mockSnsClient.CreateTopicRequests);
         }
-        
+
         [Test]
         public async Task Should_not_dispatch_multicast_operation_if_event_type_is_object()
         {
@@ -319,7 +319,7 @@
             mockSnsClient.FindTopicAsyncResponse = topic => null;
 
             var transportConfiguration = new TransportConfiguration(settings);
-            var dispatcher = new MessageDispatcher(transportConfiguration, null, null, mockSnsClient, new QueueCache(null, transportConfiguration), settings.SetupMessageMetadataRegistry());
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, null, mockSnsClient, new QueueCache(null, transportConfiguration), new TopicCache(mockSnsClient, settings.SetupMessageMetadataRegistry(), transportConfiguration));
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -329,12 +329,12 @@
 
             var transportTransaction = new TransportTransaction();
             var context = new ContextBag();
-            
+
             await dispatcher.Dispatch(transportOperations, transportTransaction, context);
-            
+
             Assert.IsEmpty(mockSnsClient.PublishedEvents);
         }
-        
+
         [Test]
         public async Task Should_upload_large_multicast_operations_request_to_s3()
         {
@@ -346,7 +346,7 @@
             var mockSnsClient = new MockSnsClient();
 
             var transportConfiguration = new TransportConfiguration(settings);
-            var dispatcher = new MessageDispatcher(transportConfiguration, mockS3Client, null, mockSnsClient, new QueueCache(null, transportConfiguration), settings.SetupMessageMetadataRegistry());
+            var dispatcher = new MessageDispatcher(transportConfiguration, mockS3Client, null, mockSnsClient, new QueueCache(null, transportConfiguration), new TopicCache(mockSnsClient, settings.SetupMessageMetadataRegistry(), transportConfiguration));
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -374,7 +374,7 @@
             StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{firstUpload.Key}", mockSnsClient.PublishedEvents.ElementAt(0).Message);
             StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{secondUpload.Key}", mockSnsClient.PublishedEvents.ElementAt(1).Message);
         }
-        
+
         [Test]
         public void Should_raise_queue_does_not_exists_for_delayed_delivery_for_isolated_dispatch()
         {
@@ -652,9 +652,9 @@
             StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{secondUpload.Key}", mockSqsClient.RequestsSent.ElementAt(1).MessageBody);
             StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{thirdUpload.Key}", mockSqsClient.RequestsSent.ElementAt(2).MessageBody);
         }
-        
+
         interface IEvent { }
-        
+
         interface IMyEvent : IEvent { }
         class Event : IMyEvent { }
         class AnotherEvent : IMyEvent { }
