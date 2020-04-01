@@ -25,7 +25,7 @@
             this.settings = settings;
             messageMetadataRegistry = this.settings.Get<MessageMetadataRegistry>();
             configuration = new TransportConfiguration(settings);
-            
+
             if (settings.HasSetting(SettingsKeys.DisableNativePubSub))
             {
                 OutboundRoutingPolicy = new OutboundRoutingPolicy(OutboundRoutingType.Unicast, OutboundRoutingType.Unicast, OutboundRoutingType.Unicast);
@@ -72,6 +72,7 @@
             }
 
             queueCache = new QueueCache(sqsClient, configuration);
+            topicCache = new TopicCache(snsClient, messageMetadataRegistry, configuration);
         }
 
 
@@ -98,7 +99,7 @@
 
         MessageDispatcher CreateMessageDispatcher()
         {
-            return new MessageDispatcher(configuration, s3Client, sqsClient, snsClient, queueCache, messageMetadataRegistry);
+            return new MessageDispatcher(configuration, s3Client, sqsClient, snsClient, queueCache, topicCache);
         }
 
         public override TransportReceiveInfrastructure ConfigureReceiveInfrastructure()
@@ -126,7 +127,7 @@
 
         public override TransportSubscriptionInfrastructure ConfigureSubscriptionInfrastructure()
         {
-            return new TransportSubscriptionInfrastructure(() => new SubscriptionManager(sqsClient, snsClient, settings.LocalAddress(), queueCache, configuration, messageMetadataRegistry));
+            return new TransportSubscriptionInfrastructure(() => new SubscriptionManager(sqsClient, snsClient, settings.LocalAddress(), queueCache, messageMetadataRegistry, topicCache));
         }
 
         public override EndpointInstance BindToLocalEndpoint(EndpointInstance instance)
@@ -158,6 +159,7 @@
         readonly TransportConfiguration configuration;
         readonly ReadOnlySettings settings;
         readonly MessageMetadataRegistry messageMetadataRegistry;
+        readonly TopicCache topicCache;
         static ILog Logger = LogManager.GetLogger(typeof(TransportInfrastructure));
     }
 }
