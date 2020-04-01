@@ -22,7 +22,7 @@ namespace NServiceBus.AmazonSQS.Tests
             queueName = "fakeQueue";
 
             var transportConfiguration = new TransportConfiguration(settings);
-            manager = new SubscriptionManager(sqsClient, snsClient, queueName, new QueueCache(sqsClient, transportConfiguration), transportConfiguration, messageMetadataRegistry);
+            manager = new SubscriptionManager(sqsClient, snsClient, queueName, new QueueCache(sqsClient, transportConfiguration), messageMetadataRegistry, new TopicCache(snsClient, messageMetadataRegistry, transportConfiguration));
         }
 
         [Test]
@@ -52,7 +52,7 @@ namespace NServiceBus.AmazonSQS.Tests
             Assert.IsNotEmpty(initialSubscribeRequests);
             Assert.IsEmpty(snsClient.SubscribeQueueRequests);
         }
-        
+
         [Test]
         public async Task Subscribe_Unsubscribe_and_Subscribe_again()
         {
@@ -62,7 +62,7 @@ namespace NServiceBus.AmazonSQS.Tests
 
             await manager.Subscribe(eventType, null);
             await manager.Unsubscribe(eventType, null);
-            
+
             await manager.Subscribe(eventType, null);
 
             Assert.AreEqual(2, snsClient.SubscribeQueueRequests.Count);

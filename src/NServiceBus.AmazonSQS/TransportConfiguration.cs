@@ -5,6 +5,7 @@
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
     using Settings;
+    using Unicast.Messages;
 
     class TransportConfiguration
     {
@@ -26,7 +27,7 @@
                 return sqsClientFactory;
             }
         }
-        
+
         public Func<IAmazonSimpleNotificationService> SnsClientFactory
         {
             get
@@ -97,7 +98,7 @@
                 }
                 return queueNamePrefix;
             }
-        }       
+        }
 
         public bool PreTruncateQueueNames
         {
@@ -123,13 +124,13 @@
             }
         }
 
-        public Func<Type, string, string> TopicNameGenerator
+        public Func<MessageMetadata, string> TopicNameGenerator
         {
             get
             {
                 if (topicNameGenerator == null)
                 {
-                    topicNameGenerator = settings.GetOrDefault<Func<Type, string, string>>(SettingsKeys.TopicNameGenerator) ?? ((eventType, prefix) => TopicNameHelper.GetSnsTopicName(eventType, this) );
+                    topicNameGenerator = metadata => (settings.GetOrDefault<Func<Type, string, string>>(SettingsKeys.TopicNameGenerator) ?? ((eventType, prefix) => TopicNameHelper.GetSnsTopicName(eventType, this)))(metadata.MessageType, TopicNamePrefix);
                 }
                 return topicNameGenerator;
             }
@@ -185,7 +186,7 @@
                 return queueDelayTime.Value;
             }
         }
-        
+
         public ServerSideEncryptionMethod ServerSideEncryptionMethod
         {
             get
@@ -199,7 +200,7 @@
                 return serverSideEncryptionMethod;
             }
         }
-        
+
         public string ServerSideEncryptionKeyManagementServiceKeyId
         {
             get
@@ -213,7 +214,7 @@
                 return serverSideEncryptionKeyManagementServiceKeyId;
             }
         }
-        
+
         public ServerSideEncryptionCustomerMethod ServerSideEncryptionCustomerMethod
         {
             get
@@ -241,7 +242,7 @@
                 return serverSideEncryptionCustomerProvidedKey;
             }
         }
-        
+
         public string ServerSideEncryptionCustomerProvidedKeyMD5
         {
             get
@@ -255,7 +256,7 @@
                 return serverSideEncryptionCustomerProvidedKeyMD5;
             }
         }
-        
+
         public const string DelayedDeliveryQueueSuffix = "-delay.fifo";
         public static readonly int AwsMaximumQueueDelayTime = (int)TimeSpan.FromMinutes(15).TotalSeconds;
         public static readonly TimeSpan DelayedDeliveryQueueMessageRetentionPeriod = TimeSpan.FromDays(4);
@@ -268,7 +269,7 @@
         string s3KeyPrefix;
         string queueNamePrefix;
         string topicNamePrefix;
-        Func<Type, string, string> topicNameGenerator;
+        Func<MessageMetadata, string> topicNameGenerator;
         ServerSideEncryptionMethod serverSideEncryptionMethod;
         bool serverSideEncryptionMethodInitialized;
         string serverSideEncryptionKeyManagementServiceKeyId;

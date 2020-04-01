@@ -4,12 +4,13 @@ namespace NServiceBus.AmazonSQS
     using System.Threading.Tasks;
     using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
+    using Unicast.Messages;
 
     static class SnsClientExtensions
     {
-        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, string topicName, string queueName)
+        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, MessageMetadata metadata, string queueName)
         {
-            var existingTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
+            var existingTopic = await topicCache.GetTopic(metadata).ConfigureAwait(false);
             if (existingTopic == null)
             {
                 return null;
