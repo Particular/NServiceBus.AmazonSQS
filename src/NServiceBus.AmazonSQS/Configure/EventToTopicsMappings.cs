@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
 
     class EventToTopicsMappings
     {
@@ -16,10 +15,7 @@
 
             foreach (var topicName in topicsNames)
             {
-                if (!mapping.Contains(topicName))
-                {
-                    mapping.Add(topicName);
-                }
+                mapping.Add(topicName);
             }
         }
 
@@ -28,9 +24,9 @@
             return eventsToTopicsMappings.ContainsKey(eventType);
         }
 
-        public string[] GetMappedTopicsNames(Type eventType)
+        public IEnumerable<string> GetMappedTopicsNames(Type eventType)
         {
-            return eventsToTopicsMappings[eventType].ToArray();
+            return eventsToTopicsMappings[eventType];
         }
 
         Dictionary<Type, HashSet<string>> eventsToTopicsMappings = new Dictionary<Type, HashSet<string>>();
