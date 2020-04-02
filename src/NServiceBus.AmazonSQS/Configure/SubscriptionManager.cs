@@ -2,6 +2,7 @@ namespace NServiceBus
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Threading;
     using System.Threading.Tasks;
     using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
@@ -80,16 +81,28 @@ namespace NServiceBus
 
             topicName = topicName ?? topicCache.GetTopicName(metadata);
 
-            // SNS dedups subscriptions based on the endpoint name
-            // only the overload that takes the sqs client properly works with raw mode
-            var createdSubscription = await snsClient.SubscribeQueueAsync(topic.TopicArn, sqsClient, queueUrl).ConfigureAwait(false);
-            var setSubscriptionAttributesRequest = new SetSubscriptionAttributesRequest
+            try
             {
-                SubscriptionArn = createdSubscription,
-                AttributeName = "RawMessageDelivery",
-                AttributeValue = "true"
-            };
-            await snsClient.SetSubscriptionAttributesAsync(setSubscriptionAttributesRequest).ConfigureAwait(false);
+                // need to safe guard the subscribe section so that policy are not overriden
+                // deliberately not set a cancellation token for now
+                // https://github.com/aws/aws-sdk-net/issues/1569
+                await subscribeQueueLimiter.WaitAsync().ConfigureAwait(false);
+
+                // SNS dedups subscriptions based on the endpoint name
+                // only the overload that takes the sqs client properly works with raw mode
+                var createdSubscription = await snsClient.SubscribeQueueAsync(topic.TopicArn, sqsClient, queueUrl).ConfigureAwait(false);
+                var setSubscriptionAttributesRequest = new SetSubscriptionAttributesRequest
+                {
+                    SubscriptionArn = createdSubscription,
+                    AttributeName = "RawMessageDelivery",
+                    AttributeValue = "true"
+                };
+                await snsClient.SetSubscriptionAttributesAsync(setSubscriptionAttributesRequest).ConfigureAwait(false);
+            }
+            finally
+            {
+                subscribeQueueLimiter.Release();
+            }
 
             Logger.Debug($"Created subscription for queue '{queueName}' to topic '{topicName}'");
         }
@@ -113,6 +126,7 @@ namespace NServiceBus
         readonly string queueName;
         readonly MessageMetadataRegistry messageMetadataRegistry;
         readonly TopicCache topicCache;
+        readonly SemaphoreSlim subscribeQueueLimiter = new SemaphoreSlim(1);
 
         static ILog Logger = LogManager.GetLogger(typeof(SubscriptionManager));
     }
