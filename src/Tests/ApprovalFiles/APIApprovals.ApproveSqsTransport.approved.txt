@@ -37,6 +37,8 @@ namespace NServiceBus
         public static void MapEvent(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Type eventType, string customTopicName) { }
         public static void MapEvent<TEvent>(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Collections.Generic.IEnumerable<string> customTopicsNames) { }
         public static void MapEvent(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Type eventType, System.Collections.Generic.IEnumerable<string> customTopicsNames) { }
+        public static void MapEvent<TSubscribedEvent, TConcreteEvent>(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
+        public static void MapEvent(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Type subscribedEvent, System.Type concreteEventType) { }
         [System.ObsoleteAttribute("Use `MaxTimeToLive` instead. The member currently throws a NotImplementedExceptio" +
             "n. Will be removed in version 5.0.0.", true)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> MaxTTLDays(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, int maxTtlDays) { }
