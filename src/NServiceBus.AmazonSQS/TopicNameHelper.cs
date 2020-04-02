@@ -6,7 +6,7 @@
 
     static class TopicNameHelper
     {
-        public static string GetSnsTopicName(Type eventType, TransportConfiguration transportConfiguration)
+        public static string GetSnsTopicName(Type eventType, string topicNamePrefix, bool preTruncateTopicNames)
         {
             if (eventType == null)
             {
@@ -15,18 +15,18 @@
 
             var destination = eventType.FullName;
 
-            var s = transportConfiguration.TopicNamePrefix + destination;
+            var s = topicNamePrefix + destination;
 
-            if (transportConfiguration.PreTruncateTopicNames && s.Length > 256)
+            if (preTruncateTopicNames && s.Length > 256)
             {
-                var charsToTake = 256 - transportConfiguration.TopicNamePrefix.Length;
-                s = transportConfiguration.TopicNamePrefix +
+                var charsToTake = 256 - topicNamePrefix.Length;
+                s = topicNamePrefix +
                     new string(s.Reverse().Take(charsToTake).Reverse().ToArray());
             }
 
             if (s.Length > 256)
             {
-                throw new Exception($"Address {destination} with configured prefix {transportConfiguration.TopicNamePrefix} is longer than 256 characters and therefore cannot be used to create an SNS topic. Use a shorter topic name.");
+                throw new Exception($"Address {destination} with configured prefix {topicNamePrefix} is longer than 256 characters and therefore cannot be used to create an SNS topic. Use a shorter topic name.");
             }
 
             var topicNameBuilder = new StringBuilder(s);
