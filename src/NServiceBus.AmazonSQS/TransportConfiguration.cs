@@ -130,7 +130,7 @@
             {
                 if (topicNameGenerator == null)
                 {
-                    topicNameGenerator = metadata => (settings.GetOrDefault<Func<Type, string, string>>(SettingsKeys.TopicNameGenerator) ?? ((eventType, prefix) => TopicNameHelper.GetSnsTopicName(eventType, this)))(metadata.MessageType, TopicNamePrefix);
+                    topicNameGenerator = metadata => (settings.GetOrDefault<Func<Type, string, string>>(SettingsKeys.TopicNameGenerator) ?? ((eventType, prefix) => TopicNameHelper.GetSnsTopicName(eventType, TopicNamePrefix, PreTruncateQueueNames)))(metadata.MessageType, TopicNamePrefix);
                 }
                 return topicNameGenerator;
             }
