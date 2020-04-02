@@ -18,10 +18,13 @@ namespace NServiceBus.AmazonSQS.Tests
             sqsClient = new MockSqsClient();
             snsClient = new MockSnsClient();
             settings = new SettingsHolder();
-            
-            customSubscriptionsMappings = new EventToTopicsMappings();
-            settings.Set(customSubscriptionsMappings);
-            
+
+            customEventToTopicsMappings = new EventToTopicsMappings();
+            settings.Set(customEventToTopicsMappings);
+
+            customEventToEventsMappings = new EventToEventsMappings();
+            settings.Set(customEventToEventsMappings);
+
             messageMetadataRegistry = settings.SetupMessageMetadataRegistry();
             queueName = "fakeQueue";
 
@@ -88,13 +91,13 @@ namespace NServiceBus.AmazonSQS.Tests
 
             CollectionAssert.AreEquivalent(new List<string> { "NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-Event" }, snsClient.CreateTopicRequests);
         }
-        
+
         [Test]
-        public async Task Subscribe_creates_custom_defined_topic_if_not_exists()
+        public async Task Subscribe_with_event_to_topics_mapping_creates_custom_defined_topic_if_not_exists()
         {
             // cache
             var eventType = typeof(Event);
-            customSubscriptionsMappings.Add(eventType, new []{"custom-topic-name"});
+            customEventToTopicsMappings.Add(eventType, new []{"custom-topic-name"});
             messageMetadataRegistry.GetMessageMetadata(eventType);
 
             var responses = new Queue<Func<string, Topic>>();
@@ -105,6 +108,25 @@ namespace NServiceBus.AmazonSQS.Tests
             await manager.Subscribe(eventType, null);
 
             CollectionAssert.AreEquivalent(new List<string> { "custom-topic-name" }, snsClient.CreateTopicRequests);
+        }
+
+        [Test]
+        public async Task Subscribe_with_event_to_events_mapping_creates_custom_defined_topic_if_not_exists()
+        {
+            // cache
+            var subscribedEventType = typeof(IEvent);
+            var concreteEventType = typeof(Event);
+            customEventToEventsMappings.Add(subscribedEventType, concreteEventType);
+            messageMetadataRegistry.GetMessageMetadata(subscribedEventType);
+
+            var responses = new Queue<Func<string, Topic>>();
+            responses.Enqueue(t => null);
+            responses.Enqueue(t => new Topic { TopicArn = t });
+            snsClient.FindTopicAsyncResponse = topic => responses.Dequeue()(topic);
+
+            await manager.Subscribe(subscribedEventType, null);
+
+            CollectionAssert.AreEquivalent(new List<string> { "NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-Event" }, snsClient.CreateTopicRequests);
         }
 
         // Apparently we can only set the raw mode by doing it that way so let's enforce via test
@@ -190,6 +212,7 @@ namespace NServiceBus.AmazonSQS.Tests
         MessageMetadataRegistry messageMetadataRegistry;
         SettingsHolder settings;
         string queueName;
-        EventToTopicsMappings customSubscriptionsMappings;
+        EventToTopicsMappings customEventToTopicsMappings;
+        EventToEventsMappings customEventToEventsMappings;
     }
 }
