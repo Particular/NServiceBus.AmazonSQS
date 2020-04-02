@@ -69,9 +69,9 @@ namespace NServiceBus
                     //we skip the topic name generation assuming the topic name is already good
                     //TODO: should we still use the prefix though?
                     await CreateTopicAndSubscribe(mappedTopic, queueUrl).ConfigureAwait(false);
-
-                    MarkTypeConfigured(eventType);
                 }
+
+                MarkTypeConfigured(eventType);
             }
 
             if (customEventsMappings.HasMappingsFor(eventType))
@@ -80,9 +80,9 @@ namespace NServiceBus
                 foreach (var mappedType in mappedTypes)
                 {
                     await CreateTopicAndSubscribe(configuration.TopicNameGenerator(mappedType, configuration.TopicNamePrefix), queueUrl).ConfigureAwait(false);
-
-                    MarkTypeConfigured(eventType);
                 }
+
+                MarkTypeConfigured(eventType);
             }
 
             //TODO: if there are custom mappings for a message type should we look for the most concrete type and subscribe anyway or the custom mapping overrides the whole process?
