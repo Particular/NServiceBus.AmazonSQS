@@ -3,7 +3,7 @@
     using System;
     using System.Collections.Generic;
 
-    class EventToEventMappings
+    class EventToEventsMappings
     {
         public void Add(Type subscribedEvent, Type concreteEventType)
         {
