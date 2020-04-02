@@ -257,7 +257,8 @@
             }
         }
 
-        public EventToTopicsMappings CustomSubscriptionsMappings => settings.GetOrDefault<EventToTopicsMappings>();
+        public EventToTopicsMappings CustomEventToTopicsMappings => settings.GetOrDefault<EventToTopicsMappings>();
+        public EventToEventsMappings CustomEventToEventsMappings => settings.GetOrDefault<EventToEventsMappings>();
 
         public const string DelayedDeliveryQueueSuffix = "-delay.fifo";
         public static readonly int AwsMaximumQueueDelayTime = (int)TimeSpan.FromMinutes(15).TotalSeconds;
