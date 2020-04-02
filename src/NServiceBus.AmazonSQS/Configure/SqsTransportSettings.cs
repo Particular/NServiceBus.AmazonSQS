@@ -223,9 +223,9 @@
             Guard.AgainstNull(nameof(concreteEventType), concreteEventType);
 
             var settings = transportExtensions.GetSettings();
-            if (!settings.TryGet<EventToEventMappings>(out var mappings))
+            if (!settings.TryGet<EventToEventsMappings>(out var mappings))
             {
-                mappings = new EventToEventMappings();
+                mappings = new EventToEventsMappings();
                 settings.Set(mappings);
             }
 

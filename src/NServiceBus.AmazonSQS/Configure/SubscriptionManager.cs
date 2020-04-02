@@ -23,7 +23,8 @@ namespace NServiceBus
             this.sqsClient = sqsClient;
             this.snsClient = snsClient;
             this.queueName = queueName;
-            this.customMappings = configuration.CustomSubscriptionsMappings ?? new EventToTopicsMappings();
+            this.customTopicsMappings = configuration.CustomEventToTopicsMappings ?? new EventToTopicsMappings();
+            this.customEventsMappings = configuration.CustomEventToEventsMappings ?? new EventToEventsMappings();
         }
 
         public async Task Subscribe(Type eventType, ContextBag context)
@@ -60,9 +61,9 @@ namespace NServiceBus
 
         async Task SetupTypeSubscriptions(Type eventType, string queueUrl)
         {
-            if (customMappings.HasMappingsFor(eventType))
+            if (customTopicsMappings.HasMappingsFor(eventType))
             {
-                var mappedTopicsNames = customMappings.GetMappedTopicsNames(eventType);
+                var mappedTopicsNames = customTopicsMappings.GetMappedTopicsNames(eventType);
                 foreach (var mappedTopic in mappedTopicsNames)
                 {
                     //we skip the topic name generation assuming the topic name is already good
@@ -72,8 +73,19 @@ namespace NServiceBus
                     MarkTypeConfigured(eventType);
                 }
             }
-            
-            //TODO: if there are custom mappings for a message type should we look for the most concrete type and subscribe anyway or the custom mapping overrides the whole process?   
+
+            if (customEventsMappings.HasMappingsFor(eventType))
+            {
+                var mappedTypes = customEventsMappings.GetMappedTypes(eventType);
+                foreach (var mappedType in mappedTypes)
+                {
+                    await CreateTopicAndSubscribe(configuration.TopicNameGenerator(mappedType, configuration.TopicNamePrefix), queueUrl).ConfigureAwait(false);
+
+                    MarkTypeConfigured(eventType);
+                }
+            }
+
+            //TODO: if there are custom mappings for a message type should we look for the most concrete type and subscribe anyway or the custom mapping overrides the whole process?
             var metadata = messageMetadataRegistry.GetMessageMetadata(eventType);
             if (metadata.MessageType == typeof(object) || IsTypeTopologyKnownConfigured(metadata.MessageType))
             {
@@ -144,6 +156,7 @@ namespace NServiceBus
         readonly SemaphoreSlim subscribeQueueLimiter = new SemaphoreSlim(1);
 
         static ILog Logger = LogManager.GetLogger(typeof(SubscriptionManager));
-        EventToTopicsMappings customMappings;
+        EventToTopicsMappings customTopicsMappings;
+        EventToEventsMappings customEventsMappings;
     }
 }
