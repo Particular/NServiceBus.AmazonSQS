@@ -21,7 +21,7 @@
             settings.Set("NServiceBus.Subscriptions.EnableMigrationMode", true);
             return new SubscriptionMigrationModeSettings(settings);
         }
-        
+
         /// <summary>
         /// Configures a client factory for the SQS client. The default client factory creates a SQS client with the default
         /// constructor.
@@ -33,7 +33,7 @@
             transportExtensions.GetSettings().Set(SettingsKeys.SqsClientFactory, factory);
             return transportExtensions;
         }
-        
+
         /// <summary>
         /// Configures a client factory for the SNS client. The default client factory creates a SNS client with the default
         /// constructor.
@@ -44,7 +44,7 @@
             Guard.AgainstNull(nameof(factory), factory);
             transportExtensions.GetSettings().Set(SettingsKeys.SnsClientFactory, factory);
             return transportExtensions;
-        }        
+        }
 
         /// <summary>
         /// This is the maximum time that a message will be retained within SQS
@@ -167,7 +167,7 @@
         {
             MapEvent(transportExtensions, typeof(TEvent), new []{ customTopicName});
         }
-        
+
         /// <summary>
         /// Maps a specific message type to a set of topics. The transport will automatically map the most concrete type to a topic.
         /// In case a subscriber needs to subscribe to a type up in the message inheritance chain a custom mapping needs to be defined.
@@ -176,7 +176,7 @@
         {
             MapEvent(transportExtensions, eventType, new []{ customTopicName});
         }
-        
+
         /// <summary>
         /// Maps a specific message type to a set of topics. The transport will automatically map the most concrete type to a topic.
         /// In case a subscriber needs to subscribe to a type up in the message inheritance chain a custom mapping needs to be defined.
@@ -185,7 +185,7 @@
         {
             MapEvent(transportExtensions, typeof(TEvent), customTopicsNames);
         }
-        
+
         /// <summary>
         /// Maps a specific message type to a set of topics. The transport will automatically map the most concrete type to a topic.
         /// In case a subscriber needs to subscribe to a type up in the message inheritance chain a custom mapping needs to be defined.
@@ -193,15 +193,43 @@
         public static void MapEvent(this TransportExtensions<SqsTransport> transportExtensions, Type eventType, IEnumerable<string> customTopicsNames)
         {
             Guard.AgainstNull(nameof(customTopicsNames), customTopicsNames);
-            
+
             var settings = transportExtensions.GetSettings();
             if (!settings.TryGet<EventToTopicsMappings>(out var mappings))
             {
                 mappings = new EventToTopicsMappings();
                 settings.Set(mappings);
             }
-            
+
             mappings.Add(eventType, customTopicsNames);
+        }
+
+        /// <summary>
+        /// Maps a specific message type to a concrete message type. The transport will automatically map the most concrete type to a topic.
+        /// In case a subscriber needs to subscribe to a type up in the message inheritance chain a custom mapping needs to be defined.
+        /// </summary>
+        public static void MapEvent<TSubscribedEvent, TConcreteEvent>(this TransportExtensions<SqsTransport> transportExtensions)
+        {
+            MapEvent(transportExtensions, typeof(TSubscribedEvent), typeof(TConcreteEvent));
+        }
+
+        /// <summary>
+        /// Maps a specific message type to a concrete message type. The transport will automatically map the most concrete type to a topic.
+        /// In case a subscriber needs to subscribe to a type up in the message inheritance chain a custom mapping needs to be defined.
+        /// </summary>
+        public static void MapEvent(this TransportExtensions<SqsTransport> transportExtensions, Type subscribedEvent, Type concreteEventType)
+        {
+            Guard.AgainstNull(nameof(subscribedEvent), subscribedEvent);
+            Guard.AgainstNull(nameof(concreteEventType), concreteEventType);
+
+            var settings = transportExtensions.GetSettings();
+            if (!settings.TryGet<EventToEventMappings>(out var mappings))
+            {
+                mappings = new EventToEventMappings();
+                settings.Set(mappings);
+            }
+
+            mappings.Add(subscribedEvent, concreteEventType);
         }
 
         /// <summary>
