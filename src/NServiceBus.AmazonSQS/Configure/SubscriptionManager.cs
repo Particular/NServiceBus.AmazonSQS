@@ -90,13 +90,11 @@ namespace NServiceBus
 
         async Task SetupTypeSubscriptions(MessageMetadata metadata, string queueUrl)
         {
-            var hasCustomMappings = false;
             var mappedTopicsNames = topicCache.CustomEventToTopicsMappings.GetMappedTopicsNames(metadata.MessageType);
             foreach (var mappedTopicName in mappedTopicsNames)
             {
                 //we skip the topic name generation assuming the topic name is already good
                 await CreateTopicAndSubscribe(mappedTopicName, queueUrl).ConfigureAwait(false);
-                hasCustomMappings = true;
             }
 
             var mappedTypes = topicCache.CustomEventToEventsMappings.GetMappedTypes(metadata.MessageType);
@@ -111,14 +109,14 @@ namespace NServiceBus
 
                 // doesn't need to be cached since we never publish to it
                 await CreateTopicAndSubscribe(mappedTypeMetadata, queueUrl).ConfigureAwait(false);
-                hasCustomMappings = true;
             }
 
-            if (!hasCustomMappings && metadata.MessageType != typeof(object) && !IsTypeTopologyKnownConfigured(metadata.MessageType))
+            if (metadata.MessageType == typeof(object) || IsTypeTopologyKnownConfigured(metadata.MessageType))
             {
-                await CreateTopicAndSubscribe(metadata, queueUrl).ConfigureAwait(false);
+                return;
             }
 
+            await CreateTopicAndSubscribe(metadata, queueUrl).ConfigureAwait(false);
             MarkTypeConfigured(metadata.MessageType);
         }
 

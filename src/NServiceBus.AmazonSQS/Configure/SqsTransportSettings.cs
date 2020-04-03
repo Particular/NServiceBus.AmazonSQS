@@ -208,19 +208,19 @@
         /// Maps a specific message type to a concrete message type. The transport will automatically map the most concrete type to a topic.
         /// In case a subscriber needs to subscribe to a type up in the message inheritance chain a custom mapping needs to be defined.
         /// </summary>
-        public static void MapEvent<TSubscribedEvent, TConcreteEvent>(this TransportExtensions<SqsTransport> transportExtensions)
+        public static void MapEvent<TSubscribedEvent, TPublishedEvent>(this TransportExtensions<SqsTransport> transportExtensions)
         {
-            MapEvent(transportExtensions, typeof(TSubscribedEvent), typeof(TConcreteEvent));
+            MapEvent(transportExtensions, typeof(TSubscribedEvent), typeof(TPublishedEvent));
         }
 
         /// <summary>
         /// Maps a specific message type to a concrete message type. The transport will automatically map the most concrete type to a topic.
         /// In case a subscriber needs to subscribe to a type up in the message inheritance chain a custom mapping needs to be defined.
         /// </summary>
-        public static void MapEvent(this TransportExtensions<SqsTransport> transportExtensions, Type subscribedEvent, Type concreteEventType)
+        public static void MapEvent(this TransportExtensions<SqsTransport> transportExtensions, Type subscribedEvent, Type publishedEventType)
         {
             Guard.AgainstNull(nameof(subscribedEvent), subscribedEvent);
-            Guard.AgainstNull(nameof(concreteEventType), concreteEventType);
+            Guard.AgainstNull(nameof(publishedEventType), publishedEventType);
 
             var settings = transportExtensions.GetSettings();
             if (!settings.TryGet<EventToEventsMappings>(out var mappings))
@@ -229,7 +229,7 @@
                 settings.Set(mappings);
             }
 
-            mappings.Add(subscribedEvent, concreteEventType);
+            mappings.Add(subscribedEvent, publishedEventType);
         }
 
         /// <summary>
