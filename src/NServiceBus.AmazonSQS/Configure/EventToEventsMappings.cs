@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
 
     class EventToEventsMappings
     {
@@ -16,14 +17,9 @@
             mapping.Add(concreteEventType);
         }
 
-        public bool HasMappingsFor(Type eventType)
-        {
-            return eventsToEventsMappings.ContainsKey(eventType);
-        }
-
         public IEnumerable<Type> GetMappedTypes(Type eventType)
         {
-            return eventsToEventsMappings[eventType];
+            return eventsToEventsMappings.ContainsKey(eventType) ? eventsToEventsMappings[eventType] : Enumerable.Empty<Type>();
         }
 
         Dictionary<Type, HashSet<Type>> eventsToEventsMappings = new Dictionary<Type, HashSet<Type>>();
