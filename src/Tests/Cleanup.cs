@@ -42,7 +42,7 @@ namespace NServiceBus.AmazonSQS.Tests
         public async Task DeleteAllSubscriptions()
         {
             await DeleteAllSubscriptionsWithPrefix(snsClient, "AT");
-            await DeleteAllSubscriptionsWithPrefix(snsClient, "TT");            
+            await DeleteAllSubscriptionsWithPrefix(snsClient, "TT");
         }
 
         [Test]
@@ -52,7 +52,7 @@ namespace NServiceBus.AmazonSQS.Tests
             await DeleteAllTopicsWithPrefix(snsClient, "AT");
             await DeleteAllTopicsWithPrefix(snsClient, "TT");
         }
-        
+
         [Test]
         [Explicit]
         public async Task DeleteAllResourcesWithPrefix()
@@ -68,79 +68,100 @@ namespace NServiceBus.AmazonSQS.Tests
 
         public static async Task DeleteAllSubscriptionsWithPrefix(IAmazonSimpleNotificationService snsClient, string topicNamePrefix)
         {
-            ListSubscriptionsResponse subscriptions;
-            do
+            try
             {
-                subscriptions = await snsClient.ListSubscriptionsAsync();
-                var deletionTasks = new List<Task>(subscriptions.Subscriptions.Count);
-                deletionTasks.AddRange(subscriptions.Subscriptions.Select(async subscription =>
+                ListSubscriptionsResponse subscriptions;
+                do
                 {
-                    if (!subscription.TopicArn.Contains($":{topicNamePrefix}"))
+                    subscriptions = await snsClient.ListSubscriptionsAsync();
+                    var deletionTasks = new List<Task>(subscriptions.Subscriptions.Count);
+                    deletionTasks.AddRange(subscriptions.Subscriptions.Select(async subscription =>
                     {
-                        return;
-                    }
+                        if (!subscription.TopicArn.Contains($":{topicNamePrefix}"))
+                        {
+                            return;
+                        }
 
-                    try
-                    {
-                        await snsClient.UnsubscribeAsync(subscription.SubscriptionArn).ConfigureAwait(false);
-                    }
-                    catch (Exception)
-                    {
-                        Console.WriteLine($"Unable to delete subscription '{subscription.SubscriptionArn}' '{subscription.TopicArn}'");
-                    }
-                }));
+                        try
+                        {
+                            await snsClient.UnsubscribeAsync(subscription.SubscriptionArn).ConfigureAwait(false);
+                        }
+                        catch (Exception)
+                        {
+                            Console.WriteLine($"Unable to delete subscription '{subscription.SubscriptionArn}' '{subscription.TopicArn}'");
+                        }
+                    }));
 
-                await Task.WhenAll(deletionTasks).ConfigureAwait(false);
-            } while (subscriptions.NextToken != null && subscriptions.Subscriptions.Count > 0);
+                    await Task.WhenAll(deletionTasks).ConfigureAwait(false);
+                } while (subscriptions.NextToken != null && subscriptions.Subscriptions.Count > 0);
+            }
+            catch (Exception)
+            {
+                Console.WriteLine($"Unable to delete subscriptions with topic prefix '{topicNamePrefix}'");
+            }
         }
 
         public static async Task DeleteAllTopicsWithPrefix(IAmazonSimpleNotificationService snsClient, string topicNamePrefix)
         {
-            ListTopicsResponse upToHundredTopics = null;
-            do
+            try
             {
-                upToHundredTopics = await snsClient.ListTopicsAsync(upToHundredTopics?.NextToken);
-                var deletionTasks = new List<Task>(upToHundredTopics.Topics.Count);
-                deletionTasks.AddRange(upToHundredTopics.Topics.Select(async topic =>
+                ListTopicsResponse upToHundredTopics = null;
+                do
                 {
-                    if (!topic.TopicArn.Contains($":{topicNamePrefix}"))
+                    upToHundredTopics = await snsClient.ListTopicsAsync(upToHundredTopics?.NextToken);
+                    var deletionTasks = new List<Task>(upToHundredTopics.Topics.Count);
+                    deletionTasks.AddRange(upToHundredTopics.Topics.Select(async topic =>
                     {
-                        return;
-                    }
-                    
-                    try
-                    {
-                        await snsClient.DeleteTopicAsync(topic.TopicArn).ConfigureAwait(false);
-                    }
-                    catch (Exception)
-                    {
-                        Console.WriteLine($"Unable to delete topic '{topic.TopicArn}'");
-                    }
-                }));
-                await Task.WhenAll(deletionTasks).ConfigureAwait(false);
-            } while (upToHundredTopics.NextToken != null && upToHundredTopics.Topics.Count > 0);
+                        if (!topic.TopicArn.Contains($":{topicNamePrefix}"))
+                        {
+                            return;
+                        }
+
+                        try
+                        {
+                            await snsClient.DeleteTopicAsync(topic.TopicArn).ConfigureAwait(false);
+                        }
+                        catch (Exception)
+                        {
+                            Console.WriteLine($"Unable to delete topic '{topic.TopicArn}'");
+                        }
+                    }));
+                    await Task.WhenAll(deletionTasks).ConfigureAwait(false);
+                } while (upToHundredTopics.NextToken != null && upToHundredTopics.Topics.Count > 0);
+            }
+            catch (Exception)
+            {
+                Console.WriteLine($"Unable to delete topics with prefix '{topicNamePrefix}'");
+            }
         }
 
         public static async Task DeleteAllQueuesWithPrefix(IAmazonSQS sqsClient, string queueNamePrefix)
         {
-            ListQueuesResponse upToAThousandQueues;
-            do
+            try
             {
-                upToAThousandQueues = await sqsClient.ListQueuesAsync(queueNamePrefix);
-                var deletionTasks = new List<Task>(upToAThousandQueues.QueueUrls.Count);
-                deletionTasks.AddRange(upToAThousandQueues.QueueUrls.Select(async queueUrl =>
+                ListQueuesResponse upToAThousandQueues;
+                do
                 {
-                    try
+                    upToAThousandQueues = await sqsClient.ListQueuesAsync(queueNamePrefix);
+                    var deletionTasks = new List<Task>(upToAThousandQueues.QueueUrls.Count);
+                    deletionTasks.AddRange(upToAThousandQueues.QueueUrls.Select(async queueUrl =>
                     {
-                        await sqsClient.DeleteQueueAsync(queueUrl);
-                    }
-                    catch (Exception)
-                    {
-                        Console.WriteLine($"Unable to delete queue '{queueUrl}'");
-                    }
-                }));
-                await Task.WhenAll(deletionTasks).ConfigureAwait(false);
-            } while (upToAThousandQueues.QueueUrls.Count > 0);
+                        try
+                        {
+                            await sqsClient.DeleteQueueAsync(queueUrl);
+                        }
+                        catch (Exception)
+                        {
+                            Console.WriteLine($"Unable to delete queue '{queueUrl}'");
+                        }
+                    }));
+                    await Task.WhenAll(deletionTasks).ConfigureAwait(false);
+                } while (upToAThousandQueues.QueueUrls.Count > 0);
+            }
+            catch (Exception)
+            {
+                Console.WriteLine($"Unable to delete queues with prefix '{queueNamePrefix}'");
+            }
         }
 
         AmazonSQSClient sqsClient;
