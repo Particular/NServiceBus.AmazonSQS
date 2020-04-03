@@ -6,7 +6,8 @@
     using Conventions = AcceptanceTesting.Customization.Conventions;
     using AmazonSQS.AcceptanceTests;
     using NUnit.Framework;
-    using Routing.MessageDrivenSubscriptions;
+    using MessageDriven = Routing.MessageDrivenSubscriptions;
+    using NativePublishSubscribe = Routing.NativePublishSubscribe;
 
     public class ConfigureEndpointSqsTransport : IConfigureEndpointTestExecution
     {
@@ -18,21 +19,41 @@
 
             transportConfig.ConfigureSqsTransport(SetupFixture.NamePrefix);
 
-            var routingConfig = transportConfig.Routing();
-            foreach (var publisher in publisherMetadata.Publishers)
-            {
-                foreach (var eventType in publisher.Events)
-                {
-                    routingConfig.RegisterPublisher(eventType, publisher.PublisherName);
-                }
-            }
+            ApplyMappingsToSupportMultipleInheritance(endpointName, transportConfig);
 
-            // TODO: remove when AWS SDK bug is resolved https://github.com/aws/aws-sdk-net/issues/796
-            // The bug causes messages to be marked as in flight, but not delivered to the client.
-            // Wait for tests longer than the invisibility time to make sure messages are received.
             settings.TestExecutionTimeout = TimeSpan.FromSeconds(40);
 
             return Task.FromResult(0);
+        }
+
+        static void ApplyMappingsToSupportMultipleInheritance(string endpointName, TransportExtensions<SqsTransport> transportConfig)
+        {
+            if (endpointName == Conventions.EndpointNamingConvention(typeof(NativePublishSubscribe.When_multi_subscribing_to_a_polymorphic_event.Subscriber)))
+            {
+                transportConfig.MapEvent<NativePublishSubscribe.When_multi_subscribing_to_a_polymorphic_event.IMyEvent, NativePublishSubscribe.When_multi_subscribing_to_a_polymorphic_event.MyEvent1>();
+                transportConfig.MapEvent<NativePublishSubscribe.When_multi_subscribing_to_a_polymorphic_event.IMyEvent, NativePublishSubscribe.When_multi_subscribing_to_a_polymorphic_event.MyEvent2>();
+            }
+
+            if (endpointName == Conventions.EndpointNamingConvention(typeof(NativePublishSubscribe.When_subscribing_to_a_base_event.GeneralSubscriber)))
+            {
+                transportConfig.MapEvent<NativePublishSubscribe.When_subscribing_to_a_base_event.IBaseEvent, NativePublishSubscribe.When_subscribing_to_a_base_event.SpecificEvent>();
+            }
+
+            if (endpointName == Conventions.EndpointNamingConvention(typeof(Routing.When_publishing_an_event_implementing_two_unrelated_interfaces.Subscriber)))
+            {
+                transportConfig.MapEvent<Routing.When_publishing_an_event_implementing_two_unrelated_interfaces.IEventA, Routing.When_publishing_an_event_implementing_two_unrelated_interfaces.CompositeEvent>();
+                transportConfig.MapEvent<Routing.When_publishing_an_event_implementing_two_unrelated_interfaces.IEventB, Routing.When_publishing_an_event_implementing_two_unrelated_interfaces.CompositeEvent>();
+            }
+
+            if (endpointName == Conventions.EndpointNamingConvention(typeof(Sagas.When_started_by_base_event_from_other_saga.SagaThatIsStartedByABaseEvent)))
+            {
+                transportConfig.MapEvent<Sagas.When_started_by_base_event_from_other_saga.BaseEvent, Sagas.When_started_by_base_event_from_other_saga.SomethingHappenedEvent>();
+            }
+
+            if (endpointName == Conventions.EndpointNamingConvention(typeof(Versioning.When_multiple_versions_of_a_message_is_published.V1Subscriber)))
+            {
+                transportConfig.MapEvent<Versioning.When_multiple_versions_of_a_message_is_published.V1Event, Versioning.When_multiple_versions_of_a_message_is_published.V2Event>();
+            }
         }
 
         public Task Cleanup()
@@ -43,7 +64,7 @@
 
         static void PreventInconclusiveTestsFromRunning(string endpointName)
         {
-            if (endpointName == Conventions.EndpointNamingConvention(typeof(When_publishing_from_sendonly.SendOnlyPublisher)))
+            if (endpointName == Conventions.EndpointNamingConvention(typeof(MessageDriven.When_publishing_from_sendonly.SendOnlyPublisher)))
             {
                 Assert.Inconclusive("Test is not using endpoint naming conventions in hardcoded subscription storage. Should be fixed in core vNext.");
             }

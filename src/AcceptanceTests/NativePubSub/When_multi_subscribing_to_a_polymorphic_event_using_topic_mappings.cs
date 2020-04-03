@@ -12,7 +12,7 @@
      * via the project file.
      */
 
-    public class When_multi_subscribing_to_a_polymorphic_event : NServiceBusAcceptanceTest
+    public class When_multi_subscribing_to_a_polymorphic_event_using_topic_mappings : NServiceBusAcceptanceTest
     {
         [Test]
         public async Task Both_events_should_be_delivered()
