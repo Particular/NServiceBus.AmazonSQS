@@ -5,13 +5,6 @@
     using EndpointTemplates;
     using NUnit.Framework;
 
-    /*
-     * This test is copied from the original NServiceBus Acceptance tests
-     * suite to customize the event type to topic name.
-     * The original test has been removed from the default NServiceBus acceptance tests
-     * via the project file.
-     */
-
     public class When_multi_subscribing_to_a_polymorphic_event_using_topic_mappings : NServiceBusAcceptanceTest
     {
         [Test]
@@ -48,7 +41,12 @@
         {
             public Publisher1()
             {
-                EndpointSetup<DefaultPublisher>();
+                EndpointSetup<DefaultPublisher>(c =>
+                {
+                    var transportConfig = c.ConfigureSqsTransport();
+                    // to avoid pretruncation
+                    transportConfig.TopicNameGenerator((type, prefix) => $"{prefix}{type.Name}");
+                });
             }
         }
 
@@ -56,7 +54,12 @@
         {
             public Publisher2()
             {
-                EndpointSetup<DefaultPublisher>();
+                EndpointSetup<DefaultPublisher>(c =>
+                {
+                    var transportConfig = c.ConfigureSqsTransport();
+                    // to avoid pretruncation
+                    transportConfig.TopicNameGenerator((type, prefix) => $"{prefix}{type.Name}");
+                });
             }
         }
 
@@ -64,13 +67,15 @@
         {
             public Subscriber()
             {
-                EndpointSetup<DefaultServer>(endpointConfiguration =>
+                EndpointSetup<DefaultServer>(c =>
                 {
-                    var topicNameForMyEvent1 = SetupFixture.NamePrefix + "NServiceBus-AcceptanceTests-NativePubSub-When_multi_subscribing_to_a_polymorphic_event_using_topic_mappings-MyEvent1";
-                    var topicNameForMyEvent2 = SetupFixture.NamePrefix + "NServiceBus-AcceptanceTests-NativePubSub-When_multi_subscribing_to_a_polymorphic_event_using_topic_mappings-MyEvent2";
+                    var topicNameForMyEvent1 = SetupFixture.NamePrefix + "MyEvent1";
+                    var topicNameForMyEvent2 = SetupFixture.NamePrefix + "MyEvent2";
 
-                    var transportConfig = endpointConfiguration.UseTransport<SqsTransport>();
-                    transportConfig.MapEvent<IMyEvent>(new[] {topicNameForMyEvent1, topicNameForMyEvent2});
+                    var transportConfig = c.ConfigureSqsTransport();
+                    // to avoid pretruncation
+                    transportConfig.TopicNameGenerator((type, prefix) => $"{prefix}{type.Name}");
+                    transportConfig.MapEvent<IMyEvent>(new[] { topicNameForMyEvent1, topicNameForMyEvent2 });
                 });
             }
 
