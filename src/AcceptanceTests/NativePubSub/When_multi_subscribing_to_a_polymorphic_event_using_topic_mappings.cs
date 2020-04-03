@@ -66,8 +66,8 @@
             {
                 EndpointSetup<DefaultServer>(endpointConfiguration =>
                 {
-                    var topicNameForMyEvent1 = SetupFixture.NamePrefix + "NServiceBus-AcceptanceTests-NativePubSub-When_multi_subscribing_to_a_polymorphic_event-MyEvent1";
-                    var topicNameForMyEvent2 = SetupFixture.NamePrefix + "NServiceBus-AcceptanceTests-NativePubSub-When_multi_subscribing_to_a_polymorphic_event-MyEvent2";
+                    var topicNameForMyEvent1 = SetupFixture.NamePrefix + "NServiceBus-AcceptanceTests-NativePubSub-When_multi_subscribing_to_a_polymorphic_event_using_topic_mappings-MyEvent1";
+                    var topicNameForMyEvent2 = SetupFixture.NamePrefix + "NServiceBus-AcceptanceTests-NativePubSub-When_multi_subscribing_to_a_polymorphic_event_using_topic_mappings-MyEvent2";
 
                     var transportConfig = endpointConfiguration.UseTransport<SqsTransport>();
                     transportConfig.MapEvent<IMyEvent>(new[] {topicNameForMyEvent1, topicNameForMyEvent2});
