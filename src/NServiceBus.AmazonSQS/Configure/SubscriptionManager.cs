@@ -23,8 +23,6 @@ namespace NServiceBus
             this.sqsClient = sqsClient;
             this.snsClient = snsClient;
             this.queueName = queueName;
-            this.customTopicsMappings = configuration.CustomEventToTopicsMappings ?? new EventToTopicsMappings();
-            this.customEventsMappings = configuration.CustomEventToEventsMappings ?? new EventToEventsMappings();
         }
 
         public async Task Subscribe(Type eventType, ContextBag context)
@@ -32,7 +30,8 @@ namespace NServiceBus
             var queueUrl = await queueCache.GetQueueUrl(queueName)
                 .ConfigureAwait(false);
 
-            await SetupTypeSubscriptions(eventType, queueUrl).ConfigureAwait(false);
+            var metadata = messageMetadataRegistry.GetMessageMetadata(eventType);
+            await SetupTypeSubscriptions(metadata, queueUrl).ConfigureAwait(false);
         }
 
         public async Task Unsubscribe(Type eventType, ContextBag context)
@@ -45,56 +44,95 @@ namespace NServiceBus
             }
 
             await DeleteSubscription(metadata).ConfigureAwait(false);
-
-            MarkTypeNotConfigured(metadata.MessageType);
         }
 
         async Task DeleteSubscription(MessageMetadata metadata)
         {
+            var mappedTopicsNames = topicCache.CustomEventToTopicsMappings.GetMappedTopicsNames(metadata.MessageType);
+            foreach (var mappedTopicName in mappedTopicsNames)
+            {
+                //we skip the topic name generation assuming the topic name is already good
+                var mappedTypeMatchingSubscription = await snsClient.FindMatchingSubscription(queueCache, mappedTopicName, queueName)
+                    .ConfigureAwait(false);
+                if (mappedTypeMatchingSubscription != null)
+                {
+                    await snsClient.UnsubscribeAsync(mappedTypeMatchingSubscription).ConfigureAwait(false);
+                }
+            }
+
+            var mappedTypes = topicCache.CustomEventToEventsMappings.GetMappedTypes(metadata.MessageType);
+            foreach (var mappedType in mappedTypes)
+            {
+                // forces the types need to match the convention
+                var mappedTypeMetadata = messageMetadataRegistry.GetMessageMetadata(mappedType);
+                if (mappedTypeMetadata == null)
+                {
+                    continue;
+                }
+
+                var mappedTypeMatchingSubscription = await snsClient.FindMatchingSubscription(queueCache, topicCache, mappedTypeMetadata, queueName)
+                    .ConfigureAwait(false);
+                if (mappedTypeMatchingSubscription != null)
+                {
+                    await snsClient.UnsubscribeAsync(mappedTypeMatchingSubscription).ConfigureAwait(false);
+                }
+            }
+
             var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, topicCache, metadata, queueName)
                 .ConfigureAwait(false);
             if (matchingSubscriptionArn != null)
             {
                 await snsClient.UnsubscribeAsync(matchingSubscriptionArn).ConfigureAwait(false);
             }
+
+            MarkTypeNotConfigured(metadata.MessageType);
         }
 
-        async Task SetupTypeSubscriptions(Type eventType, string queueUrl)
+        async Task SetupTypeSubscriptions(MessageMetadata metadata, string queueUrl)
         {
-            if (customTopicsMappings.HasMappingsFor(eventType))
+            var hasCustomMappings = false;
+            var mappedTopicsNames = topicCache.CustomEventToTopicsMappings.GetMappedTopicsNames(metadata.MessageType);
+            foreach (var mappedTopicName in mappedTopicsNames)
             {
-                var mappedTopicsNames = customTopicsMappings.GetMappedTopicsNames(eventType);
-                foreach (var mappedTopic in mappedTopicsNames)
+                //we skip the topic name generation assuming the topic name is already good
+                await CreateTopicAndSubscribe(mappedTopicName, queueUrl).ConfigureAwait(false);
+                hasCustomMappings = true;
+            }
+
+            var mappedTypes = topicCache.CustomEventToEventsMappings.GetMappedTypes(metadata.MessageType);
+            foreach (var mappedType in mappedTypes)
+            {
+                // forces the types need to match the convention
+                var mappedTypeMetadata = messageMetadataRegistry.GetMessageMetadata(mappedType);
+                if (mappedTypeMetadata == null)
                 {
-                    //we skip the topic name generation assuming the topic name is already good
-                    //TODO: should we still use the prefix though?
-                    await CreateTopicAndSubscribe(mappedTopic, queueUrl).ConfigureAwait(false);
+                    continue;
                 }
 
-                MarkTypeConfigured(eventType);
+                // doesn't need to be cached since we never publish to it
+                await CreateTopicAndSubscribe(mappedTypeMetadata, queueUrl).ConfigureAwait(false);
+                hasCustomMappings = true;
             }
 
-            if (customEventsMappings.HasMappingsFor(eventType))
+            if (!hasCustomMappings && metadata.MessageType != typeof(object) && !IsTypeTopologyKnownConfigured(metadata.MessageType))
             {
-                var mappedTypes = customEventsMappings.GetMappedTypes(eventType);
-                foreach (var mappedType in mappedTypes)
-                {
-                    await CreateTopicAndSubscribe(configuration.TopicNameGenerator(mappedType, configuration.TopicNamePrefix), queueUrl).ConfigureAwait(false);
-                }
-
-                MarkTypeConfigured(eventType);
+                await CreateTopicAndSubscribe(metadata, queueUrl).ConfigureAwait(false);
             }
-
-            //TODO: if there are custom mappings for a message type should we look for the most concrete type and subscribe anyway or the custom mapping overrides the whole process?
-            var metadata = messageMetadataRegistry.GetMessageMetadata(eventType);
-            if (metadata.MessageType == typeof(object) || IsTypeTopologyKnownConfigured(metadata.MessageType))
-            {
-                return;
-            }
-
-            await CreateTopicAndSubscribe(metadata, queueUrl).ConfigureAwait(false);
 
             MarkTypeConfigured(metadata.MessageType);
+        }
+
+        async Task CreateTopicAndSubscribe(string topicName, string queueUrl)
+        {
+            var foundTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
+            if (foundTopic == null)
+            {
+                await snsClient.CreateTopicAsync(topicName).ConfigureAwait(false);
+                Logger.Debug($"Created topic topic '{topicName}'");
+                foundTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
+            }
+
+            await SubscribeTo(foundTopic, topicName, queueUrl).ConfigureAwait(false);
         }
 
         async Task CreateTopicAndSubscribe(MessageMetadata metadata, string queueUrl)
@@ -108,6 +146,11 @@ namespace NServiceBus
 
             topicName = topicName ?? topicCache.GetTopicName(metadata);
 
+            await SubscribeTo(topic, topicName, queueUrl).ConfigureAwait(false);
+        }
+
+        async Task SubscribeTo(Topic topic, string topicName, string queueUrl)
+        {
             try
             {
                 // need to safe guard the subscribe section so that policy are not overriden
@@ -156,7 +199,5 @@ namespace NServiceBus
         readonly SemaphoreSlim subscribeQueueLimiter = new SemaphoreSlim(1);
 
         static ILog Logger = LogManager.GetLogger(typeof(SubscriptionManager));
-        EventToTopicsMappings customTopicsMappings;
-        EventToEventsMappings customEventsMappings;
     }
 }

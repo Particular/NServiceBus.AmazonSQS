@@ -8,9 +8,15 @@ namespace NServiceBus.AmazonSQS
 
     static class SnsClientExtensions
     {
-        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, MessageMetadata metadata, string queueName)
+        public static Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, MessageMetadata metadata, string queueName)
         {
-            var existingTopic = await topicCache.GetTopic(metadata).ConfigureAwait(false);
+            var topicName = topicCache.GetTopicName(metadata);
+            return snsClient.FindMatchingSubscription(queueCache, topicName, queueName);
+        }
+
+        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, string topicName, string queueName)
+        {
+            var existingTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
             if (existingTopic == null)
             {
                 return null;
