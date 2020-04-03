@@ -14,7 +14,13 @@ namespace NServiceBus.AmazonSQS
             this.configuration = configuration;
             this.messageMetadataRegistry = messageMetadataRegistry;
             this.snsClient = snsClient;
+            CustomEventToTopicsMappings = configuration.CustomEventToTopicsMappings ?? new EventToTopicsMappings();
+            CustomEventToEventsMappings = configuration.CustomEventToEventsMappings ?? new EventToEventsMappings();
         }
+
+        public EventToEventsMappings CustomEventToEventsMappings { get; }
+
+        public EventToTopicsMappings CustomEventToTopicsMappings { get; }
 
         public Task<Topic> GetTopic(MessageMetadata metadata)
         {
