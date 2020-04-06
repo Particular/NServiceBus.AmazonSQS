@@ -28,19 +28,8 @@
 
         static void ApplyMappingsToSupportMultipleInheritance(string endpointName, TransportExtensions<SqsTransport> transportConfig)
         {
-            if (endpointName == Conventions.EndpointNamingConvention(typeof(NativePublishSubscribe.When_multi_subscribing_to_a_polymorphic_event.Publisher1))) 
-            {
-                transportConfig.TopicNameGenerator((type, prefix) => $"{prefix}{type.Name}");
-            }
-
-            if (endpointName == Conventions.EndpointNamingConvention(typeof(NativePublishSubscribe.When_multi_subscribing_to_a_polymorphic_event.Publisher2))) 
-            {
-                transportConfig.TopicNameGenerator((type, prefix) => $"{prefix}{type.Name}");
-            }
-
             if (endpointName == Conventions.EndpointNamingConvention(typeof(NativePublishSubscribe.When_multi_subscribing_to_a_polymorphic_event.Subscriber)))
             {
-                transportConfig.TopicNameGenerator((type, prefix) => $"{prefix}{type.Name}");
                 transportConfig.MapEvent<NativePublishSubscribe.When_multi_subscribing_to_a_polymorphic_event.IMyEvent, NativePublishSubscribe.When_multi_subscribing_to_a_polymorphic_event.MyEvent1>();
                 transportConfig.MapEvent<NativePublishSubscribe.When_multi_subscribing_to_a_polymorphic_event.IMyEvent, NativePublishSubscribe.When_multi_subscribing_to_a_polymorphic_event.MyEvent2>();
             }
