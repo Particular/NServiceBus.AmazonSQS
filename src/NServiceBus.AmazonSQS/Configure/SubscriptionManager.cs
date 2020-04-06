@@ -56,6 +56,7 @@ namespace NServiceBus
                     .ConfigureAwait(false);
                 if (mappedTypeMatchingSubscription != null)
                 {
+                    Logger.Debug($"Removed subscription for queue '{queueName}' to topic '{mappedTopicName}'");
                     await snsClient.UnsubscribeAsync(mappedTypeMatchingSubscription).ConfigureAwait(false);
                 }
             }
@@ -74,6 +75,7 @@ namespace NServiceBus
                     .ConfigureAwait(false);
                 if (mappedTypeMatchingSubscription != null)
                 {
+                    Logger.Debug($"Removed subscription with arn '{mappedTypeMatchingSubscription}' for queue '{queueName}'");
                     await snsClient.UnsubscribeAsync(mappedTypeMatchingSubscription).ConfigureAwait(false);
                 }
             }
@@ -82,6 +84,7 @@ namespace NServiceBus
                 .ConfigureAwait(false);
             if (matchingSubscriptionArn != null)
             {
+                Logger.Debug($"Removed subscription with arn '{matchingSubscriptionArn}' for queue '{queueName}'");
                 await snsClient.UnsubscribeAsync(matchingSubscriptionArn).ConfigureAwait(false);
             }
 
