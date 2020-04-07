@@ -4,7 +4,6 @@ namespace NServiceBus
     using System.Collections.Concurrent;
     using System.Threading;
     using System.Threading.Tasks;
-    using Amazon.Auth.AccessControlPolicy;
     using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS;
@@ -186,9 +185,6 @@ namespace NServiceBus
                     AttributeValue = "true"
                 }).ConfigureAwait(false);
                 Logger.Debug($"Set raw delivery for subscription with arn '{createdSubscription}' for '{topicName}' with arn '{topic.TopicArn}' for queue '{queueName}");
-
-                var queueAttributes = await sqsClient.GetAttributesAsync(queueUrl).ConfigureAwait(false);
-                Logger.Debug($"Created policy '{Policy.FromJson(queueAttributes["Policy"]).ToJson(prettyPrint: true)}");
             }
             finally
             {
