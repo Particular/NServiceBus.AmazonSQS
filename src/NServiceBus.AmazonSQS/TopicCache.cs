@@ -39,7 +39,7 @@ namespace NServiceBus.AmazonSQS
             return GetAndCacheTopicIfFound(metadata);
         }
 
-        public async Task<Topic> CreateIfNotExistent(MessageMetadata metadata, Action<string> creationAction = null)
+        public async Task<Topic> CreateIfNotExistent(MessageMetadata metadata, Action<string, Topic> creationAction = null)
         {
             var existingTopic = await GetTopic(metadata).ConfigureAwait(false);
             if (existingTopic != null)
@@ -48,9 +48,11 @@ namespace NServiceBus.AmazonSQS
             }
 
             var topicName = GetTopicName(metadata);
-            await snsClient.CreateTopicAsync(topicName).ConfigureAwait(false);
-            creationAction?.Invoke(topicName);
-            return await GetTopic(metadata).ConfigureAwait(false);
+            var response = await snsClient.CreateTopicAsync(topicName).ConfigureAwait(false);
+            // avoid querying again
+            var topic = new Topic { TopicArn = response.TopicArn };
+            creationAction?.Invoke(topicName, topic);
+            return topicCache.GetOrAdd(metadata.MessageType, topic);
         }
 
         public string GetTopicName(MessageMetadata metadata)

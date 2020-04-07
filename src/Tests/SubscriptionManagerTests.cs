@@ -94,8 +94,8 @@ namespace NServiceBus.AmazonSQS.Tests
 
             var responses = new Queue<Func<string, Topic>>();
             responses.Enqueue(t => null);
-            responses.Enqueue(t => new Topic { TopicArn = t });
             responses.Enqueue(t => null);
+            responses.Enqueue(t => new Topic { TopicArn = t });
             responses.Enqueue(t => new Topic { TopicArn = t });
             snsClient.FindTopicAsyncResponse = topic => responses.Dequeue()(topic);
 
@@ -119,10 +119,10 @@ namespace NServiceBus.AmazonSQS.Tests
 
             var responses = new Queue<Func<string, Topic>>();
             responses.Enqueue(t => null);
-            responses.Enqueue(t => new Topic { TopicArn = t });
+            responses.Enqueue(t => null);
             responses.Enqueue(t => null);
             responses.Enqueue(t => new Topic { TopicArn = t });
-            responses.Enqueue(t => null);
+            responses.Enqueue(t => new Topic { TopicArn = t });
             responses.Enqueue(t => new Topic { TopicArn = t });
             snsClient.FindTopicAsyncResponse = topic => responses.Dequeue()(topic);
 
