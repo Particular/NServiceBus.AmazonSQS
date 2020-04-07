@@ -56,8 +56,9 @@ namespace NServiceBus
                     .ConfigureAwait(false);
                 if (mappedTypeMatchingSubscription != null)
                 {
-                    Logger.Debug($"Removed subscription for queue '{queueName}' to topic '{mappedTopicName}'");
+                    Logger.Debug($"Removing subscription for queue '{queueName}' to topic '{mappedTopicName}'");
                     await snsClient.UnsubscribeAsync(mappedTypeMatchingSubscription).ConfigureAwait(false);
+                    Logger.Debug($"Removed subscription for queue '{queueName}' to topic '{mappedTopicName}'");
                 }
             }
 
@@ -75,8 +76,9 @@ namespace NServiceBus
                     .ConfigureAwait(false);
                 if (mappedTypeMatchingSubscription != null)
                 {
-                    Logger.Debug($"Removed subscription with arn '{mappedTypeMatchingSubscription}' for queue '{queueName}'");
+                    Logger.Debug($"Removing subscription with arn '{mappedTypeMatchingSubscription}' for queue '{queueName}'");
                     await snsClient.UnsubscribeAsync(mappedTypeMatchingSubscription).ConfigureAwait(false);
+                    Logger.Debug($"Removed subscription with arn '{mappedTypeMatchingSubscription}' for queue '{queueName}'");
                 }
             }
 
@@ -84,8 +86,9 @@ namespace NServiceBus
                 .ConfigureAwait(false);
             if (matchingSubscriptionArn != null)
             {
-                Logger.Debug($"Removed subscription with arn '{matchingSubscriptionArn}' for queue '{queueName}'");
+                Logger.Debug($"Removing subscription with arn '{matchingSubscriptionArn}' for queue '{queueName}'");
                 await snsClient.UnsubscribeAsync(matchingSubscriptionArn).ConfigureAwait(false);
+                Logger.Debug($"Removed subscription with arn '{matchingSubscriptionArn}' for queue '{queueName}'");
             }
 
             MarkTypeNotConfigured(metadata.MessageType);
@@ -97,7 +100,9 @@ namespace NServiceBus
             foreach (var mappedTopicName in mappedTopicsNames)
             {
                 //we skip the topic name generation assuming the topic name is already good
+                Logger.Debug($"Creating subscription to '{mappedTopicName}' for queue '{queueName}'");
                 await CreateTopicAndSubscribe(mappedTopicName, queueUrl).ConfigureAwait(false);
+                Logger.Debug($"Created subscription to '{mappedTopicName}' for queue '{queueName}'");
             }
 
             var mappedTypes = topicCache.CustomEventToEventsMappings.GetMappedTypes(metadata.MessageType);
@@ -111,15 +116,20 @@ namespace NServiceBus
                 }
 
                 // doesn't need to be cached since we never publish to it
+                Logger.Debug($"Creating subscription for '{mappedTypeMetadata.MessageType.FullName}' for queue '{queueName}'");
                 await CreateTopicAndSubscribe(mappedTypeMetadata, queueUrl).ConfigureAwait(false);
+                Logger.Debug($"Created subscription for '{mappedTypeMetadata.MessageType.FullName}' for queue '{queueName}'");
             }
 
             if (metadata.MessageType == typeof(object) || IsTypeTopologyKnownConfigured(metadata.MessageType))
             {
+                Logger.Debug($"Skipped subscription for '{metadata.MessageType.FullName}' for queue '{queueName}' because it is already configured");
                 return;
             }
 
+            Logger.Debug($"Creating subscription for '{metadata.MessageType.FullName}' for queue '{queueName}'");
             await CreateTopicAndSubscribe(metadata, queueUrl).ConfigureAwait(false);
+            Logger.Debug($"Created subscription for '{metadata.MessageType.FullName}' for queue '{queueName}'");
             MarkTypeConfigured(metadata.MessageType);
         }
 
@@ -128,9 +138,10 @@ namespace NServiceBus
             var foundTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
             if (foundTopic == null)
             {
-                await snsClient.CreateTopicAsync(topicName).ConfigureAwait(false);
-                Logger.Debug($"Created topic topic '{topicName}'");
-                foundTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
+                var response = await snsClient.CreateTopicAsync(topicName).ConfigureAwait(false);
+                Logger.Debug($"Created topic '{topicName}' with arn '{response.TopicArn}' for queue '{queueName}");
+                // avoid querying again
+                foundTopic = new Topic { TopicArn = response.TopicArn };
             }
 
             await SubscribeTo(foundTopic, topicName, queueUrl).ConfigureAwait(false);
@@ -139,10 +150,10 @@ namespace NServiceBus
         async Task CreateTopicAndSubscribe(MessageMetadata metadata, string queueUrl)
         {
             string topicName = null;
-            var topic = await topicCache.CreateIfNotExistent(metadata, name =>
+            var topic = await topicCache.CreateIfNotExistent(metadata, (name, createdTopic) =>
             {
                 topicName = name;
-                Logger.Debug($"Created topic topic '{topicName}'");
+                Logger.Debug($"Created topic '{topicName}' with arn '{createdTopic.TopicArn}' for queue '{queueName}");
             }).ConfigureAwait(false);
 
             topicName = topicName ?? topicCache.GetTopicName(metadata);
@@ -152,6 +163,7 @@ namespace NServiceBus
 
         async Task SubscribeTo(Topic topic, string topicName, string queueUrl)
         {
+            Logger.Debug($"Creating subscription for queue '{queueName}' to topic '{topicName}' with arn '{topic.TopicArn}'");
             try
             {
                 // need to safe guard the subscribe section so that policy are not overriden
@@ -161,21 +173,25 @@ namespace NServiceBus
 
                 // SNS dedups subscriptions based on the endpoint name
                 // only the overload that takes the sqs client properly works with raw mode
+                Logger.Debug($"Creating subscription for '{topicName}' with arn '{topic.TopicArn}' for queue '{queueName}");
                 var createdSubscription = await snsClient.SubscribeQueueAsync(topic.TopicArn, sqsClient, queueUrl).ConfigureAwait(false);
-                var setSubscriptionAttributesRequest = new SetSubscriptionAttributesRequest
+                Logger.Debug($"Created subscription with arn '{createdSubscription}' for '{topicName}' with arn '{topic.TopicArn}' for queue '{queueName}");
+
+                Logger.Debug($"Setting raw delivery for subscription with arn '{createdSubscription}' for '{topicName}' with arn '{topic.TopicArn}' for queue '{queueName}");
+                await snsClient.SetSubscriptionAttributesAsync(new SetSubscriptionAttributesRequest
                 {
                     SubscriptionArn = createdSubscription,
                     AttributeName = "RawMessageDelivery",
                     AttributeValue = "true"
-                };
-                await snsClient.SetSubscriptionAttributesAsync(setSubscriptionAttributesRequest).ConfigureAwait(false);
+                }).ConfigureAwait(false);
+                Logger.Debug($"Set raw delivery for subscription with arn '{createdSubscription}' for '{topicName}' with arn '{topic.TopicArn}' for queue '{queueName}");
             }
             finally
             {
                 subscribeQueueLimiter.Release();
             }
 
-            Logger.Debug($"Created subscription for queue '{queueName}' to topic '{topicName}'");
+            Logger.Debug($"Created subscription for queue '{queueName}' to topic '{topicName}' with arn '{topic.TopicArn}'");
         }
 
         void MarkTypeConfigured(Type eventType)
