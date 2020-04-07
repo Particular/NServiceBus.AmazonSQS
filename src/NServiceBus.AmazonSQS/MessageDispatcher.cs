@@ -254,7 +254,7 @@
                 && unicastTransportOperation.Message.Headers.ContainsKey(Headers.EnclosedMessageTypes))
             {
                 var mostConcreteEnclosedMessageType = unicastTransportOperation.Message.GetEnclosedMessageTypes()[0];
-                var existingTopic = await topicCache.GetTopic(mostConcreteEnclosedMessageType).ConfigureAwait(false);
+                var existingTopic = await topicCache.GetTopicArn(mostConcreteEnclosedMessageType).ConfigureAwait(false);
                 if (existingTopic != null)
                 {
                     var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination)
@@ -338,8 +338,8 @@
                 return;
             }
 
-            var existingTopic = await topicCache.GetTopic(transportOperation.MessageType).ConfigureAwait(false);
-            snsPreparedMessage.Destination = existingTopic?.TopicArn;
+            var existingTopicArn = await topicCache.GetTopicArn(transportOperation.MessageType).ConfigureAwait(false);
+            snsPreparedMessage.Destination = existingTopicArn;
         }
 
         async Task ApplyUnicastOperationMappingIfNecessary(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, string messageId)
