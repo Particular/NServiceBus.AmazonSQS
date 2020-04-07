@@ -85,7 +85,7 @@ namespace NServiceBus.AmazonSQS.Tests
             var cache = new TopicCache(snsClient, metadataRegistry, configuration);
 
             string topicName = null;
-            await cache.CreateIfNotExistent(metadata, name => { topicName = name; });
+            await cache.CreateIfNotExistent(metadata, (name, topic) => { topicName = name; });
 
             Assert.AreEqual("PREFIXEvent", topicName);
             Assert.IsNotEmpty(snsClient.CreateTopicRequests);
