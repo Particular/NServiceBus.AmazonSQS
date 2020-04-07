@@ -135,35 +135,26 @@ namespace NServiceBus
 
         async Task CreateTopicAndSubscribe(string topicName, string queueUrl)
         {
-            var foundTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
-            if (foundTopic == null)
-            {
-                var response = await snsClient.CreateTopicAsync(topicName).ConfigureAwait(false);
-                Logger.Debug($"Created topic '{topicName}' with arn '{response.TopicArn}' for queue '{queueName}");
-                // avoid querying again
-                foundTopic = new Topic { TopicArn = response.TopicArn };
-            }
+            Logger.Debug($"Getting or creating topic '{topicName}' for queue '{queueName}");
+            var createTopicResponse = await snsClient.CreateTopicAsync(topicName).ConfigureAwait(false);
+            Logger.Debug($"Got or created topic '{topicName}' with arn '{createTopicResponse.TopicArn}' for queue '{queueName}");
 
-            await SubscribeTo(foundTopic, topicName, queueUrl).ConfigureAwait(false);
+            await SubscribeTo(createTopicResponse.TopicArn, topicName, queueUrl).ConfigureAwait(false);
         }
 
         async Task CreateTopicAndSubscribe(MessageMetadata metadata, string queueUrl)
         {
-            string topicName = null;
-            var topic = await topicCache.CreateIfNotExistent(metadata, (name, createdTopic) =>
-            {
-                topicName = name;
-                Logger.Debug($"Created topic '{topicName}' with arn '{createdTopic.TopicArn}' for queue '{queueName}");
-            }).ConfigureAwait(false);
+            var topicName = topicCache.GetTopicName(metadata);
+            Logger.Debug($"Getting or creating topic '{topicName}' for queue '{queueName}");
+            var createTopicResponse = await snsClient.CreateTopicAsync(topicName).ConfigureAwait(false);
+            Logger.Debug($"Got or created topic '{topicName}' with arn '{createTopicResponse.TopicArn}' for queue '{queueName}");
 
-            topicName = topicName ?? topicCache.GetTopicName(metadata);
-
-            await SubscribeTo(topic, topicName, queueUrl).ConfigureAwait(false);
+            await SubscribeTo(createTopicResponse.TopicArn, topicName, queueUrl).ConfigureAwait(false);
         }
 
-        async Task SubscribeTo(Topic topic, string topicName, string queueUrl)
+        async Task SubscribeTo(string topicArn, string topicName, string queueUrl)
         {
-            Logger.Debug($"Creating subscription for queue '{queueName}' to topic '{topicName}' with arn '{topic.TopicArn}'");
+            Logger.Debug($"Creating subscription for queue '{queueName}' to topic '{topicName}' with arn '{topicArn}'");
             try
             {
                 // need to safe guard the subscribe section so that policy are not overriden
@@ -173,25 +164,25 @@ namespace NServiceBus
 
                 // SNS dedups subscriptions based on the endpoint name
                 // only the overload that takes the sqs client properly works with raw mode
-                Logger.Debug($"Creating subscription for '{topicName}' with arn '{topic.TopicArn}' for queue '{queueName}");
-                var createdSubscription = await snsClient.SubscribeQueueAsync(topic.TopicArn, sqsClient, queueUrl).ConfigureAwait(false);
-                Logger.Debug($"Created subscription with arn '{createdSubscription}' for '{topicName}' with arn '{topic.TopicArn}' for queue '{queueName}");
+                Logger.Debug($"Creating subscription for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
+                var createdSubscription = await snsClient.SubscribeQueueAsync(topicArn, sqsClient, queueUrl).ConfigureAwait(false);
+                Logger.Debug($"Created subscription with arn '{createdSubscription}' for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
 
-                Logger.Debug($"Setting raw delivery for subscription with arn '{createdSubscription}' for '{topicName}' with arn '{topic.TopicArn}' for queue '{queueName}");
+                Logger.Debug($"Setting raw delivery for subscription with arn '{createdSubscription}' for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
                 await snsClient.SetSubscriptionAttributesAsync(new SetSubscriptionAttributesRequest
                 {
                     SubscriptionArn = createdSubscription,
                     AttributeName = "RawMessageDelivery",
                     AttributeValue = "true"
                 }).ConfigureAwait(false);
-                Logger.Debug($"Set raw delivery for subscription with arn '{createdSubscription}' for '{topicName}' with arn '{topic.TopicArn}' for queue '{queueName}");
+                Logger.Debug($"Set raw delivery for subscription with arn '{createdSubscription}' for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
             }
             finally
             {
                 subscribeQueueLimiter.Release();
             }
 
-            Logger.Debug($"Created subscription for queue '{queueName}' to topic '{topicName}' with arn '{topic.TopicArn}'");
+            Logger.Debug($"Created subscription for queue '{queueName}' to topic '{topicName}' with arn '{topicArn}'");
         }
 
         void MarkTypeConfigured(Type eventType)

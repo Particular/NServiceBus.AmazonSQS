@@ -4,7 +4,6 @@ namespace NServiceBus.AmazonSQS
     using System.Collections.Concurrent;
     using System.Threading.Tasks;
     using Amazon.SimpleNotificationService;
-    using Amazon.SimpleNotificationService.Model;
     using Unicast.Messages;
 
     class TopicCache
@@ -22,37 +21,21 @@ namespace NServiceBus.AmazonSQS
 
         public EventToTopicsMappings CustomEventToTopicsMappings { get; }
 
-        public Task<Topic> GetTopic(MessageMetadata metadata)
+        public Task<string> GetTopicArn(MessageMetadata metadata)
         {
             return GetAndCacheTopicIfFound(metadata);
         }
 
-        public Task<Topic> GetTopic(Type eventType)
+        public Task<string> GetTopicArn(Type eventType)
         {
             var metadata = messageMetadataRegistry.GetMessageMetadata(eventType);
             return GetAndCacheTopicIfFound(metadata);
         }
 
-        public Task<Topic> GetTopic(string messageTypeIdentifier)
+        public Task<string> GetTopicArn(string messageTypeIdentifier)
         {
             var metadata = messageMetadataRegistry.GetMessageMetadata(messageTypeIdentifier);
             return GetAndCacheTopicIfFound(metadata);
-        }
-
-        public async Task<Topic> CreateIfNotExistent(MessageMetadata metadata, Action<string, Topic> creationAction = null)
-        {
-            var existingTopic = await GetTopic(metadata).ConfigureAwait(false);
-            if (existingTopic != null)
-            {
-                return existingTopic;
-            }
-
-            var topicName = GetTopicName(metadata);
-            var response = await snsClient.CreateTopicAsync(topicName).ConfigureAwait(false);
-            // avoid querying again
-            var topic = new Topic { TopicArn = response.TopicArn };
-            creationAction?.Invoke(topicName, topic);
-            return topicCache.GetOrAdd(metadata.MessageType, topic);
         }
 
         public string GetTopicName(MessageMetadata metadata)
@@ -65,7 +48,7 @@ namespace NServiceBus.AmazonSQS
             return topicNameCache.GetOrAdd(metadata.MessageType, configuration.TopicNameGenerator(metadata));
         }
 
-        async Task<Topic> GetAndCacheTopicIfFound(MessageMetadata metadata)
+        async Task<string> GetAndCacheTopicIfFound(MessageMetadata metadata)
         {
             if (topicCache.TryGetValue(metadata.MessageType, out var topic))
             {
@@ -74,13 +57,13 @@ namespace NServiceBus.AmazonSQS
 
             var topicName = GetTopicName(metadata);
             var foundTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
-            return foundTopic != null ? topicCache.GetOrAdd(metadata.MessageType, foundTopic) : null;
+            return foundTopic != null ? topicCache.GetOrAdd(metadata.MessageType, foundTopic.TopicArn) : null;
         }
 
         IAmazonSimpleNotificationService snsClient;
         MessageMetadataRegistry messageMetadataRegistry;
         TransportConfiguration configuration;
-        ConcurrentDictionary<Type, Topic> topicCache = new ConcurrentDictionary<Type, Topic>();
+        ConcurrentDictionary<Type, string> topicCache = new ConcurrentDictionary<Type, string>();
         ConcurrentDictionary<Type, string> topicNameCache = new ConcurrentDictionary<Type, string>();
     }
 }
