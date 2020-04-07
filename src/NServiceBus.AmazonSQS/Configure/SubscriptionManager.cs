@@ -127,9 +127,9 @@ namespace NServiceBus
                 return;
             }
 
-            Logger.Debug($"Creating subscription for '{metadata.MessageType.FullName}' for queue '{queueName}'");
+            Logger.Debug($"Creating topic/subscription for '{metadata.MessageType.FullName}' for queue '{queueName}'");
             await CreateTopicAndSubscribe(metadata, queueUrl).ConfigureAwait(false);
-            Logger.Debug($"Created subscription for '{metadata.MessageType.FullName}' for queue '{queueName}'");
+            Logger.Debug($"Created topic/subscription for '{metadata.MessageType.FullName}' for queue '{queueName}'");
             MarkTypeConfigured(metadata.MessageType);
         }
 
