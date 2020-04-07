@@ -100,9 +100,9 @@ namespace NServiceBus
             foreach (var mappedTopicName in mappedTopicsNames)
             {
                 //we skip the topic name generation assuming the topic name is already good
-                Logger.Debug($"Creating subscription to '{mappedTopicName}' for queue '{queueName}'");
+                Logger.Debug($"Creating topic/subscription to '{mappedTopicName}' for queue '{queueName}'");
                 await CreateTopicAndSubscribe(mappedTopicName, queueUrl).ConfigureAwait(false);
-                Logger.Debug($"Created subscription to '{mappedTopicName}' for queue '{queueName}'");
+                Logger.Debug($"Created topic/subscription to '{mappedTopicName}' for queue '{queueName}'");
             }
 
             var mappedTypes = topicCache.CustomEventToEventsMappings.GetMappedTypes(metadata.MessageType);
@@ -116,9 +116,9 @@ namespace NServiceBus
                 }
 
                 // doesn't need to be cached since we never publish to it
-                Logger.Debug($"Creating subscription for '{mappedTypeMetadata.MessageType.FullName}' for queue '{queueName}'");
+                Logger.Debug($"Creating topic/subscription for '{mappedTypeMetadata.MessageType.FullName}' for queue '{queueName}'");
                 await CreateTopicAndSubscribe(mappedTypeMetadata, queueUrl).ConfigureAwait(false);
-                Logger.Debug($"Created subscription for '{mappedTypeMetadata.MessageType.FullName}' for queue '{queueName}'");
+                Logger.Debug($"Created topic/subscription for '{mappedTypeMetadata.MessageType.FullName}' for queue '{queueName}'");
             }
 
             if (metadata.MessageType == typeof(object) || IsTypeTopologyKnownConfigured(metadata.MessageType))
