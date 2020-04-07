@@ -176,6 +176,9 @@ namespace NServiceBus
                     AttributeValue = "true"
                 }).ConfigureAwait(false);
                 Logger.Debug($"Set raw delivery for subscription with arn '{createdSubscription}' for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
+
+                // TODO: Remove again
+                await Task.Delay(5000).ConfigureAwait(false);
             }
             finally
             {
