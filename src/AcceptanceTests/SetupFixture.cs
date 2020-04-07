@@ -1,9 +1,9 @@
 ﻿namespace NServiceBus.AcceptanceTests
 {
     using System;
-    // using System.Threading.Tasks;
-    // using AmazonSQS.AcceptanceTests;
-    // using AmazonSQS.Tests;
+    using System.Threading.Tasks;
+    using AmazonSQS.AcceptanceTests;
+    using AmazonSQS.Tests;
     using NUnit.Framework;
 
     [SetUpFixture]
@@ -25,14 +25,14 @@
             NamePrefix = $"AT{DateTime.UtcNow:yyyyMMddHHmmss}";
         }
 
-        // [OneTimeTearDown]
-        // public async Task OneTimeTearDown()
-        // {
-        //     using (var sqsClient = SqsTransportExtensions.CreateSQSClient())
-        //     using (var snsClient = SqsTransportExtensions.CreateSnsClient())
-        //     {
-        //         await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, NamePrefix).ConfigureAwait(false);
-        //     }
-        // }
+        [OneTimeTearDown]
+        public async Task OneTimeTearDown()
+        {
+            using (var sqsClient = SqsTransportExtensions.CreateSQSClient())
+            using (var snsClient = SqsTransportExtensions.CreateSnsClient())
+            {
+                await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, NamePrefix).ConfigureAwait(false);
+            }
+        }
     }
 }
