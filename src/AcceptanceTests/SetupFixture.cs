@@ -1,9 +1,9 @@
 ﻿namespace NServiceBus.AcceptanceTests
 {
-    // using System;
-    // using System.Threading.Tasks;
-    // using AmazonSQS.AcceptanceTests;
-    // using AmazonSQS.Tests;
+    using System;
+    using System.Threading.Tasks;
+    using AmazonSQS.AcceptanceTests;
+    using AmazonSQS.Tests;
     using NUnit.Framework;
 
     [SetUpFixture]
@@ -22,17 +22,17 @@
             // This is to work around an SQS limitation that prevents
             // us from deleting then creating a queue with the
             // same name in a 60 second period.
-            NamePrefix = "AT-try";
+            NamePrefix = $"AT{DateTime.UtcNow:yyyyMMddHHmmss}";
         }
 
-        // [OneTimeTearDown]
-        // public async Task OneTimeTearDown()
-        // {
-        //     using (var sqsClient = SqsTransportExtensions.CreateSQSClient())
-        //     using (var snsClient = SqsTransportExtensions.CreateSnsClient())
-        //     {
-        //         await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, NamePrefix).ConfigureAwait(false);
-        //     }
-        // }
+        [OneTimeTearDown]
+        public async Task OneTimeTearDown()
+        {
+            using (var sqsClient = SqsTransportExtensions.CreateSQSClient())
+            using (var snsClient = SqsTransportExtensions.CreateSnsClient())
+            {
+                await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, NamePrefix).ConfigureAwait(false);
+            }
+        }
     }
 }
