@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "NServiceBus.Transports.SQS.CommandLine": {
+      "commandName": "Project",
+      "commandLineArgs": "endpoint create test"
+    }
+  }
+}
