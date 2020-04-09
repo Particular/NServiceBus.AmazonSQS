@@ -204,7 +204,7 @@ namespace NServiceBus
         readonly string queueName;
         readonly MessageMetadataRegistry messageMetadataRegistry;
         readonly TopicCache topicCache;
-        static readonly SemaphoreSlim subscribeQueueLimiter = new SemaphoreSlim(1);
+        readonly SemaphoreSlim subscribeQueueLimiter = new SemaphoreSlim(1);
 
         static ILog Logger = LogManager.GetLogger(typeof(SubscriptionManager));
     }
