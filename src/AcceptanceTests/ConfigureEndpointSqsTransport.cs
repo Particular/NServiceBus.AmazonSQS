@@ -24,7 +24,7 @@
 
             ApplyMappingsToSupportMultipleInheritance(endpointName, transportConfig);
 
-            settings.TestExecutionTimeout = TimeSpan.FromSeconds(40);
+            settings.TestExecutionTimeout = TimeSpan.FromSeconds(80);
 
             configuration.Pipeline.Register(new FunkyBehavior(), "Does some funky stuff");
             configuration.Pipeline.Register(new RetryIfNeeded(), "Does some funky stuff");
