@@ -339,6 +339,33 @@
             }
 
             var existingTopicArn = await topicCache.GetTopicArn(transportOperation.MessageType).ConfigureAwait(false);
+            var validateDeliveryPolicies = transportOperation.DeliveryConstraints.OfType<ValidDeliveryPolicies>().SingleOrDefault();
+            if (validateDeliveryPolicies != null)
+            {
+                if (string.IsNullOrEmpty(existingTopicArn))
+                {
+                    throw new DestinationNotYetReachable(existingTopicArn);
+                }
+
+                var subscriptions = await snsClient.ListSubscriptionsByTopicAsync(existingTopicArn).ConfigureAwait(false);
+                foreach (var subscription in subscriptions.Subscriptions)
+                {
+                    // todo optimize
+                    var queueName = subscription.Endpoint.Split(new [] { ":" }, StringSplitOptions.RemoveEmptyEntries).Last();
+
+                    var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(queueName).ConfigureAwait(false);
+                    var attributes = await sqsClient.GetAttributesAsync(getQueueUrlResponse.QueueUrl).ConfigureAwait(false);
+                    if (!attributes.TryGetValue("Policy", out var policy))
+                    {
+                        continue;
+                    }
+
+                    if (!policy.Contains(subscription.Endpoint))
+                    {
+                        throw new DestinationNotYetReachable(subscription.Endpoint);
+                    }
+                }
+            }
             snsPreparedMessage.Destination = existingTopicArn;
         }
 
