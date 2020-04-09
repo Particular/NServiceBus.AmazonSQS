@@ -1,11 +1,12 @@
-﻿namespace NServiceBus.AcceptanceTests.NativePubSub
+namespace NServiceBus.AcceptanceTests.Routing.NativePublishSubscribe
 {
     using System.Threading.Tasks;
     using AcceptanceTesting;
     using EndpointTemplates;
     using NUnit.Framework;
 
-    public class When_multi_subscribing_to_a_polymorphic_event_using_topic_mappings : NServiceBusAcceptanceTest
+    // copied over from core and excluded the core test to be able to apply the retry attribute the reason is this test is sometimes subjected to policy propagation delays on the queues which can make published to be dead lettered
+    public class When_multi_subscribing_to_a_polymorphic_event : NServiceBusAcceptanceTest
     {
         [Test]
         [Retry(5)] // due to policy propagation problems
@@ -47,12 +48,7 @@
         {
             public Publisher1()
             {
-                EndpointSetup<DefaultPublisher>(c =>
-                {
-                    var transportConfig = c.ConfigureSqsTransport();
-                    // to avoid pretruncation
-                    transportConfig.TopicNameGenerator((type, prefix) => $"{prefix}{type.Name}");
-                });
+                EndpointSetup<DefaultPublisher>();
             }
         }
 
@@ -60,12 +56,7 @@
         {
             public Publisher2()
             {
-                EndpointSetup<DefaultPublisher>(c =>
-                {
-                    var transportConfig = c.ConfigureSqsTransport();
-                    // to avoid pretruncation
-                    transportConfig.TopicNameGenerator((type, prefix) => $"{prefix}{type.Name}");
-                });
+                EndpointSetup<DefaultPublisher>();
             }
         }
 
@@ -73,16 +64,7 @@
         {
             public Subscriber()
             {
-                EndpointSetup<DefaultServer>(c =>
-                {
-                    var topicNameForMyEvent1 = SetupFixture.NamePrefix + "MyEvent1";
-                    var topicNameForMyEvent2 = SetupFixture.NamePrefix + "MyEvent2";
-
-                    var transportConfig = c.ConfigureSqsTransport();
-                    // to avoid pretruncation
-                    transportConfig.TopicNameGenerator((type, prefix) => $"{prefix}{type.Name}");
-                    transportConfig.MapEvent<IMyEvent>(new[] { topicNameForMyEvent1, topicNameForMyEvent2 });
-                });
+                EndpointSetup<DefaultServer>();
             }
 
             public class MyEventHandler : IHandleMessages<IMyEvent>
