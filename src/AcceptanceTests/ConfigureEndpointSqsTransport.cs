@@ -5,7 +5,11 @@
     using AcceptanceTesting.Support;
     using Conventions = AcceptanceTesting.Customization.Conventions;
     using AmazonSQS.AcceptanceTests;
+    using DeliveryConstraints;
+    using Logging;
+    using NServiceBus.Pipeline;
     using NUnit.Framework;
+    using Transports.SQS;
     using MessageDriven = Routing.MessageDrivenSubscriptions;
     using NativePublishSubscribe = Routing.NativePublishSubscribe;
 
@@ -22,6 +26,9 @@
             ApplyMappingsToSupportMultipleInheritance(endpointName, transportConfig);
 
             settings.TestExecutionTimeout = TimeSpan.FromSeconds(120);
+
+            configuration.Pipeline.Register(new FunkyBehavior(), "Does some funky stuff");
+            configuration.Pipeline.Register(new RetryIfNeeded(), "Does some funky stuff");
 
             return Task.FromResult(0);
         }
@@ -69,5 +76,42 @@
                 Assert.Inconclusive("Test is not using endpoint naming conventions in hardcoded subscription storage. Should be fixed in core vNext.");
             }
         }
+    }
+
+    class FunkyBehavior : Behavior<IOutgoingPublishContext>
+    {
+        public override Task Invoke(IOutgoingPublishContext context, Func<Task> next)
+        {
+            context.Extensions.AddDeliveryConstraint(new ValidDeliveryPolicies());
+
+            return next();
+        }
+    }
+
+    class RetryIfNeeded : Behavior<IOutgoingLogicalMessageContext>
+    {
+        public override async Task Invoke(IOutgoingLogicalMessageContext context, Func<Task> next)
+        {
+            var iterationCount = 0;
+            DestinationNotYetReachable exception;
+            do
+            {
+                try
+                {
+                    iterationCount++;
+                    await next().ConfigureAwait(false);
+                    exception = null;
+                }
+                catch (DestinationNotYetReachable ex)
+                {
+                    var millisecondsDelay = iterationCount * 100;
+                    Logger.Debug($"Destination {ex.Endpoint} was not reachable! Retrying in {millisecondsDelay} ms.");
+                    exception = ex;
+                    await Task.Delay(millisecondsDelay).ConfigureAwait(false);
+                }
+            } while (exception != null && iterationCount < 10);
+        }
+
+        static ILog Logger = LogManager.GetLogger<RetryIfNeeded>();
     }
 }
