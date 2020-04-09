@@ -8,30 +8,24 @@
     public class When_multi_subscribing_to_a_polymorphic_event_using_topic_mappings : NServiceBusAcceptanceTest
     {
         [Test]
-        [Retry(5)] // due to policy propagation problems
-        public void Both_events_should_be_delivered()
+        public async Task Both_events_should_be_delivered()
         {
             Requires.NativePubSubSupport();
 
-            Context context = null;
-
-            Assert.DoesNotThrowAsync(async () =>
-            {
-                context = await Scenario.Define<Context>()
-                    .WithEndpoint<Publisher1>(b => b.When(c => c.EndpointsStarted, (session, c) =>
-                    {
-                        c.AddTrace("Publishing MyEvent1");
-                        return session.Publish(new MyEvent1());
-                    }))
-                    .WithEndpoint<Publisher2>(b => b.When(c => c.EndpointsStarted, (session, c) =>
-                    {
-                        c.AddTrace("Publishing MyEvent2");
-                        return session.Publish(new MyEvent2());
-                    }))
-                    .WithEndpoint<Subscriber>()
-                    .Done(c => c.SubscriberGotIMyEvent && c.SubscriberGotMyEvent2)
-                    .Run();
-            });
+            var context = await Scenario.Define<Context>()
+                .WithEndpoint<Publisher1>(b => b.When(c => c.EndpointsStarted, (session, c) =>
+                {
+                    c.AddTrace("Publishing MyEvent1");
+                    return session.Publish(new MyEvent1());
+                }))
+                .WithEndpoint<Publisher2>(b => b.When(c => c.EndpointsStarted, (session, c) =>
+                {
+                    c.AddTrace("Publishing MyEvent2");
+                    return session.Publish(new MyEvent2());
+                }))
+                .WithEndpoint<Subscriber>()
+                .Done(c => c.SubscriberGotIMyEvent && c.SubscriberGotMyEvent2)
+                .Run();
 
             Assert.True(context.SubscriberGotIMyEvent);
             Assert.True(context.SubscriberGotMyEvent2);
