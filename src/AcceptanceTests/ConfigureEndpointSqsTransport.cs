@@ -21,7 +21,7 @@
 
             ApplyMappingsToSupportMultipleInheritance(endpointName, transportConfig);
 
-            settings.TestExecutionTimeout = TimeSpan.FromSeconds(80);
+            settings.TestExecutionTimeout = TimeSpan.FromSeconds(40);
 
             return Task.FromResult(0);
         }
