@@ -22,7 +22,7 @@
             // This is to work around an SQS limitation that prevents
             // us from deleting then creating a queue with the
             // same name in a 60 second period.
-            NamePrefix = $"AT{DateTime.UtcNow:yyyyMMddHHmmss}";
+            NamePrefix = $"AT{DateTime.UtcNow:yyyyMMdd}";
         }
 
         [OneTimeTearDown]
@@ -31,7 +31,7 @@
             using (var sqsClient = SqsTransportExtensions.CreateSQSClient())
             using (var snsClient = SqsTransportExtensions.CreateSnsClient())
             {
-                await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, NamePrefix).ConfigureAwait(false);
+                await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, $"AT{DateTime.UtcNow.AddDays(-1):yyyyMMdd}").ConfigureAwait(false);
             }
         }
     }
