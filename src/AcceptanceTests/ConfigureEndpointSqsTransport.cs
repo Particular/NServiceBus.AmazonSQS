@@ -5,7 +5,6 @@
     using AcceptanceTesting.Support;
     using Conventions = AcceptanceTesting.Customization.Conventions;
     using AmazonSQS.AcceptanceTests;
-    using DeliveryConstraints;
     using Logging;
     using NServiceBus.Pipeline;
     using NUnit.Framework;
@@ -82,7 +81,8 @@
     {
         public override Task Invoke(IOutgoingPublishContext context, Func<Task> next)
         {
-            context.Extensions.AddDeliveryConstraint(new ValidDeliveryPolicies());
+            // of course we don't need to new up, just a prototype
+            context.Extensions.Set(new ValidDeliveryPolicies());
 
             return next();
         }
