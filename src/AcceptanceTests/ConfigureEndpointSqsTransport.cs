@@ -23,9 +23,8 @@
 
             settings.TestExecutionTimeout = TimeSpan.FromSeconds(40);
 
-            configuration.RegisterComponents(c => c.ConfigureComponent<TestIndependenceMutator>(DependencyLifecycle.SingleInstance));
-
-            configuration.Pipeline.Register("TestIndependenceBehavior", typeof(TestIndependenceSkipBehavior), "Skips messages not created during the current test.");
+            configuration.Pipeline.Register(nameof(TestIndependenceSkipBehavior), typeof(TestIndependenceSkipBehavior), "Skips messages not created during the current test.");
+            configuration.Pipeline.Register(nameof(TestIndependenceBehavior), typeof(TestIndependenceBehavior), "Appends acceptance test run id to outgoing messages.");
 
 
             return Task.FromResult(0);
