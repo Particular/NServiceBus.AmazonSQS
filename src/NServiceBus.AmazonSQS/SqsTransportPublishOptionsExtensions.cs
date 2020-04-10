@@ -16,7 +16,10 @@ namespace NServiceBus
             options.GetExtensions().RequireSubscriptionDestinationPolicyValidation();
         }
 
-        internal static void RequireSubscriptionDestinationPolicyValidation(this ContextBag options)
+        /// <summary>
+        /// Enables subscription destination validation.
+        /// </summary>
+        public static void RequireSubscriptionDestinationPolicyValidation(this ContextBag options)
         {
             options.Set(ValidateSubscriptionDestinationPolicies.Instance);
         }
