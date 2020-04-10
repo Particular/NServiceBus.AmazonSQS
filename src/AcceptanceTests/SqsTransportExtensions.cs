@@ -36,20 +36,38 @@
 
         public static IAmazonSQS CreateSQSClient()
         {
+            var config = new AmazonSQSConfig();
+#if NETSTANDARD
+            config.CacheHttpClient = true;
+            config.HttpClientCacheSize = Environment.ProcessorCount;
+#endif
+
             var credentials = new EnvironmentVariablesAWSCredentials();
-            return new AmazonSQSClient(credentials);
+            return new AmazonSQSClient(credentials, config);
         }
-        
+
         public static IAmazonSimpleNotificationService CreateSnsClient()
         {
+            var config = new AmazonSimpleNotificationServiceConfig();
+#if NETSTANDARD
+            config.CacheHttpClient = true;
+            config.HttpClientCacheSize = Environment.ProcessorCount;
+#endif
+
             var credentials = new EnvironmentVariablesAWSCredentials();
-            return new AmazonSimpleNotificationServiceClient(credentials);
+            return new AmazonSimpleNotificationServiceClient(credentials, config);
         }
 
         public static IAmazonS3 CreateS3Client()
         {
+            var config = new AmazonS3Config();
+#if NETSTANDARD
+            config.CacheHttpClient = true;
+            config.HttpClientCacheSize = Environment.ProcessorCount;
+#endif
+
             var credentials = new EnvironmentVariablesAWSCredentials();
-            return new AmazonS3Client(credentials);
+            return new AmazonS3Client(credentials, config);
         }
     }
 }
