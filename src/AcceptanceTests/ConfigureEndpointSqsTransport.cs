@@ -5,10 +5,7 @@
     using AcceptanceTesting.Support;
     using Conventions = AcceptanceTesting.Customization.Conventions;
     using AmazonSQS.AcceptanceTests;
-    using Logging;
-    using NServiceBus.Pipeline;
     using NUnit.Framework;
-    using Transports.SQS;
     using MessageDriven = Routing.MessageDrivenSubscriptions;
     using NativePublishSubscribe = Routing.NativePublishSubscribe;
 
@@ -75,43 +72,5 @@
                 Assert.Inconclusive("Test is not using endpoint naming conventions in hardcoded subscription storage. Should be fixed in core vNext.");
             }
         }
-    }
-
-    class ApplyPolicyValidationBehavior : Behavior<IOutgoingPublishContext>
-    {
-        public override Task Invoke(IOutgoingPublishContext context, Func<Task> next)
-        {
-            // of course we don't need to new up, just a prototype
-            context.Extensions.Set(ValidateSubscriptionDestinationPolicies.Instance);
-
-            return next();
-        }
-    }
-
-    class RetryIfNeededBehavior : Behavior<IOutgoingLogicalMessageContext>
-    {
-        public override async Task Invoke(IOutgoingLogicalMessageContext context, Func<Task> next)
-        {
-            var iterationCount = 0;
-            TopicHasNoPermissionToAccessTheDestinationException exception;
-            do
-            {
-                try
-                {
-                    iterationCount++;
-                    await next().ConfigureAwait(false);
-                    exception = null;
-                }
-                catch (TopicHasNoPermissionToAccessTheDestinationException ex)
-                {
-                    var millisecondsDelay = iterationCount * 1000;
-                    Logger.Debug($"Destination '{ex.EndpointArn}' was not reachable from topic '{ex.TopicArn}'! Retrying in {millisecondsDelay} ms.");
-                    exception = ex;
-                    await Task.Delay(millisecondsDelay).ConfigureAwait(false);
-                }
-            } while (exception != null && iterationCount < 11);
-        }
-
-        static ILog Logger = LogManager.GetLogger<RetryIfNeededBehavior>();
     }
 }
