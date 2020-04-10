@@ -24,7 +24,7 @@
             // This is to work around an SQS limitation that prevents
             // us from deleting then creating a queue with the
             // same name in a 60 second period.
-            var envTeamCityAgentName = Environment.GetEnvironmentVariable("env.TeamCity.Agent.Name");
+            var envTeamCityAgentName = Environment.GetEnvironmentVariable("TeamCity_Agent_Name");
             UsingStaticTopology = !string.IsNullOrWhiteSpace(envTeamCityAgentName);
             if (UsingStaticTopology)
             {
