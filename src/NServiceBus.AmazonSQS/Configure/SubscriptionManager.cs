@@ -2,8 +2,10 @@ namespace NServiceBus
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Amazon.Auth.AccessControlPolicy;
     using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS;
@@ -162,16 +164,53 @@ namespace NServiceBus
                 // https://github.com/aws/aws-sdk-net/issues/1569
                 await subscribeQueueLimiter.WaitAsync().ConfigureAwait(false);
 
+                string sqsQueueArn = null;
+                for (var i = 0; i < 11; i++)
+                {
+                    if (i > 1)
+                    {
+                        var millisecondsDelay = i * 1000;
+                        Logger.Debug($"Policy not yet propagated to enable topic '{topicName} with arn '{topicArn}' to write to '{sqsQueueArn}'! Retrying in {millisecondsDelay} ms.");
+                        await Task.Delay(millisecondsDelay).ConfigureAwait(false);
+                    }
+
+                    var queueAttributes = await sqsClient.GetAttributesAsync(queueUrl).ConfigureAwait(false);
+                    sqsQueueArn = queueAttributes["QueueArn"];
+
+                    var policy = ExtractPolicy(queueAttributes);
+
+                    if (!SnsClientExtensions.HasSQSPermission(policy, topicArn, sqsQueueArn))
+                    {
+                        SnsClientExtensions.AddSQSPermission(policy, topicArn, sqsQueueArn);
+                    }
+                    else
+                    {
+                        break;
+                    }
+
+                    var setAttributes = new Dictionary<string, string> { { "Policy", policy.ToJson() } };
+                    await sqsClient.SetAttributesAsync(queueUrl, setAttributes).ConfigureAwait(false);
+                }
+
+                if (string.IsNullOrEmpty(sqsQueueArn))
+                {
+                    // TODO
+                }
+
                 // SNS dedups subscriptions based on the endpoint name
-                // only the overload that takes the sqs client properly works with raw mode
                 Logger.Debug($"Creating subscription for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
-                var createdSubscription = await snsClient.SubscribeQueueAsync(topicArn, sqsClient, queueUrl).ConfigureAwait(false);
+                var createdSubscription = await snsClient.SubscribeAsync(new SubscribeRequest
+                {
+                    TopicArn = topicArn,
+                    Protocol = "sqs",
+                    Endpoint = sqsQueueArn,
+                }).ConfigureAwait(false);
                 Logger.Debug($"Created subscription with arn '{createdSubscription}' for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
 
                 Logger.Debug($"Setting raw delivery for subscription with arn '{createdSubscription}' for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
                 await snsClient.SetSubscriptionAttributesAsync(new SetSubscriptionAttributesRequest
                 {
-                    SubscriptionArn = createdSubscription,
+                    SubscriptionArn = createdSubscription.SubscriptionArn,
                     AttributeName = "RawMessageDelivery",
                     AttributeValue = "true"
                 }).ConfigureAwait(false);
@@ -183,6 +222,27 @@ namespace NServiceBus
             }
 
             Logger.Debug($"Created subscription for queue '{queueName}' to topic '{topicName}' with arn '{topicArn}'");
+        }
+
+        static Policy ExtractPolicy(Dictionary<string, string> queueAttributes)
+        {
+            Policy policy;
+            string policyStr = null;
+            if (queueAttributes.ContainsKey("Policy"))
+            {
+                policyStr = queueAttributes["Policy"];
+            }
+
+            if (string.IsNullOrEmpty(policyStr))
+            {
+                policy = new Policy();
+            }
+            else
+            {
+                policy = Policy.FromJson(policyStr);
+            }
+
+            return policy;
         }
 
         void MarkTypeConfigured(Type eventType)
