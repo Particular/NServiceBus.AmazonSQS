@@ -39,7 +39,7 @@
             var config = new AmazonSQSConfig();
 #if NETSTANDARD
             config.CacheHttpClient = true;
-            config.HttpClientCacheSize = 1;
+            config.HttpClientCacheSize = Environment.ProcessorCount;
 #endif
 
             var credentials = new EnvironmentVariablesAWSCredentials();
@@ -51,7 +51,7 @@
             var config = new AmazonSimpleNotificationServiceConfig();
 #if NETSTANDARD
             config.CacheHttpClient = true;
-            config.HttpClientCacheSize = 1;
+            config.HttpClientCacheSize = Environment.ProcessorCount;
 #endif
 
             var credentials = new EnvironmentVariablesAWSCredentials();
@@ -63,7 +63,7 @@
             var config = new AmazonS3Config();
 #if NETSTANDARD
             config.CacheHttpClient = true;
-            config.HttpClientCacheSize = 1;
+            config.HttpClientCacheSize = Environment.ProcessorCount;
 #endif
 
             var credentials = new EnvironmentVariablesAWSCredentials();
