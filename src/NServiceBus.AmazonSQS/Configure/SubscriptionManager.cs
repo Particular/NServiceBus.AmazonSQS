@@ -205,16 +205,16 @@ namespace NServiceBus
                     Protocol = "sqs",
                     Endpoint = sqsQueueArn,
                 }).ConfigureAwait(false);
-                Logger.Debug($"Created subscription with arn '{createdSubscription}' for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
+                Logger.Debug($"Created subscription with arn '{createdSubscription.SubscriptionArn}' for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
 
-                Logger.Debug($"Setting raw delivery for subscription with arn '{createdSubscription}' for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
+                Logger.Debug($"Setting raw delivery for subscription with arn '{createdSubscription.SubscriptionArn}' for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
                 await snsClient.SetSubscriptionAttributesAsync(new SetSubscriptionAttributesRequest
                 {
                     SubscriptionArn = createdSubscription.SubscriptionArn,
                     AttributeName = "RawMessageDelivery",
                     AttributeValue = "true"
                 }).ConfigureAwait(false);
-                Logger.Debug($"Set raw delivery for subscription with arn '{createdSubscription}' for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
+                Logger.Debug($"Set raw delivery for subscription with arn '{createdSubscription.SubscriptionArn}' for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
             }
             finally
             {
