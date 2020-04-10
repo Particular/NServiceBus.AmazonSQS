@@ -341,13 +341,8 @@
             }
 
             var existingTopicArn = await topicCache.GetTopicArn(transportOperation.MessageType).ConfigureAwait(false);
-            if (context.TryGet<ValidateSubscriptionDestinationPolicies>(out _))
+            if (context.TryGet<ValidateSubscriptionDestinationPolicies>(out _) && !string.IsNullOrEmpty(existingTopicArn))
             {
-                if (string.IsNullOrEmpty(existingTopicArn))
-                {
-                    throw new DestinationNotYetReachable(string.Empty, existingTopicArn);
-                }
-
                 ListSubscriptionsByTopicResponse upToAHundredSubscriptions = null;
                 var validateSubscriptionDestinationPoliciesTasks = new List<Task>();
 
