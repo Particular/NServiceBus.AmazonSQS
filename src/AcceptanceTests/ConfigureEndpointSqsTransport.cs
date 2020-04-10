@@ -21,7 +21,7 @@
 
             ApplyMappingsToSupportMultipleInheritance(endpointName, transportConfig);
 
-            settings.TestExecutionTimeout = TimeSpan.FromSeconds(80);
+            settings.TestExecutionTimeout = TimeSpan.FromSeconds(120);
 
             configuration.Pipeline.Register(new ApplyPolicyValidationBehavior(), "Adds a policy validation instruction to the extension bag.");
             configuration.Pipeline.Register(new RetryIfNeededBehavior(), "Retries several times in case an DestinationNotYetReachable exception is raised");
