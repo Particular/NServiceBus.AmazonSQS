@@ -2,7 +2,7 @@
   "profiles": {
     "NServiceBus.Transports.SQS.CommandLine": {
       "commandName": "Project",
-      "commandLineArgs": "endpoint create test"
+      "commandLineArgs": "endpoint add test delay-delivery-support"
     }
   }
 }

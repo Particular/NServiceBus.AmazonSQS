@@ -9,12 +9,32 @@
 
     static class Endpoint
     {
-        public static async Task Create(IAmazonSQS sqs, IAmazonSimpleNotificationService sns, IAmazonS3 s3, CommandArgument name, CommandOption largeMessageSupport, CommandOption delayDeliverySupport)
+        public static async Task Create(IAmazonSQS sqs, CommandArgument name)
         {
-            await Queue.Create(sqs, name, false);
+            await Console.Out.WriteLineAsync($"Creating endpoint '{name.Value}'.");
 
-            if(delayDeliverySupport.HasValue()) await Queue.Create(sqs, name, true);
-            if (largeMessageSupport.HasValue()) await Bucket.Create(s3, name);
+            await Queue.Create(sqs, name);
+
+            await Console.Out.WriteLineAsync($"Endpoint '{name.Value}' is ready.");
+        }
+
+        public static async Task AddLargeMessageSupport(IAmazonS3 s3, CommandArgument name, CommandArgument bucketName)
+        {
+            await Console.Out.WriteLineAsync($"Adding large message support to Endpoint '{name.Value}'.");
+
+            await Bucket.Create(s3, name, bucketName);
+            await Bucket.EnableCleanup(s3, name, bucketName);
+
+            await Console.Out.WriteLineAsync($"Added large message support to Endpoint '{name.Value}'.");
+        }
+
+        public static async Task AddDelayDelivery(IAmazonSQS sqs, CommandArgument name)
+        {
+            await Console.Out.WriteLineAsync($"Adding delay delivery support to Endpoint '{name.Value}'.");
+
+            await Queue.CreateDelayDelivery(sqs, name);
+
+            await Console.Out.WriteLineAsync($"Added delay delivery support to Endpoint '{name.Value}'.");
         }
 
         /* public static async Task Subscribe(ManagementClient client, CommandArgument name, CommandOption topicName, CommandOption subscriptionName, CommandArgument eventType, CommandOption ruleName)
