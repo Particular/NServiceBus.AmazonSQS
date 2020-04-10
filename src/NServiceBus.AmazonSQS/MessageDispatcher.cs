@@ -8,6 +8,7 @@
     using Amazon.S3;
     using Amazon.S3.Model;
     using Amazon.SimpleNotificationService;
+    using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS;
     using Amazon.SQS.Model;
     using AmazonSQS;
@@ -16,6 +17,7 @@
     using Logging;
     using SimpleJson;
     using Transport;
+    using MessageAttributeValue = Amazon.SQS.Model.MessageAttributeValue;
 
     class MessageDispatcher : IDispatchMessages
     {
@@ -339,29 +341,44 @@
             }
 
             var existingTopicArn = await topicCache.GetTopicArn(transportOperation.MessageType).ConfigureAwait(false);
-            if (context.TryGet<ValidDeliveryPolicies>(out _))
+            if (context.TryGet<ValidateSubscriptionDestinationPolicies>(out _))
             {
                 if (string.IsNullOrEmpty(existingTopicArn))
                 {
-                    throw new DestinationNotYetReachable(existingTopicArn);
+                    throw new DestinationNotYetReachable(string.Empty, existingTopicArn);
                 }
 
-                var subscriptions = await snsClient.ListSubscriptionsByTopicAsync(existingTopicArn).ConfigureAwait(false);
-                foreach (var subscription in subscriptions.Subscriptions)
+                ListSubscriptionsByTopicResponse upToAHundredSubscriptions = null;
+                var validateSubscriptionDestinationPoliciesTasks = new List<Task>();
+
+                do
                 {
-                    // todo optimize
-                    var queueName = subscription.Endpoint.Split(new [] { ":" }, StringSplitOptions.RemoveEmptyEntries).Last();
+                    upToAHundredSubscriptions = await snsClient.ListSubscriptionsByTopicAsync(existingTopicArn, upToAHundredSubscriptions?.NextToken)
+                        .ConfigureAwait(false);
 
-                    var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(queueName).ConfigureAwait(false);
-                    var attributes = await sqsClient.GetAttributesAsync(getQueueUrlResponse.QueueUrl).ConfigureAwait(false);
-
-                    if (!attributes.TryGetValue("Policy", out var policy) || !policy.Contains($"\"aws:SourceArn\":\"{existingTopicArn}\""))
+                    // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
+                    foreach (var upToAHundredSubscription in upToAHundredSubscriptions.Subscriptions)
                     {
-                        throw new DestinationNotYetReachable(existingTopicArn);
+                        validateSubscriptionDestinationPoliciesTasks.Add(Validate(sqsClient, upToAHundredSubscription, existingTopicArn));
                     }
-                }
+
+                    await Task.WhenAll(validateSubscriptionDestinationPoliciesTasks).ConfigureAwait(false);
+                    validateSubscriptionDestinationPoliciesTasks.Clear();
+                } while (upToAHundredSubscriptions.NextToken != null && upToAHundredSubscriptions.Subscriptions.Count > 0);
             }
             snsPreparedMessage.Destination = existingTopicArn;
+        }
+
+        static async Task Validate(IAmazonSQS sqsClient, Subscription subscription, string existingTopicArn)
+        {
+            var queueName = subscription.Endpoint.Split(ArnSplitter, StringSplitOptions.RemoveEmptyEntries).Last();
+            var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(queueName).ConfigureAwait(false);
+            var attributes = await sqsClient.GetAttributesAsync(getQueueUrlResponse.QueueUrl).ConfigureAwait(false);
+
+            if (!attributes.TryGetValue("Policy", out var policy) || !policy.Contains($"\"aws:SourceArn\":\"{existingTopicArn}\""))
+            {
+                throw new DestinationNotYetReachable(subscription.Endpoint, existingTopicArn);
+            }
         }
 
         async Task ApplyUnicastOperationMappingIfNecessary(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, string messageId, ContextBag context)
@@ -435,6 +452,7 @@
         QueueCache queueCache;
         IJsonSerializerStrategy serializerStrategy;
         static readonly HashSet<string> emptyHashset = new HashSet<string>();
+        static readonly string[] ArnSplitter = {":"};
 
         static ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
     }

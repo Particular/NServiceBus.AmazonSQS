@@ -4,11 +4,13 @@ namespace NServiceBus.Transports.SQS
 
     class DestinationNotYetReachable : Exception
     {
-        public DestinationNotYetReachable(string endpoint)
+        public DestinationNotYetReachable(string endpointArn, string topicArn)
         {
-            Endpoint = endpoint;
+            EndpointArn = endpointArn;
+            TopicArn = topicArn;
         }
 
-        public string Endpoint { get; }
+        public string EndpointArn { get; }
+        public string TopicArn { get; }
     }
 }

@@ -82,7 +82,7 @@
         public override Task Invoke(IOutgoingPublishContext context, Func<Task> next)
         {
             // of course we don't need to new up, just a prototype
-            context.Extensions.Set(ValidDeliveryPolicies.Instance);
+            context.Extensions.Set(ValidateSubscriptionDestinationPolicies.Instance);
 
             return next();
         }
@@ -105,11 +105,11 @@
                 catch (DestinationNotYetReachable ex)
                 {
                     var millisecondsDelay = iterationCount * 1000;
-                    Logger.Debug($"Destination {ex.Endpoint} was not reachable! Retrying in {millisecondsDelay} ms.");
+                    Logger.Debug($"Destination '{ex.EndpointArn}' was not reachable from topic '{ex.TopicArn}'! Retrying in {millisecondsDelay} ms.");
                     exception = ex;
                     await Task.Delay(millisecondsDelay).ConfigureAwait(false);
                 }
-            } while (exception != null && iterationCount < 10);
+            } while (exception != null && iterationCount < 11);
         }
 
         static ILog Logger = LogManager.GetLogger<RetryIfNeededBehavior>();
