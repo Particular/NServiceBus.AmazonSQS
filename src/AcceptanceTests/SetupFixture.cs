@@ -14,6 +14,8 @@
         /// </summary>
         public static string NamePrefix { get; private set; }
 
+        public static bool UsingStaticTopology { get; private set; }
+
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
@@ -22,12 +24,26 @@
             // This is to work around an SQS limitation that prevents
             // us from deleting then creating a queue with the
             // same name in a 60 second period.
-            NamePrefix = $"AT{DateTime.UtcNow:yyyyMMddHHmmss}";
+            var envTeamCityAgentName = Environment.GetEnvironmentVariable("env.TeamCity.Agent.Name");
+            UsingStaticTopology = !string.IsNullOrWhiteSpace(envTeamCityAgentName);
+            if (UsingStaticTopology)
+            {
+                NamePrefix = envTeamCityAgentName.Replace(".", "-").Replace(" ", "-");
+            }
+            else
+            {
+                NamePrefix = $"AT{DateTime.UtcNow:yyyyMMddHHmmss}";
+            }
         }
 
         [OneTimeTearDown]
         public async Task OneTimeTearDown()
         {
+            if (UsingStaticTopology)
+            {
+                return;
+            }
+
             using (var sqsClient = SqsTransportExtensions.CreateSQSClient())
             using (var snsClient = SqsTransportExtensions.CreateSnsClient())
             {
