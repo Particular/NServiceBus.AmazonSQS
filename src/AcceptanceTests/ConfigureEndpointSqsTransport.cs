@@ -93,7 +93,7 @@
         public override async Task Invoke(IOutgoingLogicalMessageContext context, Func<Task> next)
         {
             var iterationCount = 0;
-            DestinationNotYetReachable exception;
+            TopicHasNoPermissionToAccessTheDestinationException exception;
             do
             {
                 try
@@ -102,7 +102,7 @@
                     await next().ConfigureAwait(false);
                     exception = null;
                 }
-                catch (DestinationNotYetReachable ex)
+                catch (TopicHasNoPermissionToAccessTheDestinationException ex)
                 {
                     var millisecondsDelay = iterationCount * 1000;
                     Logger.Debug($"Destination '{ex.EndpointArn}' was not reachable from topic '{ex.TopicArn}'! Retrying in {millisecondsDelay} ms.");

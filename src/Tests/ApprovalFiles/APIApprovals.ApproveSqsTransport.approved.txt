@@ -16,6 +16,10 @@ namespace NServiceBus
         public override bool RequiresConnectionString { get; }
         public override NServiceBus.Transport.TransportInfrastructure Initialize(NServiceBus.Settings.SettingsHolder settings, string connectionString) { }
     }
+    public class static SqsTransportPublishOptionsExtensions
+    {
+        public static void RequireSubscriptionDestinationPolicyValidation(this NServiceBus.PublishOptions options) { }
+    }
     public class static SqsTransportSettings
     {
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> ClientFactory(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Func<Amazon.SQS.IAmazonSQS> factory) { }
@@ -34,5 +38,12 @@ namespace NServiceBus
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> TopicNameGenerator(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Func<System.Type, string, string> topicNameGenerator) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> TopicNamePrefix(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string topicNamePrefix) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> UnrestrictedDurationDelayedDelivery(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
+    }
+    public sealed class TopicHasNoPermissionToAccessTheDestinationException : System.Exception
+    {
+        public TopicHasNoPermissionToAccessTheDestinationException(string endpointArn, string topicArn) { }
+        public string EndpointArn { get; }
+        public string TopicArn { get; }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
 }
