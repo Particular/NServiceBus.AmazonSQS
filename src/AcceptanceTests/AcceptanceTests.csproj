@@ -22,7 +22,4 @@
       <Link>Cleanup.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
-    <Compile Remove="\**\Routing\NativePublishSubscribe\When_multi_subscribing_to_a_polymorphic_event.cs" />
-  </ItemGroup>
 </Project>
