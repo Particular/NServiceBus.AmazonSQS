@@ -3,14 +3,14 @@
     using System;
     using McMaster.Extensions.CommandLineUtils;
 
-    // TODO: https://github.com/dotnet/command-line-api/wiki/DragonFruit-overview
-    // TODO: https://github.com/PublicApiGenerator/PublicApiGenerator/blob/master/src/PublicApiGenerator.Tool/Program.cs
-
     // usage: 
-    // sqs-transport endpoint create name [--large-message-support] [--delay-delivery-support]
+    // sqs-transport endpoint create name
+    // sqs-transport endpoint name add large-message-support bucket-name [--other-options]
+    // sqs-transport endpoint name add delay-delivery-support [--other-options]
+
     // sqs-transport endpoint subscribe name event-type
-    // sqs-transport endpoint unsubscribe name event-type
-    // sqs-transport endpoint remove name [--large-message-support] [--delay-delivery-support]
+    // sqs-transport endpoint unsubscribe name event-type    
+    // sqs-transport endpoint remove name
 
     class Program
     {
@@ -55,15 +55,45 @@
                     createCommand.Options.Add(accessKey);
                     createCommand.Options.Add(region);
                     createCommand.Options.Add(secret);
-
-                    var largeMessageSupport = createCommand.Option("-l|--large-message-support", "Large message support", CommandOptionType.NoValue);
-                    var delayDeliverySupport = createCommand.Option("-d|--delay-delivery-support", "Delay delivery support", CommandOptionType.NoValue);
-
+                    
                     createCommand.OnExecuteAsync(async ct =>
                     {
-                        await CommandRunner.Run(accessKey, secret, region, (sqs, sns, s3) => Endpoint.Create(sqs, sns, s3, name, largeMessageSupport, delayDeliverySupport));
+                        await CommandRunner.Run(accessKey, secret, region, (sqs, sns, s3) => Endpoint.Create(sqs, name));                       
+                    });
+                });
 
-                       await Console.Out.WriteLineAsync($"Endpoint '{name.Value}' is ready.");
+                endpointCommand.Command("add", addCommand =>
+                {
+                    addCommand.Description = "Adds optional infrastructure to an endpoint.";
+                    var name = addCommand.Argument("name", "Name of the endpoint (required)").IsRequired();
+
+                    addCommand.Command("large-message-support", largeMessageSupportCommand =>
+                    {
+                        largeMessageSupportCommand.Description = "Adds large message support infrastructure to an endpoint.";
+                         var bucketName = largeMessageSupportCommand.Argument("bucket-name", "Name of the bucket (required)").IsRequired();
+
+                        largeMessageSupportCommand.Options.Add(accessKey);
+                        largeMessageSupportCommand.Options.Add(region);
+                        largeMessageSupportCommand.Options.Add(secret);                        
+
+                        largeMessageSupportCommand.OnExecuteAsync(async ct =>
+                        {
+                            await CommandRunner.Run(accessKey, secret, region, (sqs, sns, s3) => Endpoint.AddLargeMessageSupport(s3, name, bucketName));                            
+                        });
+                    });
+
+                    addCommand.Command("delay-delivery-support", delayDeliverySupportCommand =>
+                    {
+                        delayDeliverySupportCommand.Description = "Adds delay delivery support infrastructure to an endpoint.";
+                        
+                        delayDeliverySupportCommand.Options.Add(accessKey);
+                        delayDeliverySupportCommand.Options.Add(region);
+                        delayDeliverySupportCommand.Options.Add(secret);
+
+                        delayDeliverySupportCommand.OnExecuteAsync(async ct =>
+                        {
+                            await CommandRunner.Run(accessKey, secret, region, (sqs, sns, s3) => Endpoint.AddDelayDelivery(sqs, name));
+                        });
                     });
                 });
 
@@ -113,54 +143,6 @@
                     });
                 });
             });
-
-            //app.Command("queue", queueCommand =>
-            //{
-            //    queueCommand.OnExecute(() =>
-            //    {
-            //        Console.WriteLine("Specify a subcommand");
-            //        queueCommand.ShowHelp();
-            //        return 1;
-            //    });
-
-            //    queueCommand.Command("create", createCommand =>
-            //    {
-            //        createCommand.Description = "Creates a queue with the settings required by the transport";
-            //        var name = createCommand.Argument("name", "Name of the queue (required)").IsRequired();
-
-            //        createCommand.Options.Add(accessKey);
-            //        createCommand.Options.Add(region);
-            //        createCommand.Options.Add(secret);
-
-            //        /* 
-            //         createCommand.Options.Add(size);
-            //         createCommand.Options.Add(partitioning);*/
-
-            //        createCommand.OnExecuteAsync(async ct =>
-            //        {
-            //          //  await CommandRunner.Run(connectionString, client => Queue.Create(client, name, size, partitioning));
-
-            //            await Console.Out.WriteLineAsync($"Queue name '{name.Value}' created");
-            //        });
-            //    });
-
-            //    queueCommand.Command("delete", deleteCommand =>
-            //    {
-            //        deleteCommand.Description = "Deletes a queue";
-            //        var name = deleteCommand.Argument("name", "Name of the queue (required)").IsRequired();
-
-            //        deleteCommand.Options.Add(accessKey);
-            //        deleteCommand.Options.Add(region);
-            //        deleteCommand.Options.Add(secret);
-
-            //        deleteCommand.OnExecuteAsync(async ct =>
-            //        {
-            //            // await CommandRunner.Run(connectionString, client => Queue.Delete(client, name));
-
-            //            await Console.Out.WriteLineAsync($"Queue with name '{name.Value}' deleted");
-            //        });
-            //    });
-            //});
 
             app.OnExecute(() =>
             {
