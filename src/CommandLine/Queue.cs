@@ -10,7 +10,7 @@
 
     static class Queue
     {
-        public static async Task Create(IAmazonSQS sqs, CommandArgument name)
+        public static async Task<string> Create(IAmazonSQS sqs, CommandArgument name)
         {
             var endpointName = name.Value;
             var sqsRequest = new CreateQueueRequest { QueueName = endpointName };
@@ -20,9 +20,10 @@
             sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod, DefaultConfigurationValues.MaxTimeToLive.TotalSeconds.ToString(CultureInfo.InvariantCulture));            
             await sqs.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
             await Console.Out.WriteLineAsync($"Created SQS Queue with name '{sqsRequest.QueueName}' for endpoint '{endpointName}'.");
+            return createQueueResponse.QueueUrl;
         }
 
-        public static async Task CreateDelayDelivery(IAmazonSQS sqs, CommandArgument name)
+        public static async Task<string> CreateDelayDelivery(IAmazonSQS sqs, CommandArgument name)
         {
             var endpointName = name.Value;            
             var delayedDeliveryQueueName = $"{endpointName}{DefaultConfigurationValues.DelayedDeliveryQueueSuffix}";
@@ -38,6 +39,7 @@
             sqsAttributesRequest.Attributes.Add(QueueAttributeName.DelaySeconds, DefaultConfigurationValues.DelayedDeliveryQueueDelayTime.ToString(CultureInfo.InvariantCulture));
             await sqs.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
             await Console.Out.WriteLineAsync($"Created SQS delayed delivery queue with name '{sqsRequest.QueueName}' for endpoint '{endpointName}'.");
+            return createQueueResponse.QueueUrl;
         }
     }
 
