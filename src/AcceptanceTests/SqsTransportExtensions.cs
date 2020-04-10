@@ -38,7 +38,7 @@
         {
             var config = new AmazonSQSConfig();
 #if NETSTANDARD
-            config.CacheHttpClient = false;
+            config.CacheHttpClient = true;
             config.HttpClientCacheSize = 1;
 #endif
 
@@ -50,7 +50,7 @@
         {
             var config = new AmazonSimpleNotificationServiceConfig();
 #if NETSTANDARD
-            config.CacheHttpClient = false;
+            config.CacheHttpClient = true;
             config.HttpClientCacheSize = 1;
 #endif
 
@@ -62,7 +62,7 @@
         {
             var config = new AmazonS3Config();
 #if NETSTANDARD
-            config.CacheHttpClient = false;
+            config.CacheHttpClient = true;
             config.HttpClientCacheSize = 1;
 #endif
 
