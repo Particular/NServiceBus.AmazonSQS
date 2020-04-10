@@ -341,7 +341,7 @@
             }
 
             var existingTopicArn = await topicCache.GetTopicArn(transportOperation.MessageType).ConfigureAwait(false);
-            if (context.TryGet<ValidateSubscriptionDestinationPolicies>(out _) && !string.IsNullOrEmpty(existingTopicArn))
+            if (!string.IsNullOrEmpty(existingTopicArn) && context.TryGet<ValidateSubscriptionDestinationPolicies>(out _))
             {
                 ListSubscriptionsByTopicResponse upToAHundredSubscriptions = null;
                 var validateSubscriptionDestinationPoliciesTasks = new List<Task>();
@@ -352,6 +352,7 @@
                         .ConfigureAwait(false);
 
                     // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
+                    // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
                     foreach (var upToAHundredSubscription in upToAHundredSubscriptions.Subscriptions)
                     {
                         validateSubscriptionDestinationPoliciesTasks.Add(Validate(sqsClient, upToAHundredSubscription, existingTopicArn));
