@@ -164,23 +164,12 @@ namespace NServiceBus
                 // https://github.com/aws/aws-sdk-net/issues/1569
                 await subscribeQueueLimiter.WaitAsync().ConfigureAwait(false);
 
-                Logger.Debug($"Setting delivery policies on queue '{queueName} for '{topicName}' with arn '{topicArn}'");
+
                 var sqsQueueArn = await SetNecessaryDeliveryPolicies(topicArn, topicName, queueUrl).ConfigureAwait(false);
-                Logger.Debug($"Set delivery policies on queue '{queueName} for '{topicName}' with arn '{topicArn}'");
+                var createdSubscription = await SubscribeQueue(topicArn, topicName, sqsQueueArn).ConfigureAwait(false);
 
-                // SNS dedups subscriptions based on the endpoint name
-                Logger.Debug($"Creating subscription for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
-                var createdSubscription = await snsClient.SubscribeAsync(new SubscribeRequest
-                {
-                    TopicArn = topicArn,
-                    Protocol = "sqs",
-                    Endpoint = sqsQueueArn,
-                }).ConfigureAwait(false);
-                Logger.Debug($"Created subscription with arn '{createdSubscription.SubscriptionArn}' for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
 
-                Logger.Debug($"Setting raw delivery for subscription with arn '{createdSubscription.SubscriptionArn}' for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
-                await SetRawDeliveryModeWithRetries(createdSubscription).ConfigureAwait(false);
-                Logger.Debug($"Set raw delivery for subscription with arn '{createdSubscription.SubscriptionArn}' for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
+                await SetRawDeliveryModeWithRetries(createdSubscription.SubscriptionArn, topicArn, topicName).ConfigureAwait(false);
             }
             finally
             {
@@ -190,8 +179,23 @@ namespace NServiceBus
             Logger.Debug($"Created subscription for queue '{queueName}' to topic '{topicName}' with arn '{topicArn}'");
         }
 
+        async Task<SubscribeResponse> SubscribeQueue(string topicArn, string topicName, string sqsQueueArn)
+        {
+            // SNS dedups subscriptions based on the endpoint name
+            Logger.Debug($"Creating subscription for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
+            var createdSubscription = await snsClient.SubscribeAsync(new SubscribeRequest
+            {
+                TopicArn = topicArn,
+                Protocol = "sqs",
+                Endpoint = sqsQueueArn
+            }).ConfigureAwait(false);
+            Logger.Debug($"Created subscription with arn '{createdSubscription.SubscriptionArn}' for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
+            return createdSubscription;
+        }
+
         async Task<string> SetNecessaryDeliveryPolicies(string topicArn, string topicName, string queueUrl)
         {
+            Logger.Debug($"Setting delivery policies on queue '{queueName} for '{topicName}' with arn '{topicArn}'");
             string sqsQueueArn = null;
             for (var i = 0; i < 10; i++)
             {
@@ -207,9 +211,9 @@ namespace NServiceBus
 
                 var policy = ExtractPolicy(queueAttributes);
 
-                if (!SnsClientExtensions.HasSQSPermission(policy, topicArn, sqsQueueArn))
+                if (!policy.HasSQSPermission(topicArn, sqsQueueArn))
                 {
-                    SnsClientExtensions.AddSQSPermission(policy, topicArn, sqsQueueArn);
+                    policy.AddSQSPermission(topicArn, sqsQueueArn);
                 }
                 else
                 {
@@ -225,11 +229,13 @@ namespace NServiceBus
                 throw new Exception($"Unable to setup necessary policies for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
             }
 
+            Logger.Debug($"Set delivery policies on queue '{queueName} for '{topicName}' with arn '{topicArn}'");
             return sqsQueueArn;
         }
 
-        async Task SetRawDeliveryModeWithRetries(SubscribeResponse createdSubscription)
+        async Task SetRawDeliveryModeWithRetries(string subscriptionArn, string topicArn, string topicName)
         {
+            Logger.Debug($"Setting raw delivery for subscription with arn '{subscriptionArn}' for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
             NotFoundException notFoundException;
             var iterationCount = 0;
             do
@@ -238,21 +244,23 @@ namespace NServiceBus
                 {
                     await snsClient.SetSubscriptionAttributesAsync(new SetSubscriptionAttributesRequest
                     {
-                        SubscriptionArn = createdSubscription.SubscriptionArn,
+                        SubscriptionArn = subscriptionArn,
                         AttributeName = "RawMessageDelivery",
                         AttributeValue = "true"
                     }).ConfigureAwait(false);
                     notFoundException = null;
                 }
-                catch (NotFoundException exception) when(iterationCount < 5)
+                catch (NotFoundException exception) when (iterationCount < 5)
                 {
                     notFoundException = exception;
                     iterationCount++;
                     var millisecondsDelay = iterationCount * 1000;
-                    Logger.Debug($"Unable to set raw delivery mode for subscription with arn '{createdSubscription.SubscriptionArn}'! Retrying in {millisecondsDelay} ms.");
+                    Logger.Debug($"Unable to set raw delivery mode for subscription with arn '{subscriptionArn}'! Retrying in {millisecondsDelay} ms.");
                     await Task.Delay(millisecondsDelay).ConfigureAwait(false);
                 }
             } while (notFoundException != null);
+
+            Logger.Debug($"Set raw delivery for subscription with arn '{subscriptionArn}' for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
         }
 
         static Policy ExtractPolicy(Dictionary<string, string> queueAttributes)
