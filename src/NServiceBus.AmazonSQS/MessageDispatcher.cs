@@ -359,9 +359,9 @@
                         continue;
                     }
 
-                    if (!policy.Contains(subscription.Endpoint))
+                    if (!policy.Contains($"\"aws:SourceArn\":\"{existingTopicArn}\""))
                     {
-                        throw new DestinationNotYetReachable(subscription.Endpoint);
+                        throw new DestinationNotYetReachable(existingTopicArn);
                     }
                 }
             }
