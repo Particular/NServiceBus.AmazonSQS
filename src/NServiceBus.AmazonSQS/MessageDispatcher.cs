@@ -354,12 +354,8 @@
 
                     var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(queueName).ConfigureAwait(false);
                     var attributes = await sqsClient.GetAttributesAsync(getQueueUrlResponse.QueueUrl).ConfigureAwait(false);
-                    if (!attributes.TryGetValue("Policy", out var policy))
-                    {
-                        continue;
-                    }
 
-                    if (!policy.Contains($"\"aws:SourceArn\":\"{existingTopicArn}\""))
+                    if (!attributes.TryGetValue("Policy", out var policy) || !policy.Contains($"\"aws:SourceArn\":\"{existingTopicArn}\""))
                     {
                         throw new DestinationNotYetReachable(existingTopicArn);
                     }

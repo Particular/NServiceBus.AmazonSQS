@@ -26,8 +26,8 @@
 
             settings.TestExecutionTimeout = TimeSpan.FromSeconds(80);
 
-            configuration.Pipeline.Register(new FunkyBehavior(), "Does some funky stuff");
-            configuration.Pipeline.Register(new RetryIfNeeded(), "Does some funky stuff");
+            configuration.Pipeline.Register(new ApplyPolicyValidationBehavior(), "Adds a policy validation instruction to the extension bag.");
+            configuration.Pipeline.Register(new RetryIfNeededBehavior(), "Retries several times in case an DestinationNotYetReachable exception is raised");
 
             return Task.FromResult(0);
         }
@@ -77,18 +77,18 @@
         }
     }
 
-    class FunkyBehavior : Behavior<IOutgoingPublishContext>
+    class ApplyPolicyValidationBehavior : Behavior<IOutgoingPublishContext>
     {
         public override Task Invoke(IOutgoingPublishContext context, Func<Task> next)
         {
             // of course we don't need to new up, just a prototype
-            context.Extensions.Set(new ValidDeliveryPolicies());
+            context.Extensions.Set(ValidDeliveryPolicies.Instance);
 
             return next();
         }
     }
 
-    class RetryIfNeeded : Behavior<IOutgoingLogicalMessageContext>
+    class RetryIfNeededBehavior : Behavior<IOutgoingLogicalMessageContext>
     {
         public override async Task Invoke(IOutgoingLogicalMessageContext context, Func<Task> next)
         {
@@ -104,7 +104,7 @@
                 }
                 catch (DestinationNotYetReachable ex)
                 {
-                    var millisecondsDelay = iterationCount * 100;
+                    var millisecondsDelay = iterationCount * 1000;
                     Logger.Debug($"Destination {ex.Endpoint} was not reachable! Retrying in {millisecondsDelay} ms.");
                     exception = ex;
                     await Task.Delay(millisecondsDelay).ConfigureAwait(false);
@@ -112,6 +112,6 @@
             } while (exception != null && iterationCount < 10);
         }
 
-        static ILog Logger = LogManager.GetLogger<RetryIfNeeded>();
+        static ILog Logger = LogManager.GetLogger<RetryIfNeededBehavior>();
     }
 }
