@@ -13,7 +13,12 @@ namespace NServiceBus
         /// </summary>
         public static void RequireSubscriptionDestinationPolicyValidation(this PublishOptions options)
         {
-            options.GetExtensions().Set(ValidateSubscriptionDestinationPolicies.Instance);
+            options.GetExtensions().RequireSubscriptionDestinationPolicyValidation();
+        }
+
+        internal static void RequireSubscriptionDestinationPolicyValidation(this ContextBag options)
+        {
+            options.Set(ValidateSubscriptionDestinationPolicies.Instance);
         }
     }
 }
