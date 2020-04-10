@@ -18,7 +18,7 @@ namespace NServiceBus.Transports.SQS
                 DelaySeconds = message.DelaySeconds
             };
         }
-        
+
         public static PublishRequest ToPublishRequest(this SnsPreparedMessage message)
         {
             return new PublishRequest(message.Destination, message.Body)

@@ -372,7 +372,7 @@
 
             if (!attributes.TryGetValue("Policy", out var policy) || !policy.Contains($"\"aws:SourceArn\":\"{existingTopicArn}\""))
             {
-                throw new DestinationNotYetReachable(subscription.Endpoint, existingTopicArn);
+                throw new TopicHasNoPermissionToAccessTheDestinationException(subscription.Endpoint, existingTopicArn);
             }
         }
 
