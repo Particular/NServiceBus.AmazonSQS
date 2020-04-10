@@ -106,17 +106,9 @@
                     subscribeCommand.Options.Add(accessKey);
                     subscribeCommand.Options.Add(region);
                     subscribeCommand.Options.Add(secret);
-
-                    /*  
-                      var topicName = subscribeCommand.Option("-t|--topic", "Topic name (defaults to 'bundle-1')", CommandOptionType.SingleValue);
-                      var subscriptionName = subscribeCommand.Option("-b|--subscription", "Subscription name (defaults to endpoint name) ", CommandOptionType.SingleValue);
-                      var shortenedRuleName = subscribeCommand.Option("-r|--rule-name", "Rule name (defaults to event type) ", CommandOptionType.SingleValue);*/
-
                     subscribeCommand.OnExecuteAsync(async ct =>
                     {
-                      //  await CommandRunner.Run(connectionString, client => Endpoint.Subscribe(client, name, topicName, subscriptionName, eventType, shortenedRuleName));
-
-                       await Console.Out.WriteLineAsync($"Endpoint '{name.Value}' subscribed to '{eventType.Value}'.");
+                        await CommandRunner.Run(accessKey, secret, region, (sqs, sns, s3) => Endpoint.Subscribe(sqs, sns, name, eventType));                        
                     });
                 });
 
