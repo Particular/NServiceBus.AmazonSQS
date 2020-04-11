@@ -204,7 +204,7 @@ namespace NServiceBus
                 {
                     var millisecondsDelay = i * 1000;
                     Logger.Debug($"Policy not yet propagated to enable topic '{topicName} with arn '{topicArn}' to write to '{sqsQueueArn}'! Retrying in {millisecondsDelay} ms.");
-                    await Task.Delay(millisecondsDelay).ConfigureAwait(false);
+                    await Delay(millisecondsDelay).ConfigureAwait(false);
                 }
 
                 var queueAttributes = await sqsClient.GetAttributesAsync(queueUrl).ConfigureAwait(false);
@@ -257,11 +257,17 @@ namespace NServiceBus
                     iterationCount++;
                     var millisecondsDelay = iterationCount * 1000;
                     Logger.Debug($"Unable to set raw delivery mode for subscription with arn '{subscriptionArn}'! Retrying in {millisecondsDelay} ms.");
-                    await Task.Delay(millisecondsDelay).ConfigureAwait(false);
+                    await Delay(millisecondsDelay).ConfigureAwait(false);
                 }
             } while (notFoundException != null);
 
             Logger.Debug($"Set raw delivery for subscription with arn '{subscriptionArn}' for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
+        }
+
+        // only for testing
+        protected virtual Task Delay(int millisecondsDelay, CancellationToken token = default)
+        {
+            return Task.Delay(millisecondsDelay, token);
         }
 
         static Policy ExtractPolicy(Dictionary<string, string> queueAttributes)

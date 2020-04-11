@@ -1,8 +1,13 @@
 namespace NServiceBus.AmazonSQS.Tests
 {
+    using System;
     using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
+    using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
+    using Amazon.SQS;
     using NUnit.Framework;
     using Settings;
     using Unicast.Messages;
@@ -28,7 +33,7 @@ namespace NServiceBus.AmazonSQS.Tests
             queueName = "fakeQueue";
 
             var transportConfiguration = new TransportConfiguration(settings);
-            manager = new SubscriptionManager(sqsClient, snsClient, queueName, new QueueCache(sqsClient, transportConfiguration), messageMetadataRegistry, new TopicCache(snsClient, messageMetadataRegistry, transportConfiguration));
+            manager = new TestableSubscriptionManager(sqsClient, snsClient, queueName, new QueueCache(sqsClient, transportConfiguration), messageMetadataRegistry, new TopicCache(snsClient, messageMetadataRegistry, transportConfiguration));
         }
 
         [Test]
@@ -117,12 +122,10 @@ namespace NServiceBus.AmazonSQS.Tests
             Assert.IsEmpty(snsClient.FindTopicRequests);
         }
 
-        // Apparently we can only set the raw mode by doing it that way so let's enforce via test
         [Test]
         public async Task Subscribe_creates_subscription_with_raw_message_mode()
         {
             var eventType = typeof(Event);
-            messageMetadataRegistry.GetMessageMetadata(eventType);
 
             await manager.Subscribe(eventType, null);
 
@@ -130,12 +133,39 @@ namespace NServiceBus.AmazonSQS.Tests
             var subscribeRequest = snsClient.SubscribeRequestsSent[0];
             Assert.AreEqual("arn:fakeQueue", subscribeRequest.Endpoint);
             Assert.AreEqual("arn:aws:sns:us-west-2:123456789012:NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-Event", subscribeRequest.TopicArn);
+            Assert.IsTrue(subscribeRequest.ReturnSubscriptionArn);
 
             Assert.AreEqual(1, snsClient.SetSubscriptionAttributesRequests.Count);
             var setAttributeRequest = snsClient.SetSubscriptionAttributesRequests[0];
             Assert.AreEqual("RawMessageDelivery", setAttributeRequest.AttributeName);
             Assert.AreEqual("true", setAttributeRequest.AttributeValue);
             Assert.AreEqual("arn:fakeQueue", setAttributeRequest.SubscriptionArn);
+        }
+
+        [Test]
+        public void Subscribe_retries_setting_raw_Mode_five_times_with_linear_delays_and_gives_up()
+        {
+            snsClient.SetSubscriptionAttributesResponse = req => throw new NotFoundException("");
+
+            Assert.ThrowsAsync<NotFoundException>(async() => await manager.Subscribe(typeof(Event), null));
+            Assert.AreEqual(5, manager.Delays.Count);
+            Assert.AreEqual(15000, manager.Delays.Sum());
+        }
+
+        [Test]
+        public void Subscribe_retries_setting_raw_Mode_with_linear_delays()
+        {
+            var queue = new Queue<Func<SetSubscriptionAttributesResponse>>();
+            queue.Enqueue(() => throw new NotFoundException(""));
+            queue.Enqueue(() => throw new NotFoundException(""));
+            queue.Enqueue(() => throw new NotFoundException(""));
+            queue.Enqueue(() => throw new NotFoundException(""));
+            queue.Enqueue(() => new SetSubscriptionAttributesResponse());
+            snsClient.SetSubscriptionAttributesResponse = req => queue.Dequeue()();
+
+            Assert.DoesNotThrowAsync(async() => await manager.Subscribe(typeof(Event), null));
+            Assert.AreEqual(4, manager.Delays.Count);
+            Assert.AreEqual(10000, manager.Delays.Sum());
         }
 
         [Test]
@@ -269,13 +299,28 @@ namespace NServiceBus.AmazonSQS.Tests
         }
 
         MockSqsClient sqsClient;
-        SubscriptionManager manager;
+        TestableSubscriptionManager manager;
         MockSnsClient snsClient;
         MessageMetadataRegistry messageMetadataRegistry;
         SettingsHolder settings;
         string queueName;
         EventToTopicsMappings customEventToTopicsMappings;
         EventToEventsMappings customEventToEventsMappings;
+
+        class TestableSubscriptionManager : SubscriptionManager
+        {
+            public TestableSubscriptionManager(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, MessageMetadataRegistry messageMetadataRegistry, TopicCache topicCache) : base(sqsClient, snsClient, queueName, queueCache, messageMetadataRegistry, topicCache)
+            {
+            }
+
+            public List<int> Delays { get; } = new List<int>();
+
+            protected override Task Delay(int millisecondsDelay, CancellationToken token = default)
+            {
+                Delays.Add(millisecondsDelay);
+                return Task.FromResult(0);
+            }
+        }
 
         interface IEvent
         {
