@@ -164,11 +164,8 @@ namespace NServiceBus
                 // https://github.com/aws/aws-sdk-net/issues/1569
                 await subscribeQueueLimiter.WaitAsync().ConfigureAwait(false);
 
-
                 var sqsQueueArn = await SetNecessaryDeliveryPoliciesWithRetries(topicArn, topicName, queueUrl).ConfigureAwait(false);
                 var createdSubscription = await SubscribeQueue(topicArn, topicName, sqsQueueArn).ConfigureAwait(false);
-
-
                 await SetRawDeliveryModeWithRetries(createdSubscription.SubscriptionArn, topicArn, topicName).ConfigureAwait(false);
             }
             finally
