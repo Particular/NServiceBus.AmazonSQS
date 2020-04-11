@@ -3,7 +3,6 @@ namespace NServiceBus
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Threading;
     using System.Threading.Tasks;
     using Amazon.Auth.AccessControlPolicy;
     using Amazon.SimpleNotificationService;
@@ -157,25 +156,9 @@ namespace NServiceBus
         async Task SubscribeTo(string topicArn, string topicName, string queueUrl)
         {
             Logger.Debug($"Creating subscription for queue '{queueName}' to topic '{topicName}' with arn '{topicArn}'");
-            try
-            {
-                // need to safe guard the subscribe section so that policy are not overwritten
-                // deliberately not set a cancellation token for now
-                // https://github.com/aws/aws-sdk-net/issues/1569
-                await subscribeQueueLimiter.WaitAsync().ConfigureAwait(false);
-
-
-                var sqsQueueArn = await SetNecessaryDeliveryPolicies(topicArn, topicName, queueUrl).ConfigureAwait(false);
-                var createdSubscription = await SubscribeQueue(topicArn, topicName, sqsQueueArn).ConfigureAwait(false);
-
-
-                await SetRawDeliveryModeWithRetries(createdSubscription.SubscriptionArn, topicArn, topicName).ConfigureAwait(false);
-            }
-            finally
-            {
-                subscribeQueueLimiter.Release();
-            }
-
+            var sqsQueueArn = await SetNecessaryDeliveryPolicies(topicArn, topicName, queueUrl).ConfigureAwait(false);
+            var createdSubscription = await SubscribeQueue(topicArn, topicName, sqsQueueArn).ConfigureAwait(false);
+            await SetRawDeliveryModeWithRetries(createdSubscription.SubscriptionArn, topicArn, topicName).ConfigureAwait(false);
             Logger.Debug($"Created subscription for queue '{queueName}' to topic '{topicName}' with arn '{topicArn}'");
         }
 
@@ -303,7 +286,6 @@ namespace NServiceBus
         readonly string queueName;
         readonly MessageMetadataRegistry messageMetadataRegistry;
         readonly TopicCache topicCache;
-        readonly SemaphoreSlim subscribeQueueLimiter = new SemaphoreSlim(1);
 
         static ILog Logger = LogManager.GetLogger(typeof(SubscriptionManager));
     }
