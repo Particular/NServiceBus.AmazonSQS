@@ -1,16 +1,13 @@
 namespace NServiceBus.AmazonSQS.Tests
 {
-    using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
-    using Amazon.Runtime.SharedInterfaces;
     using Amazon.SimpleNotificationService.Model;
     using NUnit.Framework;
     using Settings;
     using Unicast.Messages;
 
     [TestFixture]
-    [Ignore("Fix if this approach works")]
     public class SubscriptionManagerTests
     {
         [SetUp]
@@ -18,6 +15,7 @@ namespace NServiceBus.AmazonSQS.Tests
         {
             sqsClient = new MockSqsClient();
             snsClient = new MockSnsClient();
+            sqsClient.EnableGetAttributeReturnsWhatWasSet();
             settings = new SettingsHolder();
 
             customEventToTopicsMappings = new EventToTopicsMappings();
@@ -50,13 +48,13 @@ namespace NServiceBus.AmazonSQS.Tests
 
             await manager.Subscribe(eventType, null);
 
-            var initialSubscribeRequests = new List<(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)>(snsClient.SubscribeQueueRequests);
-            snsClient.SubscribeQueueRequests.Clear();
+            var initialSubscribeRequests = new List<SubscribeRequest>(snsClient.SubscribeRequestsSent);
+            snsClient.SubscribeRequestsSent.Clear();
 
             await manager.Subscribe(eventType, null);
 
             Assert.IsNotEmpty(initialSubscribeRequests);
-            Assert.IsEmpty(snsClient.SubscribeQueueRequests);
+            Assert.IsEmpty(snsClient.SubscribeRequestsSent);
         }
 
         [Test]
@@ -69,36 +67,25 @@ namespace NServiceBus.AmazonSQS.Tests
 
             await manager.Subscribe(eventType, null);
 
-            Assert.AreEqual(2, snsClient.SubscribeQueueRequests.Count);
+            Assert.AreEqual(2, snsClient.SubscribeRequestsSent.Count);
         }
 
         [Test]
-        public async Task Subscribe_creates_topic_if_not_exists()
+        public async Task Subscribe_always_creates_topic()
         {
             var eventType = typeof(Event);
-
-            var responses = new Queue<Func<string, Topic>>();
-            responses.Enqueue(t => null);
-            responses.Enqueue(t => new Topic { TopicArn = t });
-            snsClient.FindTopicAsyncResponse = topic => responses.Dequeue()(topic);
 
             await manager.Subscribe(eventType, null);
 
-            CollectionAssert.AreEquivalent(new List<string> { "NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-Event" }, snsClient.CreateTopicRequests);
+            CollectionAssert.AreEquivalent(new List<string> {"NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-Event"}, snsClient.CreateTopicRequests);
+            Assert.IsEmpty(snsClient.FindTopicRequests);
         }
 
         [Test]
-        public async Task Subscribe_with_event_to_topics_mapping_creates_custom_defined_topic_if_not_exists()
+        public async Task Subscribe_with_event_to_topics_mapping_creates_custom_defined_topic()
         {
             var eventType = typeof(Event);
-            customEventToTopicsMappings.Add(eventType, new []{"custom-topic-name"});
-
-            var responses = new Queue<Func<string, Topic>>();
-            responses.Enqueue(t => null);
-            responses.Enqueue(t => null);
-            responses.Enqueue(t => new Topic { TopicArn = t });
-            responses.Enqueue(t => new Topic { TopicArn = t });
-            snsClient.FindTopicAsyncResponse = topic => responses.Dequeue()(topic);
+            customEventToTopicsMappings.Add(eventType, new[] {"custom-topic-name"});
 
             await manager.Subscribe(eventType, null);
 
@@ -107,25 +94,17 @@ namespace NServiceBus.AmazonSQS.Tests
                 "custom-topic-name",
                 "NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-Event"
             }, snsClient.CreateTopicRequests);
+            Assert.IsEmpty(snsClient.FindTopicRequests);
         }
 
         [Test]
-        public async Task Subscribe_with_event_to_events_mapping_creates_custom_defined_topic_if_not_exists()
+        public async Task Subscribe_with_event_to_events_mapping_creates_custom_defined_topic()
         {
             var subscribedEventType = typeof(IEvent);
             var concreteEventType = typeof(Event);
             var concreteAnotherEventType = typeof(AnotherEvent);
             customEventToEventsMappings.Add(subscribedEventType, concreteEventType);
             customEventToEventsMappings.Add(subscribedEventType, concreteAnotherEventType);
-
-            var responses = new Queue<Func<string, Topic>>();
-            responses.Enqueue(t => null);
-            responses.Enqueue(t => null);
-            responses.Enqueue(t => null);
-            responses.Enqueue(t => new Topic { TopicArn = t });
-            responses.Enqueue(t => new Topic { TopicArn = t });
-            responses.Enqueue(t => new Topic { TopicArn = t });
-            snsClient.FindTopicAsyncResponse = topic => responses.Dequeue()(topic);
 
             await manager.Subscribe(subscribedEventType, null);
 
@@ -135,27 +114,28 @@ namespace NServiceBus.AmazonSQS.Tests
                 "NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-AnotherEvent",
                 "NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-IEvent"
             }, snsClient.CreateTopicRequests);
+            Assert.IsEmpty(snsClient.FindTopicRequests);
         }
 
         // Apparently we can only set the raw mode by doing it that way so let's enforce via test
         [Test]
-        public async Task Subscribe_creates_subscription_with_passed_sqs_client_and_raw_message()
+        public async Task Subscribe_creates_subscription_with_raw_message_mode()
         {
             var eventType = typeof(Event);
             messageMetadataRegistry.GetMessageMetadata(eventType);
 
             await manager.Subscribe(eventType, null);
 
-            CollectionAssert.AreEquivalent(new List<(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)>
-            {
-                ("arn:aws:sns:us-west-2:123456789012:NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-Event", sqsClient, queueName)
-            }, snsClient.SubscribeQueueRequests);
+            Assert.AreEqual(1, snsClient.SubscribeRequestsSent.Count);
+            var subscribeRequest = snsClient.SubscribeRequestsSent[0];
+            Assert.AreEqual("arn:fakeQueue", subscribeRequest.Endpoint);
+            Assert.AreEqual("arn:aws:sns:us-west-2:123456789012:NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-Event", subscribeRequest.TopicArn);
 
             Assert.AreEqual(1, snsClient.SetSubscriptionAttributesRequests.Count);
-            var firstElement = snsClient.SetSubscriptionAttributesRequests[0];
-            Assert.AreEqual("RawMessageDelivery", firstElement.AttributeName);
-            Assert.AreEqual("true", firstElement.AttributeValue);
-            Assert.AreEqual("arn:aws:sns:us-west-2:123456789012:arn:aws:sns:us-west-2:123456789012:NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-Event:6b0e71bd-7e97-4d97-80ce-4a0994e55286", firstElement.SubscriptionArn);
+            var setAttributeRequest = snsClient.SetSubscriptionAttributesRequests[0];
+            Assert.AreEqual("RawMessageDelivery", setAttributeRequest.AttributeName);
+            Assert.AreEqual("true", setAttributeRequest.AttributeValue);
+            Assert.AreEqual("arn:fakeQueue", setAttributeRequest.SubscriptionArn);
         }
 
         [Test]
@@ -175,8 +155,8 @@ namespace NServiceBus.AmazonSQS.Tests
             {
                 Subscriptions = new List<Subscription>
                 {
-                    new Subscription { Endpoint = "arn:someOtherQueue", SubscriptionArn = "arn:someOtherSubscription" },
-                    new Subscription { Endpoint = "arn:yetAnotherQueue", SubscriptionArn = "arn:yetAnotherSubscription" }
+                    new Subscription {Endpoint = "arn:someOtherQueue", SubscriptionArn = "arn:someOtherSubscription"},
+                    new Subscription {Endpoint = "arn:yetAnotherQueue", SubscriptionArn = "arn:yetAnotherSubscription"}
                 }
             };
 
@@ -194,8 +174,8 @@ namespace NServiceBus.AmazonSQS.Tests
             {
                 Subscriptions = new List<Subscription>
                 {
-                    new Subscription { Endpoint = "arn:someOtherQueue", SubscriptionArn = "arn:someOtherSubscription" },
-                    new Subscription { Endpoint = $"arn:{queueName}", SubscriptionArn = "arn:subscription" }
+                    new Subscription {Endpoint = "arn:someOtherQueue", SubscriptionArn = "arn:someOtherSubscription"},
+                    new Subscription {Endpoint = $"arn:{queueName}", SubscriptionArn = "arn:subscription"}
                 }
             };
 
@@ -253,7 +233,7 @@ namespace NServiceBus.AmazonSQS.Tests
         public async Task Unsubscribe_with_event_to_topics_mapping_should_unsubscribe_matching_subscription()
         {
             var unsubscribedEvent = typeof(IEvent);
-            customEventToTopicsMappings.Add(unsubscribedEvent, new []{"custom-topic-name"});
+            customEventToTopicsMappings.Add(unsubscribedEvent, new[] {"custom-topic-name"});
 
             snsClient.ListSubscriptionsByTopicResponse = topic =>
             {
@@ -288,13 +268,6 @@ namespace NServiceBus.AmazonSQS.Tests
             }, snsClient.UnsubscribeRequests);
         }
 
-        interface IEvent { }
-
-        interface IMyEvent : IEvent { }
-        class Event : IMyEvent { }
-
-        class AnotherEvent : IMyEvent { }
-
         MockSqsClient sqsClient;
         SubscriptionManager manager;
         MockSnsClient snsClient;
@@ -303,5 +276,21 @@ namespace NServiceBus.AmazonSQS.Tests
         string queueName;
         EventToTopicsMappings customEventToTopicsMappings;
         EventToEventsMappings customEventToEventsMappings;
+
+        interface IEvent
+        {
+        }
+
+        interface IMyEvent : IEvent
+        {
+        }
+
+        class Event : IMyEvent
+        {
+        }
+
+        class AnotherEvent : IMyEvent
+        {
+        }
     }
 }

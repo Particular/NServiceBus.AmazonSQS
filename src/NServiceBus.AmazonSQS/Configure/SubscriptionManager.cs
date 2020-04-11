@@ -165,7 +165,7 @@ namespace NServiceBus
                 await subscribeQueueLimiter.WaitAsync().ConfigureAwait(false);
 
 
-                var sqsQueueArn = await SetNecessaryDeliveryPolicies(topicArn, topicName, queueUrl).ConfigureAwait(false);
+                var sqsQueueArn = await SetNecessaryDeliveryPoliciesWithRetries(topicArn, topicName, queueUrl).ConfigureAwait(false);
                 var createdSubscription = await SubscribeQueue(topicArn, topicName, sqsQueueArn).ConfigureAwait(false);
 
 
@@ -187,13 +187,14 @@ namespace NServiceBus
             {
                 TopicArn = topicArn,
                 Protocol = "sqs",
-                Endpoint = sqsQueueArn
+                Endpoint = sqsQueueArn,
+                ReturnSubscriptionArn = true
             }).ConfigureAwait(false);
             Logger.Debug($"Created subscription with arn '{createdSubscription.SubscriptionArn}' for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
             return createdSubscription;
         }
 
-        async Task<string> SetNecessaryDeliveryPolicies(string topicArn, string topicName, string queueUrl)
+        async Task<string> SetNecessaryDeliveryPoliciesWithRetries(string topicArn, string topicName, string queueUrl)
         {
             Logger.Debug($"Setting delivery policies on queue '{queueName} for '{topicName}' with arn '{topicArn}'");
             string sqsQueueArn = null;

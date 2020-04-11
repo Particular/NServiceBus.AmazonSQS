@@ -82,6 +82,16 @@ namespace NServiceBus.AmazonSQS.Tests
             return Task.FromResult(ListSubscriptionsByTopicResponse(topicArn));
         }
 
+        public List<SubscribeRequest> SubscribeRequestsSent = new List<SubscribeRequest>();
+
+        public Func<SubscribeRequest, SubscribeResponse> SubscribeResponse = req => new SubscribeResponse { SubscriptionArn = "arn:fakeQueue" };
+
+        public Task<SubscribeResponse> SubscribeAsync(SubscribeRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            SubscribeRequestsSent.Add(request);
+            return Task.FromResult(SubscribeResponse(request));
+        }
+
         #region NotImplemented
 
         public Task<PublishResponse> PublishAsync(string topicArn, string message, CancellationToken cancellationToken = new CancellationToken())
@@ -582,11 +592,6 @@ namespace NServiceBus.AmazonSQS.Tests
         }
 
         public Task<SubscribeResponse> SubscribeAsync(string topicArn, string protocol, string endpoint, CancellationToken cancellationToken = new CancellationToken())
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<SubscribeResponse> SubscribeAsync(SubscribeRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
         }
