@@ -169,6 +169,42 @@ namespace NServiceBus.AmazonSQS.Tests
         }
 
         [Test]
+        public void Subscribe_retries_setting_policies_eight_times_with_linear_delays_and_gives_up()
+        {
+            sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
+            {
+                { "QueueArn", "arn:fakeQueue" }
+            };
+
+            Assert.DoesNotThrowAsync(async() => await manager.Subscribe(typeof(Event), null));
+            Assert.AreEqual(8, manager.Delays.Count);
+            Assert.AreEqual(44000, manager.Delays.Sum());
+        }
+
+        [Test]
+        public void Subscribe_retries_setting_policies_seven_times_with_linear_delays()
+        {
+            var invocationCount = 0;
+            var original = sqsClient.GetAttributeRequestsResponse;
+            sqsClient.GetAttributeRequestsResponse = s =>
+            {
+                invocationCount++;
+                if (invocationCount < 9)
+                {
+                    return new Dictionary<string, string>
+                    {
+                        {"QueueArn", "arn:fakeQueue"}
+                    };
+                }
+                return original(s);
+            };
+
+            Assert.DoesNotThrowAsync(async() => await manager.Subscribe(typeof(Event), null));
+            Assert.AreEqual(7, manager.Delays.Count);
+            Assert.AreEqual(35000, manager.Delays.Sum());
+        }
+
+        [Test]
         public async Task Unsubscribe_object_should_ignore()
         {
             var eventType = typeof(object);
