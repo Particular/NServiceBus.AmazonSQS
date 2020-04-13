@@ -7,10 +7,12 @@
     // sqs-transport endpoint create name
     // sqs-transport endpoint name add large-message-support bucket-name [--other-options]
     // sqs-transport endpoint name add delay-delivery-support [--other-options]
-
     // sqs-transport endpoint subscribe name event-type
+
     // sqs-transport endpoint unsubscribe name event-type    
-    // sqs-transport endpoint remove name
+    // sqs-transport endpoint name remove large-message-support bucket-name [--other-options]
+    // sqs-transport endpoint name remove delay-delivery-support [--other-options]
+    // sqs-transport endpoint delete name
 
     class Program
     {
@@ -62,6 +64,21 @@
                     });
                 });
 
+                endpointCommand.Command("delete", createCommand =>
+                {
+                    createCommand.Description = "Deletes infrastructure required for an endpoint.";
+                    var name = createCommand.Argument("name", "Name of the endpoint (required)").IsRequired();
+
+                    createCommand.Options.Add(accessKey);
+                    createCommand.Options.Add(region);
+                    createCommand.Options.Add(secret);
+
+                    createCommand.OnExecuteAsync(async ct =>
+                    {
+                        await CommandRunner.Run(accessKey, secret, region, (sqs, sns, s3) => Endpoint.Delete(sqs, name));
+                    });
+                });
+
                 endpointCommand.Command("add", addCommand =>
                 {
                     addCommand.Description = "Adds optional infrastructure to an endpoint.";
@@ -97,6 +114,41 @@
                     });
                 });
 
+                endpointCommand.Command("remove", addCommand =>
+                {
+                    addCommand.Description = "Removes optional infrastructure to an endpoint.";
+                    var name = addCommand.Argument("name", "Name of the endpoint (required)").IsRequired();
+
+                    addCommand.Command("large-message-support", largeMessageSupportCommand =>
+                    {
+                        largeMessageSupportCommand.Description = "Removes large message support infrastructure.";
+                        var bucketName = largeMessageSupportCommand.Argument("bucket-name", "Name of the bucket (required)").IsRequired();
+
+                        largeMessageSupportCommand.Options.Add(accessKey);
+                        largeMessageSupportCommand.Options.Add(region);
+                        largeMessageSupportCommand.Options.Add(secret);
+
+                        largeMessageSupportCommand.OnExecuteAsync(async ct =>
+                        {
+                            await CommandRunner.Run(accessKey, secret, region, (sqs, sns, s3) => Endpoint.RemoveLargeMessageSupport(s3, name, bucketName));
+                        });
+                    });
+
+                    addCommand.Command("delay-delivery-support", delayDeliverySupportCommand =>
+                    {
+                        delayDeliverySupportCommand.Description = "Removes delay delivery support infrastructure to an endpoint.";
+
+                        delayDeliverySupportCommand.Options.Add(accessKey);
+                        delayDeliverySupportCommand.Options.Add(region);
+                        delayDeliverySupportCommand.Options.Add(secret);
+
+                        delayDeliverySupportCommand.OnExecuteAsync(async ct =>
+                        {
+                            await CommandRunner.Run(accessKey, secret, region, (sqs, sns, s3) => Endpoint.RemoveDelayDelivery(sqs, name));
+                        });
+                    });
+                });
+
                 endpointCommand.Command("subscribe", subscribeCommand =>
                 {
                     subscribeCommand.Description = "Subscribes an endpoint to an event.";
@@ -122,14 +174,9 @@
                     unsubscribeCommand.Options.Add(region);
                     unsubscribeCommand.Options.Add(secret);
 
-                    /* 
-                     var topicName = unsubscribeCommand.Option("-t|--topic", "Topic name (defaults to 'bundle-1')", CommandOptionType.SingleValue);
-                     var subscriptionName = unsubscribeCommand.Option("-b|--subscription", "Subscription name (defaults to endpoint name) ", CommandOptionType.SingleValue);
-                     var shortenedRuleName = unsubscribeCommand.Option("-r|--rule-name", "Rule name (defaults to event type) ", CommandOptionType.SingleValue);*/
-
                     unsubscribeCommand.OnExecuteAsync(async ct =>
                     {
-                        //await CommandRunner.Run(connectionString, client => Endpoint.Unsubscribe(client, name, topicName, subscriptionName, eventType, shortenedRuleName));
+                        await CommandRunner.Run(accessKey, secret, region, (sqs, sns, s3) => Endpoint.Unsubscribe(sqs, sns, name, eventType));
 
                         await Console.Out.WriteLineAsync($"Endpoint '{name.Value}' unsubscribed from '{eventType.Value}'.");
                     });
