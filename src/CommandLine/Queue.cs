@@ -10,6 +10,21 @@
 
     static class Queue
     {
+        public static async Task<string> GetUrl(IAmazonSQS sqs, CommandArgument name)
+        {
+            var endpointName = name.Value;
+            var getQueueUrlRequest = new GetQueueUrlRequest(endpointName);
+            var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+            return queueUrlResponse.QueueUrl;
+        }
+
+        public static async Task<string> GetArn(IAmazonSQS sqs, CommandArgument name)
+        {
+            var queueUrl = await GetUrl(sqs, name);
+            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrl, new List<string> { "QueueArn" }).ConfigureAwait(false);
+            return queueAttributesResponse.QueueARN;
+        }
+
         public static async Task<string> Create(IAmazonSQS sqs, CommandArgument name)
         {
             var endpointName = name.Value;
@@ -40,6 +55,29 @@
             await sqs.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
             await Console.Out.WriteLineAsync($"Created SQS delayed delivery queue with name '{sqsRequest.QueueName}' for endpoint '{endpointName}'.");
             return createQueueResponse.QueueUrl;
+        }
+
+        public static async Task Delete(IAmazonSQS sqs, CommandArgument name)
+        {
+            var endpointName = name.Value;
+            var getQueueUrlRequest = new GetQueueUrlRequest(endpointName);
+            var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+            var deleteRequest = new DeleteQueueRequest { QueueUrl = queueUrlResponse.QueueUrl };
+            await Console.Out.WriteLineAsync($"Deleting SQS Queue with url '{deleteRequest.QueueUrl}' for endpoint '{endpointName}'.");
+            var deleteQueueResponse = await sqs.DeleteQueueAsync(deleteRequest).ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"Deleted SQS Queue with url '{deleteRequest.QueueUrl}' for endpoint '{endpointName}'.");
+        }
+
+        public static async Task DeleteDelayDelivery(IAmazonSQS sqs, CommandArgument name)
+        {
+            var endpointName = name.Value;
+            var delayedDeliveryQueueName = $"{endpointName}{DefaultConfigurationValues.DelayedDeliveryQueueSuffix}";
+            var getQueueUrlRequest = new GetQueueUrlRequest(delayedDeliveryQueueName);
+            var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+            var deleteRequest = new DeleteQueueRequest { QueueUrl = queueUrlResponse.QueueUrl };
+            await Console.Out.WriteLineAsync($"Deleting SQS delayed delivery queue with url '{deleteRequest.QueueUrl}' for endpoint '{endpointName}'.");
+            var deleteQueueResponse = await sqs.DeleteQueueAsync(deleteRequest).ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"Deleted SQS delayed delivery queue with url '{deleteRequest.QueueUrl}' for endpoint '{endpointName}'.");
         }
     }
 

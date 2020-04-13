@@ -10,6 +10,13 @@
 
     static class Topic
     {
+        public static async Task<string> Get(IAmazonSimpleNotificationService sns, CommandArgument eventType)
+        {
+            var topicName = GetSanitizedTopicName(eventType.Value);
+            var findTopicResponse = await sns.FindTopicAsync(topicName).ConfigureAwait(false);
+            return findTopicResponse.TopicArn;
+        }
+
         public static async Task<string> Create(IAmazonSimpleNotificationService sns, CommandArgument eventType)
         {
             var topicName = GetSanitizedTopicName(eventType.Value);
@@ -33,6 +40,37 @@
             }).ConfigureAwait(false);
             await Console.Out.WriteLineAsync($"Raw delivery for subscription with arn '{createdSubscription}' set.");
             return createdSubscription;
+        }
+
+        public static async Task Unsubscribe(IAmazonSimpleNotificationService sns, string topicArn, string queueArn)
+        {
+            await Console.Out.WriteLineAsync($"Unsubscribing queue with ARN '{queueArn}' from topic with ARN '{topicArn}'.");
+
+            var subscriptionArn = await sns.FindMatchingSubscription(topicArn, queueArn);
+
+            var unsubscribeResponse = await sns.UnsubscribeAsync(subscriptionArn).ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"Queue with ARN '{queueArn}' unsubscribed from topic with ARN '{topicArn}'.");       
+        }
+
+        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService sns, string topicArn, string queueArn)
+        {
+            ListSubscriptionsByTopicResponse upToAHundredSubscriptions = null;
+
+            do
+            {
+                upToAHundredSubscriptions = await sns.ListSubscriptionsByTopicAsync(topicArn, upToAHundredSubscriptions?.NextToken)
+                    .ConfigureAwait(false);
+
+                foreach (var upToAHundredSubscription in upToAHundredSubscriptions.Subscriptions)
+                {
+                    if (upToAHundredSubscription.Endpoint == queueArn)
+                    {
+                        return upToAHundredSubscription.SubscriptionArn;
+                    }
+                }
+            } while (upToAHundredSubscriptions.NextToken != null && upToAHundredSubscriptions.Subscriptions.Count > 0);
+
+            return null;
         }
 
         public static string GetSanitizedTopicName(string topicName)
