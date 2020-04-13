@@ -80,9 +80,28 @@
             else
             {
                 await Console.Out.WriteLineAsync($"Lifecycle configuration already configured for bucket name '{bucketName}' for endpoint '{endpointName}'.");
-            }
+            }           
+        }
 
-           
+        public static async Task Delete(IAmazonS3 s3, CommandArgument endpoint, CommandArgument bucket)
+        {
+            var endpointName = endpoint.Value;
+            var bucketName = bucket.Value;
+
+            await Console.Out.WriteLineAsync($"Delete bucket with name '{bucketName}' for endpoint '{endpointName}'.");
+
+            var listBucketsResponse = await s3.ListBucketsAsync(new ListBucketsRequest()).ConfigureAwait(false);
+            var bucketExists = listBucketsResponse.Buckets.Any(x => string.Equals(x.BucketName, bucketName, StringComparison.InvariantCultureIgnoreCase));
+            if (bucketExists)
+            {
+                await s3.DeleteBucketAsync(new DeleteBucketRequest { BucketName = bucketName }).ConfigureAwait(false);
+
+                await Console.Out.WriteLineAsync($"Delete bucket with name '{bucketName}' for endpoint '{endpointName}'.");
+            }
+            else
+            {
+                await Console.Out.WriteLineAsync($"Bucket with name '{bucketName}' does not exist.");
+            }
         }
     }
 
