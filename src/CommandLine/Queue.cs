@@ -6,42 +6,38 @@
     using System.Threading.Tasks;
     using Amazon.SQS;
     using Amazon.SQS.Model;
-    using McMaster.Extensions.CommandLineUtils;
 
     static class Queue
     {
-        public static async Task<string> GetUrl(IAmazonSQS sqs, CommandArgument name)
+        public static async Task<string> GetUrl(IAmazonSQS sqs, string endpointName)
         {
-            var endpointName = name.Value;
             var getQueueUrlRequest = new GetQueueUrlRequest(endpointName);
             var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
             return queueUrlResponse.QueueUrl;
         }
 
-        public static async Task<string> GetArn(IAmazonSQS sqs, CommandArgument name)
+        public static async Task<string> GetArn(IAmazonSQS sqs, string endpointName)
         {
-            var queueUrl = await GetUrl(sqs, name);
+            var queueUrl = await GetUrl(sqs, endpointName);
             var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrl, new List<string> { "QueueArn" }).ConfigureAwait(false);
             return queueAttributesResponse.QueueARN;
         }
 
-        public static async Task<string> Create(IAmazonSQS sqs, CommandArgument name)
+        public static async Task<string> Create(IAmazonSQS sqs, string endpointName, double retentionPeriodInSeconds)
         {
-            var endpointName = name.Value;
             var sqsRequest = new CreateQueueRequest { QueueName = endpointName };
             await Console.Out.WriteLineAsync($"Creating SQS Queue with name '{sqsRequest.QueueName}' for endpoint '{endpointName}'.");
             var createQueueResponse = await sqs.CreateQueueAsync(sqsRequest).ConfigureAwait(false);
             var sqsAttributesRequest = new SetQueueAttributesRequest { QueueUrl = createQueueResponse.QueueUrl };
-            sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod, DefaultConfigurationValues.MaxTimeToLive.TotalSeconds.ToString(CultureInfo.InvariantCulture));            
+            sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod, retentionPeriodInSeconds.ToString(CultureInfo.InvariantCulture));            
             await sqs.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
             await Console.Out.WriteLineAsync($"Created SQS Queue with name '{sqsRequest.QueueName}' for endpoint '{endpointName}'.");
             return createQueueResponse.QueueUrl;
         }
 
-        public static async Task<string> CreateDelayDelivery(IAmazonSQS sqs, CommandArgument name)
+        public static async Task<string> CreateDelayDelivery(IAmazonSQS sqs, string endpointName, double delayInSeconds, double retentionPeriodInSeconds, string suffix)
         {
-            var endpointName = name.Value;            
-            var delayedDeliveryQueueName = $"{endpointName}{DefaultConfigurationValues.DelayedDeliveryQueueSuffix}";
+            var delayedDeliveryQueueName = $"{endpointName}{suffix}";
             var sqsRequest = new CreateQueueRequest
             {
                 QueueName = delayedDeliveryQueueName,
@@ -50,16 +46,15 @@
             await Console.Out.WriteLineAsync($"Creating SQS delayed delivery queue with name '{sqsRequest.QueueName}' for endpoint '{endpointName}'.");
             var createQueueResponse = await sqs.CreateQueueAsync(sqsRequest).ConfigureAwait(false);
             var sqsAttributesRequest = new SetQueueAttributesRequest { QueueUrl = createQueueResponse.QueueUrl };
-            sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod, DefaultConfigurationValues.DelayedDeliveryQueueMessageRetentionPeriod.TotalSeconds.ToString(CultureInfo.InvariantCulture));
-            sqsAttributesRequest.Attributes.Add(QueueAttributeName.DelaySeconds, DefaultConfigurationValues.DelayedDeliveryQueueDelayTime.ToString(CultureInfo.InvariantCulture));
+            sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod, retentionPeriodInSeconds.ToString(CultureInfo.InvariantCulture));
+            sqsAttributesRequest.Attributes.Add(QueueAttributeName.DelaySeconds, delayInSeconds.ToString(CultureInfo.InvariantCulture));
             await sqs.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
             await Console.Out.WriteLineAsync($"Created SQS delayed delivery queue with name '{sqsRequest.QueueName}' for endpoint '{endpointName}'.");
             return createQueueResponse.QueueUrl;
         }
 
-        public static async Task Delete(IAmazonSQS sqs, CommandArgument name)
+        public static async Task Delete(IAmazonSQS sqs, string endpointName)
         {
-            var endpointName = name.Value;
             var getQueueUrlRequest = new GetQueueUrlRequest(endpointName);
             var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
             var deleteRequest = new DeleteQueueRequest { QueueUrl = queueUrlResponse.QueueUrl };
@@ -68,10 +63,9 @@
             await Console.Out.WriteLineAsync($"Deleted SQS Queue with url '{deleteRequest.QueueUrl}' for endpoint '{endpointName}'.");
         }
 
-        public static async Task DeleteDelayDelivery(IAmazonSQS sqs, CommandArgument name)
+        public static async Task DeleteDelayDelivery(IAmazonSQS sqs, string endpointName, string suffix)
         {
-            var endpointName = name.Value;
-            var delayedDeliveryQueueName = $"{endpointName}{DefaultConfigurationValues.DelayedDeliveryQueueSuffix}";
+            var delayedDeliveryQueueName = $"{endpointName}{suffix}";
             var getQueueUrlRequest = new GetQueueUrlRequest(delayedDeliveryQueueName);
             var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
             var deleteRequest = new DeleteQueueRequest { QueueUrl = queueUrlResponse.QueueUrl };
@@ -80,5 +74,4 @@
             await Console.Out.WriteLineAsync($"Deleted SQS delayed delivery queue with url '{deleteRequest.QueueUrl}' for endpoint '{endpointName}'.");
         }
     }
-
 }

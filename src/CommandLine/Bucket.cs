@@ -6,15 +6,11 @@
     using System.Threading.Tasks;
     using Amazon.S3;
     using Amazon.S3.Model;
-    using McMaster.Extensions.CommandLineUtils;
 
     static class Bucket
     {
-        public static async Task Create(IAmazonS3 s3, CommandArgument endpoint, CommandArgument bucket)
+        public static async Task Create(IAmazonS3 s3, string endpointName, string bucketName)
         {
-            var endpointName = endpoint.Value;
-            var bucketName = bucket.Value;
-
             await Console.Out.WriteLineAsync($"Creating bucket with name '{bucketName}' for endpoint '{endpointName}'.");
 
             var listBucketsResponse = await s3.ListBucketsAsync(new ListBucketsRequest()).ConfigureAwait(false);
@@ -33,12 +29,8 @@
             }
         }
 
-        public static async Task EnableCleanup(IAmazonS3 s3, CommandArgument endpoint, CommandArgument bucket) 
+        public static async Task EnableCleanup(IAmazonS3 s3, string endpointName, string bucketName, string prefix, int expirationInDays) 
         {
-            var endpointName = endpoint.Value;
-            var bucketName = bucket.Value;
-
-
             await Console.Out.WriteLineAsync($"Adding lifecycle configuration to bucket name '{bucketName}' for endpoint '{endpointName}'.");
 
             var lifecycleConfig = await s3.GetLifecycleConfigurationAsync(bucketName).ConfigureAwait(false);
@@ -61,13 +53,13 @@
                                         {
                                             LifecycleFilterPredicate = new LifecyclePrefixPredicate
                                             {
-                                                Prefix = DefaultConfigurationValues.S3KeyPrefix
+                                                Prefix = prefix
                                             }
                                         },
                                         Status = LifecycleRuleStatus.Enabled,
                                         Expiration = new LifecycleRuleExpiration
                                         {
-                                            Days = (int)Math.Ceiling(DefaultConfigurationValues.MaxTimeToLive.TotalDays)
+                                            Days = expirationInDays
                                         }
                                     }
                             }
@@ -83,11 +75,8 @@
             }           
         }
 
-        public static async Task Delete(IAmazonS3 s3, CommandArgument endpoint, CommandArgument bucket)
+        public static async Task Delete(IAmazonS3 s3, string endpointName, string bucketName)
         {
-            var endpointName = endpoint.Value;
-            var bucketName = bucket.Value;
-
             await Console.Out.WriteLineAsync($"Delete bucket with name '{bucketName}' for endpoint '{endpointName}'.");
 
             var listBucketsResponse = await s3.ListBucketsAsync(new ListBucketsRequest()).ConfigureAwait(false);
