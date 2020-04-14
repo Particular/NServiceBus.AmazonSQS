@@ -5,85 +5,84 @@
     using Amazon.S3;
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
-    using McMaster.Extensions.CommandLineUtils;
 
     static class Endpoint
     {
-        public static async Task Create(IAmazonSQS sqs, CommandArgument name)
+        public static async Task Create(IAmazonSQS sqs, string endpointName, double retentionPeriodInSeconds)
         {
-            await Console.Out.WriteLineAsync($"Creating endpoint '{name.Value}'.");
+            await Console.Out.WriteLineAsync($"Creating endpoint '{endpointName}'.");
 
-            await Queue.Create(sqs, name);
+            await Queue.Create(sqs, endpointName, retentionPeriodInSeconds);
 
-            await Console.Out.WriteLineAsync($"Endpoint '{name.Value}' is ready.");
+            await Console.Out.WriteLineAsync($"Endpoint '{endpointName}' is ready.");
         }
 
-        public static async Task Delete(IAmazonSQS sqs, CommandArgument name)
+        public static async Task Delete(IAmazonSQS sqs, string endpointName)
         {
-            await Console.Out.WriteLineAsync($"Deleting endpoint '{name.Value}'.");
+            await Console.Out.WriteLineAsync($"Deleting endpoint '{endpointName}'.");
 
-            await Queue.Delete(sqs, name);
+            await Queue.Delete(sqs, endpointName);
 
-            await Console.Out.WriteLineAsync($"Endpoint '{name.Value}' is deleted.");
+            await Console.Out.WriteLineAsync($"Endpoint '{endpointName}' is deleted.");
         }
 
-        public static async Task AddLargeMessageSupport(IAmazonS3 s3, CommandArgument name, CommandArgument bucketName)
+        public static async Task AddLargeMessageSupport(IAmazonS3 s3, string endpointName, string bucketName, string prefix, int expirationInDays)
         {
-            await Console.Out.WriteLineAsync($"Adding large message support to Endpoint '{name.Value}'.");
+            await Console.Out.WriteLineAsync($"Adding large message support to Endpoint '{endpointName}'.");
 
-            await Bucket.Create(s3, name, bucketName);
-            await Bucket.EnableCleanup(s3, name, bucketName);
+            await Bucket.Create(s3, endpointName, bucketName);
+            await Bucket.EnableCleanup(s3, endpointName, bucketName, prefix, expirationInDays);
 
-            await Console.Out.WriteLineAsync($"Added large message support to Endpoint '{name.Value}'.");
+            await Console.Out.WriteLineAsync($"Added large message support to Endpoint '{endpointName}'.");
         }
 
-        public static async Task RemoveLargeMessageSupport(IAmazonS3 s3, CommandArgument name, CommandArgument bucketName)
+        public static async Task RemoveLargeMessageSupport(IAmazonS3 s3, string endpointName, string bucketName)
         {
-            await Console.Out.WriteLineAsync($"Removing large message support from Endpoint '{name.Value}'.");
+            await Console.Out.WriteLineAsync($"Removing large message support from Endpoint '{endpointName}'.");
 
-            await Bucket.Delete(s3, name, bucketName);
+            await Bucket.Delete(s3, endpointName, bucketName);
 
-            await Console.Out.WriteLineAsync($"Removing large message support from Endpoint '{name.Value}'.");
+            await Console.Out.WriteLineAsync($"Removing large message support from Endpoint '{endpointName}'.");
         }
 
-        public static async Task AddDelayDelivery(IAmazonSQS sqs, CommandArgument name)
+        public static async Task AddDelayDelivery(IAmazonSQS sqs, string endpointName, double delayInSeconds, double retentionPeriodInSeconds, string suffix)
         {
-            await Console.Out.WriteLineAsync($"Adding delay delivery support to Endpoint '{name.Value}'.");
+            await Console.Out.WriteLineAsync($"Adding delay delivery support to Endpoint '{endpointName}'.");
 
-            await Queue.CreateDelayDelivery(sqs, name);
+            await Queue.CreateDelayDelivery(sqs, endpointName, delayInSeconds, retentionPeriodInSeconds, suffix);
 
-            await Console.Out.WriteLineAsync($"Added delay delivery support to Endpoint '{name.Value}'.");
+            await Console.Out.WriteLineAsync($"Added delay delivery support to Endpoint '{endpointName}'.");
         }
 
-        public static async Task RemoveDelayDelivery(IAmazonSQS sqs, CommandArgument name)
+        public static async Task RemoveDelayDelivery(IAmazonSQS sqs, string endpointName, string suffix)
         {
-            await Console.Out.WriteLineAsync($"Removing delay delivery support from Endpoint '{name.Value}'.");
+            await Console.Out.WriteLineAsync($"Removing delay delivery support from Endpoint '{endpointName}'.");
 
-            await Queue.DeleteDelayDelivery(sqs, name);
+            await Queue.DeleteDelayDelivery(sqs, endpointName, suffix);
 
-            await Console.Out.WriteLineAsync($"Removing delay delivery support from Endpoint '{name.Value}'.");
+            await Console.Out.WriteLineAsync($"Removing delay delivery support from Endpoint '{endpointName}'.");
         }
 
-        public static async Task Subscribe(IAmazonSQS sqs, IAmazonSimpleNotificationService sns, CommandArgument name, CommandArgument eventType)
+        public static async Task Subscribe(IAmazonSQS sqs, IAmazonSimpleNotificationService sns, string endpointName, string eventType)
         {
-            await Console.Out.WriteLineAsync($"Subscribing endpoint '{name.Value}' to '{eventType.Value}'.");
+            await Console.Out.WriteLineAsync($"Subscribing endpoint '{endpointName}' to '{eventType}'.");
 
-            var queueUrl = await Queue.GetUrl(sqs, name);
+            var queueUrl = await Queue.GetUrl(sqs, endpointName);
             var topicArn = await Topic.Create(sns, eventType);
             var subscriptionArn = await Topic.Subscribe(sqs, sns, topicArn, queueUrl);
 
-            await Console.Out.WriteLineAsync($"Endpoint '{name.Value}' subscribed to '{eventType.Value}'.");
+            await Console.Out.WriteLineAsync($"Endpoint '{endpointName}' subscribed to '{eventType}'.");
         }
 
-        public static async Task Unsubscribe(IAmazonSQS sqs, IAmazonSimpleNotificationService sns, CommandArgument name, CommandArgument eventType)
+        public static async Task Unsubscribe(IAmazonSQS sqs, IAmazonSimpleNotificationService sns, string endpointName, string eventType)
         {
-            await Console.Out.WriteLineAsync($"Unsubscribing endpoint '{name.Value}' from '{eventType.Value}'.");
+            await Console.Out.WriteLineAsync($"Unsubscribing endpoint '{endpointName}' from '{eventType}'.");
 
-            var queueArn = await Queue.GetArn(sqs, name);
+            var queueArn = await Queue.GetArn(sqs, endpointName);
             var topicArn = await Topic.Get(sns, eventType);
             await Topic.Unsubscribe(sns, topicArn, queueArn);
 
-            await Console.Out.WriteLineAsync($"Endpoint '{name.Value}' unsubscribed from '{eventType.Value}'.");
+            await Console.Out.WriteLineAsync($"Endpoint '{endpointName}' unsubscribed from '{eventType}'.");
         }
 
 
