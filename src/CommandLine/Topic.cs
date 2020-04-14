@@ -6,20 +6,19 @@
     using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS;
-    using McMaster.Extensions.CommandLineUtils;
 
     static class Topic
     {
-        public static async Task<string> Get(IAmazonSimpleNotificationService sns, CommandArgument eventType)
+        public static async Task<string> Get(IAmazonSimpleNotificationService sns, string eventType)
         {
-            var topicName = GetSanitizedTopicName(eventType.Value);
+            var topicName = GetSanitizedTopicName(eventType);
             var findTopicResponse = await sns.FindTopicAsync(topicName).ConfigureAwait(false);
             return findTopicResponse.TopicArn;
         }
 
-        public static async Task<string> Create(IAmazonSimpleNotificationService sns, CommandArgument eventType)
+        public static async Task<string> Create(IAmazonSimpleNotificationService sns, string eventType)
         {
-            var topicName = GetSanitizedTopicName(eventType.Value);
+            var topicName = GetSanitizedTopicName(eventType);
             await Console.Out.WriteLineAsync($"Creating SNS Topic with name '{topicName}'.");
             var createTopicResponse = await sns.CreateTopicAsync(topicName).ConfigureAwait(false);
             await Console.Out.WriteLineAsync($"Created SNS Topic with name '{topicName}'.");
