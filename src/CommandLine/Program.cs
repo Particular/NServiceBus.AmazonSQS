@@ -5,13 +5,13 @@
 
     // usage: 
     // sqs-transport endpoint create name [--other-options]
-    // sqs-transport endpoint name add large-message-support bucket-name [--other-options]
-    // sqs-transport endpoint name add delay-delivery-support [--other-options]
+    // sqs-transport endpoint add name large-message-support bucket-name [--other-options]
+    // sqs-transport endpoint add name delay-delivery-support [--other-options]
     // sqs-transport endpoint subscribe name event-type [--other-options]
 
     // sqs-transport endpoint unsubscribe name event-type [--other-options]
-    // sqs-transport endpoint name remove large-message-support bucket-name [--other-options]
-    // sqs-transport endpoint name remove delay-delivery-support [--other-options]
+    // sqs-transport endpoint remove large-message-support bucket-name [--other-options]
+    // sqs-transport endpoint remove remove delay-delivery-support [--other-options]
     // sqs-transport endpoint delete name [--other-options]
 
     class Program
@@ -99,17 +99,17 @@
                         largeMessageSupportCommand.Options.Add(region);
                         largeMessageSupportCommand.Options.Add(secret);
 
-                        var prefixCommand = largeMessageSupportCommand.Option("-p|--prefix", "S3 Key prefix.", CommandOptionType.SingleValue);
+                        var keyPrefixCommand = largeMessageSupportCommand.Option("-k|--key-prefix", "S3 Key prefix.", CommandOptionType.SingleValue);
                         var expirationInDaysCommand = largeMessageSupportCommand.Option("-e|--expiration", "Experation time in days (defaults to " + DefaultConfigurationValues.RetentionPeriod.TotalDays + " ) ", CommandOptionType.SingleValue);
 
                         largeMessageSupportCommand.OnExecuteAsync(async ct =>
                         {
                             var endpointName = nameArgument.Value;
                             var bucketName = bucketArgument.Value;
-                            var prefix = prefixCommand.HasValue() ? prefixCommand.Value() : DefaultConfigurationValues.S3KeyPrefix;
+                            var keyPrefix = keyPrefixCommand.HasValue() ? keyPrefixCommand.Value() : DefaultConfigurationValues.S3KeyPrefix;
                             var expirationInDays = expirationInDaysCommand.HasValue() ? int.Parse(expirationInDaysCommand.Value()) : (int)(Math.Ceiling(DefaultConfigurationValues.RetentionPeriod.TotalDays));
 
-                            await CommandRunner.Run(accessKey, secret, region, (sqs, sns, s3) => Endpoint.AddLargeMessageSupport(s3, endpointName, bucketName, prefix, expirationInDays));                            
+                            await CommandRunner.Run(accessKey, secret, region, (sqs, sns, s3) => Endpoint.AddLargeMessageSupport(s3, endpointName, bucketName, keyPrefix, expirationInDays));                            
                         });
                     });
 

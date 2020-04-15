@@ -1,7 +1,6 @@
 ﻿namespace NServiceBus.Transport.SQS.CommandLine
 {
     using System;
-    using System.Text;
     using System.Threading.Tasks;
     using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
@@ -11,14 +10,14 @@
     {
         public static async Task<string> Get(IAmazonSimpleNotificationService sns, string eventType)
         {
-            var topicName = GetSanitizedTopicName(eventType);
+            var topicName = TopicSanitization.GetSanitizedTopicName(eventType);
             var findTopicResponse = await sns.FindTopicAsync(topicName).ConfigureAwait(false);
             return findTopicResponse.TopicArn;
         }
 
         public static async Task<string> Create(IAmazonSimpleNotificationService sns, string eventType)
         {
-            var topicName = GetSanitizedTopicName(eventType);
+            var topicName = TopicSanitization.GetSanitizedTopicName(eventType);
             await Console.Out.WriteLineAsync($"Creating SNS Topic with name '{topicName}'.");
             var createTopicResponse = await sns.CreateTopicAsync(topicName).ConfigureAwait(false);
             await Console.Out.WriteLineAsync($"Created SNS Topic with name '{topicName}'.");
@@ -72,24 +71,7 @@
             return null;
         }
 
-        public static string GetSanitizedTopicName(string topicName)
-        {
-            var topicNameBuilder = new StringBuilder(topicName);
-            // SNS topic names can only have alphanumeric characters, hyphens and underscores.
-            // Any other characters will be replaced with a hyphen.
-            for (var i = 0; i < topicNameBuilder.Length; ++i)
-            {
-                var c = topicNameBuilder[i];
-                if (!char.IsLetterOrDigit(c)
-                    && c != '-'
-                    && c != '_')
-                {
-                    topicNameBuilder[i] = '-';
-                }
-            }
-
-            return topicNameBuilder.ToString();
-        }
+        
     }
 
 }

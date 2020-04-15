@@ -26,12 +26,12 @@
             await Console.Out.WriteLineAsync($"Endpoint '{endpointName}' is deleted.");
         }
 
-        public static async Task AddLargeMessageSupport(IAmazonS3 s3, string endpointName, string bucketName, string prefix, int expirationInDays)
+        public static async Task AddLargeMessageSupport(IAmazonS3 s3, string endpointName, string bucketName, string keyPrefix, int expirationInDays)
         {
             await Console.Out.WriteLineAsync($"Adding large message support to Endpoint '{endpointName}'.");
 
             await Bucket.Create(s3, endpointName, bucketName);
-            await Bucket.EnableCleanup(s3, endpointName, bucketName, prefix, expirationInDays);
+            await Bucket.EnableCleanup(s3, endpointName, bucketName, keyPrefix, expirationInDays);
 
             await Console.Out.WriteLineAsync($"Added large message support to Endpoint '{endpointName}'.");
         }
