@@ -29,7 +29,7 @@
             }
         }
 
-        public static async Task EnableCleanup(IAmazonS3 s3, string endpointName, string bucketName, string prefix, int expirationInDays) 
+        public static async Task EnableCleanup(IAmazonS3 s3, string endpointName, string bucketName, string keyPrefix, int expirationInDays) 
         {
             await Console.Out.WriteLineAsync($"Adding lifecycle configuration to bucket name '{bucketName}' for endpoint '{endpointName}'.");
 
@@ -53,7 +53,7 @@
                                         {
                                             LifecycleFilterPredicate = new LifecyclePrefixPredicate
                                             {
-                                                Prefix = prefix
+                                                Prefix = keyPrefix
                                             }
                                         },
                                         Status = LifecycleRuleStatus.Enabled,
