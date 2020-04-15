@@ -9,23 +9,25 @@
 
     static class Queue
     {
-        public static async Task<string> GetUrl(IAmazonSQS sqs, string endpointName)
+        public static async Task<string> GetUrl(IAmazonSQS sqs, string prefix, string endpointName)
         {
-            var getQueueUrlRequest = new GetQueueUrlRequest(endpointName);
+            var queueName = $"{prefix}{endpointName}";
+            var getQueueUrlRequest = new GetQueueUrlRequest(queueName);
             var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
             return queueUrlResponse.QueueUrl;
         }
 
-        public static async Task<string> GetArn(IAmazonSQS sqs, string endpointName)
+        public static async Task<string> GetArn(IAmazonSQS sqs, string prefix, string endpointName)
         {
-            var queueUrl = await GetUrl(sqs, endpointName);
+            var queueUrl = await GetUrl(sqs, prefix, endpointName);
             var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrl, new List<string> { "QueueArn" }).ConfigureAwait(false);
             return queueAttributesResponse.QueueARN;
         }
 
-        public static async Task<string> Create(IAmazonSQS sqs, string endpointName, double retentionPeriodInSeconds)
+        public static async Task<string> Create(IAmazonSQS sqs, string prefix, string endpointName, double retentionPeriodInSeconds)
         {
-            var sqsRequest = new CreateQueueRequest { QueueName = endpointName };
+            var queueName = $"{prefix}{endpointName}";
+            var sqsRequest = new CreateQueueRequest { QueueName = queueName };
             await Console.Out.WriteLineAsync($"Creating SQS Queue with name '{sqsRequest.QueueName}' for endpoint '{endpointName}'.");
             var createQueueResponse = await sqs.CreateQueueAsync(sqsRequest).ConfigureAwait(false);
             var sqsAttributesRequest = new SetQueueAttributesRequest { QueueUrl = createQueueResponse.QueueUrl };
@@ -35,9 +37,9 @@
             return createQueueResponse.QueueUrl;
         }
 
-        public static async Task<string> CreateDelayDelivery(IAmazonSQS sqs, string endpointName, double delayInSeconds, double retentionPeriodInSeconds, string suffix)
+        public static async Task<string> CreateDelayDelivery(IAmazonSQS sqs, string prefix, string endpointName, double delayInSeconds, double retentionPeriodInSeconds, string suffix)
         {
-            var delayedDeliveryQueueName = $"{endpointName}{suffix}";
+            var delayedDeliveryQueueName = $"{prefix}{endpointName}{suffix}";
             var sqsRequest = new CreateQueueRequest
             {
                 QueueName = delayedDeliveryQueueName,
@@ -53,9 +55,10 @@
             return createQueueResponse.QueueUrl;
         }
 
-        public static async Task Delete(IAmazonSQS sqs, string endpointName)
+        public static async Task Delete(IAmazonSQS sqs, string prefix, string endpointName)
         {
-            var getQueueUrlRequest = new GetQueueUrlRequest(endpointName);
+            var queueName = $"{prefix}{endpointName}";
+            var getQueueUrlRequest = new GetQueueUrlRequest(queueName);
             var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
             var deleteRequest = new DeleteQueueRequest { QueueUrl = queueUrlResponse.QueueUrl };
             await Console.Out.WriteLineAsync($"Deleting SQS Queue with url '{deleteRequest.QueueUrl}' for endpoint '{endpointName}'.");
@@ -63,9 +66,9 @@
             await Console.Out.WriteLineAsync($"Deleted SQS Queue with url '{deleteRequest.QueueUrl}' for endpoint '{endpointName}'.");
         }
 
-        public static async Task DeleteDelayDelivery(IAmazonSQS sqs, string endpointName, string suffix)
+        public static async Task DeleteDelayDelivery(IAmazonSQS sqs, string prefix, string endpointName, string suffix)
         {
-            var delayedDeliveryQueueName = $"{endpointName}{suffix}";
+            var delayedDeliveryQueueName = $"{prefix}{endpointName}{suffix}";
             var getQueueUrlRequest = new GetQueueUrlRequest(delayedDeliveryQueueName);
             var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
             var deleteRequest = new DeleteQueueRequest { QueueUrl = queueUrlResponse.QueueUrl };

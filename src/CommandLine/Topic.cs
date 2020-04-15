@@ -8,19 +8,21 @@
 
     static class Topic
     {
-        public static async Task<string> Get(IAmazonSimpleNotificationService sns, string eventType)
+        public static async Task<string> Get(IAmazonSimpleNotificationService sns, string prefix, string eventType)
         {
-            var topicName = TopicSanitization.GetSanitizedTopicName(eventType);
-            var findTopicResponse = await sns.FindTopicAsync(topicName).ConfigureAwait(false);
+            var topicName = $"{prefix}{eventType}";
+            var sanitized = TopicSanitization.GetSanitizedTopicName(topicName);
+            var findTopicResponse = await sns.FindTopicAsync(sanitized).ConfigureAwait(false);
             return findTopicResponse.TopicArn;
         }
 
-        public static async Task<string> Create(IAmazonSimpleNotificationService sns, string eventType)
+        public static async Task<string> Create(IAmazonSimpleNotificationService sns, string prefix, string eventType)
         {
-            var topicName = TopicSanitization.GetSanitizedTopicName(eventType);
-            await Console.Out.WriteLineAsync($"Creating SNS Topic with name '{topicName}'.");
-            var createTopicResponse = await sns.CreateTopicAsync(topicName).ConfigureAwait(false);
-            await Console.Out.WriteLineAsync($"Created SNS Topic with name '{topicName}'.");
+            var topicName = $"{prefix}{eventType}";
+            var sanitized = TopicSanitization.GetSanitizedTopicName(topicName);
+            await Console.Out.WriteLineAsync($"Creating SNS Topic with name '{sanitized}'.");
+            var createTopicResponse = await sns.CreateTopicAsync(sanitized).ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"Created SNS Topic with name '{sanitized}'.");
             return createTopicResponse.TopicArn;
         }
 
