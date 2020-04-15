@@ -9,11 +9,9 @@
         public static readonly string S3KeyPrefix = string.Empty;
         public static readonly string DelayedDeliveryQueueSuffix = "-delay.fifo";
 
-        /* TODO: Add support for
-          public static readonly string QueueNamePrefix = string.Empty;
-          public static readonly string TopicNamePrefix = string.Empty;
-         */
-
+        public static readonly string QueueNamePrefix = string.Empty;
+        public static readonly string TopicNamePrefix = string.Empty;
+        
         /* TODO: look into these, why are they different from the above?
          public static readonly int AwsMaximumQueueDelayTime = (int)TimeSpan.FromMinutes(15).TotalSeconds;
          public static readonly TimeSpan DelayedDeliveryQueueMessageRetentionPeriod = TimeSpan.FromDays(4);
