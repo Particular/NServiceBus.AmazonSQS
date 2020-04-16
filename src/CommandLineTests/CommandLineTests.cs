@@ -22,9 +22,11 @@
         const string EventType = "MyNamespace.MyMessage1";
 
         [Test]
-        public async Task Create_endpoint_when_there_are_no_entities()
+        public async Task Create_endpoint_without_prefix_when_there_are_no_entities()
         {
             await DeleteQueue(EndpointName);
+
+            await Task.Delay(60000); // wait for delete to propagate as this queue is reused...
 
             var (output, error, exitCode) = await Execute($"endpoint create {EndpointName}");
 
@@ -32,10 +34,14 @@
             Assert.IsTrue(error == string.Empty);
 
             await VerifyQueue(EndpointName);
+
+            await DeleteQueue(EndpointName);
+
+            await Task.Delay(60000); // wait for delete to propagate as this queue is reused...
         }
 
         [Test]
-        public async Task Create_endpoint_when_there_are_entities()
+        public async Task Create_endpoint_without_prefix_when_there_are_entities()
         {
             var (output, error, exitCode) = await Execute($"endpoint create {EndpointName}");
             (output, error, exitCode) = await Execute($"endpoint create {EndpointName}");
@@ -44,28 +50,53 @@
             Assert.IsTrue(error == string.Empty);
 
             await VerifyQueue(EndpointName);
+
+            await DeleteQueue(EndpointName);
+
+            await Task.Delay(60000); // wait for delete to propagate as this queue is reused...
+        }
+
+        [Test]
+        public async Task Create_endpoint()
+        {
+            var prefix = $"CLI{DateTime.UtcNow:yyyyMMddHHmmss}-";
+
+            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            await VerifyQueue(EndpointName, prefix);
+
+            await DeleteQueue(EndpointName, prefix);
         }
 
         [Test]
         public async Task Create_endpoint_with_custom_retention()
         {
-            await DeleteQueue(EndpointName);
+            var prefix = $"CLI{DateTime.UtcNow:yyyyMMddHHmmss}-";
 
             var customRetention = 60000;
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --retention {customRetention}");
+            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --retention {customRetention} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            await VerifyQueue(EndpointName, customRetention);
+            await VerifyQueue(EndpointName, prefix, retentionPeriodInSeconds: customRetention);
+
+            await DeleteQueue(EndpointName, prefix);
         }
 
         [Test]
         public async Task Enable_large_message_support_on_endpoint()
         {
+            var prefix = $"CLI{DateTime.UtcNow:yyyyMMddHHmmss}-";
+
             await DeleteBucket(BucketName);
 
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName}");
+            await Task.Delay(60000); // wait for delete to propagate as bucket is reused...
+
+            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -76,16 +107,26 @@
             Assert.IsTrue(error == string.Empty);
 
             await VerifyBucket(BucketName);
+
+            await DeleteQueue(EndpointName, prefix);
+
+            await DeleteBucket(BucketName);
+
+            await Task.Delay(60000); // wait for delete to propagate as bucket is reused...
         }
 
         [Test]
         public async Task Enable_large_message_support_on_endpoint_with_custom_key_prefix()
         {
-            var keyPrefix = "prefix-";
+            var prefix = $"CLI{DateTime.UtcNow:yyyyMMddHHmmss}-";
+
+            var keyPrefix = "k-";
 
             await DeleteBucket(BucketName);
 
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName}");
+            await Task.Delay(60000); // wait for delete to propagate as bucket is reused...
+
+            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -97,16 +138,26 @@
 
             await VerifyBucket(BucketName);
             await VerifyLifecycleConfiguration(BucketName, keyPrefix: keyPrefix);
+
+            await DeleteQueue(EndpointName, prefix);
+
+            await DeleteBucket(BucketName);
+
+            await Task.Delay(60000); // wait for delete to propagate as bucket is reused...
         }
 
         [Test]
         public async Task Enable_large_message_support_on_endpoint_with_custom_expiration()
         {
+            var prefix = $"CLI{DateTime.UtcNow:yyyyMMddHHmmss}-";
+
             var expiration = 7;
 
             await DeleteBucket(BucketName);
 
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName}");
+            await Task.Delay(60000); // wait for delete to propagate as bucket is reused...
+
+            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -118,106 +169,125 @@
 
             await VerifyBucket(BucketName);
             await VerifyLifecycleConfiguration(BucketName, expiration: expiration);
+
+            await DeleteQueue(EndpointName, prefix);
+
+            await DeleteBucket(BucketName);
+
+            await Task.Delay(60000); // wait for delete to propagate as bucket is reused...
         }
         
         [Test]
         public async Task Enable_delay_delivery_on_endpoint()
         {
-            await DeleteDelayDeliveryQueue(EndpointName);
+            var prefix = $"CLI{DateTime.UtcNow:yyyyMMddHHmmss}-";
 
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName}");
-
-            Assert.AreEqual(0, exitCode);
-            Assert.IsTrue(error == string.Empty);
-
-            (output, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support");
+            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            await VerifyDelayDeliveryQueue(EndpointName);
+            (output, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            await VerifyDelayDeliveryQueue(EndpointName, prefix);
+
+            await DeleteQueue(EndpointName, prefix);
+            await DeleteDelayDeliveryQueue(EndpointName, prefix);
         }
 
         [Test]
         public async Task Enable_delay_delivery_on_endpoint_with_custom_delay()
         {
+            var prefix = $"CLI{DateTime.UtcNow:yyyyMMddHHmmss}-";
+
             var delay = 600;
-
-            await DeleteDelayDeliveryQueue(EndpointName);
-
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName}");
+            
+            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (output, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --delay {delay}");
+            (output, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --delay {delay} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            await VerifyDelayDeliveryQueue(EndpointName, delayInSeconds: delay);
+            await VerifyDelayDeliveryQueue(EndpointName, prefix, delayInSeconds: delay);
+            
+            await DeleteQueue(EndpointName, prefix);
+            await DeleteDelayDeliveryQueue(EndpointName, prefix);
         }
 
         [Test]
         public async Task Enable_delay_delivery_on_endpoint_with_custom_retention()
         {
+            var prefix = $"CLI{DateTime.UtcNow:yyyyMMddHHmmss}-";
+
             var retention = 60000;
 
-            await DeleteDelayDeliveryQueue(EndpointName);
-
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName}");
+            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (output, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --retention {retention}");
+            (output, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --retention {retention} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            await VerifyDelayDeliveryQueue(EndpointName, retentionPeriodInSeconds: retention);
+            await VerifyDelayDeliveryQueue(EndpointName, prefix, retentionPeriodInSeconds: retention);
+
+            await DeleteQueue(EndpointName, prefix);
+            await DeleteDelayDeliveryQueue(EndpointName, prefix);
         }
 
         [Test]
         public async Task Enable_delay_delivery_on_endpoint_with_custom_suffix()
         {
+            var prefix = $"CLI{DateTime.UtcNow:yyyyMMddHHmmss}-";
             var suffix = "-mydelay.fifo";
 
-            await DeleteDelayDeliveryQueue(EndpointName, suffix);
-
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName}");
+            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (output, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --suffix {suffix}");
+            (output, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --prefix {prefix} --suffix {suffix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            await VerifyDelayDeliveryQueue(EndpointName, suffix: suffix);
+            await VerifyDelayDeliveryQueue(EndpointName, prefix, suffix: suffix);
+
+            await DeleteQueue(EndpointName, prefix);
+            await DeleteDelayDeliveryQueue(EndpointName, prefix, suffix);
         }
 
         [Test]
         public async Task Subscribe_on_event()
         {
-            await DeleteQueue(EndpointName);
+            var prefix = $"CLI{DateTime.UtcNow:yyyyMMddHHmmss}-";
 
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName}");
-
-            Assert.AreEqual(0, exitCode);
-            Assert.IsTrue(error == string.Empty);
-
-            (output, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType}");
+            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            var queueArn = await VerifyQueue(EndpointName);
-            var topicArn = await VerifyTopic(EventType);
+            (output, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            var queueArn = await VerifyQueue(EndpointName, prefix);
+            var topicArn = await VerifyTopic(EventType, prefix);
             await VerifySubscription(topicArn, queueArn);
-        }
 
+            await DeleteQueue(EndpointName, prefix);
+            await DeleteTopic(EventType, prefix);
+        }
 
         static async Task<(string output, string error, int exitCode)> Execute(string command)
         {
@@ -248,13 +318,13 @@
 
             return (output, error, process.ExitCode);
         }
-
         
-        async Task<string> VerifyQueue(string queueName, double? retentionPeriodInSeconds = null)
+        async Task<string> VerifyQueue(string queueName, string prefix = null, double? retentionPeriodInSeconds = null)
         {
+            if (prefix == null) prefix = DefaultConfigurationValues.QueueNamePrefix;
             if (retentionPeriodInSeconds == null) retentionPeriodInSeconds = DefaultConfigurationValues.RetentionPeriod.TotalSeconds;
 
-            var getQueueUrlRequest = new GetQueueUrlRequest(queueName);
+            var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
             var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
 
             var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string> { QueueAttributeName.MessageRetentionPeriod, QueueAttributeName.QueueArn }).ConfigureAwait(false);
@@ -264,13 +334,14 @@
             return queueAttributesResponse.QueueARN;
         }
 
-        async Task<string> VerifyDelayDeliveryQueue(string queueName, double? retentionPeriodInSeconds = null, double? delayInSeconds = null, string suffix = null)
+        async Task<string> VerifyDelayDeliveryQueue(string queueName, string prefix = null, double? retentionPeriodInSeconds = null, double? delayInSeconds = null, string suffix = null)
         {
+            if (prefix == null) prefix = DefaultConfigurationValues.QueueNamePrefix;
             if (retentionPeriodInSeconds == null) retentionPeriodInSeconds = DefaultConfigurationValues.RetentionPeriod.TotalSeconds;
             if (delayInSeconds == null) delayInSeconds = DefaultConfigurationValues.MaximumQueueDelayTime.TotalSeconds;
             if (suffix == null) suffix = DefaultConfigurationValues.DelayedDeliveryQueueSuffix;
 
-            var getQueueUrlRequest = new GetQueueUrlRequest(queueName + suffix);
+            var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}{suffix}");
             var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
 
             var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string> { 
@@ -284,9 +355,10 @@
             return queueAttributesResponse.QueueARN;
         }
 
-        async Task<string> VerifyTopic(string eventType)
+        async Task<string> VerifyTopic(string eventType, string prefix = null)
         {
-            var topicName = TopicSanitization.GetSanitizedTopicName(eventType);
+            if (prefix == null) prefix = DefaultConfigurationValues.TopicNamePrefix;
+            var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
 
             var findTopicResponse = await sns.FindTopicAsync(topicName).ConfigureAwait(false);
 
@@ -340,29 +412,29 @@
             Assert.IsNotNull(subscription);
         }
 
-        async Task DeleteQueue(string queueName)
+        async Task DeleteQueue(string queueName, string prefix = null)
         {
+            if (prefix == null) prefix = DefaultConfigurationValues.QueueNamePrefix;
             try
             {
-                var getQueueUrlRequest = new GetQueueUrlRequest(queueName);
+                var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
                 var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
                 var deleteRequest = new DeleteQueueRequest { QueueUrl = queueUrlResponse.QueueUrl };
-                await sqs.DeleteQueueAsync(deleteRequest).ConfigureAwait(false);
-
-                await Task.Delay(90000); // aws doesn't like us deleting and creating queues fast...
+                await sqs.DeleteQueueAsync(deleteRequest).ConfigureAwait(false);               
             }
             catch (QueueDoesNotExistException)
             {
                 // this is fine
             }           
         }
-        
-        async Task DeleteDelayDeliveryQueue(string queueName, string suffix = null)
+
+        async Task DeleteDelayDeliveryQueue(string queueName, string prefix = null, string suffix = null)
         {
+            if (prefix == null) prefix = DefaultConfigurationValues.QueueNamePrefix;
             if (suffix == null) suffix = DefaultConfigurationValues.DelayedDeliveryQueueSuffix;
             try
             {
-                var getQueueUrlRequest = new GetQueueUrlRequest(queueName + suffix);
+                var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}{suffix}");
                 var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
                 var deleteRequest = new DeleteQueueRequest { QueueUrl = queueUrlResponse.QueueUrl };
                 await sqs.DeleteQueueAsync(deleteRequest).ConfigureAwait(false);
@@ -381,12 +453,20 @@
             var bucketExists = listBucketsResponse.Buckets.Any(x => string.Equals(x.BucketName, bucketName, StringComparison.InvariantCultureIgnoreCase));
             if (bucketExists)
             {
-                await s3.DeleteBucketAsync(new DeleteBucketRequest { BucketName = bucketName }).ConfigureAwait(false);
-
-                await Task.Delay(90000); // aws doesn't like us deleting and creating buckets fast...
+                await s3.DeleteBucketAsync(new DeleteBucketRequest { BucketName = bucketName }).ConfigureAwait(false);               
             }
         }
 
+        async Task DeleteTopic(string eventType, string prefix = null)
+        {
+            if (prefix == null) prefix = DefaultConfigurationValues.TopicNamePrefix;
+            var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
+
+            var findTopicResponse = await sns.FindTopicAsync(topicName).ConfigureAwait(false);
+
+            await sns.DeleteTopicAsync(findTopicResponse.TopicArn).ConfigureAwait(false);
+        }
+        
         [SetUp]
         public void Setup()
         {
