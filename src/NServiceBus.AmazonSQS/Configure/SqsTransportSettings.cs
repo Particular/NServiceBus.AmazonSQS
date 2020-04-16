@@ -9,7 +9,7 @@
     /// <summary>
     /// Adds access to the SQS transport config to the global Transports object.
     /// </summary>
-    public static partial class SqsTransportSettings
+    public static class SqsTransportSettings
     {
         /// <summary>
         /// Enables compatibility with endpoints running on message-driven pub-sub
