@@ -2,7 +2,7 @@
   "profiles": {
     "NServiceBus.Transports.SQS.CommandLine": {
       "commandName": "Project",
-      "commandLineArgs": "endpoint subscribe test MyNamespace.MyMessage"
+      "commandLineArgs": "endpoint create test --prefix yves-"
     }
   }
 }
