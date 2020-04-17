@@ -161,13 +161,16 @@
                         largeMessageSupportCommand.Options.Add(accessKeyOption);
                         largeMessageSupportCommand.Options.Add(regionOption);
                         largeMessageSupportCommand.Options.Add(secretOption);
+                        var removeSharedResourcesCommand = largeMessageSupportCommand.Option("-f|--remove-shared-resources", "Remove shared resources (S3 Bucket).", CommandOptionType.NoValue);
+
 
                         largeMessageSupportCommand.OnExecuteAsync(async ct =>
                         {
                             var endpointName = nameArgument.Value;
                             var bucketName = bucketArgument.Value;
+                            var removeSharedResources = removeSharedResourcesCommand.HasValue();
 
-                            await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.RemoveLargeMessageSupport(s3, endpointName, bucketName));
+                            await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.RemoveLargeMessageSupport(s3, endpointName, bucketName, removeSharedResources));
                         });
                     });
 
@@ -224,14 +227,16 @@
                     unsubscribeCommand.Options.Add(regionOption);
                     unsubscribeCommand.Options.Add(secretOption);
                     unsubscribeCommand.Options.Add(prefixOption);
+                    var removeSharedResourcesCommand = unsubscribeCommand.Option("-f|--remove-shared-resources", "Remove shared resources (Topic being unsubscribed from).", CommandOptionType.NoValue);
 
                     unsubscribeCommand.OnExecuteAsync(async ct =>
                     {
                         var endpointName = nameArgument.Value;
                         var prefix = prefixOption.HasValue() ? prefixOption.Value() : DefaultConfigurationValues.QueueNamePrefix;
                         var eventType = eventTypeArgument.Value;
+                        var removeSharedResources = removeSharedResourcesCommand.HasValue();
 
-                        await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.Unsubscribe(sqs, sns, prefix, endpointName, eventType));
+                        await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.Unsubscribe(sqs, sns, prefix, endpointName, eventType, removeSharedResources));
 
                         await Console.Out.WriteLineAsync($"Endpoint '{endpointName}' unsubscribed from '{eventType}'.");
                     });

@@ -36,11 +36,11 @@
             await Console.Out.WriteLineAsync($"Added large message support to Endpoint '{endpointName}'.");
         }
 
-        public static async Task RemoveLargeMessageSupport(IAmazonS3 s3, string endpointName, string bucketName)
+        public static async Task RemoveLargeMessageSupport(IAmazonS3 s3, string endpointName, string bucketName, bool removeSharedResources)
         {
             await Console.Out.WriteLineAsync($"Removing large message support from Endpoint '{endpointName}'.");
 
-            await Bucket.Delete(s3, endpointName, bucketName);
+            if (removeSharedResources) await Bucket.Delete(s3, endpointName, bucketName);
 
             await Console.Out.WriteLineAsync($"Removing large message support from Endpoint '{endpointName}'.");
         }
@@ -74,7 +74,7 @@
             await Console.Out.WriteLineAsync($"Endpoint '{endpointName}' subscribed to '{eventType}'.");
         }
 
-        public static async Task Unsubscribe(IAmazonSQS sqs, IAmazonSimpleNotificationService sns, string prefix, string endpointName, string eventType)
+        public static async Task Unsubscribe(IAmazonSQS sqs, IAmazonSimpleNotificationService sns, string prefix, string endpointName, string eventType, bool removeSharedResources)
         {
             await Console.Out.WriteLineAsync($"Unsubscribing endpoint '{endpointName}' from '{eventType}'.");
 
@@ -83,6 +83,11 @@
             await Topic.Unsubscribe(sns, topicArn, queueArn);
 
             await Console.Out.WriteLineAsync($"Endpoint '{endpointName}' unsubscribed from '{eventType}'.");
+
+            if (removeSharedResources)
+            {
+                await Topic.Delete(sns, topicArn);
+            }
         }
 
 
