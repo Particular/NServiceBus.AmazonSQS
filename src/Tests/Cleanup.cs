@@ -68,14 +68,25 @@ namespace NServiceBus.AmazonSQS.Tests
 
         public static async Task DeleteAllSubscriptionsWithPrefix(IAmazonSimpleNotificationService snsClient, string topicNamePrefix)
         {
+            var deletedSubscriptionArns = new HashSet<string>(StringComparer.Ordinal);
+
             try
             {
                 ListSubscriptionsResponse subscriptions;
                 do
                 {
                     subscriptions = await snsClient.ListSubscriptionsAsync();
+
+                    // if everything returned here has already been deleted it is probably a good time to stop trying due to the eventual consistency
+                    if (subscriptions.Subscriptions.All(subscription => deletedSubscriptionArns.Contains(subscription.SubscriptionArn)))
+                    {
+                        return;
+                    }
+
                     var deletionTasks = new List<Task>(subscriptions.Subscriptions.Count);
-                    deletionTasks.AddRange(subscriptions.Subscriptions.Select(async subscription =>
+                    deletionTasks.AddRange(subscriptions.Subscriptions
+                        .Where(subscription => !deletedSubscriptionArns.Contains(subscription.SubscriptionArn))
+                        .Select(async subscription =>
                     {
                         if (!subscription.TopicArn.Contains($":{topicNamePrefix}"))
                         {
@@ -85,6 +96,7 @@ namespace NServiceBus.AmazonSQS.Tests
                         try
                         {
                             await snsClient.UnsubscribeAsync(subscription.SubscriptionArn).ConfigureAwait(false);
+                            deletedSubscriptionArns.Add(subscription.SubscriptionArn);
                         }
                         catch (Exception)
                         {
@@ -103,14 +115,24 @@ namespace NServiceBus.AmazonSQS.Tests
 
         public static async Task DeleteAllTopicsWithPrefix(IAmazonSimpleNotificationService snsClient, string topicNamePrefix)
         {
+            var deletedTopicArns = new HashSet<string>(StringComparer.Ordinal);
             try
             {
                 ListTopicsResponse upToHundredTopics = null;
                 do
                 {
                     upToHundredTopics = await snsClient.ListTopicsAsync(upToHundredTopics?.NextToken);
+
+                    // if everything returned here has already been deleted it is probably a good time to stop trying due to the eventual consistency
+                    if (upToHundredTopics.Topics.All(topic => deletedTopicArns.Contains(topic.TopicArn)))
+                    {
+                        return;
+                    }
+
                     var deletionTasks = new List<Task>(upToHundredTopics.Topics.Count);
-                    deletionTasks.AddRange(upToHundredTopics.Topics.Select(async topic =>
+                    deletionTasks.AddRange(upToHundredTopics.Topics
+                        .Where(topic => !deletedTopicArns.Contains(topic.TopicArn))
+                        .Select(async topic =>
                     {
                         if (!topic.TopicArn.Contains($":{topicNamePrefix}"))
                         {
@@ -120,6 +142,7 @@ namespace NServiceBus.AmazonSQS.Tests
                         try
                         {
                             await snsClient.DeleteTopicAsync(topic.TopicArn).ConfigureAwait(false);
+                            deletedTopicArns.Add(topic.TopicArn);
                         }
                         catch (Exception)
                         {
@@ -137,18 +160,28 @@ namespace NServiceBus.AmazonSQS.Tests
 
         public static async Task DeleteAllQueuesWithPrefix(IAmazonSQS sqsClient, string queueNamePrefix)
         {
+            var deletedQueueUrls = new HashSet<string>(StringComparer.Ordinal);
             try
             {
                 ListQueuesResponse upToAThousandQueues;
                 do
                 {
                     upToAThousandQueues = await sqsClient.ListQueuesAsync(queueNamePrefix);
+                    // if everything returned here has already been deleted it is probably a good time to stop trying due to the eventual consistency
+                    if (upToAThousandQueues.QueueUrls.All(url => deletedQueueUrls.Contains(url)))
+                    {
+                        return;
+                    }
+
                     var deletionTasks = new List<Task>(upToAThousandQueues.QueueUrls.Count);
-                    deletionTasks.AddRange(upToAThousandQueues.QueueUrls.Select(async queueUrl =>
+                    deletionTasks.AddRange(upToAThousandQueues.QueueUrls
+                        .Where(url => !deletedQueueUrls.Contains(url))
+                        .Select(async queueUrl =>
                     {
                         try
                         {
                             await sqsClient.DeleteQueueAsync(queueUrl);
+                            deletedQueueUrls.Add(queueUrl);
                         }
                         catch (Exception)
                         {
