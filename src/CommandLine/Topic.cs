@@ -73,7 +73,14 @@
             return null;
         }
 
-        
+        public static async Task Delete(IAmazonSimpleNotificationService sns, string topicArn)
+        {
+            await Console.Out.WriteLineAsync($"Deleting topic with ARN '{topicArn}'.");
+
+            await sns.DeleteTopicAsync(topicArn).ConfigureAwait(false);
+
+            await Console.Out.WriteLineAsync($"Deleted topic with ARN '{topicArn}'.");
+        }
     }
 
 }
