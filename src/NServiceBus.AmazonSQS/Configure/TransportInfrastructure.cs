@@ -75,6 +75,7 @@
             topicCache = new TopicCache(snsClient, messageMetadataRegistry, configuration);
         }
 
+        public SubscriptionManager SubscriptionManager { get; private set;  }
 
         public override IEnumerable<Type> DeliveryConstraints => new List<Type>
         {
@@ -127,7 +128,11 @@
 
         public override TransportSubscriptionInfrastructure ConfigureSubscriptionInfrastructure()
         {
-            return new TransportSubscriptionInfrastructure(() => new SubscriptionManager(sqsClient, snsClient, settings.LocalAddress(), queueCache, messageMetadataRegistry, topicCache));
+            if (SubscriptionManager == null)
+            {
+                SubscriptionManager = new SubscriptionManager(sqsClient, snsClient, settings.LocalAddress(), queueCache, messageMetadataRegistry, topicCache);
+            }
+            return new TransportSubscriptionInfrastructure(() => SubscriptionManager);
         }
 
         public override EndpointInstance BindToLocalEndpoint(EndpointInstance instance)

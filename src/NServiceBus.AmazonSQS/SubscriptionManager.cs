@@ -1,4 +1,4 @@
-namespace NServiceBus
+namespace NServiceBus.AmazonSQS
 {
     using System;
     using System.Collections.Concurrent;
@@ -9,13 +9,12 @@ namespace NServiceBus
     using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS;
-    using AmazonSQS;
     using Extensibility;
     using Logging;
     using Transport;
     using Unicast.Messages;
 
-    class SubscriptionManager : IManageSubscriptions
+    class SubscriptionManager : IManageSubscriptions, ISettlePolicy
     {
         public SubscriptionManager(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, MessageMetadataRegistry messageMetadataRegistry, TopicCache topicCache)
         {
@@ -49,7 +48,7 @@ namespace NServiceBus
         }
 
         // guaranteed to be only executed by startup task without concurrency, no other subscribes can happen during the policy settlement
-        public async Task SettlePolicy()
+        public async Task Settle()
         {
             var queueUrl = await queueCache.GetQueueUrl(queueName)
                 .ConfigureAwait(false);

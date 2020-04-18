@@ -228,7 +228,7 @@ namespace NServiceBus.AmazonSQS.Tests
             var anotherEvent = typeof(AnotherEvent);
             await manager.Subscribe(anotherEvent, null);
 
-            await manager.SettlePolicy();
+            await manager.Settle();
 
             var policy = Policy.FromJson(sqsClient.SetAttributesRequestsSent[0].attributes["Policy"]);
 
