@@ -1,9 +1,10 @@
-﻿namespace NServiceBus.AmazonSQS
+﻿namespace NServiceBus.Transport.AmazonSQS
 {
     using System;
     using Amazon.S3;
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
+    using Configure;
     using Settings;
     using Unicast.Messages;
 

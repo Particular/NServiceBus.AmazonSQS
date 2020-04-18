@@ -1,4 +1,4 @@
-namespace NServiceBus.Transports.SQS
+namespace NServiceBus.Transport.AmazonSQS
 {
     abstract class PreparedMessage
     {

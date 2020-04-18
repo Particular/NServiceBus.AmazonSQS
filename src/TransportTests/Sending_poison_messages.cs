@@ -3,12 +3,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using NServiceBus.Transport;
-using NServiceBus.AmazonSQS;
 using NServiceBus.Settings;
 using NServiceBus.AmazonSQS.AcceptanceTests;
 using Amazon.SQS.Model;
 using NServiceBus;
 using NServiceBus.Configuration.AdvancedExtensibility;
+using NServiceBus.Transport.AmazonSQS;
 using NServiceBus.TransportTests;
 
 public class Sending_poison_messages : NServiceBusTransportTest

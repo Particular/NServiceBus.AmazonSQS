@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.AmazonSQS
+﻿namespace NServiceBus.Transport.AmazonSQS
 {
     using System;
     using System.Collections.Concurrent;
@@ -14,6 +14,7 @@
             this.configuration = configuration;
             queueNameToUrlCache = new ConcurrentDictionary<string, string>();
             queueNameToPhysicalAddressCache = new ConcurrentDictionary<string, string>();
+            queueUrlToQueueArnCache = new ConcurrentDictionary<string, string>();
             this.sqsClient = sqsClient;
         }
 
@@ -25,6 +26,17 @@
         public string GetPhysicalQueueName(string queueName)
         {
             return queueNameToPhysicalAddressCache.GetOrAdd(queueName, name => GetSqsQueueName(name, configuration));
+        }
+
+        public async Task<string> GetQueueArn(string queueUrl)
+        {
+            if (queueUrlToQueueArnCache.TryGetValue(queueUrl, out var queueArn))
+            {
+                return queueArn;
+            }
+
+            var queueAttributes = await sqsClient.GetAttributesAsync(queueUrl).ConfigureAwait(false);
+            return queueUrlToQueueArnCache.AddOrUpdate(queueUrl, queueAttributes["QueueArn"], (key, value) => value);
         }
 
         public async Task<string> GetQueueUrl(string queueName)
@@ -49,9 +61,9 @@
             }
 
             // we need to process again because of the way we handle fifo queues
-            var queueName = !string.IsNullOrEmpty(transportConfiguration.QueueNamePrefix) && 
-                    destination.StartsWith(transportConfiguration.QueueNamePrefix, StringComparison.Ordinal) ? 
-                destination : 
+            var queueName = !string.IsNullOrEmpty(transportConfiguration.QueueNamePrefix) &&
+                    destination.StartsWith(transportConfiguration.QueueNamePrefix, StringComparison.Ordinal) ?
+                destination :
                 $"{transportConfiguration.QueueNamePrefix}{destination}";
 
             if (transportConfiguration.PreTruncateQueueNames && queueName.Length > 80)
@@ -91,6 +103,7 @@
 
         ConcurrentDictionary<string, string> queueNameToUrlCache;
         ConcurrentDictionary<string, string> queueNameToPhysicalAddressCache;
+        ConcurrentDictionary<string, string> queueUrlToQueueArnCache;
         IAmazonSQS sqsClient;
         TransportConfiguration configuration;
     }

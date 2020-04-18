@@ -1,4 +1,4 @@
-namespace NServiceBus.Transports.SQS
+namespace NServiceBus.Transport.AmazonSQS
 {
     using System.Collections.Generic;
     using Amazon.SQS.Model;

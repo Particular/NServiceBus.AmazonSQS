@@ -1,9 +1,10 @@
-namespace NServiceBus.AmazonSQS
+namespace NServiceBus.Transport.AmazonSQS
 {
     using System;
     using System.Collections.Concurrent;
     using System.Threading.Tasks;
     using Amazon.SimpleNotificationService;
+    using Configure;
     using Unicast.Messages;
 
     class TopicCache

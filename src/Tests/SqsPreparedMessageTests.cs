@@ -5,7 +5,7 @@ namespace NServiceBus.AmazonSQS.Tests
     using System.IO;
     using Amazon.SQS.Model;
     using NUnit.Framework;
-    using Transports.SQS;
+    using Transport.AmazonSQS;
 
     [TestFixture]
     public class SqsPreparedMessageTests
@@ -18,9 +18,9 @@ namespace NServiceBus.AmazonSQS.Tests
             message.MessageAttributes.Add("Key2", new MessageAttributeValue { StringListValues = new List<string> { "SomeString" }});
             message.MessageAttributes.Add("Key3", new MessageAttributeValue { BinaryValue = new MemoryStream(new byte[1]) });
             message.MessageAttributes.Add("Key4", new MessageAttributeValue { BinaryListValues = new List<MemoryStream> { new MemoryStream(new byte[2]) }});
-            
+
             message.CalculateSize();
-            
+
             Assert.AreEqual(45, message.Size);
         }
 
@@ -33,7 +33,7 @@ namespace NServiceBus.AmazonSQS.Tests
             {
                 MessageId = expectedMessageId
             };
-            
+
             Assert.AreEqual(expectedMessageId, message.MessageAttributes[Headers.MessageId].StringValue);
         }
     }

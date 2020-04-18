@@ -5,6 +5,8 @@
     using System.Threading.Tasks;
     using NUnit.Framework;
     using Settings;
+    using Transport.AmazonSQS;
+    using Transport.AmazonSQS.Configure;
 
     [TestFixture]
     public class QueueCacheTests
@@ -133,6 +135,28 @@
 
             Assert.IsEmpty(sqsClient.QueueUrlRequestsSent);
             CollectionAssert.AreEqual(new List<string> { "PREFIXfakeQueueName" }, requestsSent);
+        }
+
+        [Test]
+        public async Task GetQueueArn_caches()
+        {
+            var settings = new SettingsHolder();
+
+            var configuration = new TransportConfiguration(settings);
+            var sqsClient = new MockSqsClient();
+
+            var cache = new QueueCache(sqsClient, configuration);
+
+            await cache.GetQueueArn("fakeQueueUrl");
+
+            var requestsSent = new List<string>(sqsClient.GetAttributeRequestsSent);
+
+            sqsClient.GetAttributeRequestsSent.Clear();
+
+            await cache.GetQueueArn("fakeQueueUrl");
+
+            Assert.IsEmpty(sqsClient.GetAttributeRequestsSent);
+            CollectionAssert.AreEqual(new List<string> { "fakeQueueUrl" }, requestsSent);
         }
 
         [Test]

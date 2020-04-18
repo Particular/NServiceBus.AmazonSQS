@@ -4,6 +4,8 @@
     using Routing;
     using Settings;
     using Transport;
+    using Transport.AmazonSQS.Configure;
+    using TransportInfrastructure = Transport.TransportInfrastructure;
 
     /// <summary>
     /// Sqs transport definition.
@@ -17,7 +19,7 @@
         public override bool RequiresConnectionString => false;
 
         /// <inheritdoc />
-        public override Transport.TransportInfrastructure Initialize(SettingsHolder settings, string connectionString)
+        public override TransportInfrastructure Initialize(SettingsHolder settings, string connectionString)
         {
             if (!string.IsNullOrEmpty(connectionString))
             {
@@ -30,7 +32,7 @@
             settings.SetDefault(SettingsKeys.QueueNamePrefix, string.Empty);
             settings.SetDefault(SettingsKeys.TopicNamePrefix, string.Empty);
 
-            return new TransportInfrastructure(settings);
+            return new SqsTransportInfrastructure(settings);
         }
     }
 }
