@@ -11,6 +11,8 @@ namespace NServiceBus.AmazonSQS.Tests
     using Amazon.SQS;
     using NUnit.Framework;
     using Settings;
+    using Transport.AmazonSQS;
+    using Transport.AmazonSQS.Configure;
     using Unicast.Messages;
 
     [TestFixture]

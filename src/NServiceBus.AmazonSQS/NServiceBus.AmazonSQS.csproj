@@ -4,6 +4,7 @@
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>$(SolutionDir)NServiceBus.snk</AssemblyOriginatorKeyFile>
     <Description>An Amazon SQS transport implementation for NServiceBus</Description>
+    <RootNamespace>NServiceBus.Transport.AmazonSQS</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="[3.3.18.5, 3.4)" />

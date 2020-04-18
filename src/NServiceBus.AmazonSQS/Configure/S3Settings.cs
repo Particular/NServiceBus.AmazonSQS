@@ -5,6 +5,8 @@ namespace NServiceBus
     using Amazon.S3;
     using Configuration.AdvancedExtensibility;
     using Settings;
+    using Transport.AmazonSQS;
+    using Transport.AmazonSQS.Configure;
 
     /// <summary>
     /// Exposes settings to configure S3 bucket and client factory.

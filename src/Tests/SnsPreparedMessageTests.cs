@@ -4,7 +4,7 @@ namespace NServiceBus.AmazonSQS.Tests
     using System.IO;
     using Amazon.SimpleNotificationService.Model;
     using NUnit.Framework;
-    using Transports.SQS;
+    using Transport.AmazonSQS;
 
     [TestFixture]
     public class SnsPreparedMessageTests
@@ -15,9 +15,9 @@ namespace NServiceBus.AmazonSQS.Tests
             var message = new SnsPreparedMessage();
             message.MessageAttributes.Add("Key1", new MessageAttributeValue { DataType = "string", StringValue = "SomeString" });
             message.MessageAttributes.Add("Key3", new MessageAttributeValue { BinaryValue = new MemoryStream(new byte[1]) });
-            
+
             message.CalculateSize();
-            
+
             Assert.AreEqual(25, message.Size);
         }
 
@@ -30,7 +30,7 @@ namespace NServiceBus.AmazonSQS.Tests
             {
                 MessageId = expectedMessageId
             };
-            
+
             Assert.AreEqual(expectedMessageId, message.MessageAttributes[Headers.MessageId].StringValue);
         }
     }

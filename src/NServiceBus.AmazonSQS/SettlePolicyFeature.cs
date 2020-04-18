@@ -1,6 +1,7 @@
-namespace NServiceBus.AmazonSQS
+namespace NServiceBus.Transport.AmazonSQS
 {
     using System.Threading.Tasks;
+    using Configure;
     using Features;
     using Transport;
 
@@ -15,7 +16,7 @@ namespace NServiceBus.AmazonSQS
 
         protected override void Setup(FeatureConfigurationContext context)
         {
-            var transportInfrastructure = (NServiceBus.TransportInfrastructure)context.Settings.Get<TransportInfrastructure>();
+            var transportInfrastructure = (SqsTransportInfrastructure)context.Settings.Get<TransportInfrastructure>();
 
             // with Core 7.2.4 the startup task will run after the auto subscribe startup task
             context.RegisterStartupTask(b => new SettlePolicyStartupTask(transportInfrastructure.SubscriptionManager));

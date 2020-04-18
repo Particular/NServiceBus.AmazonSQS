@@ -1,4 +1,4 @@
-namespace NServiceBus.AmazonSQS
+namespace NServiceBus.Transport.AmazonSQS.Extensions
 {
     using System;
     using System.Linq;

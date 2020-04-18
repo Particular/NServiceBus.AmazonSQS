@@ -1,4 +1,4 @@
-namespace NServiceBus.AmazonSQS
+namespace NServiceBus.Transport.AmazonSQS
 {
     using System;
     using System.Collections.Concurrent;
@@ -10,6 +10,7 @@ namespace NServiceBus.AmazonSQS
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS;
     using Extensibility;
+    using Extensions;
     using Logging;
     using Transport;
     using Unicast.Messages;

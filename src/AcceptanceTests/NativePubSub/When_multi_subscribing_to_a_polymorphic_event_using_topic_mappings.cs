@@ -75,7 +75,7 @@
                     var transportConfig = c.ConfigureSqsTransport();
                     // to avoid pretruncation
                     transportConfig.TopicNameGenerator((type, prefix) => $"{prefix}{type.Name}");
-                    transportConfig.MapEvent<IMyEvent>(new[] { topicNameForMyEvent1, topicNameForMyEvent2 });
+                    SqsTransportSettings.MapEvent<IMyEvent>(transportConfig, new[] { topicNameForMyEvent1, topicNameForMyEvent2 });
                 });
             }
 

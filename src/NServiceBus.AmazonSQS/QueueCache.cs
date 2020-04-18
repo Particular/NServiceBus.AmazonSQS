@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.AmazonSQS
+﻿namespace NServiceBus.Transport.AmazonSQS
 {
     using System;
     using System.Collections.Concurrent;

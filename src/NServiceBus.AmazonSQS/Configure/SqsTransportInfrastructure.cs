@@ -1,4 +1,4 @@
-﻿namespace NServiceBus
+﻿namespace NServiceBus.Transport.AmazonSQS.Configure
 {
     using System;
     using System.Collections.Generic;
@@ -8,19 +8,17 @@
     using Amazon.S3;
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
-    using AmazonSQS;
     using DelayedDelivery;
     using Logging;
     using Performance.TimeToBeReceived;
     using Routing;
     using Settings;
     using Transport;
-    using Transports.SQS;
     using Unicast.Messages;
 
-    class TransportInfrastructure : Transport.TransportInfrastructure
+    class SqsTransportInfrastructure : TransportInfrastructure
     {
-        public TransportInfrastructure(ReadOnlySettings settings)
+        public SqsTransportInfrastructure(ReadOnlySettings settings)
         {
             this.settings = settings;
             messageMetadataRegistry = this.settings.Get<MessageMetadataRegistry>();
@@ -165,6 +163,6 @@
         readonly ReadOnlySettings settings;
         readonly MessageMetadataRegistry messageMetadataRegistry;
         readonly TopicCache topicCache;
-        static ILog Logger = LogManager.GetLogger(typeof(TransportInfrastructure));
+        static ILog Logger = LogManager.GetLogger(typeof(SqsTransportInfrastructure));
     }
 }
