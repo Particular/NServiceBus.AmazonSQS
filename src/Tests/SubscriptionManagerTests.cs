@@ -5,11 +5,14 @@ namespace NServiceBus.AmazonSQS.Tests
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Amazon.Auth.AccessControlPolicy;
     using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS;
     using NUnit.Framework;
     using Settings;
+    using Transport.AmazonSQS;
+    using Transport.AmazonSQS.Configure;
     using Unicast.Messages;
 
     [TestFixture]
@@ -189,7 +192,7 @@ namespace NServiceBus.AmazonSQS.Tests
             sqsClient.GetAttributeRequestsResponse = s =>
             {
                 invocationCount++;
-                if (invocationCount < 9)
+                if (invocationCount < 10)
                 {
                     return new Dictionary<string, string>
                     {
@@ -202,6 +205,42 @@ namespace NServiceBus.AmazonSQS.Tests
             Assert.DoesNotThrowAsync(async() => await manager.Subscribe(typeof(Event), null));
             Assert.AreEqual(7, manager.Delays.Count);
             Assert.AreEqual(35000, manager.Delays.Sum());
+        }
+
+        [Test]
+        public async Task Subscribe_endpointstarting_creates_topic_but_not_policies_and_subscriptions()
+        {
+            manager.EndpointStartingMode = true;
+
+            var eventType = typeof(Event);
+            await manager.Subscribe(eventType, null);
+
+            Assert.AreEqual(1, snsClient.CreateTopicRequests.Count);
+            Assert.IsEmpty(snsClient.SubscribeRequestsSent);
+            Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
+        }
+
+        [Test]
+        public async Task SettlePolicy_sets_full_policy()
+        {
+            manager.EndpointStartingMode = true;
+
+            var eventType = typeof(Event);
+            await manager.Subscribe(eventType, null);
+            var anotherEvent = typeof(AnotherEvent);
+            await manager.Subscribe(anotherEvent, null);
+
+            await manager.Settle();
+
+            var policy = Policy.FromJson(sqsClient.SetAttributesRequestsSent[0].attributes["Policy"]);
+
+            Assert.AreEqual(2, policy.Statements.Count);
+            CollectionAssert.AreEquivalent(new []
+            {
+                "arn:aws:sns:us-west-2:123456789012:NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-Event",
+                "arn:aws:sns:us-west-2:123456789012:NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-AnotherEvent"
+            }, policy.Statements.SelectMany(s => s.Conditions).SelectMany(c => c.Values));
+            Assert.IsFalse(manager.EndpointStartingMode);
         }
 
         [Test]
@@ -347,9 +386,16 @@ namespace NServiceBus.AmazonSQS.Tests
         {
             public TestableSubscriptionManager(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, MessageMetadataRegistry messageMetadataRegistry, TopicCache topicCache) : base(sqsClient, snsClient, queueName, queueCache, messageMetadataRegistry, topicCache)
             {
+                EndpointStartingMode = false;
             }
 
             public List<int> Delays { get; } = new List<int>();
+
+            public bool EndpointStartingMode
+            {
+                set => endpointStartingMode = value;
+                get => endpointStartingMode;
+            }
 
             protected override Task Delay(int millisecondsDelay, CancellationToken token = default)
             {

@@ -1,9 +1,8 @@
-namespace NServiceBus.Transports.SQS
+namespace NServiceBus.Transport.AmazonSQS
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using AmazonSQS;
 
     static class Batcher
     {

@@ -5,6 +5,8 @@ namespace NServiceBus.AmazonSQS.Tests
     using System.Threading.Tasks;
     using NUnit.Framework;
     using Settings;
+    using Transport.AmazonSQS;
+    using Transport.AmazonSQS.Configure;
 
     [TestFixture]
     public class TopicCacheTests

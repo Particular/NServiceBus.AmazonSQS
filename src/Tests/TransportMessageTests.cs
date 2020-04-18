@@ -7,6 +7,7 @@
     using Performance.TimeToBeReceived;
     using SimpleJson;
     using Transport;
+    using Transport.AmazonSQS;
 
     [TestFixture]
     public class TransportMessageTests
@@ -146,11 +147,11 @@
             Assert.IsTrue(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), "ReplyToAddress header is missing");
             Assert.AreEqual(expectedReplyToAddress, transportMessage.Headers[Headers.ReplyToAddress], "ReplyToAddress header does not match expected value.");
         }
-        
+
         [Test]
         public void Can_be_built_from_serialized_message()
         {
-            var json = SimpleJson.SerializeObject(new 
+            var json = SimpleJson.SerializeObject(new
             {
                 Headers = new Dictionary<string, string>
                 {

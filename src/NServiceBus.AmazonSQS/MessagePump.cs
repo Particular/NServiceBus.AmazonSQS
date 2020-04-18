@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.Transports.SQS
+﻿namespace NServiceBus.Transport.AmazonSQS
 {
     using System;
     using System.Collections.Generic;
@@ -8,8 +8,8 @@
     using Amazon.S3;
     using Amazon.SQS;
     using Amazon.SQS.Model;
-    using AmazonSQS;
     using Extensibility;
+    using Extensions;
     using Logging;
     using SimpleJson;
     using Transport;

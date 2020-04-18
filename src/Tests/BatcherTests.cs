@@ -5,7 +5,7 @@ namespace NServiceBus.AmazonSQS.Tests
     using System.Linq;
     using Amazon.SQS.Model;
     using NUnit.Framework;
-    using Transports.SQS;
+    using Transport.AmazonSQS;
 
     [TestFixture]
     public class BatcherTests

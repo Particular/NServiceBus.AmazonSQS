@@ -1,7 +1,7 @@
 namespace NServiceBus.AmazonSQS.Tests
 {
     using NUnit.Framework;
-    using Transports.SQS;
+    using Transport.AmazonSQS;
 
     [TestFixture]
     public class PreparedMessageTests
@@ -10,17 +10,17 @@ namespace NServiceBus.AmazonSQS.Tests
         public void CalculateSize_BodyTakenIntoAccount()
         {
             var expectedSize = 10;
-            
+
             var message = new TestPreparedMessage
             {
                 Body = new string('a', expectedSize)
             };
-            
+
             message.CalculateSize();
-            
+
             Assert.AreEqual(expectedSize, message.Size);
         }
-        
+
         [Test]
         public void CalculateSize_AttributeSizeTakenIntoAccount()
         {
@@ -33,7 +33,7 @@ namespace NServiceBus.AmazonSQS.Tests
             };
 
             message.CalculateSize();
-            
+
             Assert.AreEqual(2*expectedSize, message.Size);
         }
 
