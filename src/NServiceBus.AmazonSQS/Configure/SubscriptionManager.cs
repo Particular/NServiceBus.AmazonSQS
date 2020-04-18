@@ -48,6 +48,27 @@ namespace NServiceBus
             await DeleteSubscription(metadata).ConfigureAwait(false);
         }
 
+        // guaranteed to be only executed by startup task without concurrency, no other subscribes can happen during the policy settlement
+        public async Task SettlePolicy()
+        {
+            var queueUrl = await queueCache.GetQueueUrl(queueName)
+                .ConfigureAwait(false);
+
+            var statements = new List<Statement>(preparedPolicyStatements.Count);
+            while (!preparedPolicyStatements.IsEmpty)
+            {
+                if (preparedPolicyStatements.TryTake(out var statement))
+                {
+                    statements.Add(statement);
+                }
+            }
+
+            await SetNecessaryDeliveryPoliciesWithRetries(queueUrl, statements)
+                .ConfigureAwait(false);
+
+            endpointStartingMode = false;
+        }
+
         async Task DeleteSubscription(MessageMetadata metadata)
         {
             var mappedTopicsNames = topicCache.CustomEventToTopicsMappings.GetMappedTopicsNames(metadata.MessageType);
@@ -157,23 +178,21 @@ namespace NServiceBus
         async Task SubscribeTo(string topicArn, string topicName, string queueUrl)
         {
             Logger.Debug($"Creating subscription for queue '{queueName}' to topic '{topicName}' with arn '{topicArn}'");
-            try
-            {
-                // need to safe guard the subscribe section so that policy are not overwritten
-                // deliberately not set a cancellation token for now
-                // https://github.com/aws/aws-sdk-net/issues/1569
-                await subscribeQueueLimiter.WaitAsync().ConfigureAwait(false);
 
-                var sqsQueueArn = await SetNecessaryDeliveryPoliciesWithRetries(topicArn, topicName, queueUrl).ConfigureAwait(false);
-                var createdSubscription = await SubscribeQueue(topicArn, topicName, sqsQueueArn).ConfigureAwait(false);
-                await SetRawDeliveryModeWithRetries(createdSubscription.SubscriptionArn, topicArn, topicName).ConfigureAwait(false);
-            }
-            finally
-            {
-                subscribeQueueLimiter.Release();
-            }
-
+            var queueAttributes = await sqsClient.GetAttributesAsync(queueUrl).ConfigureAwait(false);
+            var sqsQueueArn = queueAttributes["QueueArn"];
+            var createdSubscription = await SubscribeQueue(topicArn, topicName, sqsQueueArn).ConfigureAwait(false);
+            await SetRawDeliveryModeWithRetries(createdSubscription.SubscriptionArn, topicArn, topicName).ConfigureAwait(false);
             Logger.Debug($"Created subscription for queue '{queueName}' to topic '{topicName}' with arn '{topicArn}'");
+
+            var sqsPermissionStatement = PolicyExtensions.CreateSQSPermissionStatement(topicArn, sqsQueueArn);
+            if (endpointStartingMode)
+            {
+                preparedPolicyStatements.Add(sqsPermissionStatement);
+                return;
+            }
+
+            await SetNecessaryDeliveryPoliciesWithRetries(queueUrl, new List<Statement> {sqsPermissionStatement}).ConfigureAwait(false);
         }
 
         async Task<SubscribeResponse> SubscribeQueue(string topicArn, string topicName, string sqsQueueArn)
@@ -191,44 +210,64 @@ namespace NServiceBus
             return createdSubscription;
         }
 
-        async Task<string> SetNecessaryDeliveryPoliciesWithRetries(string topicArn, string topicName, string queueUrl)
+        async Task SetNecessaryDeliveryPoliciesWithRetries(string queueUrl, IReadOnlyCollection<Statement> addStatements)
         {
-            Logger.Debug($"Setting delivery policies on queue '{queueName} for '{topicName}' with arn '{topicArn}'");
-            string sqsQueueArn = null;
-            for (var i = 0; i < 10; i++)
+            try
             {
-                if (i > 1)
+                // need to safe guard the subscribe section so that policy are not overwritten
+                // deliberately not set a cancellation token for now
+                // https://github.com/aws/aws-sdk-net/issues/1569
+                await subscribeQueueLimiter.WaitAsync().ConfigureAwait(false);
+
+                Logger.Debug($"Setting delivery policies on queue '{queueName}.");
+                string sqsQueueArn = null;
+                for (var i = 0; i < 10; i++)
                 {
-                    var millisecondsDelay = i * 1000;
-                    Logger.Debug($"Policy not yet propagated to enable topic '{topicName} with arn '{topicArn}' to write to '{sqsQueueArn}'! Retrying in {millisecondsDelay} ms.");
-                    await Delay(millisecondsDelay).ConfigureAwait(false);
+                    if (i > 1)
+                    {
+                        var millisecondsDelay = i * 1000;
+                        Logger.Debug($"Policy not yet propagated to write to '{sqsQueueArn}'! Retrying in {millisecondsDelay} ms.");
+                        await Delay(millisecondsDelay).ConfigureAwait(false);
+                    }
+
+                    var queueAttributes = await sqsClient.GetAttributesAsync(queueUrl).ConfigureAwait(false);
+                    sqsQueueArn = queueAttributes["QueueArn"];
+
+                    var policy = ExtractPolicy(queueAttributes);
+
+                    var policyAdded = false;
+
+                    foreach (var statement in addStatements)
+                    {
+                        if (policy.HasSQSPermission(statement))
+                        {
+                            continue;
+                        }
+
+                        policy.AddSQSPermission(statement);
+                        policyAdded = true;
+                    }
+
+                    if (!policyAdded)
+                    {
+                        break;
+                    }
+
+                    var setAttributes = new Dictionary<string, string> {{"Policy", policy.ToJson()}};
+                    await sqsClient.SetAttributesAsync(queueUrl, setAttributes).ConfigureAwait(false);
                 }
 
-                var queueAttributes = await sqsClient.GetAttributesAsync(queueUrl).ConfigureAwait(false);
-                sqsQueueArn = queueAttributes["QueueArn"];
-
-                var policy = ExtractPolicy(queueAttributes);
-
-                if (!policy.HasSQSPermission(topicArn, sqsQueueArn))
+                if (string.IsNullOrEmpty(sqsQueueArn))
                 {
-                    policy.AddSQSPermission(topicArn, sqsQueueArn);
-                }
-                else
-                {
-                    break;
+                    throw new Exception($"Unable to setup necessary policies for queue '{queueName}");
                 }
 
-                var setAttributes = new Dictionary<string, string> {{"Policy", policy.ToJson()}};
-                await sqsClient.SetAttributesAsync(queueUrl, setAttributes).ConfigureAwait(false);
+                Logger.Debug($"Set delivery policies on queue '{queueName}");
             }
-
-            if (string.IsNullOrEmpty(sqsQueueArn))
+            finally
             {
-                throw new Exception($"Unable to setup necessary policies for '{topicName}' with arn '{topicArn}' for queue '{queueName}");
+                subscribeQueueLimiter.Release();
             }
-
-            Logger.Debug($"Set delivery policies on queue '{queueName} for '{topicName}' with arn '{topicArn}'");
-            return sqsQueueArn;
         }
 
         async Task SetRawDeliveryModeWithRetries(string subscriptionArn, string topicArn, string topicName)
@@ -301,6 +340,7 @@ namespace NServiceBus
         bool IsTypeTopologyKnownConfigured(Type eventType) => typeTopologyConfiguredSet.ContainsKey(eventType);
 
         readonly ConcurrentDictionary<Type, string> typeTopologyConfiguredSet = new ConcurrentDictionary<Type, string>();
+        readonly ConcurrentBag<Statement> preparedPolicyStatements = new ConcurrentBag<Statement>();
         readonly QueueCache queueCache;
         readonly IAmazonSQS sqsClient;
         readonly IAmazonSimpleNotificationService snsClient;
@@ -308,6 +348,7 @@ namespace NServiceBus
         readonly MessageMetadataRegistry messageMetadataRegistry;
         readonly TopicCache topicCache;
         readonly SemaphoreSlim subscribeQueueLimiter = new SemaphoreSlim(1);
+        protected bool endpointStartingMode = true;
 
         static ILog Logger = LogManager.GetLogger(typeof(SubscriptionManager));
     }

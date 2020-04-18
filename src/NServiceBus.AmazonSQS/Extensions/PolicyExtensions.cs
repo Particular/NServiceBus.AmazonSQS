@@ -7,7 +7,7 @@ namespace NServiceBus.AmazonSQS
 
     static class PolicyExtensions
     {
-        internal static bool HasSQSPermission(this Policy policy, string topicArn, string sqsQueueArn)
+        internal static bool HasSQSPermission(this Policy policy, Statement addStatement)
         {
             foreach (var statement in policy.Statements)
             {
@@ -16,7 +16,7 @@ namespace NServiceBus.AmazonSQS
                 // ReSharper disable once LoopCanBeConvertedToQuery
                 foreach (var resource in statement.Resources)
                 {
-                    if (resource.Id.Equals(sqsQueueArn))
+                    if (resource.Id.Equals(addStatement.Resources[0].Id))
                     {
                         containsResource = true;
                         break;
@@ -37,7 +37,7 @@ namespace NServiceBus.AmazonSQS
                          string.Equals(condition.Type, ConditionFactory.ArnComparisonType.ArnEquals.ToString(), StringComparison.OrdinalIgnoreCase) ||
                          string.Equals(condition.Type, ConditionFactory.ArnComparisonType.ArnLike.ToString(), StringComparison.OrdinalIgnoreCase)) &&
                         string.Equals(condition.ConditionKey, ConditionFactory.SOURCE_ARN_CONDITION_KEY, StringComparison.OrdinalIgnoreCase) &&
-                        condition.Values.Contains(topicArn))
+                        condition.Values.Contains(addStatement.Conditions[0].Values[0]))
                     {
                         return true;
                     }
@@ -47,14 +47,19 @@ namespace NServiceBus.AmazonSQS
             return false;
         }
 
-        internal static void AddSQSPermission(this Policy policy, string topicArn, string sqsQueueArn)
+        internal static void AddSQSPermission(this Policy policy, Statement addStatement)
+        {
+            policy.Statements.Add(addStatement);
+        }
+
+        internal static Statement CreateSQSPermissionStatement(string topicArn, string sqsQueueArn)
         {
             var statement = new Statement(Statement.StatementEffect.Allow);
             statement.Actions.Add(SQSActionIdentifiers.SendMessage);
             statement.Resources.Add(new Resource(sqsQueueArn));
             statement.Conditions.Add(ConditionFactory.NewSourceArnCondition(topicArn));
             statement.Principals.Add(new Principal("*"));
-            policy.Statements.Add(statement);
+            return statement;
         }
     }
 }
