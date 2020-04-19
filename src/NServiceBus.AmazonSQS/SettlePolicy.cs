@@ -3,12 +3,10 @@ namespace NServiceBus.Transport.AmazonSQS
     using System.Threading.Tasks;
     using Configure;
     using Features;
-    using Logging;
-    using Transport;
 
-    class SettlePolicyFeature : Feature
+    class SettlePolicy : Feature
     {
-        public SettlePolicyFeature()
+        public SettlePolicy()
         {
             EnableByDefault();
 
@@ -20,12 +18,12 @@ namespace NServiceBus.Transport.AmazonSQS
             var transportInfrastructure = (SqsTransportInfrastructure)context.Settings.Get<TransportInfrastructure>();
 
             // with Core 7.2.4 the startup task will run after the auto subscribe startup task
-            context.RegisterStartupTask(b => new SettlePolicyStartupTask(transportInfrastructure.SubscriptionManager));
+            context.RegisterStartupTask(b => new SettlePolicyTask(transportInfrastructure.SubscriptionManager));
         }
 
-        class SettlePolicyStartupTask : FeatureStartupTask
+        class SettlePolicyTask : FeatureStartupTask
         {
-            public SettlePolicyStartupTask(IManageSubscriptions subscriptionManager)
+            public SettlePolicyTask(IManageSubscriptions subscriptionManager)
             {
                 this.subscriptionManager = subscriptionManager;
             }
@@ -41,8 +39,6 @@ namespace NServiceBus.Transport.AmazonSQS
             }
 
             IManageSubscriptions subscriptionManager;
-
-            static ILog Logger = LogManager.GetLogger<AutoSubscribe>();
         }
     }
 }

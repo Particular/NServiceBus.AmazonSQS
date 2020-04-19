@@ -51,6 +51,8 @@ namespace NServiceBus.Transport.AmazonSQS
         // guaranteed to be only executed by startup task without concurrency, no other subscribes can happen during the policy settlement
         public async Task Settle()
         {
+            Logger.Debug($"Settling policy for queue '{queueName}'.");
+
             var queueUrl = await queueCache.GetQueueUrl(queueName)
                 .ConfigureAwait(false);
 
@@ -67,6 +69,8 @@ namespace NServiceBus.Transport.AmazonSQS
                 .ConfigureAwait(false);
 
             endpointStartingMode = false;
+
+            Logger.Debug($"Settled policy for queue '{queueName}'.");
         }
 
         async Task DeleteSubscription(MessageMetadata metadata)
