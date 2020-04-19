@@ -10,7 +10,7 @@ namespace NServiceBus.Transport.AmazonSQS
         {
             EnableByDefault();
 
-            DependsOn<AutoSubscribe>(); // will enforce this feature to run after AutoSubscribe
+            DependsOnOptionally<AutoSubscribe>(); // will enforce this feature to run after AutoSubscribe if present
         }
 
         protected override void Setup(FeatureConfigurationContext context)
