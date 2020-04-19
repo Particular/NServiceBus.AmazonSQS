@@ -352,7 +352,7 @@ namespace NServiceBus.Transport.AmazonSQS
         readonly MessageMetadataRegistry messageMetadataRegistry;
         readonly TopicCache topicCache;
         readonly SemaphoreSlim subscribeQueueLimiter = new SemaphoreSlim(1);
-        protected bool endpointStartingMode = true;
+        protected volatile bool endpointStartingMode = true;
 
         static ILog Logger = LogManager.GetLogger(typeof(SubscriptionManager));
     }
