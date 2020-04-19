@@ -3,6 +3,7 @@ namespace NServiceBus.Transport.AmazonSQS
     using System.Threading.Tasks;
     using Configure;
     using Features;
+    using Logging;
     using Transport;
 
     class SettlePolicyFeature : Feature
@@ -40,6 +41,8 @@ namespace NServiceBus.Transport.AmazonSQS
             }
 
             IManageSubscriptions subscriptionManager;
+
+            static ILog Logger = LogManager.GetLogger<AutoSubscribe>();
         }
     }
 }
