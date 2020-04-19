@@ -15,7 +15,7 @@ namespace NServiceBus.Transport.AmazonSQS
     using Transport;
     using Unicast.Messages;
 
-    class SubscriptionManager : IManageSubscriptions, ISettlePolicy
+    class SubscriptionManager : IManageSubscriptions
     {
         public SubscriptionManager(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, MessageMetadataRegistry messageMetadataRegistry, TopicCache topicCache)
         {

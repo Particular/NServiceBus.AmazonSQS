@@ -30,7 +30,7 @@ namespace NServiceBus.Transport.AmazonSQS
 
             protected override Task OnStart(IMessageSession session)
             {
-                return (subscriptionManager as ISettlePolicy)?.Settle() ?? Task.FromResult(0);
+                return (subscriptionManager as SubscriptionManager)?.Settle() ?? Task.FromResult(0);
             }
 
             protected override Task OnStop(IMessageSession session)

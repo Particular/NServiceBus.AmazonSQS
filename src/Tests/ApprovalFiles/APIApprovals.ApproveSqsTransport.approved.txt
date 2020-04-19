@@ -36,10 +36,3 @@ namespace NServiceBus
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> UnrestrictedDurationDelayedDelivery(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
     }
 }
-namespace NServiceBus.Transport.AmazonSQS
-{
-    public interface ISettlePolicy
-    {
-        System.Threading.Tasks.Task Settle();
-    }
-}
