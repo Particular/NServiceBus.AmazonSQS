@@ -557,12 +557,23 @@
             if (keyPrefix == null) { keyPrefix = DefaultConfigurationValues.S3KeyPrefix; }
             if (expiration == null) { expiration = (int)Math.Ceiling(DefaultConfigurationValues.RetentionPeriod.TotalDays); }
 
-            var lifecycleConfig = await s3.GetLifecycleConfigurationAsync(bucketName).ConfigureAwait(false);
-            var setLifecycleConfig = lifecycleConfig.Configuration.Rules.FirstOrDefault(x => x.Id == "NServiceBus.SQS.DeleteMessageBodies");
+            LifecycleRule setLifeCycleConfig;
+            int backOff;
+            var executions = 0;
+            do
+            {
+                backOff = executions * executions * verificationBackoffInterval;
+                await Task.Delay(backOff);
+                executions++;
 
-            Assert.IsNotNull(setLifecycleConfig);
-            Assert.AreEqual(expiration, setLifecycleConfig.Expiration.Days);
-            Assert.AreEqual(keyPrefix, (setLifecycleConfig.Filter.LifecycleFilterPredicate as LifecyclePrefixPredicate).Prefix);
+                var lifecycleConfig = await s3.GetLifecycleConfigurationAsync(bucketName).ConfigureAwait(false);
+                setLifeCycleConfig = lifecycleConfig.Configuration.Rules.FirstOrDefault(x => x.Id == "NServiceBus.SQS.DeleteMessageBodies");
+            }
+            while (setLifeCycleConfig == null && backOff < maximumBackoffInterval);
+
+            Assert.IsNotNull(setLifeCycleConfig);
+            Assert.AreEqual(expiration, setLifeCycleConfig.Expiration.Days);
+            Assert.AreEqual(keyPrefix, (setLifeCycleConfig.Filter.LifecycleFilterPredicate as LifecyclePrefixPredicate).Prefix);
         }
 
         public async Task VerifySubscription(string topicArn, string queueArn)
