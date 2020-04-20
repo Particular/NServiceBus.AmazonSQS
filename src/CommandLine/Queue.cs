@@ -31,7 +31,7 @@
             await Console.Out.WriteLineAsync($"Creating SQS Queue with name '{sqsRequest.QueueName}' for endpoint '{endpointName}'.");
             var createQueueResponse = await sqs.CreateQueueAsync(sqsRequest).ConfigureAwait(false);
             var sqsAttributesRequest = new SetQueueAttributesRequest { QueueUrl = createQueueResponse.QueueUrl };
-            sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod, retentionPeriodInSeconds.ToString(CultureInfo.InvariantCulture));            
+            sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod, retentionPeriodInSeconds.ToString(CultureInfo.InvariantCulture));
             await sqs.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
             await Console.Out.WriteLineAsync($"Created SQS Queue with name '{sqsRequest.QueueName}' for endpoint '{endpointName}'.");
             return createQueueResponse.QueueUrl;
@@ -62,7 +62,7 @@
             var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
             var deleteRequest = new DeleteQueueRequest { QueueUrl = queueUrlResponse.QueueUrl };
             await Console.Out.WriteLineAsync($"Deleting SQS Queue with url '{deleteRequest.QueueUrl}' for endpoint '{endpointName}'.");
-            var deleteQueueResponse = await sqs.DeleteQueueAsync(deleteRequest).ConfigureAwait(false);
+            await sqs.DeleteQueueAsync(deleteRequest).ConfigureAwait(false);
             await Console.Out.WriteLineAsync($"Deleted SQS Queue with url '{deleteRequest.QueueUrl}' for endpoint '{endpointName}'.");
         }
 
@@ -73,7 +73,7 @@
             var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
             var deleteRequest = new DeleteQueueRequest { QueueUrl = queueUrlResponse.QueueUrl };
             await Console.Out.WriteLineAsync($"Deleting SQS delayed delivery queue with url '{deleteRequest.QueueUrl}' for endpoint '{endpointName}'.");
-            var deleteQueueResponse = await sqs.DeleteQueueAsync(deleteRequest).ConfigureAwait(false);
+            await sqs.DeleteQueueAsync(deleteRequest).ConfigureAwait(false);
             await Console.Out.WriteLineAsync($"Deleted SQS delayed delivery queue with url '{deleteRequest.QueueUrl}' for endpoint '{endpointName}'.");
         }
     }

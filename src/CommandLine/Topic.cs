@@ -48,8 +48,8 @@
 
             var subscriptionArn = await sns.FindMatchingSubscription(topicArn, queueArn);
 
-            var unsubscribeResponse = await sns.UnsubscribeAsync(subscriptionArn).ConfigureAwait(false);
-            await Console.Out.WriteLineAsync($"Queue with ARN '{queueArn}' unsubscribed from topic with ARN '{topicArn}'.");       
+            await sns.UnsubscribeAsync(subscriptionArn).ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"Queue with ARN '{queueArn}' unsubscribed from topic with ARN '{topicArn}'.");
         }
 
         public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService sns, string topicArn, string queueArn)
