@@ -158,7 +158,6 @@ namespace NServiceBus
         {
             Logger.Debug($"Creating subscription for queue '{queueName}' to topic '{topicName}' with arn '{topicArn}'");
 
-            string sqsQueueArn;
             try
             {
                 // need to safe guard the subscribe section so that policy are not overwritten
@@ -166,7 +165,7 @@ namespace NServiceBus
                 // https://github.com/aws/aws-sdk-net/issues/1569
                 await subscribeQueueLimiter.WaitAsync().ConfigureAwait(false);
 
-                sqsQueueArn = await SetNecessaryDeliveryPoliciesWithRetries(topicArn, topicName, queueUrl).ConfigureAwait(false);
+                await SetNecessaryDeliveryPoliciesWithRetries(topicArn, topicName, queueUrl).ConfigureAwait(false);
 
             }
             finally
@@ -174,6 +173,8 @@ namespace NServiceBus
                 subscribeQueueLimiter.Release();
             }
 
+            var queueAttributes = await sqsClient.GetAttributesAsync(queueUrl).ConfigureAwait(false);
+            var sqsQueueArn = queueAttributes["QueueArn"];
             var createdSubscription = await SubscribeQueue(topicArn, topicName, sqsQueueArn).ConfigureAwait(false);
             await SetRawDeliveryModeWithRetries(createdSubscription.SubscriptionArn, topicArn, topicName).ConfigureAwait(false);
 
