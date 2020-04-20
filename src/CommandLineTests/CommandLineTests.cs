@@ -496,8 +496,8 @@
         
         async Task<string> VerifyQueue(string queueName, string prefix = null, double? retentionPeriodInSeconds = null)
         {
-            if (prefix == null) prefix = DefaultConfigurationValues.QueueNamePrefix;
-            if (retentionPeriodInSeconds == null) retentionPeriodInSeconds = DefaultConfigurationValues.RetentionPeriod.TotalSeconds;
+            if (prefix == null) { prefix = DefaultConfigurationValues.QueueNamePrefix; }
+            if (retentionPeriodInSeconds == null) { retentionPeriodInSeconds = DefaultConfigurationValues.RetentionPeriod.TotalSeconds; }
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
             var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
@@ -511,10 +511,10 @@
 
         async Task<string> VerifyDelayDeliveryQueue(string queueName, string prefix = null, double? retentionPeriodInSeconds = null, double? delayInSeconds = null, string suffix = null)
         {
-            if (prefix == null) prefix = DefaultConfigurationValues.QueueNamePrefix;
-            if (retentionPeriodInSeconds == null) retentionPeriodInSeconds = DefaultConfigurationValues.RetentionPeriod.TotalSeconds;
-            if (delayInSeconds == null) delayInSeconds = DefaultConfigurationValues.MaximumQueueDelayTime.TotalSeconds;
-            if (suffix == null) suffix = DefaultConfigurationValues.DelayedDeliveryQueueSuffix;
+            if (prefix == null) { prefix = DefaultConfigurationValues.QueueNamePrefix; }
+            if (retentionPeriodInSeconds == null) { retentionPeriodInSeconds = DefaultConfigurationValues.RetentionPeriod.TotalSeconds; }
+            if (delayInSeconds == null) { delayInSeconds = DefaultConfigurationValues.MaximumQueueDelayTime.TotalSeconds; }
+            if (suffix == null) { suffix = DefaultConfigurationValues.DelayedDeliveryQueueSuffix; }
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}{suffix}");
             var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
@@ -532,7 +532,7 @@
 
         async Task<string> VerifyTopic(string eventType, string prefix = null)
         {
-            if (prefix == null) prefix = DefaultConfigurationValues.TopicNamePrefix;
+            if (prefix == null) { prefix = DefaultConfigurationValues.TopicNamePrefix; }
             var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
 
             var findTopicResponse = await sns.FindTopicAsync(topicName).ConfigureAwait(false);
@@ -554,8 +554,8 @@
 
         async Task VerifyLifecycleConfiguration(string bucketName, string keyPrefix = null, int? expiration = null)
         {
-            if (keyPrefix == null) keyPrefix = DefaultConfigurationValues.S3KeyPrefix;
-            if (expiration == null) expiration = (int)Math.Ceiling(DefaultConfigurationValues.RetentionPeriod.TotalDays);
+            if (keyPrefix == null) { keyPrefix = DefaultConfigurationValues.S3KeyPrefix; }
+            if (expiration == null) { expiration = (int)Math.Ceiling(DefaultConfigurationValues.RetentionPeriod.TotalDays); }
 
             var lifecycleConfig = await s3.GetLifecycleConfigurationAsync(bucketName).ConfigureAwait(false);
             var setLifecycleConfig = lifecycleConfig.Configuration.Rules.FirstOrDefault(x => x.Id == "NServiceBus.SQS.DeleteMessageBodies");
@@ -611,7 +611,7 @@
 
         async Task VerifyTopicDeleted(string eventType, string prefix = null)
         {
-            if (prefix == null) prefix = DefaultConfigurationValues.TopicNamePrefix;
+            if (prefix == null) { prefix = DefaultConfigurationValues.TopicNamePrefix; }
             var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
 
             var findTopicResponse = await sns.FindTopicAsync(topicName).ConfigureAwait(false); 
@@ -621,8 +621,8 @@
 
         async Task VerifyDelayDeliveryQueueDeleted(string queueName, string prefix = null, string suffix = null)
         {
-            if (prefix == null) prefix = DefaultConfigurationValues.QueueNamePrefix;
-            if (suffix == null) suffix = DefaultConfigurationValues.DelayedDeliveryQueueSuffix;
+            if (prefix == null) { prefix = DefaultConfigurationValues.QueueNamePrefix; }
+            if (suffix == null) { suffix = DefaultConfigurationValues.DelayedDeliveryQueueSuffix; }
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}{suffix}");
             GetQueueUrlResponse queueUrlResponse = null;
@@ -651,7 +651,7 @@
 
         async Task VerifyQueueDeleted(string queueName, string prefix = null)
         {
-            if (prefix == null) prefix = DefaultConfigurationValues.QueueNamePrefix;
+            if (prefix == null) { prefix = DefaultConfigurationValues.QueueNamePrefix; }
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
             GetQueueUrlResponse queueUrlResponse = null;
             var backOff = 0;
@@ -698,7 +698,7 @@
 
         async Task DeleteQueue(string queueName, string prefix = null)
         {
-            if (prefix == null) prefix = DefaultConfigurationValues.QueueNamePrefix;
+            if (prefix == null) { prefix = DefaultConfigurationValues.QueueNamePrefix; }
             try
             {
                 var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
@@ -714,8 +714,8 @@
 
         async Task DeleteDelayDeliveryQueue(string queueName, string prefix = null, string suffix = null)
         {
-            if (prefix == null) prefix = DefaultConfigurationValues.QueueNamePrefix;
-            if (suffix == null) suffix = DefaultConfigurationValues.DelayedDeliveryQueueSuffix;
+            if (prefix == null) { prefix = DefaultConfigurationValues.QueueNamePrefix; }
+            if (suffix == null) { suffix = DefaultConfigurationValues.DelayedDeliveryQueueSuffix; }
             try
             {
                 var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}{suffix}");
@@ -741,7 +741,7 @@
 
         async Task DeleteTopic(string eventType, string prefix = null)
         {
-            if (prefix == null) prefix = DefaultConfigurationValues.TopicNamePrefix;
+            if (prefix == null) { prefix = DefaultConfigurationValues.TopicNamePrefix; }
             var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
 
             var findTopicResponse = await sns.FindTopicAsync(topicName).ConfigureAwait(false);
