@@ -7,6 +7,7 @@
     using System.Text.RegularExpressions;
     using System.Threading.Tasks;
     using Amazon;
+    using Amazon.Runtime;
     using Amazon.S3;
     using Amazon.S3.Model;
     using Amazon.SimpleNotificationService;
@@ -752,15 +753,15 @@
         [SetUp]
         public void Setup()
         {
-            var accessKey = Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
-            var secret = Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
             var region = Environment.GetEnvironmentVariable("AWS_REGION");
+
+            var credentials = new EnvironmentVariablesAWSCredentials();
 
             var regionEndpoint = RegionEndpoint.GetBySystemName(region);
 
-            sqs = new AmazonSQSClient(accessKey, secret, regionEndpoint);
-            sns = new AmazonSimpleNotificationServiceClient(accessKey, secret, regionEndpoint);
-            s3 = new AmazonS3Client(accessKey, secret, regionEndpoint);
+            sqs = new AmazonSQSClient(credentials, regionEndpoint);
+            sns = new AmazonSimpleNotificationServiceClient(credentials, regionEndpoint);
+            s3 = new AmazonS3Client(credentials, regionEndpoint);
         }
 
         [TearDown]
