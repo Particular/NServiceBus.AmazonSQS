@@ -4,12 +4,13 @@
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>$(SolutionDir)NServiceBus.snk</AssemblyOriginatorKeyFile>
     <Description>An Amazon SQS transport implementation for NServiceBus</Description>
+    <RootNamespace>NServiceBus.Transport.AmazonSQS</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="[3.3.18.5, 3.4)" />
     <PackageReference Include="AWSSDK.SQS" Version="[3.3.3.10, 3.4)" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="[3.3.3.10, 3.4)" />
-    <PackageReference Include="NServiceBus" Version="[7.2.0, 8.0.0)" />
+    <PackageReference Include="NServiceBus" Version="[7.2.4, 8.0.0)" />
     <PackageReference Include="Fody" Version="4.2.1" PrivateAssets="All" />
     <PackageReference Include="Obsolete.Fody" Version="4.4.3" PrivateAssets="All" />
     <PackageReference Include="Particular.CodeRules" Version="0.2.1" PrivateAssets="All" />

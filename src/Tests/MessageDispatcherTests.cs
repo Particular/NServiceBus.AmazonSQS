@@ -16,7 +16,8 @@
     using Routing;
     using Settings;
     using Transport;
-    using Transports.SQS;
+    using Transport.AmazonSQS;
+    using Transport.AmazonSQS.Configure;
 
     [TestFixture]
     public class MessageDispatcherTests

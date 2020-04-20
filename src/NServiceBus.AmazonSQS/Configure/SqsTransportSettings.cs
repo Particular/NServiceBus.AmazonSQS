@@ -5,6 +5,8 @@
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
     using Configuration.AdvancedExtensibility;
+    using Transport.AmazonSQS;
+    using Transport.AmazonSQS.Configure;
 
     /// <summary>
     /// Adds access to the SQS transport config to the global Transports object.

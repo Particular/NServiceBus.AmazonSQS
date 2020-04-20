@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.AmazonSQS
+﻿namespace NServiceBus.Transport.AmazonSQS.Extensions
 {
     using System;
     using System.Globalization;
@@ -26,7 +26,7 @@
                 BucketName = transportConfiguration.S3BucketForLargeMessages,
                 Key = transportMessage.S3BodyKey
             };
-            
+
             if (transportConfiguration.ServerSideEncryptionCustomerMethod != null)
             {
                 getObjectRequest.ServerSideEncryptionCustomerMethod = transportConfiguration.ServerSideEncryptionCustomerMethod;
@@ -37,7 +37,7 @@
                     getObjectRequest.ServerSideEncryptionCustomerProvidedKeyMD5 = transportConfiguration.ServerSideEncryptionCustomerProvidedKeyMD5;
                 }
             }
-            
+
             var s3GetResponse = await s3Client.GetObjectAsync(getObjectRequest, cancellationToken)
                 .ConfigureAwait(false);
 

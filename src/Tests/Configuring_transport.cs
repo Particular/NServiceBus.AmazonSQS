@@ -4,6 +4,7 @@ using System;
 using Amazon.S3;
 using NServiceBus.Configuration.AdvancedExtensibility;
 using NServiceBus.Settings;
+using NServiceBus.Transport.AmazonSQS.Configure;
 
 [TestFixture]
 public class Configuring_transport
@@ -104,7 +105,7 @@ public class Configuring_transport
 
         Assert.AreEqual("DEV", result.GetSettings().Get("NServiceBus.AmazonSQS.QueueNamePrefix"));
     }
-    
+
     [Test]
     public void PubSubCompatibilityModeWorks()
     {

@@ -5,6 +5,7 @@
     using Configuration.AdvancedExtensibility;
     using EndpointTemplates;
     using NUnit.Framework;
+    using Transport.AmazonSQS.Configure;
 
     public class Sending_small_message_with_no_bucket_configured : NServiceBusAcceptanceTest
     {
