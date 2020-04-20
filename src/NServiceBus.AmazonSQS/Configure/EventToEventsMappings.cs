@@ -6,15 +6,15 @@
 
     class EventToEventsMappings
     {
-        public void Add(Type subscribedEvent, Type concreteEventType)
+        public void Add(Type subscribedEventType, Type publishedEventType)
         {
-            if (!eventsToEventsMappings.TryGetValue(subscribedEvent, out var mapping))
+            if (!eventsToEventsMappings.TryGetValue(subscribedEventType, out var mapping))
             {
                 mapping = new HashSet<Type>();
-                eventsToEventsMappings.Add(subscribedEvent, mapping);
+                eventsToEventsMappings.Add(subscribedEventType, mapping);
             }
 
-            mapping.Add(concreteEventType);
+            mapping.Add(publishedEventType);
         }
 
         public IEnumerable<Type> GetMappedTypes(Type eventType)

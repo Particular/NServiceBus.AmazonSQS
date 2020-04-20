@@ -6,12 +6,12 @@
 
     class EventToTopicsMappings
     {
-        public void Add(Type eventType, IEnumerable<string> topicsNames)
+        public void Add(Type subscribedEventType, IEnumerable<string> topicsNames)
         {
-            if (!eventsToTopicsMappings.TryGetValue(eventType, out var mapping))
+            if (!eventsToTopicsMappings.TryGetValue(subscribedEventType, out var mapping))
             {
                 mapping = new HashSet<string>();
-                eventsToTopicsMappings.Add(eventType, mapping);
+                eventsToTopicsMappings.Add(subscribedEventType, mapping);
             }
 
             foreach (var topicName in topicsNames)
@@ -20,9 +20,9 @@
             }
         }
         
-        public IEnumerable<string> GetMappedTopicsNames(Type eventType)
+        public IEnumerable<string> GetMappedTopicsNames(Type subscribedEventType)
         {
-            return eventsToTopicsMappings.ContainsKey(eventType) ? eventsToTopicsMappings[eventType] : Enumerable.Empty<string>();
+            return eventsToTopicsMappings.ContainsKey(subscribedEventType) ? eventsToTopicsMappings[subscribedEventType] : Enumerable.Empty<string>();
         }
 
         Dictionary<Type, HashSet<string>> eventsToTopicsMappings = new Dictionary<Type, HashSet<string>>();

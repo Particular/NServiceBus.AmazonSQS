@@ -163,9 +163,9 @@
         /// Maps a specific message type to a set of topics. The transport will automatically map the most concrete type to a topic.
         /// In case a subscriber needs to subscribe to a type up in the message inheritance chain a custom mapping needs to be defined.
         /// </summary>
-        public static void MapEvent<TEvent>(this TransportExtensions<SqsTransport> transportExtensions, string customTopicName)
+        public static void MapEvent<TSubscribedEvent>(this TransportExtensions<SqsTransport> transportExtensions, string customTopicName)
         {
-            MapEvent(transportExtensions, typeof(TEvent), new []{ customTopicName});
+            MapEvent(transportExtensions, typeof(TSubscribedEvent), new []{ customTopicName});
         }
 
         /// <summary>
@@ -181,16 +181,16 @@
         /// Maps a specific message type to a set of topics. The transport will automatically map the most concrete type to a topic.
         /// In case a subscriber needs to subscribe to a type up in the message inheritance chain a custom mapping needs to be defined.
         /// </summary>
-        public static void MapEvent<TEvent>(this TransportExtensions<SqsTransport> transportExtensions, IEnumerable<string> customTopicsNames)
+        public static void MapEvent<TSubscribedEvent>(this TransportExtensions<SqsTransport> transportExtensions, IEnumerable<string> customTopicsNames)
         {
-            MapEvent(transportExtensions, typeof(TEvent), customTopicsNames);
+            MapEvent(transportExtensions, typeof(TSubscribedEvent), customTopicsNames);
         }
 
         /// <summary>
         /// Maps a specific message type to a set of topics. The transport will automatically map the most concrete type to a topic.
         /// In case a subscriber needs to subscribe to a type up in the message inheritance chain a custom mapping needs to be defined.
         /// </summary>
-        public static void MapEvent(this TransportExtensions<SqsTransport> transportExtensions, Type eventType, IEnumerable<string> customTopicsNames)
+        public static void MapEvent(this TransportExtensions<SqsTransport> transportExtensions, Type subscribedEventType, IEnumerable<string> customTopicsNames)
         {
             Guard.AgainstNull(nameof(customTopicsNames), customTopicsNames);
 
@@ -201,7 +201,7 @@
                 settings.Set(mappings);
             }
 
-            mappings.Add(eventType, customTopicsNames);
+            mappings.Add(subscribedEventType, customTopicsNames);
         }
 
         /// <summary>
@@ -217,9 +217,9 @@
         /// Maps a specific message type to a concrete message type. The transport will automatically map the most concrete type to a topic.
         /// In case a subscriber needs to subscribe to a type up in the message inheritance chain a custom mapping needs to be defined.
         /// </summary>
-        public static void MapEvent(this TransportExtensions<SqsTransport> transportExtensions, Type subscribedEvent, Type publishedEventType)
+        public static void MapEvent(this TransportExtensions<SqsTransport> transportExtensions, Type subscribedEventType, Type publishedEventType)
         {
-            Guard.AgainstNull(nameof(subscribedEvent), subscribedEvent);
+            Guard.AgainstNull(nameof(subscribedEventType), subscribedEventType);
             Guard.AgainstNull(nameof(publishedEventType), publishedEventType);
 
             var settings = transportExtensions.GetSettings();
@@ -229,7 +229,7 @@
                 settings.Set(mappings);
             }
 
-            mappings.Add(subscribedEvent, publishedEventType);
+            mappings.Add(subscribedEventType, publishedEventType);
         }
 
         /// <summary>
