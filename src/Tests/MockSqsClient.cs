@@ -11,7 +11,6 @@
     class MockSqsClient : IAmazonSQS
     {
         public List<string> QueueUrlRequestsSent { get; } = new List<string>();
-        
         public Task<GetQueueUrlResponse> GetQueueUrlAsync(string queueName, CancellationToken cancellationToken = new CancellationToken())
         {
             QueueUrlRequestsSent.Add(queueName);
@@ -30,11 +29,70 @@
 
         public List<SendMessageRequest> RequestsSent { get; } = new List<SendMessageRequest>();
         public Func<SendMessageRequest, SendMessageResponse> RequestResponse = req => new SendMessageResponse();
-        
+
         public Task<SendMessageResponse> SendMessageAsync(SendMessageRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             RequestsSent.Add(request);
             return Task.FromResult(RequestResponse(request));
+        }
+
+        public List<string> GetAttributeRequestsSent { get; } = new List<string>();
+        public Func<string, Dictionary<string, string>> GetAttributeRequestsResponse = queueUrl => new Dictionary<string, string>
+        {
+            { "QueueArn", "arn:fakeQueue" }
+        };
+
+        public Task<Dictionary<string, string>> GetAttributesAsync(string queueUrl)
+        {
+            GetAttributeRequestsSent.Add(queueUrl);
+            return Task.FromResult(GetAttributeRequestsResponse(queueUrl));
+        }
+
+        public List<(string queueUrl, Dictionary<string, string> attributes)> SetAttributesRequestsSent { get; } = new List<(string queueUrl, Dictionary<string, string> attributes)>();
+        public Dictionary<string, Queue<Dictionary<string, string>>> SetAttributesRequestsSentByUrl { get; } = new Dictionary<string, Queue<Dictionary<string, string>>>();
+
+        public Task SetAttributesAsync(string queueUrl, Dictionary<string, string> attributes)
+        {
+            if (!attributes.ContainsKey("QueueArn"))
+            {
+                attributes.Add("QueueArn", $"arn:{queueUrl}");
+            }
+            SetAttributesRequestsSent.Add((queueUrl, attributes));
+            if (!SetAttributesRequestsSentByUrl.TryGetValue(queueUrl, out var attributeRequestsQueue))
+            {
+                var requests = new Queue<Dictionary<string, string>>();
+                requests.Enqueue(attributes);
+                SetAttributesRequestsSentByUrl.Add(queueUrl, requests);
+            }
+            else
+            {
+                attributeRequestsQueue.Enqueue(attributes);
+            }
+            return Task.FromResult(0);
+        }
+
+        public void EnableGetAttributeReturnsWhatWasSet()
+        {
+            GetAttributeRequestsResponse = queueUrl =>
+            {
+                if (!SetAttributesRequestsSentByUrl.ContainsKey(queueUrl))
+                {
+                    return new Dictionary<string, string>
+                    {
+                        {"QueueArn", $"arn:{queueUrl}"}
+                    };
+                }
+
+                var queue = SetAttributesRequestsSentByUrl[queueUrl];
+                if (queue.Count == 0)
+                {
+                    return new Dictionary<string, string>
+                    {
+                        {"QueueArn", $"arn:{queueUrl}"}
+                    };
+                }
+                return queue.Dequeue();
+            };
         }
 
         #region NotImplemented
@@ -49,17 +107,7 @@
             throw new NotImplementedException();
         }
 
-        public Task<Dictionary<string, string>> GetAttributesAsync(string queueUrl)
-        {
-            throw new NotImplementedException();
-        }
-
         public void SetAttributes(string queueUrl, Dictionary<string, string> attributes)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task SetAttributesAsync(string queueUrl, Dictionary<string, string> attributes)
         {
             throw new NotImplementedException();
         }
