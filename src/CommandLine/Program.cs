@@ -3,7 +3,7 @@
     using System;
     using McMaster.Extensions.CommandLineUtils;
 
-    // usage: 
+    // usage:
     // sqs-transport endpoint create name [--other-options]
     // sqs-transport endpoint add name large-message-support bucket-name [--other-options]
     // sqs-transport endpoint add name delay-delivery-support [--other-options]
@@ -40,7 +40,7 @@
 
             var prefixOption = new CommandOption("-p|--prefix", CommandOptionType.SingleValue)
             {
-                Description = $"Prefix to prepend before all queues and topics"
+                Description = "Prefix to prepend before all queues and topics"
             };
 
             app.HelpOption(inherited: true);
@@ -65,14 +65,14 @@
                     createCommand.Options.Add(prefixOption);
 
                     var retentionPeriodInSecondsCommand = createCommand.Option("-t|--retention", "Retention Period in seconds (defaults to " + DefaultConfigurationValues.RetentionPeriod.TotalSeconds + " ) ", CommandOptionType.SingleValue);
-                    
+
                     createCommand.OnExecuteAsync(async ct =>
                     {
                         var endpointName = nameArgument.Value;
                         var retentionPeriodInSeconds = retentionPeriodInSecondsCommand.HasValue() ? double.Parse(retentionPeriodInSecondsCommand.Value()) : DefaultConfigurationValues.RetentionPeriod.TotalSeconds;
                         var prefix = prefixOption.HasValue() ? prefixOption.Value() : DefaultConfigurationValues.QueueNamePrefix;
 
-                        await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.Create(sqs, prefix, endpointName, retentionPeriodInSeconds));                       
+                        await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.Create(sqs, prefix, endpointName, retentionPeriodInSeconds));
                     });
                 });
 
@@ -118,14 +118,14 @@
                             var keyPrefix = keyPrefixCommand.HasValue() ? keyPrefixCommand.Value() : DefaultConfigurationValues.S3KeyPrefix;
                             var expirationInDays = expirationInDaysCommand.HasValue() ? int.Parse(expirationInDaysCommand.Value()) : (int)(Math.Ceiling(DefaultConfigurationValues.RetentionPeriod.TotalDays));
 
-                            await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.AddLargeMessageSupport(s3, endpointName, bucketName, keyPrefix, expirationInDays));                            
+                            await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.AddLargeMessageSupport(s3, endpointName, bucketName, keyPrefix, expirationInDays));
                         });
                     });
 
                     addCommand.Command("delay-delivery-support", delayDeliverySupportCommand =>
                     {
                         delayDeliverySupportCommand.Description = "Adds delay delivery support infrastructure to an endpoint.";
-                        
+
                         delayDeliverySupportCommand.Options.Add(accessKeyOption);
                         delayDeliverySupportCommand.Options.Add(regionOption);
                         delayDeliverySupportCommand.Options.Add(secretOption);
@@ -213,7 +213,7 @@
                         var prefix = prefixOption.HasValue() ? prefixOption.Value() : DefaultConfigurationValues.QueueNamePrefix;
                         var eventType = eventTypeArgument.Value;
 
-                        await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.Subscribe(sqs, sns, prefix, endpointName, eventType));                        
+                        await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.Subscribe(sqs, sns, prefix, endpointName, eventType));
                     });
                 });
 

@@ -6,7 +6,6 @@
     using System.Linq;
     using System.Text.RegularExpressions;
     using System.Threading.Tasks;
-    using Amazon;
     using Amazon.Runtime;
     using Amazon.S3;
     using Amazon.S3.Model;
@@ -31,7 +30,7 @@
             var prefix = $"cli-{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToLowerInvariant()}-";
             var endpointName = prefix + EndpointName;
 
-            var (output, error, exitCode) = await Execute($"endpoint create {endpointName}");
+            var (_, error, exitCode) = await Execute($"endpoint create {endpointName}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -47,8 +46,8 @@
             var prefix = $"cli-{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToLowerInvariant()}-";
             var endpointName = prefix + EndpointName;
 
-            var (output, error, exitCode) = await Execute($"endpoint create {endpointName}");
-            (output, error, exitCode) = await Execute($"endpoint create {endpointName}");
+            await Execute($"endpoint create {endpointName}");
+            var (_, error, exitCode) = await Execute($"endpoint create {endpointName}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -63,7 +62,7 @@
         {
             var prefix = $"cli-{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToLowerInvariant()}-";
 
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -79,7 +78,7 @@
             var prefix = $"cli-{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToLowerInvariant()}-";
 
             var customRetention = 60000;
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --retention {customRetention} --prefix {prefix}");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --retention {customRetention} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -95,12 +94,12 @@
             var prefix = $"cli-{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToLowerInvariant()}-";
             var bucketName = prefix + BucketName;
 
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (output, error, exitCode) = await Execute($"endpoint add {EndpointName} large-message-support {bucketName}");
+            (_, error, exitCode) = await Execute($"endpoint add {EndpointName} large-message-support {bucketName}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -122,12 +121,12 @@
 
             await DeleteBucket(bucketName);
 
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (output, error, exitCode) = await Execute($"endpoint add {EndpointName} large-message-support {bucketName} --key-prefix {keyPrefix}");
+            (_, error, exitCode) = await Execute($"endpoint add {EndpointName} large-message-support {bucketName} --key-prefix {keyPrefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -148,12 +147,12 @@
 
             var expiration = 7;
 
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (output, error, exitCode) = await Execute($"endpoint add {EndpointName} large-message-support {bucketName} --expiration {expiration}");
+            (_, error, exitCode) = await Execute($"endpoint add {EndpointName} large-message-support {bucketName} --expiration {expiration}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -165,18 +164,18 @@
 
             await DeleteBucket(bucketName);
         }
-        
+
         [Test]
         public async Task Enable_delay_delivery_on_endpoint()
         {
             var prefix = $"cli-{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToLowerInvariant()}-";
 
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (output, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --prefix {prefix}");
+            (_, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -193,19 +192,19 @@
             var prefix = $"cli-{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToLowerInvariant()}-";
 
             var delay = 600;
-            
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (output, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --delay {delay} --prefix {prefix}");
+            (_, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --delay {delay} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
             await VerifyDelayDeliveryQueue(EndpointName, prefix, delayInSeconds: delay);
-            
+
             await DeleteQueue(EndpointName, prefix);
             await DeleteDelayDeliveryQueue(EndpointName, prefix);
         }
@@ -217,12 +216,12 @@
 
             var retention = 60000;
 
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (output, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --retention {retention} --prefix {prefix}");
+            (_, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --retention {retention} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -239,12 +238,12 @@
             var prefix = $"cli-{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToLowerInvariant()}-";
             var suffix = "-mydelay.fifo";
 
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (output, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --prefix {prefix} --suffix {suffix}");
+            (_, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --prefix {prefix} --suffix {suffix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -260,12 +259,12 @@
         {
             var prefix = $"cli-{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToLowerInvariant()}-";
 
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (output, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix {prefix}");
+            (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -283,12 +282,12 @@
         {
             var prefix = $"cli-{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToLowerInvariant()}-";
 
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (output, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix {prefix}");
+            (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -297,7 +296,7 @@
             var topicArn = await VerifyTopic(EventType, prefix);
             await VerifySubscription(topicArn, queueArn);
 
-            (output, error, exitCode) = await Execute($"endpoint unsubscribe {EndpointName} {EventType} --prefix {prefix}");
+            await Execute($"endpoint unsubscribe {EndpointName} {EventType} --prefix {prefix}");
 
             await VerifySubscriptionDeleted(topicArn, queueArn);
             await VerifyTopic(EventType, prefix);
@@ -311,12 +310,12 @@
         {
             var prefix = $"cli-{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToLowerInvariant()}-";
 
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (output, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix {prefix}");
+            (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -325,7 +324,7 @@
             var topicArn = await VerifyTopic(EventType, prefix);
             await VerifySubscription(topicArn, queueArn);
 
-            (output, error, exitCode) = await Execute($"endpoint unsubscribe {EndpointName} {EventType} --prefix {prefix} --remove-shared-resources");
+            await Execute($"endpoint unsubscribe {EndpointName} {EventType} --prefix {prefix} --remove-shared-resources");
 
             await VerifyTopicDeleted(EventType, prefix);
 
@@ -337,19 +336,19 @@
         {
             var prefix = $"cli-{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToLowerInvariant()}-";
 
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (output, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --prefix {prefix}");
+            (_, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
             await VerifyDelayDeliveryQueue(EndpointName, prefix);
 
-            (output, error, exitCode) = await Execute($"endpoint remove {EndpointName} delay-delivery-support --prefix {prefix}");
+            (_, error, exitCode) = await Execute($"endpoint remove {EndpointName} delay-delivery-support --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -365,19 +364,19 @@
             var prefix = $"cli-{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToLowerInvariant()}-";
             var suffix = "-mydelay.fifo";
 
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (output, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --prefix {prefix} --suffix {suffix}");
+            (_, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --prefix {prefix} --suffix {suffix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
             await VerifyDelayDeliveryQueue(EndpointName, prefix, suffix: suffix);
 
-            (output, error, exitCode) = await Execute($"endpoint remove {EndpointName} delay-delivery-support --prefix {prefix} --suffix {suffix}");
+            (_, error, exitCode) = await Execute($"endpoint remove {EndpointName} delay-delivery-support --prefix {prefix} --suffix {suffix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -393,19 +392,19 @@
             var prefix = $"cli-{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToLowerInvariant()}-";
             var bucketName = prefix + BucketName;
 
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (output, error, exitCode) = await Execute($"endpoint add {EndpointName} large-message-support {bucketName}");
+            (_, error, exitCode) = await Execute($"endpoint add {EndpointName} large-message-support {bucketName}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
             await VerifyBucket(bucketName);
 
-            (output, error, exitCode) = await Execute($"endpoint remove {EndpointName} large-message-support {bucketName}");
+            (_, error, exitCode) = await Execute($"endpoint remove {EndpointName} large-message-support {bucketName}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -413,7 +412,7 @@
             await VerifyBucket(bucketName);
 
             await DeleteQueue(EndpointName, prefix);
-            await DeleteBucket(bucketName);           
+            await DeleteBucket(bucketName);
         }
 
         [Test]
@@ -422,19 +421,19 @@
             var prefix = $"cli-{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToLowerInvariant()}-";
             var bucketName = prefix + BucketName;
 
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (output, error, exitCode) = await Execute($"endpoint add {EndpointName} large-message-support {bucketName}");
+            (_, error, exitCode) = await Execute($"endpoint add {EndpointName} large-message-support {bucketName}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
             await VerifyBucket(bucketName);
 
-            (output, error, exitCode) = await Execute($"endpoint remove {EndpointName} large-message-support {bucketName} --remove-shared-resources");
+            (_, error, exitCode) = await Execute($"endpoint remove {EndpointName} large-message-support {bucketName} --remove-shared-resources");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -442,7 +441,7 @@
             await VerifyBucketDeleted(bucketName);
 
             await DeleteQueue(EndpointName, prefix);
-           
+
         }
 
         [Test]
@@ -450,14 +449,14 @@
         {
             var prefix = $"cli-{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToLowerInvariant()}-";
 
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
             await VerifyQueue(EndpointName, prefix);
 
-            (output, error, exitCode) = await Execute($"endpoint delete {EndpointName} --prefix {prefix}");
+            (_, error, exitCode) = await Execute($"endpoint delete {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -494,7 +493,7 @@
 
             return (output, error, process.ExitCode);
         }
-        
+
         async Task<string> VerifyQueue(string queueName, string prefix = null, double? retentionPeriodInSeconds = null)
         {
             if (prefix == null) { prefix = DefaultConfigurationValues.QueueNamePrefix; }
@@ -504,7 +503,7 @@
             var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
 
             var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string> { QueueAttributeName.MessageRetentionPeriod, QueueAttributeName.QueueArn }).ConfigureAwait(false);
-                
+
             Assert.AreEqual(retentionPeriodInSeconds, queueAttributesResponse.MessageRetentionPeriod);
 
             return queueAttributesResponse.QueueARN;
@@ -520,8 +519,8 @@
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}{suffix}");
             var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
 
-            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string> { 
-                QueueAttributeName.MessageRetentionPeriod, 
+            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string> {
+                QueueAttributeName.MessageRetentionPeriod,
                 QueueAttributeName.DelaySeconds,
                 QueueAttributeName.QueueArn }).ConfigureAwait(false);
 
@@ -615,7 +614,7 @@
             if (prefix == null) { prefix = DefaultConfigurationValues.TopicNamePrefix; }
             var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
 
-            var findTopicResponse = await sns.FindTopicAsync(topicName).ConfigureAwait(false); 
+            var findTopicResponse = await sns.FindTopicAsync(topicName).ConfigureAwait(false);
 
             Assert.IsNull(findTopicResponse);
         }
@@ -626,7 +625,7 @@
             if (suffix == null) { suffix = DefaultConfigurationValues.DelayedDeliveryQueueSuffix; }
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}{suffix}");
-            GetQueueUrlResponse queueUrlResponse = null;
+            GetQueueUrlResponse queueUrlResponse;
             var backOff = 0;
             var executions = 0;
             do
@@ -639,7 +638,7 @@
 
                     queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
                 }
-                catch (Amazon.SQS.Model.QueueDoesNotExistException)
+                catch (QueueDoesNotExistException)
                 {
                     // expected
                     queueUrlResponse = null;
@@ -654,7 +653,7 @@
         {
             if (prefix == null) { prefix = DefaultConfigurationValues.QueueNamePrefix; }
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
-            GetQueueUrlResponse queueUrlResponse = null;
+            GetQueueUrlResponse queueUrlResponse;
             var backOff = 0;
             var executions = 0;
             do
@@ -663,11 +662,11 @@
                 {
                     backOff = executions * executions * verificationBackoffInterval;
                     await Task.Delay(backOff);
-                    executions++;                    
+                    executions++;
 
                     queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
                 }
-                catch (Amazon.SQS.Model.QueueDoesNotExistException)
+                catch (QueueDoesNotExistException)
                 {
                     // expected
                     queueUrlResponse = null;
@@ -681,7 +680,7 @@
         async Task VerifyBucketDeleted(string bucketName)
         {
             S3Bucket bucket;
-            var backOff = 0;
+            int backOff;
             var executions = 0;
             do
             {
@@ -705,12 +704,12 @@
                 var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
                 var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
                 var deleteRequest = new DeleteQueueRequest { QueueUrl = queueUrlResponse.QueueUrl };
-                await sqs.DeleteQueueAsync(deleteRequest).ConfigureAwait(false);               
+                await sqs.DeleteQueueAsync(deleteRequest).ConfigureAwait(false);
             }
             catch (QueueDoesNotExistException)
             {
                 // this is fine
-            }           
+            }
         }
 
         async Task DeleteDelayDeliveryQueue(string queueName, string prefix = null, string suffix = null)
@@ -722,7 +721,7 @@
                 var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}{suffix}");
                 var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
                 var deleteRequest = new DeleteQueueRequest { QueueUrl = queueUrlResponse.QueueUrl };
-                await sqs.DeleteQueueAsync(deleteRequest).ConfigureAwait(false);                
+                await sqs.DeleteQueueAsync(deleteRequest).ConfigureAwait(false);
             }
             catch (QueueDoesNotExistException)
             {
@@ -736,7 +735,7 @@
             var bucketExists = listBucketsResponse.Buckets.Any(x => string.Equals(x.BucketName, bucketName, StringComparison.InvariantCultureIgnoreCase));
             if (bucketExists)
             {
-                await s3.DeleteBucketAsync(new DeleteBucketRequest { BucketName = bucketName }).ConfigureAwait(false);               
+                await s3.DeleteBucketAsync(new DeleteBucketRequest { BucketName = bucketName }).ConfigureAwait(false);
             }
         }
 
@@ -749,19 +748,13 @@
 
             await sns.DeleteTopicAsync(findTopicResponse.TopicArn).ConfigureAwait(false);
         }
-        
+
         [SetUp]
         public void Setup()
         {
-            var region = Environment.GetEnvironmentVariable("AWS_REGION");
-
-            var credentials = new EnvironmentVariablesAWSCredentials();
-
-            var regionEndpoint = RegionEndpoint.GetBySystemName(region);
-
-            sqs = new AmazonSQSClient(credentials, regionEndpoint);
-            sns = new AmazonSimpleNotificationServiceClient(credentials, regionEndpoint);
-            s3 = new AmazonS3Client(credentials, regionEndpoint);
+            sqs = new AmazonSQSClient(new EnvironmentVariablesAWSCredentials());
+            sns = new AmazonSimpleNotificationServiceClient(new EnvironmentVariablesAWSCredentials());
+            s3 = new AmazonS3Client(new EnvironmentVariablesAWSCredentials());
         }
 
         [TearDown]

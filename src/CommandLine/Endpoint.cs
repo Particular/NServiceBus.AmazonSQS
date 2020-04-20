@@ -72,7 +72,7 @@
 
             var queueUrl = await Queue.GetUrl(sqs, prefix, endpointName);
             var topicArn = await Topic.Create(sns, prefix, eventType);
-            var subscriptionArn = await Topic.Subscribe(sqs, sns, topicArn, queueUrl);
+            await Topic.Subscribe(sqs, sns, topicArn, queueUrl);
 
             await Console.Out.WriteLineAsync($"Endpoint '{endpointName}' subscribed to '{eventType}'.");
         }
