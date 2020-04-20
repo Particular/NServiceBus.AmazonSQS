@@ -40,7 +40,10 @@
         {
             await Console.Out.WriteLineAsync($"Removing large message support from Endpoint '{endpointName}'.");
 
-            if (removeSharedResources) await Bucket.Delete(s3, endpointName, bucketName);
+            if (removeSharedResources)
+            {
+                await Bucket.Delete(s3, endpointName, bucketName);
+            }
 
             await Console.Out.WriteLineAsync($"Removing large message support from Endpoint '{endpointName}'.");
         }
