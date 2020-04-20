@@ -18,11 +18,12 @@
 
             var regionEndpoint = RegionEndpoint.GetBySystemName(regionToUse);
 
-            var sqs = new AmazonSQSClient(accessKeyToUse, secretToUse, regionEndpoint);
-            var sns = new AmazonSimpleNotificationServiceClient(accessKeyToUse, secretToUse, regionEndpoint);
-            var s3 = new AmazonS3Client(accessKeyToUse, secretToUse, regionEndpoint);
-
-            await func(sqs, sns, s3);           
+            using(var sqs = new AmazonSQSClient(accessKeyToUse, secretToUse, regionEndpoint))
+            using(var sns = new AmazonSimpleNotificationServiceClient(accessKeyToUse, secretToUse, regionEndpoint))
+            using (var s3 = new AmazonS3Client(accessKeyToUse, secretToUse, regionEndpoint))
+            {
+                await func(sqs, sns, s3);
+            }
         }
 
         public const string AccessKeyId = "AWS_ACCESS_KEY_ID";
