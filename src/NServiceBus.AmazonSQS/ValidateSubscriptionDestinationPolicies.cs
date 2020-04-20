@@ -1,4 +1,4 @@
-namespace NServiceBus.Transports.SQS
+namespace NServiceBus.Transport.AmazonSQS
 {
     // doesn't help to make this a struct since it gets boxed anyway by the extension bag
     class ValidateSubscriptionDestinationPolicies

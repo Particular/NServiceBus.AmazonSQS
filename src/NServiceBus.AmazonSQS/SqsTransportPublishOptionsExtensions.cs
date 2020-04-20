@@ -1,7 +1,7 @@
 namespace NServiceBus
 {
     using Extensibility;
-    using Transports.SQS;
+    using Transport.AmazonSQS;
 
     /// <summary>
     /// PublishOptions extensions from the transport
