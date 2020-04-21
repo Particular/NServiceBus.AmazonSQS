@@ -3,7 +3,6 @@ using NServiceBus;
 using NServiceBus.AmazonSQS.AcceptanceTests;
 using NServiceBus.AmazonSQS.Tests;
 using NServiceBus.Settings;
-using NServiceBus.Transport.SQS.Configure;
 using NServiceBus.TransportTests;
 
 public class ConfigureSqsTransportInfrastructure : IConfigureTransportInfrastructure

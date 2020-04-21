@@ -4,6 +4,7 @@
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>$(SolutionDir)Test.snk</AssemblyOriginatorKeyFile>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <RootNamespace>TransportTests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="3.3.110.52" />

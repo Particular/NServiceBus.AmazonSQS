@@ -5,8 +5,7 @@
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
     using NServiceBus.AcceptanceTests.ScenarioDescriptors;
-    using Transport.SQS.Configure;
-
+    
     public static class SqsTransportExtensions
     {
         const string S3BucketEnvironmentVariableName = "NServiceBus_AmazonSQS_S3Bucket";
@@ -40,7 +39,7 @@
             var credentials = new EnvironmentVariablesAWSCredentials();
             return new AmazonSQSClient(credentials);
         }
-        
+
         public static IAmazonSimpleNotificationService CreateSnsClient()
         {
             var credentials = new EnvironmentVariablesAWSCredentials();
