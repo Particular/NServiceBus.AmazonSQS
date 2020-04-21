@@ -8,7 +8,6 @@
     using Routing;
     using Routing.NativePublishSubscribe;
     using Sagas;
-    using Transport.SQS.AcceptanceTests;
     using Versioning;
     using MessageDriven = Routing.MessageDrivenSubscriptions;
 

@@ -1,4 +1,4 @@
-﻿﻿namespace NServiceBus.Transport.SQS.AcceptanceTests.NativePubSub
+﻿﻿namespace NServiceBus.AcceptanceTests.NativePubSub
 {
     using System;
     using System.Collections.Generic;
@@ -6,11 +6,10 @@
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
     using Configuration.AdvancedExtensibility;
+    using EndpointTemplates;
     using Features;
-    using NServiceBus.AcceptanceTests;
-    using NServiceBus.AcceptanceTests.EndpointTemplates;
+    using NServiceBus.Routing.MessageDrivenSubscriptions;
     using NUnit.Framework;
-    using Routing.MessageDrivenSubscriptions;
 
     public class When_publisher_runs_in_compat_mode : NServiceBusAcceptanceTest
     {

@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.Transport.SQS.AcceptanceTests
+﻿namespace NServiceBus.AcceptanceTests
 {
     using System;
     using System.Linq;
@@ -6,9 +6,8 @@
     using System.Threading.Tasks;
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
+    using EndpointTemplates;
     using NServiceBus;
-    using NServiceBus.AcceptanceTests;
-    using NServiceBus.AcceptanceTests.EndpointTemplates;
     using NUnit.Framework;
 
     public class Handling_messages_concurrently : NServiceBusAcceptanceTest

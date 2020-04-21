@@ -1,12 +1,11 @@
-﻿namespace NServiceBus.Transport.SQS.AcceptanceTests
+﻿namespace NServiceBus.AcceptanceTests
 {
     using System;
     using AcceptanceTesting;
     using Configuration.AdvancedExtensibility;
-    using Configure;
-    using NServiceBus.AcceptanceTests;
-    using NServiceBus.AcceptanceTests.EndpointTemplates;
+    using EndpointTemplates;
     using NUnit.Framework;
+    using Transport.SQS.Configure;
 
     public class Sending_oversized_message_without_bucket_configured : NServiceBusAcceptanceTest
     {

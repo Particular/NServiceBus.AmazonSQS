@@ -1,10 +1,9 @@
-namespace NServiceBus.Transport.SQS.AcceptanceTests
+namespace NServiceBus.AcceptanceTests
 {
     using System.Threading.Tasks;
     using AcceptanceTesting;
     using Amazon.S3;
-    using NServiceBus.AcceptanceTests;
-    using NServiceBus.AcceptanceTests.EndpointTemplates;
+    using EndpointTemplates;
     using NUnit.Framework;
 
     public class Sending_large_message_using_serverside_aes : NServiceBusAcceptanceTest

@@ -1,10 +1,10 @@
-﻿namespace NServiceBus.Transport.SQS.AcceptanceTests
+﻿namespace NServiceBus.AcceptanceTests
 {
     using Amazon.Runtime;
     using Amazon.S3;
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
-    using NServiceBus.AcceptanceTests.ScenarioDescriptors;
+    using ScenarioDescriptors;
 
     public static class SqsTransportExtensions
     {

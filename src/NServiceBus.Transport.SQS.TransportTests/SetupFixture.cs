@@ -2,8 +2,8 @@
 {
     using System;
     using System.Threading.Tasks;
+    using AcceptanceTests;
     using NUnit.Framework;
-    using Transport.SQS.AcceptanceTests;
     using Transport.SQS.Tests;
 
     [SetUpFixture]

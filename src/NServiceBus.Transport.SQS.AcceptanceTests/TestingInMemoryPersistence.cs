@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.Transport.SQS.AcceptanceTests
+﻿namespace NServiceBus.AcceptanceTests
 {
     using System;
     using System.Collections.Concurrent;

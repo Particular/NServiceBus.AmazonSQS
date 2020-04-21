@@ -1,10 +1,9 @@
-﻿namespace NServiceBus.Transport.SQS.AcceptanceTests.NativePubSub
+﻿namespace NServiceBus.AcceptanceTests.NativePubSub
 {
     using System.Threading.Tasks;
     using AcceptanceTesting;
+    using EndpointTemplates;
     using Features;
-    using NServiceBus.AcceptanceTests;
-    using NServiceBus.AcceptanceTests.EndpointTemplates;
     using NUnit.Framework;
 
     public class When_concurrent_subscribe : NServiceBusAcceptanceTest
