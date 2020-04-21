@@ -80,10 +80,16 @@
             await Console.Out.WriteLineAsync($"Delete bucket with name '{bucketName}' for endpoint '{endpointName}'.");
 
             var listBucketsResponse = await s3.ListBucketsAsync(new ListBucketsRequest()).ConfigureAwait(false);
-            var bucketExists = listBucketsResponse.Buckets.Any(x => string.Equals(x.BucketName, bucketName, StringComparison.InvariantCultureIgnoreCase));
-            if (bucketExists)
+            var bucket = listBucketsResponse.Buckets.FirstOrDefault(x => string.Equals(x.BucketName, bucketName, StringComparison.InvariantCultureIgnoreCase));
+            if (bucket != null)
             {
-                await s3.DeleteBucketAsync(new DeleteBucketRequest { BucketName = bucketName }).ConfigureAwait(false);
+                var bucketLocation = await s3.GetBucketLocationAsync(bucketName);
+
+                var deleteRequest = new DeleteBucketRequest { BucketName = bucketName };
+                if (!string.IsNullOrEmpty(bucketLocation.Location)) {
+                    deleteRequest.BucketRegion = bucketLocation.Location;
+                }
+                await s3.DeleteBucketAsync(deleteRequest).ConfigureAwait(false);
 
                 await Console.Out.WriteLineAsync($"Delete bucket with name '{bucketName}' for endpoint '{endpointName}'.");
             }
