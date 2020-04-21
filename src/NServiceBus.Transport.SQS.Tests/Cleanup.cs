@@ -97,7 +97,7 @@ namespace NServiceBus.Transport.SQS.Tests
                         await s3Client.DeleteBucketAsync(new DeleteBucketRequest
                         {
                             BucketName = bucketName,
-                            BucketRegion = string.IsNullOrEmpty(bucketLocation.Location) ? new S3Region("us-east-1") : bucketLocation.Location
+                            BucketRegion = bucketLocation.Location
                         });
                     }
                     catch (AmazonS3Exception)

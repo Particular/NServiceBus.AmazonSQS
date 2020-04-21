@@ -29,7 +29,7 @@
             }
         }
 
-        public static async Task EnableCleanup(IAmazonS3 s3, string endpointName, string bucketName, string keyPrefix, int expirationInDays) 
+        public static async Task EnableCleanup(IAmazonS3 s3, string endpointName, string bucketName, string keyPrefix, int expirationInDays)
         {
             await Console.Out.WriteLineAsync($"Adding lifecycle configuration to bucket name '{bucketName}' for endpoint '{endpointName}'.");
 
@@ -72,7 +72,7 @@
             else
             {
                 await Console.Out.WriteLineAsync($"Lifecycle configuration already configured for bucket name '{bucketName}' for endpoint '{endpointName}'.");
-            }           
+            }
         }
 
         public static async Task Delete(IAmazonS3 s3, string endpointName, string bucketName)
@@ -81,14 +81,16 @@
 
             var listBucketsResponse = await s3.ListBucketsAsync(new ListBucketsRequest()).ConfigureAwait(false);
             var bucket = listBucketsResponse.Buckets.FirstOrDefault(x => string.Equals(x.BucketName, bucketName, StringComparison.InvariantCultureIgnoreCase));
-            if (bucket != null)
+            if (bucket != null && await s3.DoesS3BucketExistAsync(bucket.BucketName))
             {
                 var bucketLocation = await s3.GetBucketLocationAsync(bucketName);
 
-                var deleteRequest = new DeleteBucketRequest { BucketName = bucketName };
-                if (!string.IsNullOrEmpty(bucketLocation.Location)) {
-                    deleteRequest.BucketRegion = bucketLocation.Location;
-                }
+                var deleteRequest = new DeleteBucketRequest
+                {
+                    BucketName = bucketName,
+                    BucketRegion = bucketLocation.Location
+                };
+
                 await s3.DeleteBucketAsync(deleteRequest).ConfigureAwait(false);
 
                 await Console.Out.WriteLineAsync($"Delete bucket with name '{bucketName}' for endpoint '{endpointName}'.");
