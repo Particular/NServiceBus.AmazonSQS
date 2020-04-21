@@ -3,7 +3,6 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Text.RegularExpressions;
     using System.Threading.Tasks;
     using Amazon.S3;
     using Amazon.S3.Model;
@@ -11,17 +10,14 @@
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS;
     using Amazon.SQS.Model;
-    using NUnit.Framework;
 
-    [SetUpFixture]
     public class Cleanup
-    {   
-
+    {
         public static Task DeleteAllResourcesWithPrefix(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, IAmazonS3 s3Client, string namePrefix)
         {
             return Task.WhenAll(
-                DeleteAllQueuesWithPrefix(sqsClient, namePrefix), 
-                DeleteAllTopicsWithPrefix(snsClient, namePrefix), 
+                DeleteAllQueuesWithPrefix(sqsClient, namePrefix),
+                DeleteAllTopicsWithPrefix(snsClient, namePrefix),
                 DeleteAllSubscriptionsWithPrefix(snsClient, namePrefix),
                 DeleteAllBucketsWithPrefix(s3Client, namePrefix));
         }
@@ -159,24 +155,32 @@
 
         public static async Task DeleteAllBucketsWithPrefix(IAmazonS3 s3Client, string bucketNamePrefix)
         {
-            var deletedBucketNames = new HashSet<string>(StringComparer.Ordinal);
             try
             {
-
                 var listBucketsResponse = await s3Client.ListBucketsAsync(new ListBucketsRequest()).ConfigureAwait(false);
-                var buckets = listBucketsResponse.Buckets.Where(x => x.BucketName.StartsWith(bucketNamePrefix, StringComparison.OrdinalIgnoreCase)).Select(b => b.BucketName);
-                foreach(var bucketName in buckets)
-                {
-                    try
+                await Task.WhenAll(listBucketsResponse.Buckets.Where(x => x.BucketName.StartsWith(bucketNamePrefix, StringComparison.OrdinalIgnoreCase))
+                    .Select(x => x.BucketName).Select(async bucketName =>
                     {
-                        await s3Client.DeleteBucketAsync(new DeleteBucketRequest { BucketName = bucketName }).ConfigureAwait(false);
-                    }
-                    catch (Exception)
-                    {
-                        Console.WriteLine($"Unable to delete bucket with name '{bucketName}'");
-                    }
-                }
+                        try
+                        {
+                            if (!await s3Client.DoesS3BucketExistAsync(bucketName))
+                            {
+                                return;
+                            }
 
+                            var bucketLocation = await s3Client.GetBucketLocationAsync(bucketName);
+
+                            await s3Client.DeleteBucketAsync(new DeleteBucketRequest
+                            {
+                                BucketName = bucketName,
+                                BucketRegion = string.IsNullOrEmpty(bucketLocation.Location) ? new S3Region("us-east-1") : bucketLocation.Location
+                            });
+                        }
+                        catch (AmazonS3Exception)
+                        {
+                            Console.WriteLine($"Unable to delete bucket '{bucketName}'");
+                        }
+                    }));
             }
             catch (Exception)
             {
@@ -184,5 +188,4 @@
             }
         }
     }
-
 }
