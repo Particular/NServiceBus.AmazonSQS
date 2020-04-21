@@ -38,12 +38,6 @@ namespace NServiceBus.Transport.SQS
         public async Task Unsubscribe(Type eventType, ContextBag context)
         {
             var metadata = messageMetadataRegistry.GetMessageMetadata(eventType);
-            // not checking the topology cache
-            if (metadata.MessageType == typeof(object))
-            {
-                return;
-            }
-
             await DeleteSubscription(metadata).ConfigureAwait(false);
         }
 
@@ -146,7 +140,7 @@ namespace NServiceBus.Transport.SQS
                 Logger.Debug($"Created topic/subscription for '{mappedTypeMetadata.MessageType.FullName}' for queue '{queueName}'");
             }
 
-            if (metadata.MessageType == typeof(object) || IsTypeTopologyKnownConfigured(metadata.MessageType))
+            if (IsTypeTopologyKnownConfigured(metadata.MessageType))
             {
                 Logger.Debug($"Skipped subscription for '{metadata.MessageType.FullName}' for queue '{queueName}' because it is already configured");
                 return;

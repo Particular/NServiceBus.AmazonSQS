@@ -40,13 +40,13 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
-        public async Task Subscribe_object_should_ignore()
+        public async Task Subscribe_object_should_work()
         {
             var eventType = typeof(object);
 
             await manager.Subscribe(eventType, null);
 
-            Assert.IsEmpty(snsClient.SubscribeQueueRequests);
+            Assert.IsNotEmpty(snsClient.SubscribeRequestsSent);
         }
 
         [Test]

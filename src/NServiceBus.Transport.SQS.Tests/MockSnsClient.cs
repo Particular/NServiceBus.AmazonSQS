@@ -11,16 +11,6 @@ namespace NServiceBus.Transport.SQS.Tests
 
     class MockSnsClient : IAmazonSimpleNotificationService
     {
-        public delegate string SubscribeQueueResponse(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl);
-
-        public SubscribeQueueResponse SubscribeQueueAsyncResponse { get; set; } = (arn, client, url) => $"arn:aws:sns:us-west-2:123456789012:{arn}:6b0e71bd-7e97-4d97-80ce-4a0994e55286";
-        public List<(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)> SubscribeQueueRequests { get; } = new List<(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)>();
-        public Task<string> SubscribeQueueAsync(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)
-        {
-            SubscribeQueueRequests.Add((topicArn, sqsClient, sqsQueueUrl));
-            return Task.FromResult(SubscribeQueueAsyncResponse(topicArn, sqsClient, sqsQueueUrl));
-        }
-
         public List<string> UnsubscribeRequests = new List<string>();
 
         public Task<UnsubscribeResponse> UnsubscribeAsync(string subscriptionArn, CancellationToken cancellationToken = new CancellationToken())
@@ -93,6 +83,11 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         #region NotImplemented
+        
+        public Task<string> SubscribeQueueAsync(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)
+        {
+            throw new NotImplementedException();
+        }
 
         public Task<PublishResponse> PublishAsync(string topicArn, string message, CancellationToken cancellationToken = new CancellationToken())
         {
