@@ -6,7 +6,6 @@
     using Conventions = AcceptanceTesting.Customization.Conventions;
     using AmazonSQS.AcceptanceTests;
     using NUnit.Framework;
-    using Transport.SQS.Configure;
     using MessageDriven = Routing.MessageDrivenSubscriptions;
     using NativePublishSubscribe = Routing.NativePublishSubscribe;
 

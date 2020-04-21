@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NServiceBus.Transport.SQS",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NServiceBus.Transport.SQS.Tests", "NServiceBus.Transport.SQS.Tests\NServiceBus.Transport.SQS.Tests.csproj", "{7E15376E-8902-49AA-8AB9-3916A012D588}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AcceptanceTests", "AcceptanceTests\AcceptanceTests.csproj", "{E87BA318-68A7-4EEE-8817-DFC91296299B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NServiceBus.Transport.SQS.AcceptanceTests", "NServiceBus.Transport.SQS.AcceptanceTests\NServiceBus.Transport.SQS.AcceptanceTests.csproj", "{E87BA318-68A7-4EEE-8817-DFC91296299B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NServiceBus.Transport.SQS.TransportTests", "NServiceBus.Transport.SQS.TransportTests\NServiceBus.Transport.SQS.TransportTests.csproj", "{E1E492D1-F5B2-480F-86D4-3D94E49A162D}"
 EndProject

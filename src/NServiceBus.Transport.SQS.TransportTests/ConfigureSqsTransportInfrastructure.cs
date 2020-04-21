@@ -1,8 +1,8 @@
 ﻿using System.Threading.Tasks;
 using NServiceBus;
 using NServiceBus.AmazonSQS.AcceptanceTests;
-using NServiceBus.AmazonSQS.Tests;
 using NServiceBus.Settings;
+using NServiceBus.Transport.SQS.Tests;
 using NServiceBus.TransportTests;
 
 public class ConfigureSqsTransportInfrastructure : IConfigureTransportInfrastructure

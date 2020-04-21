@@ -3,8 +3,8 @@
     using System;
     using System.Threading.Tasks;
     using AmazonSQS.AcceptanceTests;
-    using AmazonSQS.Tests;
     using NUnit.Framework;
+    using Transport.SQS.Tests;
 
     [SetUpFixture]
     public class SetupFixture

@@ -15,7 +15,7 @@
     <PackageReference Include="NUnit3TestAdapter" Version="3.16.1" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\AcceptanceTests\SqsTransportExtensions.cs">
+    <Compile Include="..\NServiceBus.Transport.SQS.AcceptanceTests\SqsTransportExtensions.cs">
       <Link>SqsTransportExtensions.cs</Link>
     </Compile>
     <Compile Include="..\NServiceBus.Transport.SQS.Tests\Cleanup.cs">
