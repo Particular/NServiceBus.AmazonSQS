@@ -23,7 +23,7 @@
                 Name = "sqs-transport"
             };
 
-            var accessKeyOption = new CommandOption("-k|--access-key-id", CommandOptionType.SingleValue)
+            var accessKeyOption = new CommandOption("-i|--access-key-id", CommandOptionType.SingleValue)
             {
                 Description = $"Overrides environment variable '{CommandRunner.AccessKeyId}'"
             };
@@ -133,7 +133,7 @@
 
                         var delayInSecondsCommand = delayDeliverySupportCommand.Option("-d|--delay", "Delay in seconds (defaults to " + DefaultConfigurationValues.MaximumQueueDelayTime.TotalSeconds + " ).", CommandOptionType.SingleValue);
                         var retentionPeriodInSecondsCommand = delayDeliverySupportCommand.Option("-t|--retention", "Retention period in seconds (defaults to " + DefaultConfigurationValues.RetentionPeriod.TotalSeconds + " ).", CommandOptionType.SingleValue);
-                        var suffixCommand = delayDeliverySupportCommand.Option("-s|--suffix", "Delayed delivery queue suffix (defaults to " + DefaultConfigurationValues.DelayedDeliveryQueueSuffix + " ) .", CommandOptionType.SingleValue);
+                        var suffixCommand = delayDeliverySupportCommand.Option("-x|--suffix", "Delayed delivery queue suffix (defaults to " + DefaultConfigurationValues.DelayedDeliveryQueueSuffix + " ) .", CommandOptionType.SingleValue);
 
                         delayDeliverySupportCommand.OnExecuteAsync(async ct =>
                         {
@@ -182,7 +182,7 @@
                         delayDeliverySupportCommand.Options.Add(regionOption);
                         delayDeliverySupportCommand.Options.Add(secretOption);
                         delayDeliverySupportCommand.Options.Add(prefixOption);
-                        var suffixCommand = delayDeliverySupportCommand.Option("-s|--suffix", "Delayed delivery queue suffix (defaults to " + DefaultConfigurationValues.DelayedDeliveryQueueSuffix + " ) .", CommandOptionType.SingleValue);
+                        var suffixCommand = delayDeliverySupportCommand.Option("-x|--suffix", "Delayed delivery queue suffix (defaults to " + DefaultConfigurationValues.DelayedDeliveryQueueSuffix + " ) .", CommandOptionType.SingleValue);
 
 
                         delayDeliverySupportCommand.OnExecuteAsync(async ct =>
