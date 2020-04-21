@@ -5,6 +5,8 @@ namespace NServiceBus.Transport.SQS.Tests
     using System.Linq;
     using System.Threading.Tasks;
     using Amazon.Runtime;
+    using Amazon.S3;
+    using Amazon.S3.Model;
     using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS;
@@ -20,6 +22,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var credentials = new EnvironmentVariablesAWSCredentials();
             sqsClient = new AmazonSQSClient(credentials);
             snsClient = new AmazonSimpleNotificationServiceClient(credentials);
+            s3Client = new AmazonS3Client(credentials);
         }
 
         [TearDown]
@@ -27,6 +30,7 @@ namespace NServiceBus.Transport.SQS.Tests
         {
             sqsClient.Dispose();
             snsClient.Dispose();
+            s3Client.Dispose();
         }
 
         [Test]
@@ -39,7 +43,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
         [Test]
         [Explicit]
-        public async Task DeleteAllSubscriptions()
+        public async Task DeleteAllSubscriptionsUsedForTests()
         {
             await DeleteAllSubscriptionsWithPrefix(snsClient, "AT");
             await DeleteAllSubscriptionsWithPrefix(snsClient, "TT");
@@ -55,6 +59,13 @@ namespace NServiceBus.Transport.SQS.Tests
 
         [Test]
         [Explicit]
+        public async Task DeleteAllBucketsUsedForTests()
+        {
+            await DeleteAllBucketsWithPrefix(s3Client, "cli-");
+        }
+
+        [Test]
+        [Explicit]
         public async Task DeleteAllResourcesWithPrefix()
         {
             await DeleteAllResourcesWithPrefix(sqsClient, snsClient, "AT");
@@ -64,6 +75,36 @@ namespace NServiceBus.Transport.SQS.Tests
         public static Task DeleteAllResourcesWithPrefix(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string namePrefix)
         {
             return Task.WhenAll(DeleteAllQueuesWithPrefix(sqsClient, namePrefix), DeleteAllTopicsWithPrefix(snsClient, namePrefix), DeleteAllSubscriptionsWithPrefix(snsClient, namePrefix));
+        }
+
+
+        public static async Task DeleteAllBucketsWithPrefix(IAmazonS3 s3Client, string namePrefix)
+        {
+            var listBucketsResponse = await s3Client.ListBucketsAsync(new ListBucketsRequest()).ConfigureAwait(false);
+
+            await Task.WhenAll(listBucketsResponse.Buckets.Where(x => x.BucketName.StartsWith(namePrefix, StringComparison.OrdinalIgnoreCase))
+                .Select(x => x.BucketName).Select(async bucketName =>
+                {
+                    try
+                    {
+                        if (!await s3Client.DoesS3BucketExistAsync(bucketName))
+                        {
+                            return;
+                        }
+
+                        var bucketLocation = await s3Client.GetBucketLocationAsync(bucketName);
+
+                        await s3Client.DeleteBucketAsync(new DeleteBucketRequest
+                        {
+                            BucketName = bucketName,
+                            BucketRegion = bucketLocation.Location
+                        });
+                    }
+                    catch (AmazonS3Exception)
+                    {
+                        Console.WriteLine($"Unable to delete bucket '{bucketName}'");
+                    }
+                }));
         }
 
         public static async Task DeleteAllSubscriptionsWithPrefix(IAmazonSimpleNotificationService snsClient, string topicNamePrefix)
@@ -199,5 +240,6 @@ namespace NServiceBus.Transport.SQS.Tests
 
         AmazonSQSClient sqsClient;
         AmazonSimpleNotificationServiceClient snsClient;
+        AmazonS3Client s3Client;
     }
 }
