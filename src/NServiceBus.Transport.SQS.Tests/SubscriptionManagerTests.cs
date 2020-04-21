@@ -1,4 +1,4 @@
-namespace NServiceBus.AmazonSQS.Tests
+namespace NServiceBus.Transport.SQS.Tests
 {
     using System;
     using System.Collections.Generic;
@@ -9,10 +9,10 @@ namespace NServiceBus.AmazonSQS.Tests
     using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS;
+    using Configure;
     using NUnit.Framework;
     using Settings;
-    using Transport.SQS;
-    using Transport.SQS.Configure;
+    using SQS;
     using Unicast.Messages;
 
     [TestFixture]
@@ -85,7 +85,7 @@ namespace NServiceBus.AmazonSQS.Tests
 
             await manager.Subscribe(eventType, null);
 
-            CollectionAssert.AreEquivalent(new List<string> {"NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-Event"}, snsClient.CreateTopicRequests);
+            CollectionAssert.AreEquivalent(new List<string> {"NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event"}, snsClient.CreateTopicRequests);
             Assert.IsEmpty(snsClient.FindTopicRequests);
         }
 
@@ -100,7 +100,7 @@ namespace NServiceBus.AmazonSQS.Tests
             CollectionAssert.AreEquivalent(new List<string>
             {
                 "custom-topic-name",
-                "NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-Event"
+                "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event"
             }, snsClient.CreateTopicRequests);
             Assert.IsEmpty(snsClient.FindTopicRequests);
         }
@@ -118,9 +118,9 @@ namespace NServiceBus.AmazonSQS.Tests
 
             CollectionAssert.AreEquivalent(new List<string>
             {
-                "NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-Event",
-                "NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-AnotherEvent",
-                "NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-IEvent"
+                "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event",
+                "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent",
+                "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-IEvent"
             }, snsClient.CreateTopicRequests);
             Assert.IsEmpty(snsClient.FindTopicRequests);
         }
@@ -135,7 +135,7 @@ namespace NServiceBus.AmazonSQS.Tests
             Assert.AreEqual(1, snsClient.SubscribeRequestsSent.Count);
             var subscribeRequest = snsClient.SubscribeRequestsSent[0];
             Assert.AreEqual("arn:fakeQueue", subscribeRequest.Endpoint);
-            Assert.AreEqual("arn:aws:sns:us-west-2:123456789012:NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-Event", subscribeRequest.TopicArn);
+            Assert.AreEqual("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event", subscribeRequest.TopicArn);
             Assert.IsTrue(subscribeRequest.ReturnSubscriptionArn);
 
             Assert.AreEqual(1, snsClient.SetSubscriptionAttributesRequests.Count);
@@ -237,8 +237,8 @@ namespace NServiceBus.AmazonSQS.Tests
             Assert.AreEqual(2, policy.Statements.Count);
             CollectionAssert.AreEquivalent(new []
             {
-                "arn:aws:sns:us-west-2:123456789012:NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-Event",
-                "arn:aws:sns:us-west-2:123456789012:NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-AnotherEvent"
+                "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event",
+                "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"
             }, policy.Statements.SelectMany(s => s.Conditions).SelectMany(c => c.Values));
             Assert.IsFalse(manager.EndpointStartingMode);
         }
@@ -303,7 +303,7 @@ namespace NServiceBus.AmazonSQS.Tests
 
             snsClient.ListSubscriptionsByTopicResponse = topic =>
             {
-                if (topic.EndsWith("NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-Event"))
+                if (topic.EndsWith("NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event"))
                 {
                     return new ListSubscriptionsByTopicResponse
                     {
@@ -325,8 +325,8 @@ namespace NServiceBus.AmazonSQS.Tests
 
             CollectionAssert.AreEquivalent(new List<string>
             {
-                "NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-Event",
-                "NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-IEvent"
+                "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event",
+                "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-IEvent"
             }, snsClient.FindTopicRequests);
             CollectionAssert.AreEquivalent(new List<string>
             {
@@ -365,7 +365,7 @@ namespace NServiceBus.AmazonSQS.Tests
             CollectionAssert.AreEquivalent(new List<string>
             {
                 "custom-topic-name",
-                "NServiceBus-AmazonSQS-Tests-SubscriptionManagerTests-IEvent"
+                "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-IEvent"
             }, snsClient.FindTopicRequests);
             CollectionAssert.AreEquivalent(new List<string>
             {

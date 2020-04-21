@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.27004.2005
 MinimumVisualStudioVersion = 15.0.26430.12
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NServiceBus.Transport.SQS", "NServiceBus.Transport.SQS\NServiceBus.Transport.SQS.csproj", "{A40EBAE3-ADF8-4CD8-87DA-025BCA6BA1C2}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests\Tests.csproj", "{7E15376E-8902-49AA-8AB9-3916A012D588}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NServiceBus.Transport.SQS.Tests", "NServiceBus.Transport.SQS.Tests\NServiceBus.Transport.SQS.Tests.csproj", "{7E15376E-8902-49AA-8AB9-3916A012D588}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AcceptanceTests", "AcceptanceTests\AcceptanceTests.csproj", "{E87BA318-68A7-4EEE-8817-DFC91296299B}"
 EndProject

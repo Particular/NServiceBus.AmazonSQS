@@ -1,12 +1,12 @@
-﻿namespace NServiceBus.AmazonSQS.Tests
+﻿namespace NServiceBus.Transport.SQS.Tests
 {
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+    using Configure;
     using NUnit.Framework;
     using Settings;
-    using Transport.SQS;
-    using Transport.SQS.Configure;
+    using SQS;
 
     [TestFixture]
     public class QueueCacheTests

@@ -1,11 +1,12 @@
-namespace NServiceBus.AmazonSQS.Tests
+namespace NServiceBus.Transport.SQS.Tests
 {
     using System;
     using System.Collections.Generic;
     using System.IO;
     using Amazon.SQS.Model;
+    using NServiceBus;
     using NUnit.Framework;
-    using Transport.SQS;
+    using SQS;
 
     [TestFixture]
     public class SqsPreparedMessageTests

@@ -1,4 +1,4 @@
-namespace NServiceBus.AmazonSQS.Tests
+namespace NServiceBus.Transport.SQS.Tests
 {
     using System;
     using System.Globalization;

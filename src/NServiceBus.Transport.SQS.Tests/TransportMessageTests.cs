@@ -1,13 +1,14 @@
-﻿namespace NServiceBus.AmazonSQS.Tests
+﻿namespace NServiceBus.Transport.SQS.Tests
 {
     using System;
     using System.Collections.Generic;
     using DeliveryConstraints;
+    using NServiceBus;
     using NUnit.Framework;
     using Performance.TimeToBeReceived;
     using SimpleJson;
+    using SQS;
     using Transport;
-    using Transport.SQS;
 
     [TestFixture]
     public class TransportMessageTests
