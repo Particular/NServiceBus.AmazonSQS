@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using NServiceBus;
-using NServiceBus.AmazonSQS.AcceptanceTests;
 using NServiceBus.Settings;
+using NServiceBus.Transport.SQS.AcceptanceTests;
 using NServiceBus.Transport.SQS.Tests;
 using NServiceBus.TransportTests;
 

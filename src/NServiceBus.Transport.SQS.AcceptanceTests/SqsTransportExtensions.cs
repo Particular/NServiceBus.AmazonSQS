@@ -1,11 +1,11 @@
-﻿namespace NServiceBus.AmazonSQS.AcceptanceTests
+﻿namespace NServiceBus.Transport.SQS.AcceptanceTests
 {
     using Amazon.Runtime;
     using Amazon.S3;
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
     using NServiceBus.AcceptanceTests.ScenarioDescriptors;
-    
+
     public static class SqsTransportExtensions
     {
         const string S3BucketEnvironmentVariableName = "NServiceBus_AmazonSQS_S3Bucket";

@@ -1,7 +1,7 @@
-﻿using NServiceBus.AcceptanceTesting.Support;
-
 namespace NServiceBus.AcceptanceTests
 {
+    using AcceptanceTesting.Support;
+
     public partial class TestSuiteConstraints
     {
         public bool SupportsCrossQueueTransactions => false;

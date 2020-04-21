@@ -1,10 +1,10 @@
-﻿namespace NServiceBus.AcceptanceTests.NativePubSub
+﻿namespace NServiceBus.Transport.SQS.AcceptanceTests.NativePubSub
 {
     using System.Threading.Tasks;
     using AcceptanceTesting;
-    using EndpointTemplates;
+    using NServiceBus.AcceptanceTests;
+    using NServiceBus.AcceptanceTests.EndpointTemplates;
     using NUnit.Framework;
-    using Transport.SQS.Configure;
 
     public class When_multi_subscribing_to_a_polymorphic_event_using_topic_mappings : NServiceBusAcceptanceTest
     {

@@ -1,7 +1,6 @@
-﻿namespace NServiceBus.AcceptanceTests
+﻿namespace NServiceBus.Transport.SQS.AcceptanceTests
 {
     using Configuration.AdvancedExtensibility;
-    using Transport.SQS.Configure;
 
     public static class CustomEndpointConfigurationExtensions
     {

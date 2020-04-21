@@ -1,4 +1,4 @@
-namespace NServiceBus.AcceptanceTests
+namespace NServiceBus.Transport.SQS.AcceptanceTests
 {
     using System;
     using System.Security.Cryptography;
@@ -6,8 +6,8 @@ namespace NServiceBus.AcceptanceTests
     using AcceptanceTesting;
     using Amazon.S3;
     using Amazon.S3.Model;
-    using AmazonSQS.AcceptanceTests;
-    using EndpointTemplates;
+    using NServiceBus.AcceptanceTests;
+    using NServiceBus.AcceptanceTests.EndpointTemplates;
     using NUnit.Framework;
 
     public class Sending_large_message_using_customer_provided_aes : NServiceBusAcceptanceTest

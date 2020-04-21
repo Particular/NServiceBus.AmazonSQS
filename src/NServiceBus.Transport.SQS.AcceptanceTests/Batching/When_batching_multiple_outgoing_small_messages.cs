@@ -1,4 +1,4 @@
-namespace NServiceBus.AcceptanceTests.Batching
+namespace NServiceBus.Transport.SQS.AcceptanceTests.Batching
 {
     using System;
     using System.Collections.Concurrent;
@@ -8,8 +8,9 @@ namespace NServiceBus.AcceptanceTests.Batching
     using System.Threading.Tasks;
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
-    using EndpointTemplates;
     using Logging;
+    using NServiceBus.AcceptanceTests;
+    using NServiceBus.AcceptanceTests.EndpointTemplates;
     using NUnit.Framework;
 
     public class When_batching_multiple_outgoing_small_messages : NServiceBusAcceptanceTest

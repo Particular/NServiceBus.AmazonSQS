@@ -1,11 +1,10 @@
-﻿namespace NServiceBus.AcceptanceTests
+﻿namespace NServiceBus.Transport.SQS.AcceptanceTests
 {
     using System;
     using System.Text.RegularExpressions;
     using System.Threading.Tasks;
-    using AmazonSQS.AcceptanceTests;
     using NUnit.Framework;
-    using Transport.SQS.Tests;
+    using Tests;
 
     [SetUpFixture]
     public class SetupFixture

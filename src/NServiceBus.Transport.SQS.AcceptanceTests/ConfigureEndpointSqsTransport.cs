@@ -2,12 +2,15 @@
 {
     using System;
     using System.Threading.Tasks;
+    using AcceptanceTesting.Customization;
     using AcceptanceTesting.Support;
-    using Conventions = AcceptanceTesting.Customization.Conventions;
-    using AmazonSQS.AcceptanceTests;
     using NUnit.Framework;
+    using Routing;
+    using Routing.NativePublishSubscribe;
+    using Sagas;
+    using Transport.SQS.AcceptanceTests;
+    using Versioning;
     using MessageDriven = Routing.MessageDrivenSubscriptions;
-    using NativePublishSubscribe = Routing.NativePublishSubscribe;
 
     public class ConfigureEndpointSqsTransport : IConfigureEndpointTestExecution
     {
@@ -28,31 +31,31 @@
 
         static void ApplyMappingsToSupportMultipleInheritance(string endpointName, TransportExtensions<SqsTransport> transportConfig)
         {
-            if (endpointName == Conventions.EndpointNamingConvention(typeof(NativePublishSubscribe.When_multi_subscribing_to_a_polymorphic_event.Subscriber)))
+            if (endpointName == Conventions.EndpointNamingConvention(typeof(When_multi_subscribing_to_a_polymorphic_event.Subscriber)))
             {
-                transportConfig.MapEvent<NativePublishSubscribe.When_multi_subscribing_to_a_polymorphic_event.IMyEvent, NativePublishSubscribe.When_multi_subscribing_to_a_polymorphic_event.MyEvent1>();
-                transportConfig.MapEvent<NativePublishSubscribe.When_multi_subscribing_to_a_polymorphic_event.IMyEvent, NativePublishSubscribe.When_multi_subscribing_to_a_polymorphic_event.MyEvent2>();
+                transportConfig.MapEvent<When_multi_subscribing_to_a_polymorphic_event.IMyEvent, When_multi_subscribing_to_a_polymorphic_event.MyEvent1>();
+                transportConfig.MapEvent<When_multi_subscribing_to_a_polymorphic_event.IMyEvent, When_multi_subscribing_to_a_polymorphic_event.MyEvent2>();
             }
 
-            if (endpointName == Conventions.EndpointNamingConvention(typeof(NativePublishSubscribe.When_subscribing_to_a_base_event.GeneralSubscriber)))
+            if (endpointName == Conventions.EndpointNamingConvention(typeof(When_subscribing_to_a_base_event.GeneralSubscriber)))
             {
-                transportConfig.MapEvent<NativePublishSubscribe.When_subscribing_to_a_base_event.IBaseEvent, NativePublishSubscribe.When_subscribing_to_a_base_event.SpecificEvent>();
+                transportConfig.MapEvent<When_subscribing_to_a_base_event.IBaseEvent, When_subscribing_to_a_base_event.SpecificEvent>();
             }
 
-            if (endpointName == Conventions.EndpointNamingConvention(typeof(Routing.When_publishing_an_event_implementing_two_unrelated_interfaces.Subscriber)))
+            if (endpointName == Conventions.EndpointNamingConvention(typeof(When_publishing_an_event_implementing_two_unrelated_interfaces.Subscriber)))
             {
-                transportConfig.MapEvent<Routing.When_publishing_an_event_implementing_two_unrelated_interfaces.IEventA, Routing.When_publishing_an_event_implementing_two_unrelated_interfaces.CompositeEvent>();
-                transportConfig.MapEvent<Routing.When_publishing_an_event_implementing_two_unrelated_interfaces.IEventB, Routing.When_publishing_an_event_implementing_two_unrelated_interfaces.CompositeEvent>();
+                transportConfig.MapEvent<When_publishing_an_event_implementing_two_unrelated_interfaces.IEventA, When_publishing_an_event_implementing_two_unrelated_interfaces.CompositeEvent>();
+                transportConfig.MapEvent<When_publishing_an_event_implementing_two_unrelated_interfaces.IEventB, When_publishing_an_event_implementing_two_unrelated_interfaces.CompositeEvent>();
             }
 
-            if (endpointName == Conventions.EndpointNamingConvention(typeof(Sagas.When_started_by_base_event_from_other_saga.SagaThatIsStartedByABaseEvent)))
+            if (endpointName == Conventions.EndpointNamingConvention(typeof(When_started_by_base_event_from_other_saga.SagaThatIsStartedByABaseEvent)))
             {
-                transportConfig.MapEvent<Sagas.When_started_by_base_event_from_other_saga.BaseEvent, Sagas.When_started_by_base_event_from_other_saga.SomethingHappenedEvent>();
+                transportConfig.MapEvent<When_started_by_base_event_from_other_saga.BaseEvent, When_started_by_base_event_from_other_saga.SomethingHappenedEvent>();
             }
 
-            if (endpointName == Conventions.EndpointNamingConvention(typeof(Versioning.When_multiple_versions_of_a_message_is_published.V1Subscriber)))
+            if (endpointName == Conventions.EndpointNamingConvention(typeof(When_multiple_versions_of_a_message_is_published.V1Subscriber)))
             {
-                transportConfig.MapEvent<Versioning.When_multiple_versions_of_a_message_is_published.V1Event, Versioning.When_multiple_versions_of_a_message_is_published.V2Event>();
+                transportConfig.MapEvent<When_multiple_versions_of_a_message_is_published.V1Event, When_multiple_versions_of_a_message_is_published.V2Event>();
             }
         }
 

@@ -1,10 +1,10 @@
-﻿namespace NServiceBus.AcceptanceTests.NativePubSub
+﻿namespace NServiceBus.Transport.SQS.AcceptanceTests.NativePubSub
 {
     using System.Threading.Tasks;
     using AcceptanceTesting;
-    using EndpointTemplates;
+    using NServiceBus.AcceptanceTests;
+    using NServiceBus.AcceptanceTests.EndpointTemplates;
     using NUnit.Framework;
-    using Transport.SQS.Configure;
 
     public class When_customizing_topic_name_generation : NServiceBusAcceptanceTest
     {

@@ -1,12 +1,12 @@
-﻿namespace NServiceBus.AcceptanceTests.DelayedDelivery
+﻿namespace NServiceBus.Transport.SQS.AcceptanceTests.DelayedDelivery
 {
     using System;
     using System.Threading.Tasks;
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
-    using EndpointTemplates;
+    using NServiceBus.AcceptanceTests;
+    using NServiceBus.AcceptanceTests.EndpointTemplates;
     using NUnit.Framework;
-    using Transport.SQS.Configure;
 
     public class SendOnly_when_configured_with_queue_delay_that_requires_multiple_cycles : NServiceBusAcceptanceTest
     {

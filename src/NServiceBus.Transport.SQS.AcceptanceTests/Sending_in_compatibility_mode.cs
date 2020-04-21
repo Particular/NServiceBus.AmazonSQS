@@ -1,11 +1,11 @@
-﻿namespace NServiceBus.AcceptanceTests
+﻿namespace NServiceBus.Transport.SQS.AcceptanceTests
 {
     using System.Threading.Tasks;
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
-    using EndpointTemplates;
+    using NServiceBus.AcceptanceTests;
+    using NServiceBus.AcceptanceTests.EndpointTemplates;
     using NUnit.Framework;
-    using Transport.SQS.Configure;
 
     public class Sending_in_compatibility_mode : NServiceBusAcceptanceTest
     {
