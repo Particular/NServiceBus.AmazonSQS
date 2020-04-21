@@ -3,7 +3,10 @@
     using System;
     using System.Text.RegularExpressions;
     using System.Threading.Tasks;
+    using Amazon.SimpleNotificationService;
+    using Amazon.SQS;
     using NUnit.Framework;
+    using ScenarioDescriptors;
     using Transport.SQS.Tests;
 
     [SetUpFixture]
@@ -28,8 +31,13 @@
         [OneTimeTearDown]
         public async Task OneTimeTearDown()
         {
-            using (var sqsClient = SqsTransportExtensions.CreateSQSClient())
-            using (var snsClient = SqsTransportExtensions.CreateSnsClient())
+            var accessKeyId = EnvironmentHelper.GetEnvironmentVariable("CLEANUP_AWS_ACCESS_KEY_ID");
+            var secretAccessKey = EnvironmentHelper.GetEnvironmentVariable("CLEANUP_AWS_SECRET_ACCESS_KEY");
+
+            using (var sqsClient = string.IsNullOrEmpty(accessKeyId) ? SqsTransportExtensions.CreateSQSClient() :
+                new AmazonSQSClient(accessKeyId, secretAccessKey))
+            using (var snsClient = string.IsNullOrEmpty(accessKeyId) ? SqsTransportExtensions.CreateSnsClient() :
+                new AmazonSimpleNotificationServiceClient(accessKeyId, secretAccessKey))
             {
                 await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, NamePrefix).ConfigureAwait(false);
             }
