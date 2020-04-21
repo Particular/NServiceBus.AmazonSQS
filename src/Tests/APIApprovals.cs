@@ -1,4 +1,5 @@
 ﻿using NServiceBus;
+using NServiceBus.Transport.SQS.Configure;
 using NUnit.Framework;
 using Particular.Approvals;
 using PublicApiGenerator;

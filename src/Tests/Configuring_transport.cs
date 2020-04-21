@@ -4,7 +4,7 @@ using System;
 using Amazon.S3;
 using NServiceBus.Configuration.AdvancedExtensibility;
 using NServiceBus.Settings;
-using NServiceBus.Transport.AmazonSQS.Configure;
+using NServiceBus.Transport.SQS.Configure;
 
 [TestFixture]
 public class Configuring_transport

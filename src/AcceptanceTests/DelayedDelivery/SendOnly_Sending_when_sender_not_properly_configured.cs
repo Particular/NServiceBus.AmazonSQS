@@ -6,6 +6,7 @@
     using AcceptanceTesting.Customization;
     using EndpointTemplates;
     using NUnit.Framework;
+    using Transport.SQS.Configure;
 
     public class SendOnly_Sending_when_sender_not_properly_configured : NServiceBusAcceptanceTest
     {

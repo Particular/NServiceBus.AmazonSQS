@@ -5,6 +5,7 @@
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
     using NServiceBus.AcceptanceTests.ScenarioDescriptors;
+    using Transport.SQS.Configure;
 
     public static class SqsTransportExtensions
     {

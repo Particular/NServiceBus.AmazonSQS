@@ -8,6 +8,7 @@
     using EndpointTemplates;
     using Features;
     using NUnit.Framework;
+    using Transport.SQS.Configure;
 
     public class When_subscriber_runs_in_compat_mode : NServiceBusAcceptanceTest
     {

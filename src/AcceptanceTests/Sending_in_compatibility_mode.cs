@@ -5,6 +5,7 @@
     using AcceptanceTesting.Customization;
     using EndpointTemplates;
     using NUnit.Framework;
+    using Transport.SQS.Configure;
 
     public class Sending_in_compatibility_mode : NServiceBusAcceptanceTest
     {

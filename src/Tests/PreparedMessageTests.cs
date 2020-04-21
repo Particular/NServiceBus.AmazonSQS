@@ -1,7 +1,7 @@
 namespace NServiceBus.AmazonSQS.Tests
 {
     using NUnit.Framework;
-    using Transport.AmazonSQS;
+    using Transport.SQS;
 
     [TestFixture]
     public class PreparedMessageTests

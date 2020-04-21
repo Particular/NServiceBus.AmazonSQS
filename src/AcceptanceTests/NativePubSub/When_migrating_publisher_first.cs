@@ -10,6 +10,7 @@
     using Features;
     using NServiceBus.Routing.MessageDrivenSubscriptions;
     using NUnit.Framework;
+    using Transport.SQS.Configure;
     using Conventions = AcceptanceTesting.Customization.Conventions;
 
     public class When_migrating_publisher_first : NServiceBusAcceptanceTest

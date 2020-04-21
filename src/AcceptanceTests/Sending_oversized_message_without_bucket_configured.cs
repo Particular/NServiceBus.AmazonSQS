@@ -5,7 +5,7 @@
     using Configuration.AdvancedExtensibility;
     using EndpointTemplates;
     using NUnit.Framework;
-    using Transport.AmazonSQS.Configure;
+    using Transport.SQS.Configure;
 
     public class Sending_oversized_message_without_bucket_configured : NServiceBusAcceptanceTest
     {

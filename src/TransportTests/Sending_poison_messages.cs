@@ -8,7 +8,7 @@ using NServiceBus.AmazonSQS.AcceptanceTests;
 using Amazon.SQS.Model;
 using NServiceBus;
 using NServiceBus.Configuration.AdvancedExtensibility;
-using NServiceBus.Transport.AmazonSQS;
+using NServiceBus.Transport.SQS;
 using NServiceBus.TransportTests;
 
 public class Sending_poison_messages : NServiceBusTransportTest

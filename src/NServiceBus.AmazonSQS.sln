@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27004.2005
 MinimumVisualStudioVersion = 15.0.26430.12
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NServiceBus.AmazonSQS", "NServiceBus.AmazonSQS\NServiceBus.AmazonSQS.csproj", "{A40EBAE3-ADF8-4CD8-87DA-025BCA6BA1C2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NServiceBus.Transport.SQS", "NServiceBus.Transport.SQS\NServiceBus.Transport.SQS.csproj", "{A40EBAE3-ADF8-4CD8-87DA-025BCA6BA1C2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests\Tests.csproj", "{7E15376E-8902-49AA-8AB9-3916A012D588}"
 EndProject

@@ -5,8 +5,8 @@
     using System.Threading.Tasks;
     using NUnit.Framework;
     using Settings;
-    using Transport.AmazonSQS;
-    using Transport.AmazonSQS.Configure;
+    using Transport.SQS;
+    using Transport.SQS.Configure;
 
     [TestFixture]
     public class QueueCacheTests

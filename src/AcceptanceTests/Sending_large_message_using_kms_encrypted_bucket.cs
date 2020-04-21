@@ -5,6 +5,7 @@
     using AmazonSQS.AcceptanceTests;
     using EndpointTemplates;
     using NUnit.Framework;
+    using Transport.SQS.Configure;
 
     public class Sending_large_message_using_kms_encrypted_bucket : NServiceBusAcceptanceTest
     {

@@ -7,7 +7,7 @@
     using Performance.TimeToBeReceived;
     using SimpleJson;
     using Transport;
-    using Transport.AmazonSQS;
+    using Transport.SQS;
 
     [TestFixture]
     public class TransportMessageTests

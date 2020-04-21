@@ -4,7 +4,7 @@ namespace NServiceBus.AmazonSQS.Tests
     using System.IO;
     using Amazon.SimpleNotificationService.Model;
     using NUnit.Framework;
-    using Transport.AmazonSQS;
+    using Transport.SQS;
 
     [TestFixture]
     public class SnsPreparedMessageTests
