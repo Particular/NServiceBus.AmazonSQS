@@ -1,6 +1,5 @@
 namespace NServiceBus.Transport.SQS.Tests
 {
-    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
@@ -136,39 +135,10 @@ namespace NServiceBus.Transport.SQS.Tests
             var subscribeRequest = snsClient.SubscribeRequestsSent[0];
             Assert.AreEqual("arn:fakeQueue", subscribeRequest.Endpoint);
             Assert.AreEqual("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event", subscribeRequest.TopicArn);
-            Assert.IsTrue(subscribeRequest.ReturnSubscriptionArn);
-
-            Assert.AreEqual(1, snsClient.SetSubscriptionAttributesRequests.Count);
-            var setAttributeRequest = snsClient.SetSubscriptionAttributesRequests[0];
-            Assert.AreEqual("RawMessageDelivery", setAttributeRequest.AttributeName);
-            Assert.AreEqual("true", setAttributeRequest.AttributeValue);
-            Assert.AreEqual("arn:fakeQueue", setAttributeRequest.SubscriptionArn);
-        }
-
-        [Test]
-        public void Subscribe_retries_setting_raw_Mode_five_times_with_linear_delays_and_gives_up()
-        {
-            snsClient.SetSubscriptionAttributesResponse = req => throw new NotFoundException("");
-
-            Assert.ThrowsAsync<NotFoundException>(async() => await manager.Subscribe(typeof(Event), null));
-            Assert.AreEqual(5, manager.Delays.Count);
-            Assert.AreEqual(15000, manager.Delays.Sum());
-        }
-
-        [Test]
-        public void Subscribe_retries_setting_raw_Mode_with_linear_delays()
-        {
-            var queue = new Queue<Func<SetSubscriptionAttributesResponse>>();
-            queue.Enqueue(() => throw new NotFoundException(""));
-            queue.Enqueue(() => throw new NotFoundException(""));
-            queue.Enqueue(() => throw new NotFoundException(""));
-            queue.Enqueue(() => throw new NotFoundException(""));
-            queue.Enqueue(() => new SetSubscriptionAttributesResponse());
-            snsClient.SetSubscriptionAttributesResponse = req => queue.Dequeue()();
-
-            Assert.DoesNotThrowAsync(async() => await manager.Subscribe(typeof(Event), null));
-            Assert.AreEqual(4, manager.Delays.Count);
-            Assert.AreEqual(10000, manager.Delays.Sum());
+            CollectionAssert.AreEquivalent(new Dictionary<string, string>
+            {
+                { "RawMessageDelivery", "true"}
+            }, subscribeRequest.Attributes);
         }
 
         [Test]

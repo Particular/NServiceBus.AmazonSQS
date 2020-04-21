@@ -28,16 +28,6 @@ namespace NServiceBus.Transport.SQS.Tests
             return Task.FromResult(FindTopicAsyncResponse(topicName));
         }
 
-        public Func<SetSubscriptionAttributesRequest, SetSubscriptionAttributesResponse> SetSubscriptionAttributesResponse { get; set; } = request => new SetSubscriptionAttributesResponse();
-
-        public List<SetSubscriptionAttributesRequest> SetSubscriptionAttributesRequests { get; } = new List<SetSubscriptionAttributesRequest>();
-
-        public Task<SetSubscriptionAttributesResponse> SetSubscriptionAttributesAsync(SetSubscriptionAttributesRequest request, CancellationToken cancellationToken = new CancellationToken())
-        {
-            SetSubscriptionAttributesRequests.Add(request);
-            return Task.FromResult(SetSubscriptionAttributesResponse(request));
-        }
-
         public Func<string, CreateTopicResponse> CreateTopicResponse { get; set; } = topic => new CreateTopicResponse
         {
             TopicArn = $"arn:aws:sns:us-west-2:123456789012:{topic}"
@@ -83,7 +73,12 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         #region NotImplemented
-        
+
+        public Task<SetSubscriptionAttributesResponse> SetSubscriptionAttributesAsync(SetSubscriptionAttributesRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<string> SubscribeQueueAsync(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)
         {
             throw new NotImplementedException();

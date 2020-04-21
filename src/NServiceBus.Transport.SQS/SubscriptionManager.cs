@@ -201,13 +201,12 @@ namespace NServiceBus.Transport.SQS
         {
             Logger.Debug($"Creating subscription for queue '{queueName}' to topic '{policyStatement.TopicName}' with arn '{policyStatement.TopicArn}'");
 
-            var createdSubscription = await SubscribeQueue(policyStatement).ConfigureAwait(false);
-            await SetRawDeliveryModeWithRetries(createdSubscription.SubscriptionArn, policyStatement).ConfigureAwait(false);
+            await SubscribeQueue(policyStatement).ConfigureAwait(false);
 
             Logger.Debug($"Created subscription for queue '{queueName}' to topic '{policyStatement.TopicName}' with arn '{policyStatement.TopicArn}'");
         }
 
-        async Task<SubscribeResponse> SubscribeQueue(PolicyStatement policyStatement)
+        async Task SubscribeQueue(PolicyStatement policyStatement)
         {
             // SNS dedups subscriptions based on the endpoint name
             Logger.Debug($"Creating subscription for '{policyStatement.TopicName}' with arn '{policyStatement.TopicArn}' for queue '{queueName}");
@@ -216,10 +215,13 @@ namespace NServiceBus.Transport.SQS
                 TopicArn = policyStatement.TopicArn,
                 Protocol = "sqs",
                 Endpoint = policyStatement.QueueArn,
-                ReturnSubscriptionArn = true
+                ReturnSubscriptionArn = true,
+                Attributes = new Dictionary<string, string>
+                {
+                    { "RawMessageDelivery", "true" }
+                }
             }).ConfigureAwait(false);
             Logger.Debug($"Created subscription with arn '{createdSubscription.SubscriptionArn}' for '{policyStatement.TopicName}' with arn '{policyStatement.TopicArn}' for queue '{queueName}");
-            return createdSubscription;
         }
 
         async Task SetNecessaryDeliveryPolicyWithRetries(string queueUrl, IReadOnlyCollection<PolicyStatement> addPolicyStatements)
@@ -280,36 +282,6 @@ namespace NServiceBus.Transport.SQS
             {
                 subscribeQueueLimiter.Release();
             }
-        }
-
-        async Task SetRawDeliveryModeWithRetries(string subscriptionArn, PolicyStatement policyStatement)
-        {
-            Logger.Debug($"Setting raw delivery for subscription with arn '{subscriptionArn}' for '{policyStatement.TopicName}' with arn '{policyStatement.TopicArn}' for queue '{queueName}");
-            NotFoundException notFoundException;
-            var iterationCount = 0;
-            do
-            {
-                try
-                {
-                    await snsClient.SetSubscriptionAttributesAsync(new SetSubscriptionAttributesRequest
-                    {
-                        SubscriptionArn = subscriptionArn,
-                        AttributeName = "RawMessageDelivery",
-                        AttributeValue = "true"
-                    }).ConfigureAwait(false);
-                    notFoundException = null;
-                }
-                catch (NotFoundException exception) when (iterationCount < 5)
-                {
-                    notFoundException = exception;
-                    iterationCount++;
-                    var millisecondsDelay = iterationCount * 1000;
-                    Logger.Debug($"Unable to set raw delivery mode for subscription with arn '{subscriptionArn}'! Retrying in {millisecondsDelay} ms.");
-                    await Delay(millisecondsDelay).ConfigureAwait(false);
-                }
-            } while (notFoundException != null);
-
-            Logger.Debug($"Set raw delivery for subscription with arn '{subscriptionArn}' for '{policyStatement.TopicName}' with arn '{policyStatement.TopicArn}' for queue '{queueName}");
         }
 
         // only for testing
