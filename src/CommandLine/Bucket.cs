@@ -13,9 +13,7 @@
         {
             await Console.Out.WriteLineAsync($"Creating bucket with name '{bucketName}' for endpoint '{endpointName}'.");
 
-            var listBucketsResponse = await s3.ListBucketsAsync(new ListBucketsRequest()).ConfigureAwait(false);
-            var bucketExists = listBucketsResponse.Buckets.Any(x => string.Equals(x.BucketName, bucketName, StringComparison.InvariantCultureIgnoreCase));
-            if (!bucketExists)
+            if (!await s3.DoesS3BucketExistAsync(bucketName))
             {
                 await s3.RetryConflictsAsync(async () =>
                         await s3.PutBucketAsync(new PutBucketRequest { BucketName = bucketName }).ConfigureAwait(false),
@@ -79,16 +77,31 @@
         {
             await Console.Out.WriteLineAsync($"Delete bucket with name '{bucketName}' for endpoint '{endpointName}'.");
 
-            var listBucketsResponse = await s3.ListBucketsAsync(new ListBucketsRequest()).ConfigureAwait(false);
-            var bucket = listBucketsResponse.Buckets.FirstOrDefault(x => string.Equals(x.BucketName, bucketName, StringComparison.InvariantCultureIgnoreCase));
-            if (bucket != null && await s3.DoesS3BucketExistAsync(bucket.BucketName))
+            if (await s3.DoesS3BucketExistAsync(bucketName))
             {
-                var bucketLocation = await s3.GetBucketLocationAsync(bucketName);
+                var response = await s3.GetBucketLocationAsync(bucketName);
+                S3Region region;
+                switch (response.Location)
+                {
+                    case "":
+                    {
+                        region = new S3Region("us-east-1");
+                        break;
+                    }
+                    case "EU":
+                    {
+                        region = S3Region.EUW1;
+                        break;
+                    }
+                    default:
+                        region = response.Location;
+                        break;
+                }
 
                 var deleteRequest = new DeleteBucketRequest
                 {
                     BucketName = bucketName,
-                    BucketRegion = bucketLocation.Location
+                    BucketRegion = region,
                 };
 
                 await s3.DeleteBucketAsync(deleteRequest).ConfigureAwait(false);

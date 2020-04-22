@@ -4,6 +4,7 @@
     using System.Threading.Tasks;
     using AcceptanceTests;
     using AcceptanceTests.ScenarioDescriptors;
+    using Amazon.S3;
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
     using NUnit.Framework;
@@ -38,8 +39,10 @@
                 new AmazonSQSClient(accessKeyId, secretAccessKey))
             using (var snsClient = string.IsNullOrEmpty(accessKeyId) ? SqsTransportExtensions.CreateSnsClient() :
                 new AmazonSimpleNotificationServiceClient(accessKeyId, secretAccessKey))
+            using (var s3Client = string.IsNullOrEmpty(accessKeyId) ? SqsTransportExtensions.CreateS3Client() :
+                new AmazonS3Client(accessKeyId, secretAccessKey))
             {
-                await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, NamePrefix).ConfigureAwait(false);
+                await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, NamePrefix).ConfigureAwait(false);
             }
         }
     }

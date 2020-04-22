@@ -68,13 +68,18 @@ namespace NServiceBus.Transport.SQS.Tests
         [Explicit]
         public async Task DeleteAllResourcesWithPrefix()
         {
-            await DeleteAllResourcesWithPrefix(sqsClient, snsClient, "AT");
-            await DeleteAllResourcesWithPrefix(sqsClient, snsClient, "TT");
+            await DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, "AT");
+            await DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, "TT");
         }
 
-        public static Task DeleteAllResourcesWithPrefix(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string namePrefix)
+        public static Task DeleteAllResourcesWithPrefix(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, IAmazonS3 s3Client, string namePrefix)
         {
-            return Task.WhenAll(DeleteAllQueuesWithPrefix(sqsClient, namePrefix), DeleteAllTopicsWithPrefix(snsClient, namePrefix), DeleteAllSubscriptionsWithPrefix(snsClient, namePrefix));
+            return Task.WhenAll(
+                DeleteAllQueuesWithPrefix(sqsClient, namePrefix),
+                DeleteAllTopicsWithPrefix(snsClient, namePrefix),
+                DeleteAllSubscriptionsWithPrefix(snsClient, namePrefix),
+                DeleteAllBucketsWithPrefix(s3Client, namePrefix)
+            );
         }
 
 
@@ -92,12 +97,29 @@ namespace NServiceBus.Transport.SQS.Tests
                             return;
                         }
 
-                        var bucketLocation = await s3Client.GetBucketLocationAsync(bucketName);
+                        var response = await s3Client.GetBucketLocationAsync(bucketName);
+                        S3Region region;
+                        switch (response.Location)
+                        {
+                            case "":
+                            {
+                                region = new S3Region("us-east-1");
+                                break;
+                            }
+                            case "EU":
+                            {
+                                region = S3Region.EUW1;
+                                break;
+                            }
+                            default:
+                                region = response.Location;
+                                break;
+                        }
 
                         await s3Client.DeleteBucketAsync(new DeleteBucketRequest
                         {
                             BucketName = bucketName,
-                            BucketRegion = bucketLocation.Location
+                            BucketRegion = region
                         });
                     }
                     catch (AmazonS3Exception)
@@ -128,22 +150,22 @@ namespace NServiceBus.Transport.SQS.Tests
                     deletionTasks.AddRange(subscriptions.Subscriptions
                         .Where(subscription => !deletedSubscriptionArns.Contains(subscription.SubscriptionArn))
                         .Select(async subscription =>
-                    {
-                        if (!subscription.TopicArn.Contains($":{topicNamePrefix}"))
                         {
-                            return;
-                        }
+                            if (!subscription.TopicArn.Contains($":{topicNamePrefix}"))
+                            {
+                                return;
+                            }
 
-                        try
-                        {
-                            await snsClient.UnsubscribeAsync(subscription.SubscriptionArn).ConfigureAwait(false);
-                            deletedSubscriptionArns.Add(subscription.SubscriptionArn);
-                        }
-                        catch (Exception)
-                        {
-                            Console.WriteLine($"Unable to delete subscription '{subscription.SubscriptionArn}' '{subscription.TopicArn}'");
-                        }
-                    }));
+                            try
+                            {
+                                await snsClient.UnsubscribeAsync(subscription.SubscriptionArn).ConfigureAwait(false);
+                                deletedSubscriptionArns.Add(subscription.SubscriptionArn);
+                            }
+                            catch (Exception)
+                            {
+                                Console.WriteLine($"Unable to delete subscription '{subscription.SubscriptionArn}' '{subscription.TopicArn}'");
+                            }
+                        }));
 
                     await Task.WhenAll(deletionTasks).ConfigureAwait(false);
                 } while (subscriptions.NextToken != null && subscriptions.Subscriptions.Count > 0);
@@ -174,22 +196,22 @@ namespace NServiceBus.Transport.SQS.Tests
                     deletionTasks.AddRange(upToHundredTopics.Topics
                         .Where(topic => !deletedTopicArns.Contains(topic.TopicArn))
                         .Select(async topic =>
-                    {
-                        if (!topic.TopicArn.Contains($":{topicNamePrefix}"))
                         {
-                            return;
-                        }
+                            if (!topic.TopicArn.Contains($":{topicNamePrefix}"))
+                            {
+                                return;
+                            }
 
-                        try
-                        {
-                            await snsClient.DeleteTopicAsync(topic.TopicArn).ConfigureAwait(false);
-                            deletedTopicArns.Add(topic.TopicArn);
-                        }
-                        catch (Exception)
-                        {
-                            Console.WriteLine($"Unable to delete topic '{topic.TopicArn}'");
-                        }
-                    }));
+                            try
+                            {
+                                await snsClient.DeleteTopicAsync(topic.TopicArn).ConfigureAwait(false);
+                                deletedTopicArns.Add(topic.TopicArn);
+                            }
+                            catch (Exception)
+                            {
+                                Console.WriteLine($"Unable to delete topic '{topic.TopicArn}'");
+                            }
+                        }));
                     await Task.WhenAll(deletionTasks).ConfigureAwait(false);
                 } while (upToHundredTopics.NextToken != null && upToHundredTopics.Topics.Count > 0);
             }
@@ -218,17 +240,17 @@ namespace NServiceBus.Transport.SQS.Tests
                     deletionTasks.AddRange(upToAThousandQueues.QueueUrls
                         .Where(url => !deletedQueueUrls.Contains(url))
                         .Select(async queueUrl =>
-                    {
-                        try
                         {
-                            await sqsClient.DeleteQueueAsync(queueUrl);
-                            deletedQueueUrls.Add(queueUrl);
-                        }
-                        catch (Exception)
-                        {
-                            Console.WriteLine($"Unable to delete queue '{queueUrl}'");
-                        }
-                    }));
+                            try
+                            {
+                                await sqsClient.DeleteQueueAsync(queueUrl);
+                                deletedQueueUrls.Add(queueUrl);
+                            }
+                            catch (Exception)
+                            {
+                                Console.WriteLine($"Unable to delete queue '{queueUrl}'");
+                            }
+                        }));
                     await Task.WhenAll(deletionTasks).ConfigureAwait(false);
                 } while (upToAThousandQueues.QueueUrls.Count > 0);
             }

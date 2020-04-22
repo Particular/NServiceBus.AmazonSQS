@@ -14,6 +14,7 @@
     using Amazon.SQS;
     using Amazon.SQS.Model;
     using NUnit.Framework;
+    using SQS.Tests;
 
     [TestFixture]
     public class CommandLineTests

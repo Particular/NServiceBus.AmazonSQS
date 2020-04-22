@@ -29,4 +29,10 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\NServiceBus.Transport.SQS.Tests\Cleanup.cs">
+      <Link>Cleanup.cs</Link>
+    </Compile>
+  </ItemGroup>  
+
 </Project>
