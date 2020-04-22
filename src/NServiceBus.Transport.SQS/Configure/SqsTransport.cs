@@ -1,9 +1,11 @@
 ﻿namespace NServiceBus
 {
     using System;
+    using Features;
     using Routing;
     using Settings;
     using Transport;
+    using Transport.SQS;
     using Transport.SQS.Configure;
     using TransportInfrastructure = Transport.TransportInfrastructure;
 
@@ -31,6 +33,9 @@
             settings.SetDefault(SettingsKeys.MaxTimeToLive, TimeSpan.FromDays(4));
             settings.SetDefault(SettingsKeys.QueueNamePrefix, string.Empty);
             settings.SetDefault(SettingsKeys.TopicNamePrefix, string.Empty);
+
+            // needed to only enable the feature when the transport is used
+            settings.Set(typeof(SettlePolicy).FullName, FeatureState.Enabled);
 
             return new SqsTransportInfrastructure(settings);
         }

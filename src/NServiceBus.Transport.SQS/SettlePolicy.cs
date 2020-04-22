@@ -8,8 +8,6 @@ namespace NServiceBus.Transport.SQS
     {
         public SettlePolicy()
         {
-            EnableByDefault();
-
             DependsOnOptionally<AutoSubscribe>(); // will enforce this feature to run after AutoSubscribe if present
         }
 
