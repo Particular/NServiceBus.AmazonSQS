@@ -3,11 +3,14 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <OutputType>Exe</OutputType>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>NServiceBus.AmazonSQS.CommandLine</PackageId>
+    <Description>.NET Core global tool to manage SQS, S3 and SNS entities for NServiceBus endpoints</Description>
     <ToolCommandName>sqs-transport</ToolCommandName>
     <PackAsTool>True</PackAsTool>
-	<PackageId>ServiceBus.AmazonSQS.CommandLine</PackageId>
-    <Description>.NET Core global tool to manage SQS, S3 and SNS entities for NServiceBus endpoints</Description>
-    <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
