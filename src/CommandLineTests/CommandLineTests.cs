@@ -369,7 +369,6 @@
             Assert.IsTrue(error == string.Empty);
 
             await VerifyBucketDeleted(bucketName);
-
         }
 
         [Test]
@@ -616,21 +615,20 @@
 
         async Task VerifyBucketDeleted(string bucketName)
         {
-            S3Bucket bucket;
             int backOff;
             var executions = 0;
+            bool bucketExists;
             do
             {
                 backOff = executions * executions * verificationBackoffInterval;
                 await Task.Delay(backOff);
                 executions++;
 
-                var listBucketsResponse = await s3.ListBucketsAsync(new ListBucketsRequest()).ConfigureAwait(false);
-                bucket = listBucketsResponse.Buckets.FirstOrDefault(x => string.Equals(x.BucketName, bucketName, StringComparison.InvariantCultureIgnoreCase));
+                bucketExists = await s3.DoesS3BucketExistAsync(bucketName);
             }
-            while (bucket != null && backOff < maximumBackoffInterval);
+            while (bucketExists && backOff < maximumBackoffInterval);
 
-            Assert.IsNull(bucket);
+            Assert.IsFalse(bucketExists);
         }
 
        [SetUp]
@@ -653,12 +651,12 @@
             using (s3)
             {
                 await Cleanup.DeleteAllResourcesWithPrefix(sqs, sns, s3, prefix).ConfigureAwait(false);
-            }            
+            }
         }
 
-        private AmazonSQSClient sqs;
-        private AmazonSimpleNotificationServiceClient sns;
-        private AmazonS3Client s3;
+        private IAmazonSQS sqs;
+        private IAmazonSimpleNotificationService sns;
+        private IAmazonS3 s3;
 
     }
 
