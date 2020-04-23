@@ -16,7 +16,7 @@ namespace NServiceBus.Transport.SQS
 
     class SubscriptionManager : IManageSubscriptions
     {
-        public SubscriptionManager(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, MessageMetadataRegistry messageMetadataRegistry, TopicCache topicCache)
+        public SubscriptionManager(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, MessageMetadataRegistry messageMetadataRegistry, TopicCache topicCache, bool disableSubscribeBatchingOnStart)
         {
             this.topicCache = topicCache;
             this.messageMetadataRegistry = messageMetadataRegistry;
@@ -24,6 +24,7 @@ namespace NServiceBus.Transport.SQS
             this.sqsClient = sqsClient;
             this.snsClient = snsClient;
             this.queueName = queueName;
+            endpointStartingMode = !disableSubscribeBatchingOnStart;
         }
 
         public async Task Subscribe(Type eventType, ContextBag context)
@@ -44,6 +45,11 @@ namespace NServiceBus.Transport.SQS
         // guaranteed to be only executed by startup task without concurrency, no other subscribes can happen during the policy settlement
         public async Task Settle()
         {
+            if (!endpointStartingMode)
+            {
+                return;
+            }
+
             Logger.Debug($"Settling policy for queue '{queueName}'.");
 
             var queueUrl = await queueCache.GetQueueUrl(queueName)
@@ -322,7 +328,6 @@ namespace NServiceBus.Transport.SQS
         }
 
         bool IsTypeTopologyKnownConfigured(Type eventType) => typeTopologyConfiguredSet.ContainsKey(eventType);
-        protected volatile bool endpointStartingMode = true;
 
         readonly ConcurrentDictionary<Type, string> typeTopologyConfiguredSet = new ConcurrentDictionary<Type, string>();
         readonly ConcurrentBag<PolicyStatement> preparedPolicyStatements = new ConcurrentBag<PolicyStatement>();
@@ -333,6 +338,7 @@ namespace NServiceBus.Transport.SQS
         readonly MessageMetadataRegistry messageMetadataRegistry;
         readonly TopicCache topicCache;
         readonly SemaphoreSlim subscribeQueueLimiter = new SemaphoreSlim(1);
+        volatile bool endpointStartingMode;
 
         static ILog Logger = LogManager.GetLogger(typeof(SubscriptionManager));
 

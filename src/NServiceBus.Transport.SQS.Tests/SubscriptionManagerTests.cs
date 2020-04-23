@@ -11,7 +11,6 @@ namespace NServiceBus.Transport.SQS.Tests
     using Configure;
     using NUnit.Framework;
     using Settings;
-    using SQS;
     using Unicast.Messages;
 
     [TestFixture]
@@ -34,8 +33,35 @@ namespace NServiceBus.Transport.SQS.Tests
             messageMetadataRegistry = settings.SetupMessageMetadataRegistry();
             queueName = "fakeQueue";
 
-            var transportConfiguration = new TransportConfiguration(settings);
-            manager = new TestableSubscriptionManager(sqsClient, snsClient, queueName, new QueueCache(sqsClient, transportConfiguration), messageMetadataRegistry, new TopicCache(snsClient, messageMetadataRegistry, transportConfiguration));
+            manager = CreateNonBatchingSubscriptionManager();
+        }
+
+        TestableSubscriptionManager CreateNonBatchingSubscriptionManager()
+        {
+            return new TestableSubscriptionManager(sqsClient,
+                snsClient,
+                queueName,
+                new QueueCache(sqsClient,
+                    new TransportConfiguration(settings)),
+                messageMetadataRegistry,
+                new TopicCache(snsClient,
+                    messageMetadataRegistry,
+                    new TransportConfiguration(settings)),
+                disableSubscribeBatchingOnStart: true);
+        }
+
+        TestableSubscriptionManager CreateBatchingSubscriptionManager()
+        {
+            return new TestableSubscriptionManager(sqsClient,
+                snsClient,
+                queueName,
+                new QueueCache(sqsClient,
+                    new TransportConfiguration(settings)),
+                messageMetadataRegistry,
+                new TopicCache(snsClient,
+                    messageMetadataRegistry,
+                    new TransportConfiguration(settings)),
+                disableSubscribeBatchingOnStart: false);
         }
 
         [Test]
@@ -137,7 +163,7 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.AreEqual("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event", subscribeRequest.TopicArn);
             CollectionAssert.AreEquivalent(new Dictionary<string, string>
             {
-                { "RawMessageDelivery", "true"}
+                {"RawMessageDelivery", "true"}
             }, subscribeRequest.Attributes);
         }
 
@@ -146,10 +172,10 @@ namespace NServiceBus.Transport.SQS.Tests
         {
             sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
             {
-                { "QueueArn", "arn:fakeQueue" }
+                {"QueueArn", "arn:fakeQueue"}
             };
 
-            Assert.DoesNotThrowAsync(async() => await manager.Subscribe(typeof(Event), null));
+            Assert.DoesNotThrowAsync(async () => await manager.Subscribe(typeof(Event), null));
             Assert.AreEqual(8, manager.Delays.Count);
             Assert.AreEqual(44000, manager.Delays.Sum());
         }
@@ -169,10 +195,11 @@ namespace NServiceBus.Transport.SQS.Tests
                         {"QueueArn", "arn:fakeQueue"}
                     };
                 }
+
                 return original(s);
             };
 
-            Assert.DoesNotThrowAsync(async() => await manager.Subscribe(typeof(Event), null));
+            Assert.DoesNotThrowAsync(async () => await manager.Subscribe(typeof(Event), null));
             Assert.AreEqual(7, manager.Delays.Count);
             Assert.AreEqual(35000, manager.Delays.Sum());
         }
@@ -180,7 +207,7 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task Subscribe_endpointstarting_creates_topic_but_not_policies_and_subscriptions()
         {
-            manager.EndpointStartingMode = true;
+            manager = CreateBatchingSubscriptionManager();
 
             var eventType = typeof(Event);
             await manager.Subscribe(eventType, null);
@@ -193,24 +220,50 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task SettlePolicy_sets_full_policy()
         {
-            manager.EndpointStartingMode = true;
+            manager = CreateBatchingSubscriptionManager();
 
             var eventType = typeof(Event);
             await manager.Subscribe(eventType, null);
             var anotherEvent = typeof(AnotherEvent);
             await manager.Subscribe(anotherEvent, null);
 
+            var setAttributeRequestsSentBeforeSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
+
             await manager.Settle();
 
             var policy = Policy.FromJson(sqsClient.SetAttributesRequestsSent[0].attributes["Policy"]);
 
+            Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
             Assert.AreEqual(2, policy.Statements.Count);
-            CollectionAssert.AreEquivalent(new []
+            CollectionAssert.AreEquivalent(new[]
             {
                 "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event",
                 "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"
             }, policy.Statements.SelectMany(s => s.Conditions).SelectMany(c => c.Values));
-            Assert.IsFalse(manager.EndpointStartingMode);
+        }
+
+        [Test]
+        public async Task After_settle_policy_does_not_batch_subscriptions()
+        {
+            manager = CreateBatchingSubscriptionManager();
+
+            await manager.Subscribe(typeof(Event), null);
+            await manager.Subscribe(typeof(AnotherEvent), null);
+
+            var setAttributeRequestsSentBeforeSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
+
+            await manager.Settle();
+
+            var setAttributeRequestsSentAfterSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
+
+            await manager.Subscribe(typeof(YetAnotherEvent), null);
+            await manager.Subscribe(typeof(object), null);
+
+            var setAttributeRequestsSentAfterSubscribe = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
+
+            Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
+            Assert.AreEqual(1, setAttributeRequestsSentAfterSettle.Count);
+            Assert.AreEqual(3, setAttributeRequestsSentAfterSubscribe.Count);
         }
 
         [Test]
@@ -354,18 +407,11 @@ namespace NServiceBus.Transport.SQS.Tests
 
         class TestableSubscriptionManager : SubscriptionManager
         {
-            public TestableSubscriptionManager(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, MessageMetadataRegistry messageMetadataRegistry, TopicCache topicCache) : base(sqsClient, snsClient, queueName, queueCache, messageMetadataRegistry, topicCache)
+            public TestableSubscriptionManager(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, MessageMetadataRegistry messageMetadataRegistry, TopicCache topicCache, bool disableSubscribeBatchingOnStart) : base(sqsClient, snsClient, queueName, queueCache, messageMetadataRegistry, topicCache, disableSubscribeBatchingOnStart)
             {
-                EndpointStartingMode = false;
             }
 
             public List<int> Delays { get; } = new List<int>();
-
-            public bool EndpointStartingMode
-            {
-                set => endpointStartingMode = value;
-                get => endpointStartingMode;
-            }
 
             protected override Task Delay(int millisecondsDelay, CancellationToken token = default)
             {
@@ -387,6 +433,10 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         class AnotherEvent : IMyEvent
+        {
+        }
+
+        class YetAnotherEvent : IMyEvent
         {
         }
     }
