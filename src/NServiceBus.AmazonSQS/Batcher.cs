@@ -7,15 +7,16 @@ namespace NServiceBus.Transports.SQS
 
     static class Batcher
     {
-        public static IReadOnlyList<BatchEntry> Batch(IEnumerable<PreparedMessage> preparedMessages)
+        public static IReadOnlyList<BatchEntry<TMessage>> Batch<TMessage>(IEnumerable<TMessage> preparedMessages)
+            where TMessage : PreparedMessage
         {
-            var allBatches = new List<BatchEntry>();
-            var currentDestinationBatches = new Dictionary<string, PreparedMessage>();
+            var allBatches = new List<BatchEntry<TMessage>>();
+            var currentDestinationBatches = new Dictionary<string, TMessage>();
 
             var groupByDestination = preparedMessages.GroupBy(m => m.QueueUrl, StringComparer.Ordinal);
             foreach (var group in groupByDestination)
             {
-                PreparedMessage firstMessage = null;
+                TMessage firstMessage = null;
                 var payloadSize = 0L;
                 foreach (var message in group)
                 {
