@@ -131,15 +131,13 @@
                         delayDeliverySupportCommand.Options.Add(secretOption);
                         delayDeliverySupportCommand.Options.Add(prefixOption);
 
-                        var delayInSecondsCommand = delayDeliverySupportCommand.Option("-d|--delay", "Delay in seconds (defaults to " + DefaultConfigurationValues.MaximumQueueDelayTime.TotalSeconds + " ).", CommandOptionType.SingleValue);
                         var retentionPeriodInSecondsCommand = delayDeliverySupportCommand.Option("-t|--retention", "Retention period in seconds (defaults to " + DefaultConfigurationValues.RetentionPeriod.TotalSeconds + " ).", CommandOptionType.SingleValue);
-                        var suffixCommand = delayDeliverySupportCommand.Option("-x|--suffix", "Delayed delivery queue suffix (defaults to " + DefaultConfigurationValues.DelayedDeliveryQueueSuffix + " ) .", CommandOptionType.SingleValue);
 
                         delayDeliverySupportCommand.OnExecuteAsync(async ct =>
                         {
-                            var delayInSeconds = delayInSecondsCommand.HasValue() ? double.Parse(delayInSecondsCommand.Value()) : DefaultConfigurationValues.MaximumQueueDelayTime.TotalSeconds;
+                            var delayInSeconds = DefaultConfigurationValues.MaximumQueueDelayTime.TotalSeconds;
                             var retentionPeriodInSeconds = retentionPeriodInSecondsCommand.HasValue() ? double.Parse(retentionPeriodInSecondsCommand.Value()) : DefaultConfigurationValues.RetentionPeriod.TotalSeconds;
-                            var suffix = suffixCommand.HasValue() ? suffixCommand.Value() : DefaultConfigurationValues.DelayedDeliveryQueueSuffix;
+                            var suffix = DefaultConfigurationValues.DelayedDeliveryQueueSuffix;
 
                             var endpointName = nameArgument.Value;
                             var prefix = prefixOption.HasValue() ? prefixOption.Value() : DefaultConfigurationValues.QueueNamePrefix;
