@@ -16,7 +16,7 @@
             if (!await s3.DoesS3BucketExistAsync(bucketName))
             {
                 await s3.RetryConflictsAsync(async () =>
-                        await s3.PutBucketAsync(new PutBucketRequest { BucketName = bucketName }).ConfigureAwait(false),
+                        await s3.PutBucketAsync(new PutBucketRequest {BucketName = bucketName}).ConfigureAwait(false),
                     onRetry: async x => { await Console.Out.WriteLineAsync($"Conflict when creating S3 bucket, retrying after {x}ms."); }).ConfigureAwait(false);
 
                 await Console.Out.WriteLineAsync($"Created bucket with name '{bucketName}' for endpoint '{endpointName}'.");
@@ -37,13 +37,13 @@
             if (setLifecycleConfig)
             {
                 await s3.RetryConflictsAsync(async () =>
-                    await s3.PutLifecycleConfigurationAsync(new PutLifecycleConfigurationRequest
-                    {
-                        BucketName = bucketName,
-                        Configuration = new LifecycleConfiguration
+                        await s3.PutLifecycleConfigurationAsync(new PutLifecycleConfigurationRequest
                         {
-                            Rules = new List<LifecycleRule>
+                            BucketName = bucketName,
+                            Configuration = new LifecycleConfiguration
                             {
+                                Rules = new List<LifecycleRule>
+                                {
                                     new LifecycleRule
                                     {
                                         Id = "NServiceBus.SQS.DeleteMessageBodies",
@@ -60,10 +60,10 @@
                                             Days = expirationInDays
                                         }
                                     }
+                                }
                             }
-                        }
-                    }).ConfigureAwait(false),
-                onRetry: async x => { await Console.Out.WriteLineAsync($"Conflict when setting S3 lifecycle configuration, retrying after {x}ms."); }).ConfigureAwait(false);
+                        }).ConfigureAwait(false),
+                    onRetry: async x => { await Console.Out.WriteLineAsync($"Conflict when setting S3 lifecycle configuration, retrying after {x}ms."); }).ConfigureAwait(false);
 
                 await Console.Out.WriteLineAsync($"Added lifecycle configuration to bucket name '{bucketName}' for endpoint '{endpointName}'.");
             }
@@ -114,5 +114,4 @@
             }
         }
     }
-
 }

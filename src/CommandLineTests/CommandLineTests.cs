@@ -19,17 +19,6 @@
     [TestFixture]
     public class CommandLineTests
     {
-        string prefix;
-        const string EndpointName = "nsb-cli-test";
-        const string BucketName = "nsb-cli-test-bucket";
-        const string EventType = "MyNamespace.MyMessage1";
-        const int verificationBackoffInterval = 200;
-        const int maximumBackoffInterval = 20000; // totals up to 77000
-
-        string accessKey = Environment.GetEnvironmentVariable("CLEANUP_AWS_ACCESS_KEY_ID");
-        string secret = Environment.GetEnvironmentVariable("CLEANUP_AWS_SECRET_ACCESS_KEY");
-        string region = Environment.GetEnvironmentVariable("AWS_REGION");
-
         [Test]
         public async Task Create_endpoint_without_prefix_when_there_are_no_entities()
         {
@@ -60,7 +49,7 @@
         [Test]
         public async Task Create_endpoint()
         {
-            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix { prefix }");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -71,9 +60,8 @@
         [Test]
         public async Task Create_endpoint_with_custom_retention()
         {
-
             var customRetention = 60000;
-            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --retention {customRetention} --prefix { prefix }");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --retention {customRetention} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -86,7 +74,7 @@
         {
             var bucketName = prefix + BucketName;
 
-            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix { prefix }");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -127,7 +115,7 @@
 
             var expiration = 7;
 
-            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix { prefix }");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -144,12 +132,12 @@
         [Test]
         public async Task Enable_delay_delivery_on_endpoint()
         {
-            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix { prefix }");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (_, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --prefix { prefix }");
+            (_, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -158,34 +146,16 @@
         }
 
         [Test]
-        public async Task Enable_delay_delivery_on_endpoint_with_custom_delay()
-        {
-            var delay = 600;
-
-            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix { prefix }");
-
-            Assert.AreEqual(0, exitCode);
-            Assert.IsTrue(error == string.Empty);
-
-            (_, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --delay {delay} --prefix { prefix }");
-
-            Assert.AreEqual(0, exitCode);
-            Assert.IsTrue(error == string.Empty);
-
-            await VerifyDelayDeliveryQueue(EndpointName, prefix, delayInSeconds: delay);
-        }
-
-        [Test]
         public async Task Enable_delay_delivery_on_endpoint_with_custom_retention()
         {
             var retention = 60000;
 
-            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix { prefix }");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (_, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --retention {retention} --prefix { prefix }");
+            (_, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --retention {retention} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -194,32 +164,14 @@
         }
 
         [Test]
-        public async Task Enable_delay_delivery_on_endpoint_with_custom_suffix()
-        {
-            var suffix = "-mydelay.fifo";
-
-            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix { prefix }");
-
-            Assert.AreEqual(0, exitCode);
-            Assert.IsTrue(error == string.Empty);
-
-            (_, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --prefix { prefix } --suffix {suffix}");
-
-            Assert.AreEqual(0, exitCode);
-            Assert.IsTrue(error == string.Empty);
-
-            await VerifyDelayDeliveryQueue(EndpointName, prefix, suffix: suffix);
-        }
-
-        [Test]
         public async Task Subscribe_on_event()
         {
-            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix { prefix }");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix { prefix }");
+            (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -232,12 +184,12 @@
         [Test]
         public async Task Unsubscribe_from_event()
         {
-            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix { prefix }");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix { prefix }");
+            (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -246,7 +198,7 @@
             var topicArn = await VerifyTopic(EventType, prefix);
             await VerifySubscription(topicArn, queueArn);
 
-            await Execute($"endpoint unsubscribe {EndpointName} {EventType} --prefix { prefix }");
+            await Execute($"endpoint unsubscribe {EndpointName} {EventType} --prefix {prefix}");
 
             await VerifySubscriptionDeleted(topicArn, queueArn);
             await VerifyTopic(EventType, prefix);
@@ -255,12 +207,12 @@
         [Test]
         public async Task Unsubscribe_from_event_with_remove_shared_resources()
         {
-            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix { prefix }");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix { prefix }");
+            (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -269,27 +221,27 @@
             var topicArn = await VerifyTopic(EventType, prefix);
             await VerifySubscription(topicArn, queueArn);
 
-            await Execute($"endpoint unsubscribe {EndpointName} {EventType} --prefix { prefix } --remove-shared-resources");
+            await Execute($"endpoint unsubscribe {EndpointName} {EventType} --prefix {prefix} --remove-shared-resources");
 
-            await VerifyTopicDeleted(EventType, prefix );
+            await VerifyTopicDeleted(EventType, prefix);
         }
 
         [Test]
         public async Task Remove_delay_delivery_from_endpoint()
         {
-            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix { prefix }");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (_, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --prefix { prefix }");
+            (_, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
             await VerifyDelayDeliveryQueue(EndpointName, prefix);
 
-            (_, error, exitCode) = await Execute($"endpoint remove {EndpointName} delay-delivery-support --prefix { prefix }");
+            (_, error, exitCode) = await Execute($"endpoint remove {EndpointName} delay-delivery-support --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -298,36 +250,11 @@
         }
 
         [Test]
-        public async Task Remove_delay_delivery_with_custom_suffix_from_endpoint()
-        {
-            var suffix = "-mydelay.fifo";
-
-            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix { prefix }");
-
-            Assert.AreEqual(0, exitCode);
-            Assert.IsTrue(error == string.Empty);
-
-            (_, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --prefix { prefix } --suffix {suffix}");
-
-            Assert.AreEqual(0, exitCode);
-            Assert.IsTrue(error == string.Empty);
-
-            await VerifyDelayDeliveryQueue(EndpointName, prefix, suffix: suffix);
-
-            (_, error, exitCode) = await Execute($"endpoint remove {EndpointName} delay-delivery-support --prefix { prefix } --suffix {suffix}");
-
-            Assert.AreEqual(0, exitCode);
-            Assert.IsTrue(error == string.Empty);
-
-            await VerifyDelayDeliveryQueueDeleted(EndpointName, prefix, suffix: suffix);
-        }
-
-        [Test]
         public async Task Remove_large_message_support_from_endpoint_does_not_remove_bucket_by_default()
         {
             var bucketName = prefix + BucketName;
 
-            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix { prefix }");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -352,7 +279,7 @@
         {
             var bucketName = prefix + BucketName;
 
-            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix { prefix }");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -375,14 +302,14 @@
         [Test]
         public async Task Delete_endpoint()
         {
-            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix { prefix }");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
             await VerifyQueue(EndpointName, prefix);
 
-            (_, error, exitCode) = await Execute($"endpoint delete {EndpointName} --prefix { prefix }");
+            (_, error, exitCode) = await Execute($"endpoint delete {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -422,13 +349,20 @@
 
         async Task<string> VerifyQueue(string queueName, string prefix = null, double? retentionPeriodInSeconds = null)
         {
-            if (prefix == null) { prefix = DefaultConfigurationValues.QueueNamePrefix; }
-            if (retentionPeriodInSeconds == null) { retentionPeriodInSeconds = DefaultConfigurationValues.RetentionPeriod.TotalSeconds; }
+            if (prefix == null)
+            {
+                prefix = DefaultConfigurationValues.QueueNamePrefix;
+            }
+
+            if (retentionPeriodInSeconds == null)
+            {
+                retentionPeriodInSeconds = DefaultConfigurationValues.RetentionPeriod.TotalSeconds;
+            }
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
             var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
 
-            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string> { QueueAttributeName.MessageRetentionPeriod, QueueAttributeName.QueueArn }).ConfigureAwait(false);
+            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string> {QueueAttributeName.MessageRetentionPeriod, QueueAttributeName.QueueArn}).ConfigureAwait(false);
 
             Assert.AreEqual(retentionPeriodInSeconds, queueAttributesResponse.MessageRetentionPeriod);
 
@@ -437,18 +371,35 @@
 
         async Task<string> VerifyDelayDeliveryQueue(string queueName, string prefix = null, double? retentionPeriodInSeconds = null, double? delayInSeconds = null, string suffix = null)
         {
-            if (prefix == null) { prefix = DefaultConfigurationValues.QueueNamePrefix; }
-            if (retentionPeriodInSeconds == null) { retentionPeriodInSeconds = DefaultConfigurationValues.RetentionPeriod.TotalSeconds; }
-            if (delayInSeconds == null) { delayInSeconds = DefaultConfigurationValues.MaximumQueueDelayTime.TotalSeconds; }
-            if (suffix == null) { suffix = DefaultConfigurationValues.DelayedDeliveryQueueSuffix; }
+            if (prefix == null)
+            {
+                prefix = DefaultConfigurationValues.QueueNamePrefix;
+            }
+
+            if (retentionPeriodInSeconds == null)
+            {
+                retentionPeriodInSeconds = DefaultConfigurationValues.RetentionPeriod.TotalSeconds;
+            }
+
+            if (delayInSeconds == null)
+            {
+                delayInSeconds = DefaultConfigurationValues.MaximumQueueDelayTime.TotalSeconds;
+            }
+
+            if (suffix == null)
+            {
+                suffix = DefaultConfigurationValues.DelayedDeliveryQueueSuffix;
+            }
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}{suffix}");
             var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
 
-            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string> {
+            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
+            {
                 QueueAttributeName.MessageRetentionPeriod,
                 QueueAttributeName.DelaySeconds,
-                QueueAttributeName.QueueArn }).ConfigureAwait(false);
+                QueueAttributeName.QueueArn
+            }).ConfigureAwait(false);
 
             Assert.AreEqual(retentionPeriodInSeconds, queueAttributesResponse.MessageRetentionPeriod);
             Assert.AreEqual(delayInSeconds, queueAttributesResponse.DelaySeconds);
@@ -458,7 +409,11 @@
 
         async Task<string> VerifyTopic(string eventType, string prefix = null)
         {
-            if (prefix == null) { prefix = DefaultConfigurationValues.TopicNamePrefix; }
+            if (prefix == null)
+            {
+                prefix = DefaultConfigurationValues.TopicNamePrefix;
+            }
+
             var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
 
             var findTopicResponse = await sns.FindTopicAsync(topicName).ConfigureAwait(false);
@@ -480,8 +435,15 @@
 
         async Task VerifyLifecycleConfiguration(string bucketName, string keyPrefix = null, int? expiration = null)
         {
-            if (keyPrefix == null) { keyPrefix = DefaultConfigurationValues.S3KeyPrefix; }
-            if (expiration == null) { expiration = (int)Math.Ceiling(DefaultConfigurationValues.RetentionPeriod.TotalDays); }
+            if (keyPrefix == null)
+            {
+                keyPrefix = DefaultConfigurationValues.S3KeyPrefix;
+            }
+
+            if (expiration == null)
+            {
+                expiration = (int)Math.Ceiling(DefaultConfigurationValues.RetentionPeriod.TotalDays);
+            }
 
             LifecycleRule setLifeCycleConfig;
             int backOff;
@@ -494,8 +456,7 @@
 
                 var lifecycleConfig = await s3.GetLifecycleConfigurationAsync(bucketName).ConfigureAwait(false);
                 setLifeCycleConfig = lifecycleConfig.Configuration.Rules.FirstOrDefault(x => x.Id == "NServiceBus.SQS.DeleteMessageBodies");
-            }
-            while (setLifeCycleConfig == null && backOff < maximumBackoffInterval);
+            } while (setLifeCycleConfig == null && backOff < maximumBackoffInterval);
 
             Assert.IsNotNull(setLifeCycleConfig);
             Assert.AreEqual(expiration, setLifeCycleConfig.Expiration.Days);
@@ -548,7 +509,11 @@
 
         async Task VerifyTopicDeleted(string eventType, string prefix = null)
         {
-            if (prefix == null) { prefix = DefaultConfigurationValues.TopicNamePrefix; }
+            if (prefix == null)
+            {
+                prefix = DefaultConfigurationValues.TopicNamePrefix;
+            }
+
             var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
 
             var findTopicResponse = await sns.FindTopicAsync(topicName).ConfigureAwait(false);
@@ -558,8 +523,15 @@
 
         async Task VerifyDelayDeliveryQueueDeleted(string queueName, string prefix = null, string suffix = null)
         {
-            if (prefix == null) { prefix = DefaultConfigurationValues.QueueNamePrefix; }
-            if (suffix == null) { suffix = DefaultConfigurationValues.DelayedDeliveryQueueSuffix; }
+            if (prefix == null)
+            {
+                prefix = DefaultConfigurationValues.QueueNamePrefix;
+            }
+
+            if (suffix == null)
+            {
+                suffix = DefaultConfigurationValues.DelayedDeliveryQueueSuffix;
+            }
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}{suffix}");
             GetQueueUrlResponse queueUrlResponse;
@@ -580,15 +552,18 @@
                     // expected
                     queueUrlResponse = null;
                 }
-            }
-            while (queueUrlResponse != null && backOff < maximumBackoffInterval);
+            } while (queueUrlResponse != null && backOff < maximumBackoffInterval);
 
             Assert.IsNull(queueUrlResponse);
         }
 
         async Task VerifyQueueDeleted(string queueName, string prefix = null)
         {
-            if (prefix == null) { prefix = DefaultConfigurationValues.QueueNamePrefix; }
+            if (prefix == null)
+            {
+                prefix = DefaultConfigurationValues.QueueNamePrefix;
+            }
+
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
             GetQueueUrlResponse queueUrlResponse;
             var backOff = 0;
@@ -608,8 +583,7 @@
                     // expected
                     queueUrlResponse = null;
                 }
-            }
-            while (queueUrlResponse != null && backOff < maximumBackoffInterval);
+            } while (queueUrlResponse != null && backOff < maximumBackoffInterval);
 
             Assert.IsNull(queueUrlResponse);
         }
@@ -626,13 +600,12 @@
                 executions++;
 
                 bucketExists = await s3.DoesS3BucketExistAsync(bucketName);
-            }
-            while (bucketExists && backOff < maximumBackoffInterval);
+            } while (bucketExists && backOff < maximumBackoffInterval);
 
             Assert.IsFalse(bucketExists);
         }
 
-       [SetUp]
+        [SetUp]
         public void Setup()
         {
             prefix = $"cli-{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToLowerInvariant()}-";
@@ -647,18 +620,27 @@
         [TearDown]
         public async Task TearDown()
         {
-            using(sqs)
-            using(sns)
+            using (sqs)
+            using (sns)
             using (s3)
             {
                 await Cleanup.DeleteAllResourcesWithPrefix(sqs, sns, s3, prefix).ConfigureAwait(false);
             }
         }
 
+        string prefix;
+
+        string accessKey = Environment.GetEnvironmentVariable("CLEANUP_AWS_ACCESS_KEY_ID");
+        string secret = Environment.GetEnvironmentVariable("CLEANUP_AWS_SECRET_ACCESS_KEY");
+        string region = Environment.GetEnvironmentVariable("AWS_REGION");
+
         private IAmazonSQS sqs;
         private IAmazonSimpleNotificationService sns;
         private IAmazonS3 s3;
-
+        const string EndpointName = "nsb-cli-test";
+        const string BucketName = "nsb-cli-test-bucket";
+        const string EventType = "MyNamespace.MyMessage1";
+        const int verificationBackoffInterval = 200;
+        const int maximumBackoffInterval = 20000; // totals up to 77000
     }
-
 }

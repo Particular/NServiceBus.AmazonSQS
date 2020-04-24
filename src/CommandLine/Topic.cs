@@ -82,5 +82,4 @@
             await Console.Out.WriteLineAsync($"Deleted topic with ARN '{topicArn}'.");
         }
     }
-
 }
