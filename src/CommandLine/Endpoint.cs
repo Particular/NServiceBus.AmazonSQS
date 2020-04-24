@@ -92,8 +92,5 @@
                 await Topic.Delete(sns, topicArn);
             }
         }
-
-
     }
-
 }

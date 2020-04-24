@@ -102,7 +102,7 @@
                     addCommand.Command("large-message-support", largeMessageSupportCommand =>
                     {
                         largeMessageSupportCommand.Description = "Adds large message support infrastructure to an endpoint.";
-                         var bucketArgument = largeMessageSupportCommand.Argument("bucket-name", "Name of the bucket (required).").IsRequired();
+                        var bucketArgument = largeMessageSupportCommand.Argument("bucket-name", "Name of the bucket (required).").IsRequired();
 
                         largeMessageSupportCommand.Options.Add(accessKeyOption);
                         largeMessageSupportCommand.Options.Add(regionOption);
@@ -146,12 +146,12 @@
                     });
                 });
 
-                endpointCommand.Command("remove", addCommand =>
+                endpointCommand.Command("remove", removeCommand =>
                 {
-                    addCommand.Description = "Removes optional infrastructure to an endpoint.";
-                    var nameArgument = addCommand.Argument("name", "Name of the endpoint (required)").IsRequired();
+                    removeCommand.Description = "Removes optional infrastructure to an endpoint.";
+                    var nameArgument = removeCommand.Argument("name", "Name of the endpoint (required)").IsRequired();
 
-                    addCommand.Command("large-message-support", largeMessageSupportCommand =>
+                    removeCommand.Command("large-message-support", largeMessageSupportCommand =>
                     {
                         largeMessageSupportCommand.Description = "Removes large message support infrastructure.";
                         var bucketArgument = largeMessageSupportCommand.Argument("bucket-name", "Name of the bucket (required)").IsRequired();
@@ -160,7 +160,6 @@
                         largeMessageSupportCommand.Options.Add(regionOption);
                         largeMessageSupportCommand.Options.Add(secretOption);
                         var removeSharedResourcesCommand = largeMessageSupportCommand.Option("-f|--remove-shared-resources", "Remove shared resources (S3 Bucket).", CommandOptionType.NoValue);
-
 
                         largeMessageSupportCommand.OnExecuteAsync(async ct =>
                         {
@@ -172,7 +171,7 @@
                         });
                     });
 
-                    addCommand.Command("delay-delivery-support", delayDeliverySupportCommand =>
+                    removeCommand.Command("delay-delivery-support", delayDeliverySupportCommand =>
                     {
                         delayDeliverySupportCommand.Description = "Removes delay delivery support infrastructure to an endpoint.";
 
@@ -180,14 +179,12 @@
                         delayDeliverySupportCommand.Options.Add(regionOption);
                         delayDeliverySupportCommand.Options.Add(secretOption);
                         delayDeliverySupportCommand.Options.Add(prefixOption);
-                        var suffixCommand = delayDeliverySupportCommand.Option("-x|--suffix", "Delayed delivery queue suffix (defaults to " + DefaultConfigurationValues.DelayedDeliveryQueueSuffix + " ) .", CommandOptionType.SingleValue);
-
 
                         delayDeliverySupportCommand.OnExecuteAsync(async ct =>
                         {
                             var endpointName = nameArgument.Value;
                             var prefix = prefixOption.HasValue() ? prefixOption.Value() : DefaultConfigurationValues.QueueNamePrefix;
-                            var suffix = suffixCommand.HasValue() ? suffixCommand.Value() : DefaultConfigurationValues.DelayedDeliveryQueueSuffix;
+                            var suffix = DefaultConfigurationValues.DelayedDeliveryQueueSuffix;
 
                             await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.RemoveDelayDelivery(sqs, prefix, endpointName, suffix));
                         });
