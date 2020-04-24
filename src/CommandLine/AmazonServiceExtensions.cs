@@ -1,9 +1,9 @@
 ﻿namespace NServiceBus.Transport.SQS.CommandLine
 {
-    using Amazon.Runtime;
     using System;
     using System.Net;
     using System.Threading.Tasks;
+    using Amazon.Runtime;
 
     static class AmazonServiceExtensions
     {
@@ -36,5 +36,4 @@
             }
         }
     }
-
 }
