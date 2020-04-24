@@ -72,6 +72,16 @@ namespace NServiceBus.Transport.SQS.Tests
             return Task.FromResult(SubscribeResponse(request));
         }
 
+        public TagResourceResponse TagResource(TagResourceRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<TagResourceResponse> TagResourceAsync(TagResourceRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            throw new NotImplementedException();
+        }
+
         #region NotImplemented
 
         public Task<SetSubscriptionAttributesResponse> SetSubscriptionAttributesAsync(SetSubscriptionAttributesRequest request, CancellationToken cancellationToken = new CancellationToken())
@@ -426,6 +436,16 @@ namespace NServiceBus.Transport.SQS.Tests
             throw new NotImplementedException();
         }
 
+        public ListTagsForResourceResponse ListTagsForResource(ListTagsForResourceRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<ListTagsForResourceResponse> ListTagsForResourceAsync(ListTagsForResourceRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            throw new NotImplementedException();
+        }
+
         public ListTopicsResponse ListTopics()
         {
             throw new NotImplementedException();
@@ -600,6 +620,17 @@ namespace NServiceBus.Transport.SQS.Tests
         {
             throw new NotImplementedException();
         }
+
+        public UntagResourceResponse UntagResource(UntagResourceRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<UntagResourceResponse> UntagResourceAsync(UntagResourceRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
     }
 }
