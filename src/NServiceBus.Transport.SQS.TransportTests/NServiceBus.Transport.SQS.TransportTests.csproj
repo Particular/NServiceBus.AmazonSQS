@@ -7,7 +7,7 @@
     <RootNamespace>TransportTests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.3.110.52" />
+    <PackageReference Include="AWSSDK.S3" Version="3.3.110.58" />
     <PackageReference Include="AWSSDK.SQS" Version="3.3.102.96" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.6.1" />
     <PackageReference Include="NServiceBus.TransportTests.Sources" Version="7.2.4" />
