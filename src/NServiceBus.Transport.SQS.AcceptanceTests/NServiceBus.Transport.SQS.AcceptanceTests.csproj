@@ -7,7 +7,7 @@
     <RootNamespace>NServiceBus.AcceptanceTests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.3.110.52" />
+    <PackageReference Include="AWSSDK.S3" Version="3.3.110.62" />
     <PackageReference Include="AWSSDK.SQS" Version="3.3.102.99" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.3.101.157" />
     <PackageReference Include="NServiceBus.AcceptanceTests.Sources" Version="7.2.4" />
