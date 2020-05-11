@@ -7,7 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="3.3.110.62" />
-    <PackageReference Include="AWSSDK.SQS" Version="3.3.102.104" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.3.102.108" />
     <PackageReference Include="NServiceBus" Version="7.2.4" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.6.1" />
     <PackageReference Include="NUnit" Version="3.12.0" />
