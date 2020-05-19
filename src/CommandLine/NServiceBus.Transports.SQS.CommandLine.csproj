@@ -17,7 +17,7 @@
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.0.0" />
     <PackageReference Include="AWSSDK.S3" Version="3.3.110.70" />
     <PackageReference Include="AWSSDK.SQS" Version="3.3.102.111" />
-    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.3.101.165" />
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.3.101.168" />
     <PackageReference Include="Particular.Packaging" Version="0.7.0" PrivateAssets="All" />
   </ItemGroup>
 
