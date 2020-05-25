@@ -20,6 +20,6 @@
     <PackageReference Include="Fody" Version="4.2.1" PrivateAssets="All" />
     <PackageReference Include="Obsolete.Fody" Version="4.4.3" PrivateAssets="All" />
     <PackageReference Include="Particular.CodeRules" Version="0.3.0" PrivateAssets="All" />
-    <PackageReference Include="Particular.Packaging" Version="0.7.0" PrivateAssets="All" />
+    <PackageReference Include="Particular.Packaging" Version="0.8.0" PrivateAssets="All" />
   </ItemGroup>
 </Project>
