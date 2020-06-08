@@ -8,7 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="3.3.110.70" />
-    <PackageReference Include="AWSSDK.SQS" Version="3.3.102.121" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.3.102.123" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.3.101.168" />
     <PackageReference Include="NServiceBus.AcceptanceTests.Sources" Version="7.3.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.6.1" />
