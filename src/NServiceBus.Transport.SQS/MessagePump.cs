@@ -2,6 +2,8 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.Runtime;
@@ -159,109 +161,11 @@
                     var receivedMessages = await sqsClient.ReceiveMessageAsync(request, token).ConfigureAwait(false);
                     var clockCorrection = CorrectClockSkew.GetClockCorrectionForEndpoint(awsEndpointUrl);
 
-                    foreach (var receivedMessage in receivedMessages.Messages)
-                    {
-                        long delaySeconds = 0;
+                    var preparedMessages = PrepareMessages(token, receivedMessages, clockCorrection);
 
-                        if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.DelaySeconds, out var delayAttribute))
-                        {
-                            long.TryParse(delayAttribute.StringValue, out delaySeconds);
-                        }
+                    token.ThrowIfCancellationRequested();
 
-                        string messageId = null;
-                        if (receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
-                        {
-                            messageId = messageIdAttribute.StringValue;
-                        }
-
-                        var sent = receivedMessage.GetAdjustedDateTimeFromServerSetAttributes("SentTimestamp", clockCorrection);
-                        var received = receivedMessage.GetAdjustedDateTimeFromServerSetAttributes("ApproximateFirstReceiveTimestamp", clockCorrection);
-
-                        if (Convert.ToInt32(receivedMessage.Attributes["ApproximateReceiveCount"]) > 1)
-                        {
-                            received = DateTime.UtcNow;
-                        }
-
-                        var elapsed = received - sent;
-
-                        var remainingDelay = delaySeconds - (long)elapsed.TotalSeconds;
-
-                        SendMessageRequest sendMessageRequest;
-
-                        if (remainingDelay > configuration.DelayedDeliveryQueueDelayTime)
-                        {
-                            sendMessageRequest = new SendMessageRequest(delayedDeliveryQueueUrl, receivedMessage.Body)
-                            {
-                                MessageAttributes =
-                                {
-                                    [TransportHeaders.DelaySeconds] = new MessageAttributeValue
-                                    {
-                                        StringValue = remainingDelay.ToString(),
-                                        DataType = "String"
-                                    }
-                                }
-                            };
-
-                            var deduplicationId = receivedMessage.Attributes["MessageDeduplicationId"];
-
-                            // this is only here for acceptance testing purpose. In real prod code this is always false.
-                            // it allows us to fake multiple cycles over the FIFO queue without being subjected to deduplication
-                            if (configuration.DelayedDeliveryQueueDelayTime < TransportConfiguration.AwsMaximumQueueDelayTime)
-                            {
-                                deduplicationId = Guid.NewGuid().ToString();
-                            }
-
-                            sendMessageRequest.MessageDeduplicationId = sendMessageRequest.MessageGroupId = deduplicationId;
-                        }
-                        else
-                        {
-                            sendMessageRequest = new SendMessageRequest(queueUrl, receivedMessage.Body);
-
-                            if (remainingDelay > 0)
-                            {
-                                sendMessageRequest.DelaySeconds = Convert.ToInt32(remainingDelay);
-                            }
-                        }
-
-                        if (string.IsNullOrEmpty(messageId))
-                        {
-                            // for backward compatibility if we couldn't fetch the message id header from the attributes we use the message deduplication id
-                            messageId = receivedMessage.Attributes["MessageDeduplicationId"];
-                        }
-
-                        // because message attributes are part of the content size restriction we want to prevent message size from changing thus we add it 
-                        // for native delayed deliver as well
-                        sendMessageRequest.MessageAttributes[Headers.MessageId] = new MessageAttributeValue
-                        {
-                            StringValue = messageId,
-                            DataType = "String"
-                        };
-
-                        try
-                        {
-                            await sqsClient.SendMessageAsync(sendMessageRequest, CancellationToken.None)
-                                .ConfigureAwait(false);
-                        }
-                        catch (Exception ex)
-                        {
-                            Logger.Debug("ConsumeDelayedMessages -> SendMessageAsync failed", ex);
-
-                            await sqsClient.ChangeMessageVisibilityAsync(request.QueueUrl, receivedMessage.ReceiptHandle, 0, CancellationToken.None)
-                                .ConfigureAwait(false);
-
-                            continue;
-                        }
-
-                        try
-                        {
-                            await sqsClient.DeleteMessageAsync(delayedDeliveryQueueUrl, receivedMessage.ReceiptHandle, CancellationToken.None)
-                                .ConfigureAwait(false);
-                        }
-                        catch (ReceiptHandleIsInvalidException ex)
-                        {
-                            Logger.Info($"Message receipt handle {receivedMessage.ReceiptHandle} no longer valid.", ex);
-                        }
-                    }
+                    await BatchDispatchPreparedMessages(preparedMessages).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
@@ -270,6 +174,232 @@
                 catch (Exception ex)
                 {
                     Logger.Error("Exception thrown when consuming delayed messages", ex);
+                }
+            }
+        }
+
+        IReadOnlyCollection<SqsReceivedDelayedMessage> PrepareMessages(CancellationToken token, ReceiveMessageResponse receivedMessages, TimeSpan clockCorrection)
+        {
+            List<SqsReceivedDelayedMessage> preparedMessages = null;
+            foreach (var receivedMessage in receivedMessages.Messages)
+            {
+                token.ThrowIfCancellationRequested();
+
+                preparedMessages = preparedMessages ?? new List<SqsReceivedDelayedMessage>(receivedMessages.Messages.Count);
+                long delaySeconds = 0;
+
+                if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.DelaySeconds, out var delayAttribute))
+                {
+                    long.TryParse(delayAttribute.StringValue, out delaySeconds);
+                }
+
+                string originalMessageId = null;
+                if (receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
+                {
+                    originalMessageId = messageIdAttribute.StringValue;
+                }
+
+                var sent = receivedMessage.GetAdjustedDateTimeFromServerSetAttributes("SentTimestamp", clockCorrection);
+                var received = receivedMessage.GetAdjustedDateTimeFromServerSetAttributes("ApproximateFirstReceiveTimestamp", clockCorrection);
+
+                if (Convert.ToInt32(receivedMessage.Attributes["ApproximateReceiveCount"]) > 1)
+                {
+                    received = DateTime.UtcNow;
+                }
+
+                var elapsed = received - sent;
+
+                var remainingDelay = delaySeconds - (long)elapsed.TotalSeconds;
+
+                SqsReceivedDelayedMessage preparedMessage;
+
+                if (remainingDelay > configuration.DelayedDeliveryQueueDelayTime)
+                {
+                    preparedMessage = new SqsReceivedDelayedMessage(originalMessageId, receivedMessage.ReceiptHandle)
+                    {
+                        QueueUrl = delayedDeliveryQueueUrl,
+                        MessageAttributes =
+                        {
+                            [TransportHeaders.DelaySeconds] = new MessageAttributeValue
+                            {
+                                StringValue = remainingDelay.ToString(),
+                                DataType = "String"
+                            }
+                        }
+                    };
+
+                    var deduplicationId = receivedMessage.Attributes["MessageDeduplicationId"];
+
+                    // this is only here for acceptance testing purpose. In real prod code this is always false.
+                    // it allows us to fake multiple cycles over the FIFO queue without being subjected to deduplication
+                    if (configuration.DelayedDeliveryQueueDelayTime < TransportConfiguration.AwsMaximumQueueDelayTime)
+                    {
+                        deduplicationId = Guid.NewGuid().ToString();
+                    }
+
+                    preparedMessage.MessageDeduplicationId = preparedMessage.MessageGroupId = deduplicationId;
+                }
+                else
+                {
+                    preparedMessage = new SqsReceivedDelayedMessage(originalMessageId, receivedMessage.ReceiptHandle)
+                    {
+                        QueueUrl = queueUrl
+                    };
+
+                    if (remainingDelay > 0)
+                    {
+                        preparedMessage.DelaySeconds = Convert.ToInt32(remainingDelay);
+                    }
+                }
+
+                if (string.IsNullOrEmpty(originalMessageId))
+                {
+                    // for backward compatibility if we couldn't fetch the message id header from the attributes we use the message deduplication id
+                    originalMessageId = receivedMessage.Attributes["MessageDeduplicationId"];
+                }
+
+                // because message attributes are part of the content size restriction we want to prevent message size from changing thus we add it
+                // for native delayed deliver as well
+                preparedMessage.MessageAttributes[Headers.MessageId] = new MessageAttributeValue
+                {
+                    StringValue = originalMessageId,
+                    DataType = "String"
+                };
+
+                preparedMessage.Body = receivedMessage.Body;
+                preparedMessage.CalculateSize();
+
+                preparedMessages.Add(preparedMessage);
+            }
+
+            return preparedMessages;
+        }
+
+        async Task BatchDispatchPreparedMessages(IReadOnlyCollection<SqsReceivedDelayedMessage> preparedMessages)
+        {
+            var batchesToSend = Batcher.Batch(preparedMessages);
+            var operationCount = batchesToSend.Count;
+            Task[] batchTasks = null;
+            for (var i = 0; i < operationCount; i++)
+            {
+                batchTasks = batchTasks ?? new Task[operationCount];
+                batchTasks[i] = SendDelayedMessagesInBatches(batchesToSend[i], i + 1, operationCount);
+            }
+
+            if (batchTasks != null)
+            {
+                await Task.WhenAll(batchTasks).ConfigureAwait(false);
+            }
+        }
+
+        async Task SendDelayedMessagesInBatches(BatchEntry<SqsReceivedDelayedMessage> batch, int batchNumber, int totalBatches)
+        {
+            if (Logger.IsDebugEnabled)
+            {
+                var message = batch.PreparedMessagesBydId.Values.First();
+
+                Logger.Debug($"Sending delayed message batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
+            }
+
+            var result = await sqsClient.SendMessageBatchAsync(batch.BatchRequest).ConfigureAwait(false);
+
+            if (Logger.IsDebugEnabled)
+            {
+                var message = batch.PreparedMessagesBydId.Values.First();
+
+                Logger.Debug($"Sent delayed message '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
+            }
+
+            await Task.WhenAll(DeleteDelayedMessagesInBatches(batch, result, batchNumber, totalBatches),
+                ChangeVisibilityOfDelayedMessagesInBatches(batch, result, batchNumber, totalBatches)).ConfigureAwait(false);
+        }
+
+        async Task ChangeVisibilityOfDelayedMessagesInBatches(BatchEntry<SqsReceivedDelayedMessage> batch, SendMessageBatchResponse result, int batchNumber, int totalBatches)
+        {
+            List<ChangeMessageVisibilityBatchRequestEntry> changeVisibilityBatchRequestEntries = null;
+            foreach (var failed in result.Failed)
+            {
+                changeVisibilityBatchRequestEntries = changeVisibilityBatchRequestEntries ?? new List<ChangeMessageVisibilityBatchRequestEntry>(result.Failed.Count);
+                var preparedMessage = batch.PreparedMessagesBydId[failed.Id];
+                changeVisibilityBatchRequestEntries.Add(new ChangeMessageVisibilityBatchRequestEntry(preparedMessage.ReceivedMessageId, preparedMessage.ReceiptHandle)
+                {
+                    VisibilityTimeout = 0
+                });
+            }
+
+            if (changeVisibilityBatchRequestEntries != null)
+            {
+                if (Logger.IsDebugEnabled)
+                {
+                    var message = batch.PreparedMessagesBydId.Values.First();
+
+                    Logger.Debug($"Changing delayed message visibility for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
+                }
+
+                var changeVisibilityResult = await sqsClient.ChangeMessageVisibilityBatchAsync(new ChangeMessageVisibilityBatchRequest(delayedDeliveryQueueUrl, changeVisibilityBatchRequestEntries), CancellationToken.None)
+                    .ConfigureAwait(false);
+
+                if (Logger.IsDebugEnabled)
+                {
+                    var message = batch.PreparedMessagesBydId.Values.First();
+
+                    Logger.Debug($"Changed delayed message visibility for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
+                }
+
+                if (Logger.IsDebugEnabled && changeVisibilityResult.Failed.Count > 0)
+                {
+                    var builder = new StringBuilder();
+                    foreach (var failed in changeVisibilityResult.Failed)
+                    {
+                        builder.AppendLine($"{failed.Id}: {failed.Message} | {failed.Code} | {failed.SenderFault}");
+                    }
+
+                    Logger.Debug($"Changing visibility failed for {builder}");
+                }
+            }
+        }
+
+        async Task DeleteDelayedMessagesInBatches(BatchEntry<SqsReceivedDelayedMessage> batch, SendMessageBatchResponse result, int batchNumber, int totalBatches)
+        {
+            List<DeleteMessageBatchRequestEntry> deleteBatchRequestEntries = null;
+            foreach (var successful in result.Successful)
+            {
+                deleteBatchRequestEntries = deleteBatchRequestEntries ?? new List<DeleteMessageBatchRequestEntry>(result.Successful.Count);
+                var preparedMessage = batch.PreparedMessagesBydId[successful.Id];
+                deleteBatchRequestEntries.Add(new DeleteMessageBatchRequestEntry(preparedMessage.ReceivedMessageId, preparedMessage.ReceiptHandle));
+            }
+
+            if (deleteBatchRequestEntries != null)
+            {
+                if (Logger.IsDebugEnabled)
+                {
+                    var message = batch.PreparedMessagesBydId.Values.First();
+
+                    Logger.Debug($"Deleting delayed message for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
+                }
+
+                var deleteResult = await sqsClient.DeleteMessageBatchAsync(new DeleteMessageBatchRequest(delayedDeliveryQueueUrl, deleteBatchRequestEntries), CancellationToken.None)
+                    .ConfigureAwait(false);
+
+                if (Logger.IsDebugEnabled)
+                {
+                    var message = batch.PreparedMessagesBydId.Values.First();
+
+                    Logger.Debug($"Deleted delayed message for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
+                }
+
+                List<Task> deleteTasks = null;
+                foreach (var errorEntry in result.Failed)
+                {
+                    deleteTasks = deleteTasks ?? new List<Task>(deleteResult.Failed.Count);
+                    var messageToDeleteWithAnotherAttempt = batch.PreparedMessagesBydId[errorEntry.Id];
+                    Logger.Info($"Retrying message deletion with MessageId {messageToDeleteWithAnotherAttempt.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
+                    deleteTasks.Add(sqsClient.DeleteMessageAsync(messageToDeleteWithAnotherAttempt.QueueUrl, messageToDeleteWithAnotherAttempt.ReceiptHandle));
+                }
+
+                if (deleteTasks != null)
+                {
+                    await Task.WhenAll(deleteTasks).ConfigureAwait(false);
                 }
             }
         }
