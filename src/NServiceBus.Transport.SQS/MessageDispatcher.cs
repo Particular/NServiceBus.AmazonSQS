@@ -116,7 +116,7 @@
             await Task.WhenAll(batchTasks).ConfigureAwait(false);
         }
 
-        async Task SendBatch(BatchEntry batch, int batchNumber, int totalBatches)
+        async Task SendBatch(BatchEntry<SqsPreparedMessage> batch, int batchNumber, int totalBatches)
         {
             try
             {
