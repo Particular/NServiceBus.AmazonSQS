@@ -193,7 +193,6 @@ namespace NServiceBus.Transport.SQS.Tests
         MockSqsClient mockSqsClient;
         CancellationTokenSource cancellationTokenSource;
         MockS3Client mockS3Client;
-        TransportExtensions<SqsTransport> transport;
         const string FakeInputQueueQueueUrl = "queueUrl";
     }
 }
