@@ -42,7 +42,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 }
             };
 
-            var exception = Assert.ThrowsAsync<Exception>(async () => { await pump.Initialize("queue", "queueUrl"); });
+            var exception = Assert.ThrowsAsync<Exception>(async () => { await pump.Initialize("queue", FakeInputQueueQueueUrl); });
             Assert.AreEqual("Delayed delivery queue 'queue-delay.fifo' should not have Delivery Delay less than '00:15:00'.", exception.Message);
         }
 
@@ -60,7 +60,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 }
             };
 
-            var exception = Assert.ThrowsAsync<Exception>(async () => { await pump.Initialize("queue", "queueUrl"); });
+            var exception = Assert.ThrowsAsync<Exception>(async () => { await pump.Initialize("queue", FakeInputQueueQueueUrl); });
             Assert.AreEqual("Delayed delivery queue 'queue-delay.fifo' should not have Message Retention Period less than '4.00:00:00'.", exception.Message);
         }
 
@@ -79,7 +79,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 }
             };
 
-            var exception = Assert.ThrowsAsync<Exception>(async () => { await pump.Initialize("queue", "queueUrl"); });
+            var exception = Assert.ThrowsAsync<Exception>(async () => { await pump.Initialize("queue", FakeInputQueueQueueUrl); });
             Assert.AreEqual("Delayed delivery queue 'queue-delay.fifo' should not have Redrive Policy enabled.", exception.Message);
         }
 
@@ -95,7 +95,7 @@ namespace NServiceBus.Transport.SQS.Tests
                     {SQSConstants.ATTRIBUTE_MESSAGE_RETENTION_PERIOD, TimeSpan.FromDays(4).TotalSeconds.ToString(CultureInfo.InvariantCulture)},
                 }
             };
-            await pump.Initialize("queue", "queueUrl");
+            await pump.Initialize("queue", FakeInputQueueQueueUrl);
         }
 
         [Test]
@@ -121,7 +121,7 @@ namespace NServiceBus.Transport.SQS.Tests
             {
                 return
                     r.MaxNumberOfMessages == 10 &&
-                    r.QueueUrl == "queue-delay.fifo" &&
+                    r.QueueUrl == FakeDelayedMessagesFifoQueueUrl &&
                     r.WaitTimeSeconds == 20 &&
                     r.AttributeNames.SequenceEqual(new List<string> {"MessageDeduplicationId", "SentTimestamp", "ApproximateFirstReceiveTimestamp", "ApproximateReceiveCount"}) &&
                     r.MessageAttributeNames.SequenceEqual(new List<string> {"All"});
@@ -129,7 +129,7 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
-        public async Task Consume_sends_due_messages_in_batches()
+        public async Task Consume_sends_due_messages_in_batches_to_the_input_queue()
         {
             await SetupInitializedPump();
 
@@ -167,7 +167,51 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.AreEqual(2, mockSqsClient.BatchRequestsSent.Count);
             Assert.AreEqual(5, mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Count);
             Assert.AreEqual(5, mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Count);
-            Assert.IsTrue(mockSqsClient.BatchRequestsSent.Select(b => b.QueueUrl).All(x => x == "queueUrl"));
+            Assert.IsTrue(mockSqsClient.BatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeInputQueueQueueUrl));
+        }
+
+        [Test]
+        public async Task Consume_sends_not_yet_due_messages_in_batches_back_to_delayed_queue()
+        {
+            await SetupInitializedPump();
+
+            mockSqsClient.ReceiveMessagesRequestResponse = (req, token) =>
+            {
+                var receivedMessages = new List<Message>();
+                for (var i = 0; i < 10; i++)
+                {
+                    var messageId = Guid.NewGuid().ToString();
+                    receivedMessages.Add(new Message
+                    {
+                        Attributes = new Dictionary<string, string>
+                        {
+                            { "SentTimestamp", "10" },
+                            { "ApproximateFirstReceiveTimestamp", "15" },
+                            { "ApproximateReceiveCount", "0" },
+                            { "MessageDeduplicationId", messageId }
+                        },
+                        MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                        {
+                            { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "1500" }},
+                            { Headers.MessageId, new MessageAttributeValue { StringValue = messageId }}
+                        },
+                        Body = new string('a', 50*1024)
+                    });
+                }
+
+                return new ReceiveMessageResponse
+                {
+                    Messages = receivedMessages
+                };
+            };
+
+            await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
+
+            Assert.IsEmpty(mockSqsClient.RequestsSent);
+            Assert.AreEqual(2, mockSqsClient.BatchRequestsSent.Count);
+            Assert.AreEqual(5, mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Count);
+            Assert.AreEqual(5, mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Count);
+            Assert.IsTrue(mockSqsClient.BatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeDelayedMessagesFifoQueueUrl));
         }
 
         [Test]
@@ -238,12 +282,14 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.AreEqual(2, mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.Count);
             Assert.AreEqual("FirstMessage", mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.ElementAt(0).ReceiptHandle);
             Assert.AreEqual("SecondMessage", mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.ElementAt(1).ReceiptHandle);
-            Assert.IsTrue(mockSqsClient.DeleteMessageBatchRequestsSent.Select(b => b.QueueUrl).All(x => x == "queue-delay.fifo"));
+            Assert.IsTrue(mockSqsClient.DeleteMessageBatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeDelayedMessagesFifoQueueUrl));
         }
 
         DelayedMessagesPump pump;
         MockSqsClient mockSqsClient;
         TransportExtensions<SqsTransport> transport;
         CancellationTokenSource cancellationTokenSource;
+        const string FakeDelayedMessagesFifoQueueUrl = "queue-delay.fifo";
+        const string FakeInputQueueQueueUrl = "queueUrl";
     }
 }
