@@ -168,6 +168,68 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
+        public async Task Consume_deletes_due_messages_in_batches()
+        {
+            await SetupInitializedPump();
+
+            mockSqsClient.ReceiveMessagesRequestResponse = (req, token) =>
+            {
+                var receivedMessages = new List<Message>();
+                for (var i = 0; i < 10; i++)
+                {
+                    var messageId = Guid.NewGuid().ToString();
+                    receivedMessages.Add(new Message
+                    {
+                        Attributes = new Dictionary<string, string>
+                        {
+                            { "SentTimestamp", "10" },
+                            { "ApproximateFirstReceiveTimestamp", "15" },
+                            { "ApproximateReceiveCount", "0" },
+                            { "MessageDeduplicationId", messageId }
+                        },
+                        MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                        {
+                            { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "20" }},
+                            { Headers.MessageId, new MessageAttributeValue { StringValue = messageId }}
+                        },
+                        Body = new string('a', 50*1024),
+                        ReceiptHandle = $"Message-{i}"
+                    });
+                }
+
+                return new ReceiveMessageResponse
+                {
+                    Messages = receivedMessages
+                };
+            };
+
+            mockSqsClient.BatchRequestResponse = req =>
+            {
+                var successful = new List<SendMessageBatchResultEntry>();
+                foreach (var requestEntry in req.Entries)
+                {
+                    successful.Add(new SendMessageBatchResultEntry { Id = requestEntry.Id });
+                }
+                return new SendMessageBatchResponse
+                {
+                    Successful = successful
+                };
+            };
+
+            await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
+
+            Assert.IsEmpty(mockSqsClient.DeleteMessageRequestsSent);
+            Assert.AreEqual(2, mockSqsClient.DeleteMessageBatchRequestsSent.Count);
+            Assert.AreEqual(5, mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.Count);
+            Assert.AreEqual(5, mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(1).Entries.Count);
+            Assert.AreEqual("Message-0", mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.ElementAt(0).ReceiptHandle);
+            Assert.AreEqual("Message-4", mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.ElementAt(4).ReceiptHandle);
+            Assert.AreEqual("Message-5", mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(1).Entries.ElementAt(0).ReceiptHandle);
+            Assert.AreEqual("Message-9", mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(1).Entries.ElementAt(4).ReceiptHandle);
+            Assert.IsTrue(mockSqsClient.DeleteMessageBatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeDelayedMessagesFifoQueueUrl));
+        }
+
+        [Test]
         public async Task Consume_sends_not_yet_due_messages_in_batches_back_to_delayed_queue()
         {
             await SetupInitializedPump();
@@ -209,6 +271,68 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.AreEqual(5, mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Count);
             Assert.AreEqual(5, mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Count);
             Assert.IsTrue(mockSqsClient.BatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeDelayedMessagesFifoQueueUrl));
+        }
+
+        [Test]
+        public async Task Consume_deletes_not_yet_due_messages_in_batches()
+        {
+            await SetupInitializedPump();
+
+            mockSqsClient.ReceiveMessagesRequestResponse = (req, token) =>
+            {
+                var receivedMessages = new List<Message>();
+                for (var i = 0; i < 10; i++)
+                {
+                    var messageId = Guid.NewGuid().ToString();
+                    receivedMessages.Add(new Message
+                    {
+                        Attributes = new Dictionary<string, string>
+                        {
+                            { "SentTimestamp", "10" },
+                            { "ApproximateFirstReceiveTimestamp", "15" },
+                            { "ApproximateReceiveCount", "0" },
+                            { "MessageDeduplicationId", messageId }
+                        },
+                        MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                        {
+                            { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "1500" }},
+                            { Headers.MessageId, new MessageAttributeValue { StringValue = messageId }}
+                        },
+                        Body = new string('a', 50*1024),
+                        ReceiptHandle = $"Message-{i}"
+                    });
+                }
+
+                return new ReceiveMessageResponse
+                {
+                    Messages = receivedMessages
+                };
+            };
+
+            mockSqsClient.BatchRequestResponse = req =>
+            {
+                var successful = new List<SendMessageBatchResultEntry>();
+                foreach (var requestEntry in req.Entries)
+                {
+                    successful.Add(new SendMessageBatchResultEntry { Id = requestEntry.Id });
+                }
+                return new SendMessageBatchResponse
+                {
+                    Successful = successful
+                };
+            };
+
+            await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
+
+            Assert.IsEmpty(mockSqsClient.DeleteMessageRequestsSent);
+            Assert.AreEqual(2, mockSqsClient.DeleteMessageBatchRequestsSent.Count);
+            Assert.AreEqual(5, mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.Count);
+            Assert.AreEqual(5, mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(1).Entries.Count);
+            Assert.AreEqual("Message-0", mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.ElementAt(0).ReceiptHandle);
+            Assert.AreEqual("Message-4", mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.ElementAt(4).ReceiptHandle);
+            Assert.AreEqual("Message-5", mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(1).Entries.ElementAt(0).ReceiptHandle);
+            Assert.AreEqual("Message-9", mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(1).Entries.ElementAt(4).ReceiptHandle);
+            Assert.IsTrue(mockSqsClient.DeleteMessageBatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeDelayedMessagesFifoQueueUrl));
         }
 
         [Test]
@@ -271,76 +395,6 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.AreEqual(FakeInputQueueQueueUrl, mockSqsClient.BatchRequestsSent.ElementAt(0).QueueUrl);
             Assert.AreEqual(1, mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Count);
             Assert.AreEqual(FakeDelayedMessagesFifoQueueUrl, mockSqsClient.BatchRequestsSent.ElementAt(1).QueueUrl);
-        }
-
-        [Test]
-        public async Task Consume_deletes_due_messages_in_batches()
-        {
-            await SetupInitializedPump();
-
-            mockSqsClient.ReceiveMessagesRequestResponse = (req, token) =>
-            {
-                return new ReceiveMessageResponse
-                {
-                    Messages = new List<Message>
-                    {
-                        new Message
-                        {
-                            Attributes = new Dictionary<string, string>
-                            {
-                                { "SentTimestamp", "10" },
-                                { "ApproximateFirstReceiveTimestamp", "15" },
-                                { "ApproximateReceiveCount", "0" }
-                            },
-                            MessageAttributes = new Dictionary<string, MessageAttributeValue>
-                            {
-                                { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "20" }},
-                                { Headers.MessageId, new MessageAttributeValue { StringValue = Guid.NewGuid().ToString() }}
-                            },
-                            Body = new string('a', 50*1024),
-                            ReceiptHandle = "FirstMessage"
-                        },
-                        new Message
-                        {
-                            Attributes = new Dictionary<string, string>
-                            {
-                                { "SentTimestamp", "10" },
-                                { "ApproximateFirstReceiveTimestamp", "15" },
-                                { "ApproximateReceiveCount", "0" }
-                            },
-                            MessageAttributes = new Dictionary<string, MessageAttributeValue>
-                            {
-                                { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "20" }},
-                                { Headers.MessageId, new MessageAttributeValue { StringValue = Guid.NewGuid().ToString() }}
-                            },
-                            Body = new string('a', 50*1024),
-                            ReceiptHandle = "SecondMessage"
-                        }
-                    }
-                };
-            };
-
-            mockSqsClient.BatchRequestResponse = req =>
-            {
-                var successful = new List<SendMessageBatchResultEntry>();
-                foreach (var requestEntry in req.Entries)
-                {
-                    successful.Add(new SendMessageBatchResultEntry { Id = requestEntry.Id });
-                }
-                return new SendMessageBatchResponse
-                {
-                    Successful = successful
-                };
-            };
-
-            await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
-
-            Assert.IsEmpty(mockSqsClient.DeleteMessageRequestsSent);
-            Assert.AreEqual(1, mockSqsClient.DeleteMessageBatchRequestsSent.Count);
-            Assert.AreEqual(2, mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.Count);
-            Assert.AreEqual("FirstMessage", mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.ElementAt(0).ReceiptHandle);
-            Assert.AreEqual("SecondMessage", mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.ElementAt(1).ReceiptHandle);
-            Assert.IsTrue(mockSqsClient.DeleteMessageBatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeDelayedMessagesFifoQueueUrl));
         }
 
         DelayedMessagesPump pump;
