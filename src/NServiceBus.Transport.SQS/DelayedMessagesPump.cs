@@ -374,7 +374,7 @@ namespace NServiceBus.Transport.SQS
             }
             catch (ReceiptHandleIsInvalidException ex)
             {
-                Logger.Info($"Message receipt handle {messageToDeleteWithAnotherAttempt.ReceiptHandle} no longer valid.", ex);
+                Logger.Info($"Message receipt handle '{messageToDeleteWithAnotherAttempt.ReceiptHandle}' no longer valid.", ex);
             }
         }
 
