@@ -175,9 +175,6 @@ namespace NServiceBus.Transport.SQS.Tests
         {
             await SetupInitializedPump();
 
-            var firstMessageId = Guid.NewGuid().ToString();
-            var secondMessageId = Guid.NewGuid().ToString();
-
             mockSqsClient.ReceiveMessagesRequestResponse = (req, token) =>
             {
                 return new ReceiveMessageResponse
@@ -195,9 +192,10 @@ namespace NServiceBus.Transport.SQS.Tests
                             MessageAttributes = new Dictionary<string, MessageAttributeValue>
                             {
                                 { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "20" }},
-                                { Headers.MessageId, new MessageAttributeValue { StringValue = firstMessageId }}
+                                { Headers.MessageId, new MessageAttributeValue { StringValue = Guid.NewGuid().ToString() }}
                             },
-                            Body = new string('a', 50*1024)
+                            Body = new string('a', 50*1024),
+                            ReceiptHandle = "FirstMessage"
                         },
                         new Message
                         {
@@ -210,9 +208,10 @@ namespace NServiceBus.Transport.SQS.Tests
                             MessageAttributes = new Dictionary<string, MessageAttributeValue>
                             {
                                 { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "20" }},
-                                { Headers.MessageId, new MessageAttributeValue { StringValue = secondMessageId }}
+                                { Headers.MessageId, new MessageAttributeValue { StringValue = Guid.NewGuid().ToString() }}
                             },
-                            Body = new string('a', 50*1024)
+                            Body = new string('a', 50*1024),
+                            ReceiptHandle = "SecondMessage"
                         }
                     }
                 };
@@ -237,6 +236,8 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.IsEmpty(mockSqsClient.DeleteMessageRequestsSent);
             Assert.AreEqual(1, mockSqsClient.DeleteMessageBatchRequestsSent.Count);
             Assert.AreEqual(2, mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.Count);
+            Assert.AreEqual("FirstMessage", mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.ElementAt(0).ReceiptHandle);
+            Assert.AreEqual("SecondMessage", mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.ElementAt(1).ReceiptHandle);
             Assert.IsTrue(mockSqsClient.DeleteMessageBatchRequestsSent.Select(b => b.QueueUrl).All(x => x == "queue-delay.fifo"));
         }
 
