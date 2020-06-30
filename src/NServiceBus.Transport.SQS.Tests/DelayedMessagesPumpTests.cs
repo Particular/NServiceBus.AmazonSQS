@@ -95,6 +95,21 @@ namespace NServiceBus.Transport.SQS.Tests
                     {SQSConstants.ATTRIBUTE_MESSAGE_RETENTION_PERIOD, TimeSpan.FromDays(4).TotalSeconds.ToString(CultureInfo.InvariantCulture)},
                 }
             };
+
+            // makes batch request successful by default
+            mockSqsClient.BatchRequestResponse = req =>
+            {
+                var successful = new List<SendMessageBatchResultEntry>();
+                foreach (var requestEntry in req.Entries)
+                {
+                    successful.Add(new SendMessageBatchResultEntry { Id = requestEntry.Id });
+                }
+                return new SendMessageBatchResponse
+                {
+                    Successful = successful
+                };
+            };
+
             await pump.Initialize("queue", FakeInputQueueQueueUrl);
         }
 
@@ -203,19 +218,6 @@ namespace NServiceBus.Transport.SQS.Tests
                 };
             };
 
-            mockSqsClient.BatchRequestResponse = req =>
-            {
-                var successful = new List<SendMessageBatchResultEntry>();
-                foreach (var requestEntry in req.Entries)
-                {
-                    successful.Add(new SendMessageBatchResultEntry { Id = requestEntry.Id });
-                }
-                return new SendMessageBatchResponse
-                {
-                    Successful = successful
-                };
-            };
-
             await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
 
             Assert.IsEmpty(mockSqsClient.DeleteMessageRequestsSent);
@@ -306,19 +308,6 @@ namespace NServiceBus.Transport.SQS.Tests
                 return new ReceiveMessageResponse
                 {
                     Messages = receivedMessages
-                };
-            };
-
-            mockSqsClient.BatchRequestResponse = req =>
-            {
-                var successful = new List<SendMessageBatchResultEntry>();
-                foreach (var requestEntry in req.Entries)
-                {
-                    successful.Add(new SendMessageBatchResultEntry { Id = requestEntry.Id });
-                }
-                return new SendMessageBatchResponse
-                {
-                    Successful = successful
                 };
             };
 
