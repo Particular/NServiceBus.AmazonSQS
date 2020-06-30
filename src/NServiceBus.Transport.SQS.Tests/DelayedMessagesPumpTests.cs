@@ -430,6 +430,63 @@ namespace NServiceBus.Transport.SQS.Tests
             });
             Assert.AreSame(amazonSqsException, exception);
         }
+
+        [Test]
+        public async Task Consume_if_change_visiblity_fails_does_not_rethrow() // change visibility is best effort
+        {
+            await SetupInitializedPump();
+
+            var messageIdOfDueMessage = Guid.NewGuid().ToString();
+
+            mockSqsClient.ReceiveMessagesRequestResponse = (req, token) =>
+            {
+                return new ReceiveMessageResponse
+                {
+                    Messages = new List<Message>
+                    {
+                        new Message
+                        {
+                            Attributes = new Dictionary<string, string>
+                            {
+                                { "SentTimestamp", "10" },
+                                { "ApproximateFirstReceiveTimestamp", "15" },
+                                { "ApproximateReceiveCount", "0" },
+                                { "MessageDeduplicationId", messageIdOfDueMessage }
+                            },
+                            MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                            {
+                                { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "20" }},
+                                { Headers.MessageId, new MessageAttributeValue { StringValue = messageIdOfDueMessage }}
+                            },
+                            Body = new string('a', 50*1024),
+                            ReceiptHandle = "FirstMessage"
+                        }
+                    }
+                };
+            };
+
+            mockSqsClient.BatchRequestResponse = req =>
+            {
+                var successful = new List<BatchResultErrorEntry>();
+                foreach (var requestEntry in req.Entries)
+                {
+                    successful.Add(new BatchResultErrorEntry { Id = requestEntry.Id });
+                }
+                return new SendMessageBatchResponse
+                {
+                    Failed = successful
+                };
+            };
+
+            var amazonSqsException = new AmazonSQSException("Problem");
+            mockSqsClient.ChangeMessageVisibilityBatchRequestResponse = tuple => throw amazonSqsException;
+
+            Assert.DoesNotThrowAsync(async () =>
+            {
+                await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
+            });
+        }
+
         DelayedMessagesPump pump;
         MockSqsClient mockSqsClient;
         TransportExtensions<SqsTransport> transport;
