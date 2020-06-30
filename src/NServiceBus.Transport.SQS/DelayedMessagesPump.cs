@@ -254,11 +254,11 @@ namespace NServiceBus.Transport.SQS
                 Logger.Debug($"Sent delayed message '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
             }
 
-            await Task.WhenAll(DeleteDelayedMessagesInBatches(batch, result, batchNumber, totalBatches),
-                ChangeVisibilityOfDelayedMessagesInBatches(batch, result, batchNumber, totalBatches)).ConfigureAwait(false);
+            await Task.WhenAll(DeleteDelayedMessagesThatWereDeliveredSuccessfullyAsBatchesInBatches(batch, result, batchNumber, totalBatches),
+                ChangeVisibilityOfDelayedMessagesThatFailedBatchDeliveryInBatches(batch, result, batchNumber, totalBatches)).ConfigureAwait(false);
         }
 
-        async Task ChangeVisibilityOfDelayedMessagesInBatches(BatchEntry<SqsReceivedDelayedMessage> batch, SendMessageBatchResponse result, int batchNumber, int totalBatches)
+        async Task ChangeVisibilityOfDelayedMessagesThatFailedBatchDeliveryInBatches(BatchEntry<SqsReceivedDelayedMessage> batch, SendMessageBatchResponse result, int batchNumber, int totalBatches)
         {
             List<ChangeMessageVisibilityBatchRequestEntry> changeVisibilityBatchRequestEntries = null;
             foreach (var failed in result.Failed)
@@ -303,7 +303,7 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        async Task DeleteDelayedMessagesInBatches(BatchEntry<SqsReceivedDelayedMessage> batch, SendMessageBatchResponse result, int batchNumber, int totalBatches)
+        async Task DeleteDelayedMessagesThatWereDeliveredSuccessfullyAsBatchesInBatches(BatchEntry<SqsReceivedDelayedMessage> batch, SendMessageBatchResponse result, int batchNumber, int totalBatches)
         {
             List<DeleteMessageBatchRequestEntry> deleteBatchRequestEntries = null;
             foreach (var successful in result.Successful)
