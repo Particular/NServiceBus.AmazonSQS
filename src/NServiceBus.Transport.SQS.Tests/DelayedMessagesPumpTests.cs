@@ -212,6 +212,68 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
+        public async Task Consume_with_messages_due_and_not_due_sends_in_batches_per_destination()
+        {
+            await SetupInitializedPump();
+
+            var messageIdOfDueMessage = Guid.NewGuid().ToString();
+            var messageIdOfNotYetDueMessage = Guid.NewGuid().ToString();
+
+            mockSqsClient.ReceiveMessagesRequestResponse = (req, token) =>
+            {
+                return new ReceiveMessageResponse
+                {
+                    Messages = new List<Message>
+                    {
+                        new Message
+                        {
+                            Attributes = new Dictionary<string, string>
+                            {
+                                { "SentTimestamp", "10" },
+                                { "ApproximateFirstReceiveTimestamp", "15" },
+                                { "ApproximateReceiveCount", "0" },
+                                { "MessageDeduplicationId", messageIdOfDueMessage }
+                            },
+                            MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                            {
+                                { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "20" }},
+                                { Headers.MessageId, new MessageAttributeValue { StringValue = messageIdOfDueMessage }}
+                            },
+                            Body = new string('a', 50*1024),
+                            ReceiptHandle = "FirstMessage"
+                        },
+                        new Message
+                        {
+                            Attributes = new Dictionary<string, string>
+                            {
+                                { "SentTimestamp", "10" },
+                                { "ApproximateFirstReceiveTimestamp", "15" },
+                                { "ApproximateReceiveCount", "0" },
+                                { "MessageDeduplicationId", messageIdOfNotYetDueMessage }
+                            },
+                            MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                            {
+                                { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "1500" }},
+                                { Headers.MessageId, new MessageAttributeValue { StringValue = messageIdOfNotYetDueMessage }}
+                            },
+                            Body = new string('a', 50*1024),
+                            ReceiptHandle = "SecondMessage"
+                        }
+                    }
+                };
+            };
+
+            await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
+
+            Assert.IsEmpty(mockSqsClient.RequestsSent);
+            Assert.AreEqual(2, mockSqsClient.BatchRequestsSent.Count);
+            Assert.AreEqual(1, mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Count);
+            Assert.AreEqual(FakeInputQueueQueueUrl, mockSqsClient.BatchRequestsSent.ElementAt(0).QueueUrl);
+            Assert.AreEqual(1, mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Count);
+            Assert.AreEqual(FakeDelayedMessagesFifoQueueUrl, mockSqsClient.BatchRequestsSent.ElementAt(1).QueueUrl);
+        }
+
+        [Test]
         public async Task Consume_deletes_due_messages_in_batches()
         {
             await SetupInitializedPump();
