@@ -269,7 +269,8 @@ namespace NServiceBus.Transport.SQS
                 {
                     changeVisibilityBatchRequestEntries = changeVisibilityBatchRequestEntries ?? new List<ChangeMessageVisibilityBatchRequestEntry>(result.Failed.Count);
                     var preparedMessage = batch.PreparedMessagesBydId[failed.Id];
-                    changeVisibilityBatchRequestEntries.Add(new ChangeMessageVisibilityBatchRequestEntry(preparedMessage.ReceivedMessageId, preparedMessage.ReceiptHandle)
+                    // need to reuse the previous batch entry ID so that we can map again in failure scenarios, this is fine given that IDs only need to be unique per request
+                    changeVisibilityBatchRequestEntries.Add(new ChangeMessageVisibilityBatchRequestEntry(failed.Id, preparedMessage.ReceiptHandle)
                     {
                         VisibilityTimeout = 0
                     });
