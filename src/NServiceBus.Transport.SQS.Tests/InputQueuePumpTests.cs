@@ -71,10 +71,52 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
-        public Task Expired_messages_are_deleted_without_processing()
+        public async Task Expired_messages_are_deleted_without_processing()
         {
-            Assert.Inconclusive();
-            return Task.FromResult(0);
+            var nativeMessageId = Guid.NewGuid().ToString();
+            var messageId = Guid.NewGuid().ToString();
+            var ttbr = TimeSpan.FromHours(1);
+            var expectedReceiptHandle = "receipt-handle";
+
+            var processed = false;
+            await SetupInitializedPump(onMessage: ctx =>
+            {
+                processed = true;
+                return Task.FromResult(0);
+            });
+
+            var json = SimpleJson.SerializeObject(new TransportMessage
+            {
+                Headers = new Dictionary<string, string>
+                {
+                    {Headers.MessageId, messageId},
+                    {TransportHeaders.TimeToBeReceived, ttbr.ToString()}
+                },
+                Body = "empty message"
+            });
+
+            var message = new Message
+            {
+                ReceiptHandle = expectedReceiptHandle,
+                MessageId = nativeMessageId,
+                MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                {
+                    {Headers.MessageId, new MessageAttributeValue {StringValue = messageId}},
+                },
+                Attributes = new Dictionary<string, string>
+                {
+                    { "SentTimestamp", "10" }
+                },
+                Body = json
+            };
+
+            var semaphore = new SemaphoreSlim(0,1);
+
+            await pump.ProcessMessage(message, semaphore, CancellationToken.None).ConfigureAwait(false);
+
+            Assert.IsFalse(processed);
+            Assert.AreEqual(1, mockSqsClient.DeleteMessageRequestsSent.Count);
+            Assert.AreEqual(expectedReceiptHandle, mockSqsClient.DeleteMessageRequestsSent.Single().receiptHandle);
         }
 
         [Test]
@@ -124,6 +166,7 @@ namespace NServiceBus.Transport.SQS.Tests
         MockSqsClient mockSqsClient;
         CancellationTokenSource cancellationTokenSource;
         MockS3Client mockS3Client;
+        TransportExtensions<SqsTransport> transport;
         const string FakeInputQueueQueueUrl = "queueUrl";
     }
 }
