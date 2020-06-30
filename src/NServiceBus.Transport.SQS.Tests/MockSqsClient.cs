@@ -10,7 +10,9 @@
 
     class MockSqsClient : IAmazonSQS
     {
+        public IClientConfig Config { get; } = new AmazonSQSConfig();
         public List<string> QueueUrlRequestsSent { get; } = new List<string>();
+
 
         public Task<GetQueueUrlResponse> GetQueueUrlAsync(string queueName, CancellationToken cancellationToken = new CancellationToken())
         {
@@ -22,6 +24,7 @@
 
         public Func<SendMessageBatchRequest, SendMessageBatchResponse> BatchRequestResponse = req => new SendMessageBatchResponse();
 
+
         public Task<SendMessageBatchResponse> SendMessageBatchAsync(SendMessageBatchRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             BatchRequestsSent.Add(request);
@@ -31,6 +34,7 @@
         public List<SendMessageRequest> RequestsSent { get; } = new List<SendMessageRequest>();
         public Func<SendMessageRequest, SendMessageResponse> RequestResponse = req => new SendMessageResponse();
 
+
         public Task<SendMessageResponse> SendMessageAsync(SendMessageRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             RequestsSent.Add(request);
@@ -38,6 +42,7 @@
         }
 
         public List<string> GetAttributeRequestsSent { get; } = new List<string>();
+
         public Func<string, Dictionary<string, string>> GetAttributeRequestsResponse = queueUrl => new Dictionary<string, string>
         {
             { "QueueArn", "arn:fakeQueue" }
@@ -49,8 +54,26 @@
             return Task.FromResult(GetAttributeRequestsResponse(queueUrl));
         }
 
+        public List<(string, List<string>)> GetAttributeNamesRequestsSent { get; } = new List<(string, List<string>)>();
+
+        public Func<string, List<string>, GetQueueAttributesResponse> GetAttributeNamesRequestsResponse = (url, attributeNames) => new GetQueueAttributesResponse
+        {
+            Attributes = new Dictionary<string, string>
+            {
+                { "QueueArn", "arn:fakeQueue" }
+            }
+        };
+
+        public Task<GetQueueAttributesResponse> GetQueueAttributesAsync(string queueUrl, List<string> attributeNames, CancellationToken cancellationToken = new CancellationToken())
+        {
+            GetAttributeNamesRequestsSent.Add((queueUrl, attributeNames));
+            return Task.FromResult(GetAttributeNamesRequestsResponse(queueUrl, attributeNames));
+        }
+
         public List<(string queueUrl, Dictionary<string, string> attributes)> SetAttributesRequestsSent { get; } = new List<(string queueUrl, Dictionary<string, string> attributes)>();
+
         public Dictionary<string, Queue<Dictionary<string, string>>> SetAttributesRequestsSentByUrl { get; } = new Dictionary<string, Queue<Dictionary<string, string>>>();
+
 
         public Task SetAttributesAsync(string queueUrl, Dictionary<string, string> attributes)
         {
@@ -112,8 +135,6 @@
         {
             throw new NotImplementedException();
         }
-
-        public IClientConfig Config { get; }
 
         public string AuthorizeS3ToSendMessage(string queueUrl, string bucket)
         {
@@ -271,11 +292,6 @@
         }
 
         public GetQueueAttributesResponse GetQueueAttributes(GetQueueAttributesRequest request)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<GetQueueAttributesResponse> GetQueueAttributesAsync(string queueUrl, List<string> attributeNames, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
         }
