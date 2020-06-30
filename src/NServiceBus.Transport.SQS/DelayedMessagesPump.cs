@@ -325,7 +325,8 @@ namespace NServiceBus.Transport.SQS
             {
                 deleteBatchRequestEntries = deleteBatchRequestEntries ?? new List<DeleteMessageBatchRequestEntry>(result.Successful.Count);
                 var preparedMessage = batch.PreparedMessagesBydId[successful.Id];
-                deleteBatchRequestEntries.Add(new DeleteMessageBatchRequestEntry(preparedMessage.ReceivedMessageId, preparedMessage.ReceiptHandle));
+                // need to reuse the previous batch entry ID so that we can map again in failure scenarios, this is fine given that IDs only need to be unique per request
+                deleteBatchRequestEntries.Add(new DeleteMessageBatchRequestEntry(successful.Id, preparedMessage.ReceiptHandle));
             }
 
             if (deleteBatchRequestEntries != null)
@@ -348,18 +349,31 @@ namespace NServiceBus.Transport.SQS
                 }
 
                 List<Task> deleteTasks = null;
-                foreach (var errorEntry in result.Failed)
+                foreach (var errorEntry in deleteResult.Failed)
                 {
                     deleteTasks = deleteTasks ?? new List<Task>(deleteResult.Failed.Count);
                     var messageToDeleteWithAnotherAttempt = batch.PreparedMessagesBydId[errorEntry.Id];
                     Logger.Info($"Retrying message deletion with MessageId {messageToDeleteWithAnotherAttempt.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
-                    deleteTasks.Add(sqsClient.DeleteMessageAsync(messageToDeleteWithAnotherAttempt.QueueUrl, messageToDeleteWithAnotherAttempt.ReceiptHandle));
+                    deleteTasks.Add(DeleteMessage(messageToDeleteWithAnotherAttempt));
                 }
 
                 if (deleteTasks != null)
                 {
                     await Task.WhenAll(deleteTasks).ConfigureAwait(false);
                 }
+            }
+        }
+
+        async Task DeleteMessage(SqsReceivedDelayedMessage messageToDeleteWithAnotherAttempt)
+        {
+            try
+            {
+                // should not be cancelled
+                await sqsClient.DeleteMessageAsync(messageToDeleteWithAnotherAttempt.QueueUrl, messageToDeleteWithAnotherAttempt.ReceiptHandle).ConfigureAwait(false);
+            }
+            catch (ReceiptHandleIsInvalidException ex)
+            {
+                Logger.Info($"Message receipt handle {messageToDeleteWithAnotherAttempt.ReceiptHandle} no longer valid.", ex);
             }
         }
 
