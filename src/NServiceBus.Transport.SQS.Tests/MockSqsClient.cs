@@ -61,6 +61,12 @@
             return Task.FromResult(DeleteMessageRequestResponse((queueUrl, receiptHandle)));
         }
 
+        public Task<DeleteMessageResponse> DeleteMessageAsync(DeleteMessageRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            DeleteMessageRequestsSent.Add((request.QueueUrl, request.ReceiptHandle));
+            return Task.FromResult(DeleteMessageRequestResponse((request.QueueUrl, request.ReceiptHandle)));
+        }
+
         public List<SendMessageRequest> RequestsSent { get; } = new List<SendMessageRequest>();
         public Func<SendMessageRequest, SendMessageResponse> RequestResponse = req => new SendMessageResponse();
 
@@ -270,11 +276,6 @@
         }
 
         public DeleteMessageResponse DeleteMessage(DeleteMessageRequest request)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<DeleteMessageResponse> DeleteMessageAsync(DeleteMessageRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
         }

@@ -64,10 +64,38 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
-        public Task Poison_messages_are_moved_to_error_queue_and_deleted_without_processing()
+        public async Task Poison_messages_are_moved_to_error_queue_and_deleted_without_processing()
         {
-            Assert.Inconclusive();
-            return Task.FromResult(0);
+            var nativeMessageId = Guid.NewGuid().ToString();
+            var messageId = Guid.NewGuid().ToString();
+            var expectedReceiptHandle = "receipt-handle";
+
+            var processed = false;
+            await SetupInitializedPump(onMessage: ctx =>
+            {
+                processed = true;
+                return Task.FromResult(0);
+            });
+
+            var message = new Message
+            {
+                ReceiptHandle = expectedReceiptHandle,
+                MessageId = nativeMessageId,
+                MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                {
+                    {Headers.MessageId, new MessageAttributeValue {StringValue = messageId}},
+                },
+                Body = null //poison message
+            };
+
+            var semaphore = new SemaphoreSlim(0,1);
+
+            await pump.ProcessMessage(message, semaphore, CancellationToken.None).ConfigureAwait(false);
+
+            Assert.IsFalse(processed);
+            Assert.AreEqual(1, mockSqsClient.RequestsSent.Count);
+            Assert.AreEqual(1, mockSqsClient.DeleteMessageRequestsSent.Count);
+            Assert.AreEqual(expectedReceiptHandle, mockSqsClient.DeleteMessageRequestsSent.Single().receiptHandle);
         }
 
         [Test]
