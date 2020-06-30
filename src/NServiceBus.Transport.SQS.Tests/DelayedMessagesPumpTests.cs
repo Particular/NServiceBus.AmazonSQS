@@ -432,7 +432,7 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
-        public async Task Consume_if_batch_deletion_fails_tries_single_delete() // will then be handled automatically in next receive iteration
+        public async Task Consume_if_batch_deletion_fails_tries_single_delete()
         {
             await SetupInitializedPump();
 
@@ -465,21 +465,75 @@ namespace NServiceBus.Transport.SQS.Tests
                 };
             };
 
-            mockSqsClient.BatchRequestResponse = req =>
+            mockSqsClient.DeleteMessageBatchRequestResponse = req =>
             {
                 var failed = new List<BatchResultErrorEntry>();
                 foreach (var requestEntry in req.Entries)
                 {
                     failed.Add(new BatchResultErrorEntry { Id = requestEntry.Id });
                 }
-                return new SendMessageBatchResponse
+                return new DeleteMessageBatchResponse
+                {
+                    Failed = failed
+                };
+            };
+
+            await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
+
+            Assert.AreEqual(1, mockSqsClient.DeleteMessageRequestsSent.Count);
+            Assert.IsNotEmpty("FirstMessage", mockSqsClient.DeleteMessageRequestsSent.ElementAt(0).receiptHandle);
+            Assert.IsNotEmpty("FirstMessage", mockSqsClient.DeleteMessageRequestsSent.ElementAt(0).queueUrl);
+        }
+
+        [Test]
+        public async Task Consume_if_batch_deletion_and_single_delete_fails_throws() // will then be handled automatically in next receive iteration
+        {
+            await SetupInitializedPump();
+
+            var messageIdOfDueMessage = Guid.NewGuid().ToString();
+
+            mockSqsClient.ReceiveMessagesRequestResponse = (req, token) =>
+            {
+                return new ReceiveMessageResponse
+                {
+                    Messages = new List<Message>
+                    {
+                        new Message
+                        {
+                            Attributes = new Dictionary<string, string>
+                            {
+                                { "SentTimestamp", "10" },
+                                { "ApproximateFirstReceiveTimestamp", "15" },
+                                { "ApproximateReceiveCount", "0" },
+                                { "MessageDeduplicationId", messageIdOfDueMessage }
+                            },
+                            MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                            {
+                                { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "20" }},
+                                { Headers.MessageId, new MessageAttributeValue { StringValue = messageIdOfDueMessage }}
+                            },
+                            Body = new string('a', 50*1024),
+                            ReceiptHandle = "FirstMessage"
+                        }
+                    }
+                };
+            };
+
+            mockSqsClient.DeleteMessageBatchRequestResponse = req =>
+            {
+                var failed = new List<BatchResultErrorEntry>();
+                foreach (var requestEntry in req.Entries)
+                {
+                    failed.Add(new BatchResultErrorEntry { Id = requestEntry.Id });
+                }
+                return new DeleteMessageBatchResponse
                 {
                     Failed = failed
                 };
             };
 
             var amazonSqsException = new AmazonSQSException("Problem");
-            mockSqsClient.DeleteMessageBatchRequestResponse = tuple => throw amazonSqsException;
+            mockSqsClient.DeleteMessageRequestResponse = tuple => throw amazonSqsException;
 
             var exception = Assert.ThrowsAsync<AmazonSQSException>(async () =>
             {
