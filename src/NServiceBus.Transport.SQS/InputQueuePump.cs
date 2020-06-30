@@ -129,7 +129,7 @@ namespace NServiceBus.Transport.SQS
                             return;
                         }
 
-                        ProcessMessage(receivedMessage, token).Ignore();
+                        ProcessMessage(receivedMessage, maxConcurrencySemaphore, token).Ignore();
                     }
                 }
                 catch (OperationCanceledException)
@@ -143,7 +143,7 @@ namespace NServiceBus.Transport.SQS
             } // while
         }
 
-        async Task ProcessMessage(Message receivedMessage, CancellationToken token)
+        internal async Task ProcessMessage(Message receivedMessage, SemaphoreSlim processingSemaphoreSlim, CancellationToken token)
         {
             try
             {
@@ -210,7 +210,7 @@ namespace NServiceBus.Transport.SQS
             }
             finally
             {
-                maxConcurrencySemaphore.Release();
+                processingSemaphoreSlim.Release();
             }
         }
 
