@@ -88,23 +88,16 @@ namespace NServiceBus.Transport.SQS
                 MessageAttributeNames = new List<string> {"All"}
             };
 
-            pumpTask = Task.Run(() => ConsumeDelayedMessages(receiveDelayedMessagesRequest, token), CancellationToken.None);
+            pumpTask = Task.Run(() => ConsumeDelayedMessagesLoop(receiveDelayedMessagesRequest, token), CancellationToken.None);
         }
 
-        async Task ConsumeDelayedMessages(ReceiveMessageRequest request, CancellationToken token)
+        async Task ConsumeDelayedMessagesLoop(ReceiveMessageRequest request, CancellationToken token)
         {
             while (!token.IsCancellationRequested)
             {
                 try
                 {
-                    var receivedMessages = await sqsClient.ReceiveMessageAsync(request, token).ConfigureAwait(false);
-                    var clockCorrection = CorrectClockSkew.GetClockCorrectionForEndpoint(awsEndpointUrl);
-
-                    var preparedMessages = PrepareMessages(token, receivedMessages, clockCorrection);
-
-                    token.ThrowIfCancellationRequested();
-
-                    await BatchDispatchPreparedMessages(preparedMessages).ConfigureAwait(false);
+                    await ConsumeDelayedMessages(request, token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
@@ -115,6 +108,18 @@ namespace NServiceBus.Transport.SQS
                     Logger.Error("Exception thrown when consuming delayed messages", ex);
                 }
             }
+        }
+
+        internal async Task ConsumeDelayedMessages(ReceiveMessageRequest request, CancellationToken token)
+        {
+            var receivedMessages = await sqsClient.ReceiveMessageAsync(request, token).ConfigureAwait(false);
+            var clockCorrection = CorrectClockSkew.GetClockCorrectionForEndpoint(awsEndpointUrl);
+
+            var preparedMessages = PrepareMessages(token, receivedMessages, clockCorrection);
+
+            token.ThrowIfCancellationRequested();
+
+            await BatchDispatchPreparedMessages(preparedMessages).ConfigureAwait(false);
         }
 
         IReadOnlyCollection<SqsReceivedDelayedMessage> PrepareMessages(CancellationToken token, ReceiveMessageResponse receivedMessages, TimeSpan clockCorrection)

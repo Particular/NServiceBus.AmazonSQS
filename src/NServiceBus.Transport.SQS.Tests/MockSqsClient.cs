@@ -31,6 +31,26 @@
             return Task.FromResult(BatchRequestResponse(request));
         }
 
+        public List<DeleteMessageBatchRequest> DeleteMessageBatchRequestsSent { get; } = new List<DeleteMessageBatchRequest>();
+
+        public Func<DeleteMessageBatchRequest, DeleteMessageBatchResponse> DeleteMessageBatchRequestResponse = req => new DeleteMessageBatchResponse();
+
+        public Task<DeleteMessageBatchResponse> DeleteMessageBatchAsync(DeleteMessageBatchRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            DeleteMessageBatchRequestsSent.Add(request);
+            return Task.FromResult(DeleteMessageBatchRequestResponse(request));
+        }
+
+        public List<(string queueUrl, string receiptHandle)> DeleteMessageRequestsSent { get; } = new List<(string queueUrl, string receiptHandle)>();
+
+        public Func<(string queueUrl, string receiptHandle), DeleteMessageResponse> DeleteMessageRequestResponse = req => new DeleteMessageResponse();
+
+        public Task<DeleteMessageResponse> DeleteMessageAsync(string queueUrl, string receiptHandle, CancellationToken cancellationToken = new CancellationToken())
+        {
+            DeleteMessageRequestsSent.Add((queueUrl, receiptHandle));
+            return Task.FromResult(DeleteMessageRequestResponse((queueUrl, receiptHandle)));
+        }
+
         public List<SendMessageRequest> RequestsSent { get; } = new List<SendMessageRequest>();
         public Func<SendMessageRequest, SendMessageResponse> RequestResponse = req => new SendMessageResponse();
 
@@ -54,7 +74,7 @@
             return Task.FromResult(GetAttributeRequestsResponse(queueUrl));
         }
 
-        public List<(string, List<string>)> GetAttributeNamesRequestsSent { get; } = new List<(string, List<string>)>();
+        public List<(string queueUrl, List<string> attributeNames)> GetAttributeNamesRequestsSent { get; } = new List<(string queueUrl, List<string> attributeNames)>();
 
         public Func<string, List<string>, GetQueueAttributesResponse> GetAttributeNamesRequestsResponse = (url, attributeNames) => new GetQueueAttributesResponse
         {
@@ -117,6 +137,19 @@
                 }
                 return queue.Dequeue();
             };
+        }
+
+        public List<ReceiveMessageRequest> ReceiveMessagesRequestsSent { get; } = new List<ReceiveMessageRequest>();
+        public Func<ReceiveMessageRequest, CancellationToken, ReceiveMessageResponse> ReceiveMessagesRequestResponse = (req, token) =>
+        {
+            token.ThrowIfCancellationRequested();
+            return new ReceiveMessageResponse();
+        };
+
+        public Task<ReceiveMessageResponse> ReceiveMessageAsync(ReceiveMessageRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            ReceiveMessagesRequestsSent.Add(request);
+            return Task.FromResult(ReceiveMessagesRequestResponse(request, cancellationToken));
         }
 
         #region NotImplemented
@@ -236,11 +269,6 @@
             throw new NotImplementedException();
         }
 
-        public Task<DeleteMessageResponse> DeleteMessageAsync(string queueUrl, string receiptHandle, CancellationToken cancellationToken = new CancellationToken())
-        {
-            throw new NotImplementedException();
-        }
-
         public Task<DeleteMessageResponse> DeleteMessageAsync(DeleteMessageRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
@@ -257,11 +285,6 @@
         }
 
         public Task<DeleteMessageBatchResponse> DeleteMessageBatchAsync(string queueUrl, List<DeleteMessageBatchRequestEntry> entries, CancellationToken cancellationToken = new CancellationToken())
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<DeleteMessageBatchResponse> DeleteMessageBatchAsync(DeleteMessageBatchRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
         }
@@ -391,10 +414,7 @@
             throw new NotImplementedException();
         }
 
-        public Task<ReceiveMessageResponse> ReceiveMessageAsync(ReceiveMessageRequest request, CancellationToken cancellationToken = new CancellationToken())
-        {
-            throw new NotImplementedException();
-        }
+
 
         public RemovePermissionResponse RemovePermission(string queueUrl, string label)
         {
