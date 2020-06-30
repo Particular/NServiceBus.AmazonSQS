@@ -543,6 +543,78 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
+        public async Task Consume_if_batch_send_fails_makes_messages_appear_again()
+        {
+            await SetupInitializedPump();
+
+            mockSqsClient.ReceiveMessagesRequestResponse = (req, token) =>
+            {
+                return new ReceiveMessageResponse
+                {
+                    Messages = new List<Message>
+                    {
+                        new Message
+                        {
+                            Attributes = new Dictionary<string, string>
+                            {
+                                { "SentTimestamp", "10" },
+                                { "ApproximateFirstReceiveTimestamp", "15" },
+                                { "ApproximateReceiveCount", "0" },
+                                { "MessageDeduplicationId", Guid.NewGuid().ToString() }
+                            },
+                            MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                            {
+                                { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "20" }},
+                                { Headers.MessageId, new MessageAttributeValue { StringValue = Guid.NewGuid().ToString() }}
+                            },
+                            Body = new string('a', 50*1024),
+                            ReceiptHandle = "FirstMessage"
+                        },
+                        new Message
+                        {
+                            Attributes = new Dictionary<string, string>
+                            {
+                                { "SentTimestamp", "10" },
+                                { "ApproximateFirstReceiveTimestamp", "15" },
+                                { "ApproximateReceiveCount", "0" },
+                                { "MessageDeduplicationId", Guid.NewGuid().ToString() }
+                            },
+                            MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                            {
+                                { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "20" }},
+                                { Headers.MessageId, new MessageAttributeValue { StringValue = Guid.NewGuid().ToString() }}
+                            },
+                            Body = new string('a', 50*1024),
+                            ReceiptHandle = "SecondMessage"
+                        }
+                    }
+                };
+            };
+
+            mockSqsClient.BatchRequestResponse = req =>
+            {
+                var failed = new List<BatchResultErrorEntry>();
+                foreach (var requestEntry in req.Entries)
+                {
+                    failed.Add(new BatchResultErrorEntry { Id = requestEntry.Id });
+                }
+                return new SendMessageBatchResponse
+                {
+                    Failed = failed
+                };
+            };
+
+            await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
+
+            Assert.AreEqual(1, mockSqsClient.ChangeMessageVisibilityBatchRequestsSent.Count);
+            Assert.AreEqual(2, mockSqsClient.ChangeMessageVisibilityBatchRequestsSent.ElementAt(0).Entries.Count);
+            Assert.AreEqual("FirstMessage", mockSqsClient.ChangeMessageVisibilityBatchRequestsSent.ElementAt(0).Entries.ElementAt(0).ReceiptHandle);
+            Assert.AreEqual(0, mockSqsClient.ChangeMessageVisibilityBatchRequestsSent.ElementAt(0).Entries.ElementAt(0).VisibilityTimeout);
+            Assert.AreEqual("SecondMessage", mockSqsClient.ChangeMessageVisibilityBatchRequestsSent.ElementAt(0).Entries.ElementAt(1).ReceiptHandle);
+            Assert.AreEqual(0, mockSqsClient.ChangeMessageVisibilityBatchRequestsSent.ElementAt(0).Entries.ElementAt(1).VisibilityTimeout);
+        }
+
+        [Test]
         public async Task Consume_if_change_visibility_fails_does_not_rethrow() // change visibility is best effort
         {
             await SetupInitializedPump();
