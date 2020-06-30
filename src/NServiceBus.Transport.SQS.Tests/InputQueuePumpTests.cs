@@ -19,7 +19,6 @@ namespace NServiceBus.Transport.SQS.Tests
             cancellationTokenSource = new CancellationTokenSource();
 
             var settings = new SettingsHolder();
-            transport = new TransportExtensions<SqsTransport>(settings);
 
             mockSqsClient = new MockSqsClient();
             mockS3Client = new MockS3Client();
