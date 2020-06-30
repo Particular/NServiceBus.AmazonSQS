@@ -388,7 +388,7 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
-        public async Task Consume_if_deletion_fails_rethrows() // will then be handled automatically in next receive iteration
+        public async Task Consume_if_batch_deletion_fails_rethrows() // will then be handled automatically in next receive iteration
         {
             await SetupInitializedPump();
 
@@ -589,8 +589,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 };
             };
 
-            var amazonSqsException = new AmazonSQSException("Problem");
-            mockSqsClient.ChangeMessageVisibilityBatchRequestResponse = tuple => throw amazonSqsException;
+            mockSqsClient.ChangeMessageVisibilityBatchRequestResponse = tuple => throw new AmazonSQSException("Problem");
 
             Assert.DoesNotThrowAsync(async () =>
             {
