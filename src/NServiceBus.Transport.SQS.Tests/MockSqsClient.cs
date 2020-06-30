@@ -41,6 +41,16 @@
             return Task.FromResult(DeleteMessageBatchRequestResponse(request));
         }
 
+        public List<ChangeMessageVisibilityBatchRequest> ChangeMessageVisibilityBatchRequestsSent { get; } = new List<ChangeMessageVisibilityBatchRequest>();
+
+        public Func<ChangeMessageVisibilityBatchRequest, ChangeMessageVisibilityBatchResponse> ChangeMessageVisibilityBatchRequestResponse = req => new ChangeMessageVisibilityBatchResponse();
+
+        public Task<ChangeMessageVisibilityBatchResponse> ChangeMessageVisibilityBatchAsync(ChangeMessageVisibilityBatchRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            ChangeMessageVisibilityBatchRequestsSent.Add(request);
+            return Task.FromResult(ChangeMessageVisibilityBatchRequestResponse(request));
+        }
+
         public List<(string queueUrl, string receiptHandle)> DeleteMessageRequestsSent { get; } = new List<(string queueUrl, string receiptHandle)>();
 
         public Func<(string queueUrl, string receiptHandle), DeleteMessageResponse> DeleteMessageRequestResponse = req => new DeleteMessageResponse();
@@ -230,11 +240,6 @@
         }
 
         public Task<ChangeMessageVisibilityBatchResponse> ChangeMessageVisibilityBatchAsync(string queueUrl, List<ChangeMessageVisibilityBatchRequestEntry> entries, CancellationToken cancellationToken = new CancellationToken())
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<ChangeMessageVisibilityBatchResponse> ChangeMessageVisibilityBatchAsync(ChangeMessageVisibilityBatchRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
         }
