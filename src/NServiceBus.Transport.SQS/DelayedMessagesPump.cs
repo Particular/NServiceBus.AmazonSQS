@@ -254,52 +254,67 @@ namespace NServiceBus.Transport.SQS
                 Logger.Debug($"Sent delayed message '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
             }
 
-            await Task.WhenAll(DeleteDelayedMessagesThatWereDeliveredSuccessfullyAsBatchesInBatches(batch, result, batchNumber, totalBatches),
-                ChangeVisibilityOfDelayedMessagesThatFailedBatchDeliveryInBatches(batch, result, batchNumber, totalBatches)).ConfigureAwait(false);
+            var deletionTask = DeleteDelayedMessagesThatWereDeliveredSuccessfullyAsBatchesInBatches(batch, result, batchNumber, totalBatches);
+            // deliberately fire&forget because we treat this as a best effort
+            _ = ChangeVisibilityOfDelayedMessagesThatFailedBatchDeliveryInBatches(batch, result, batchNumber, totalBatches);
+            await deletionTask.ConfigureAwait(false);
         }
 
         async Task ChangeVisibilityOfDelayedMessagesThatFailedBatchDeliveryInBatches(BatchEntry<SqsReceivedDelayedMessage> batch, SendMessageBatchResponse result, int batchNumber, int totalBatches)
         {
-            List<ChangeMessageVisibilityBatchRequestEntry> changeVisibilityBatchRequestEntries = null;
-            foreach (var failed in result.Failed)
+            try
             {
-                changeVisibilityBatchRequestEntries = changeVisibilityBatchRequestEntries ?? new List<ChangeMessageVisibilityBatchRequestEntry>(result.Failed.Count);
-                var preparedMessage = batch.PreparedMessagesBydId[failed.Id];
-                changeVisibilityBatchRequestEntries.Add(new ChangeMessageVisibilityBatchRequestEntry(preparedMessage.ReceivedMessageId, preparedMessage.ReceiptHandle)
+                List<ChangeMessageVisibilityBatchRequestEntry> changeVisibilityBatchRequestEntries = null;
+                foreach (var failed in result.Failed)
                 {
-                    VisibilityTimeout = 0
-                });
-            }
-
-            if (changeVisibilityBatchRequestEntries != null)
-            {
-                if (Logger.IsDebugEnabled)
-                {
-                    var message = batch.PreparedMessagesBydId.Values.First();
-
-                    Logger.Debug($"Changing delayed message visibility for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
-                }
-
-                var changeVisibilityResult = await sqsClient.ChangeMessageVisibilityBatchAsync(new ChangeMessageVisibilityBatchRequest(delayedDeliveryQueueUrl, changeVisibilityBatchRequestEntries), CancellationToken.None)
-                    .ConfigureAwait(false);
-
-                if (Logger.IsDebugEnabled)
-                {
-                    var message = batch.PreparedMessagesBydId.Values.First();
-
-                    Logger.Debug($"Changed delayed message visibility for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
-                }
-
-                if (Logger.IsDebugEnabled && changeVisibilityResult.Failed.Count > 0)
-                {
-                    var builder = new StringBuilder();
-                    foreach (var failed in changeVisibilityResult.Failed)
+                    changeVisibilityBatchRequestEntries = changeVisibilityBatchRequestEntries ?? new List<ChangeMessageVisibilityBatchRequestEntry>(result.Failed.Count);
+                    var preparedMessage = batch.PreparedMessagesBydId[failed.Id];
+                    changeVisibilityBatchRequestEntries.Add(new ChangeMessageVisibilityBatchRequestEntry(preparedMessage.ReceivedMessageId, preparedMessage.ReceiptHandle)
                     {
-                        builder.AppendLine($"{failed.Id}: {failed.Message} | {failed.Code} | {failed.SenderFault}");
+                        VisibilityTimeout = 0
+                    });
+                }
+
+                if (changeVisibilityBatchRequestEntries != null)
+                {
+                    if (Logger.IsDebugEnabled)
+                    {
+                        var message = batch.PreparedMessagesBydId.Values.First();
+
+                        Logger.Debug($"Changing delayed message visibility for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
                     }
 
-                    Logger.Debug($"Changing visibility failed for {builder}");
+                    var changeVisibilityResult = await sqsClient.ChangeMessageVisibilityBatchAsync(new ChangeMessageVisibilityBatchRequest(delayedDeliveryQueueUrl, changeVisibilityBatchRequestEntries), CancellationToken.None)
+                        .ConfigureAwait(false);
+
+                    if (Logger.IsDebugEnabled)
+                    {
+                        var message = batch.PreparedMessagesBydId.Values.First();
+
+                        Logger.Debug($"Changed delayed message visibility for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
+                    }
+
+                    if (Logger.IsDebugEnabled && changeVisibilityResult.Failed.Count > 0)
+                    {
+                        var builder = new StringBuilder();
+                        foreach (var failed in changeVisibilityResult.Failed)
+                        {
+                            builder.AppendLine($"{failed.Id}: {failed.Message} | {failed.Code} | {failed.SenderFault}");
+                        }
+
+                        Logger.Debug($"Changing visibility failed for {builder}");
+                    }
                 }
+            }
+            catch (Exception e)
+            {
+                var builder = new StringBuilder();
+                foreach (var failed in result.Failed)
+                {
+                    builder.AppendLine($"{failed.Id}: {failed.Message} | {failed.Code} | {failed.SenderFault}");
+                }
+
+                Logger.Error($"Changing visibility failed for {builder}", e);
             }
         }
 
