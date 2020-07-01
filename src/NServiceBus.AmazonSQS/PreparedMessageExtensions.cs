@@ -28,7 +28,8 @@ namespace NServiceBus.Transports.SQS
             };
         }
 
-        public static BatchEntry ToBatchRequest(this PreparedMessage message, Dictionary<string, PreparedMessage> batchEntries)
+        public static BatchEntry<TMessage> ToBatchRequest<TMessage>(this TMessage message, Dictionary<string, TMessage> batchEntries)
+            where TMessage : PreparedMessage
         {
             var preparedMessagesBydId = batchEntries.ToDictionary(x => x.Key, x => x.Value);
 
@@ -38,7 +39,7 @@ namespace NServiceBus.Transports.SQS
                 batchRequestEntries.Add(kvp.Value.ToBatchEntry(kvp.Key));
             }
 
-            return new BatchEntry
+            return new BatchEntry<TMessage>
             {
                 BatchRequest = new SendMessageBatchRequest(message.QueueUrl, batchRequestEntries),
                 PreparedMessagesBydId = preparedMessagesBydId

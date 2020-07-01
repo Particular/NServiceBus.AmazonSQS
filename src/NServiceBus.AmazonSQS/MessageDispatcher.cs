@@ -94,7 +94,7 @@
             await Task.WhenAll(batchTasks).ConfigureAwait(false);
         }
 
-        async Task SendBatch(BatchEntry batch, int batchNumber, int totalBatches)
+        async Task SendBatch(BatchEntry<PreparedMessage> batch, int batchNumber, int totalBatches)
         {
             try
             {
@@ -239,8 +239,8 @@
                     preparedMessage.DelaySeconds = Convert.ToInt32(delaySeconds);
                 }
             }
-            
-            // because message attributes are part of the content size restriction we want to prevent message size from changing thus we add it 
+
+            // because message attributes are part of the content size restriction we want to prevent message size from changing thus we add it
             // for native delayed deliver as well even though the information is slightly redundant (MessageId is assigned to MessageDeduplicationId for example)
             preparedMessage.MessageAttributes[Headers.MessageId] = new MessageAttributeValue
             {
@@ -271,7 +271,7 @@
                     Key = key,
                 };
                 ApplyServerSideEncryptionConfiguration(putObjectRequest);
-                
+
                 await s3Client.PutObjectAsync(putObjectRequest).ConfigureAwait(false);
             }
 
