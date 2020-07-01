@@ -67,7 +67,7 @@
 
         MessagePump CreateMessagePump()
         {
-            return new MessagePump(configuration, s3Client, sqsClient, queueUrlCache);
+            return new MessagePump(configuration, new InputQueuePump(configuration, s3Client, sqsClient, queueUrlCache), new DelayedMessagesPump(configuration, sqsClient, queueUrlCache));
         }
 
         QueueCreator CreateQueueCreator()
