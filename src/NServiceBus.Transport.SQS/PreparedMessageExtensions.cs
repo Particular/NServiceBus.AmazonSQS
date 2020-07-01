@@ -18,7 +18,7 @@ namespace NServiceBus.Transport.SQS
                 DelaySeconds = message.DelaySeconds
             };
         }
-        
+
         public static PublishRequest ToPublishRequest(this SnsPreparedMessage message)
         {
             return new PublishRequest(message.Destination, message.Body)
@@ -43,7 +43,8 @@ namespace NServiceBus.Transport.SQS
             };
         }
 
-        public static BatchEntry ToBatchRequest(this SqsPreparedMessage message, Dictionary<string, SqsPreparedMessage> batchEntries)
+        public static BatchEntry<TMessage> ToBatchRequest<TMessage>(this TMessage message, Dictionary<string, TMessage> batchEntries)
+            where TMessage : SqsPreparedMessage
         {
             var preparedMessagesBydId = batchEntries.ToDictionary(x => x.Key, x => x.Value);
 
@@ -53,7 +54,7 @@ namespace NServiceBus.Transport.SQS
                 batchRequestEntries.Add(kvp.Value.ToBatchEntry(kvp.Key));
             }
 
-            return new BatchEntry
+            return new BatchEntry<TMessage>
             {
                 BatchRequest = new SendMessageBatchRequest(message.QueueUrl, batchRequestEntries),
                 PreparedMessagesBydId = preparedMessagesBydId

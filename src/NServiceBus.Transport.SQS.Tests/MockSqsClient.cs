@@ -10,7 +10,9 @@
 
     class MockSqsClient : IAmazonSQS
     {
+        public IClientConfig Config { get; } = new AmazonSQSConfig();
         public List<string> QueueUrlRequestsSent { get; } = new List<string>();
+
 
         public Task<GetQueueUrlResponse> GetQueueUrlAsync(string queueName, CancellationToken cancellationToken = new CancellationToken())
         {
@@ -22,14 +24,52 @@
 
         public Func<SendMessageBatchRequest, SendMessageBatchResponse> BatchRequestResponse = req => new SendMessageBatchResponse();
 
+
         public Task<SendMessageBatchResponse> SendMessageBatchAsync(SendMessageBatchRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             BatchRequestsSent.Add(request);
             return Task.FromResult(BatchRequestResponse(request));
         }
 
+        public List<DeleteMessageBatchRequest> DeleteMessageBatchRequestsSent { get; } = new List<DeleteMessageBatchRequest>();
+
+        public Func<DeleteMessageBatchRequest, DeleteMessageBatchResponse> DeleteMessageBatchRequestResponse = req => new DeleteMessageBatchResponse();
+
+        public Task<DeleteMessageBatchResponse> DeleteMessageBatchAsync(DeleteMessageBatchRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            DeleteMessageBatchRequestsSent.Add(request);
+            return Task.FromResult(DeleteMessageBatchRequestResponse(request));
+        }
+
+        public List<ChangeMessageVisibilityBatchRequest> ChangeMessageVisibilityBatchRequestsSent { get; } = new List<ChangeMessageVisibilityBatchRequest>();
+
+        public Func<ChangeMessageVisibilityBatchRequest, ChangeMessageVisibilityBatchResponse> ChangeMessageVisibilityBatchRequestResponse = req => new ChangeMessageVisibilityBatchResponse();
+
+        public Task<ChangeMessageVisibilityBatchResponse> ChangeMessageVisibilityBatchAsync(ChangeMessageVisibilityBatchRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            ChangeMessageVisibilityBatchRequestsSent.Add(request);
+            return Task.FromResult(ChangeMessageVisibilityBatchRequestResponse(request));
+        }
+
+        public List<(string queueUrl, string receiptHandle)> DeleteMessageRequestsSent { get; } = new List<(string queueUrl, string receiptHandle)>();
+
+        public Func<(string queueUrl, string receiptHandle), DeleteMessageResponse> DeleteMessageRequestResponse = req => new DeleteMessageResponse();
+
+        public Task<DeleteMessageResponse> DeleteMessageAsync(string queueUrl, string receiptHandle, CancellationToken cancellationToken = new CancellationToken())
+        {
+            DeleteMessageRequestsSent.Add((queueUrl, receiptHandle));
+            return Task.FromResult(DeleteMessageRequestResponse((queueUrl, receiptHandle)));
+        }
+
+        public Task<DeleteMessageResponse> DeleteMessageAsync(DeleteMessageRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            DeleteMessageRequestsSent.Add((request.QueueUrl, request.ReceiptHandle));
+            return Task.FromResult(DeleteMessageRequestResponse((request.QueueUrl, request.ReceiptHandle)));
+        }
+
         public List<SendMessageRequest> RequestsSent { get; } = new List<SendMessageRequest>();
         public Func<SendMessageRequest, SendMessageResponse> RequestResponse = req => new SendMessageResponse();
+
 
         public Task<SendMessageResponse> SendMessageAsync(SendMessageRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
@@ -38,6 +78,7 @@
         }
 
         public List<string> GetAttributeRequestsSent { get; } = new List<string>();
+
         public Func<string, Dictionary<string, string>> GetAttributeRequestsResponse = queueUrl => new Dictionary<string, string>
         {
             { "QueueArn", "arn:fakeQueue" }
@@ -49,8 +90,26 @@
             return Task.FromResult(GetAttributeRequestsResponse(queueUrl));
         }
 
+        public List<(string queueUrl, List<string> attributeNames)> GetAttributeNamesRequestsSent { get; } = new List<(string queueUrl, List<string> attributeNames)>();
+
+        public Func<string, List<string>, GetQueueAttributesResponse> GetAttributeNamesRequestsResponse = (url, attributeNames) => new GetQueueAttributesResponse
+        {
+            Attributes = new Dictionary<string, string>
+            {
+                { "QueueArn", "arn:fakeQueue" }
+            }
+        };
+
+        public Task<GetQueueAttributesResponse> GetQueueAttributesAsync(string queueUrl, List<string> attributeNames, CancellationToken cancellationToken = new CancellationToken())
+        {
+            GetAttributeNamesRequestsSent.Add((queueUrl, attributeNames));
+            return Task.FromResult(GetAttributeNamesRequestsResponse(queueUrl, attributeNames));
+        }
+
         public List<(string queueUrl, Dictionary<string, string> attributes)> SetAttributesRequestsSent { get; } = new List<(string queueUrl, Dictionary<string, string> attributes)>();
+
         public Dictionary<string, Queue<Dictionary<string, string>>> SetAttributesRequestsSentByUrl { get; } = new Dictionary<string, Queue<Dictionary<string, string>>>();
+
 
         public Task SetAttributesAsync(string queueUrl, Dictionary<string, string> attributes)
         {
@@ -96,6 +155,19 @@
             };
         }
 
+        public List<ReceiveMessageRequest> ReceiveMessagesRequestsSent { get; } = new List<ReceiveMessageRequest>();
+        public Func<ReceiveMessageRequest, CancellationToken, ReceiveMessageResponse> ReceiveMessagesRequestResponse = (req, token) =>
+        {
+            token.ThrowIfCancellationRequested();
+            return new ReceiveMessageResponse();
+        };
+
+        public Task<ReceiveMessageResponse> ReceiveMessageAsync(ReceiveMessageRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            ReceiveMessagesRequestsSent.Add(request);
+            return Task.FromResult(ReceiveMessagesRequestResponse(request, cancellationToken));
+        }
+
         #region NotImplemented
 
         public void Dispose()
@@ -112,8 +184,6 @@
         {
             throw new NotImplementedException();
         }
-
-        public IClientConfig Config { get; }
 
         public string AuthorizeS3ToSendMessage(string queueUrl, string bucket)
         {
@@ -180,11 +250,6 @@
             throw new NotImplementedException();
         }
 
-        public Task<ChangeMessageVisibilityBatchResponse> ChangeMessageVisibilityBatchAsync(ChangeMessageVisibilityBatchRequest request, CancellationToken cancellationToken = new CancellationToken())
-        {
-            throw new NotImplementedException();
-        }
-
         public CreateQueueResponse CreateQueue(string queueName)
         {
             throw new NotImplementedException();
@@ -215,16 +280,6 @@
             throw new NotImplementedException();
         }
 
-        public Task<DeleteMessageResponse> DeleteMessageAsync(string queueUrl, string receiptHandle, CancellationToken cancellationToken = new CancellationToken())
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<DeleteMessageResponse> DeleteMessageAsync(DeleteMessageRequest request, CancellationToken cancellationToken = new CancellationToken())
-        {
-            throw new NotImplementedException();
-        }
-
         public DeleteMessageBatchResponse DeleteMessageBatch(string queueUrl, List<DeleteMessageBatchRequestEntry> entries)
         {
             throw new NotImplementedException();
@@ -236,11 +291,6 @@
         }
 
         public Task<DeleteMessageBatchResponse> DeleteMessageBatchAsync(string queueUrl, List<DeleteMessageBatchRequestEntry> entries, CancellationToken cancellationToken = new CancellationToken())
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<DeleteMessageBatchResponse> DeleteMessageBatchAsync(DeleteMessageBatchRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
         }
@@ -271,11 +321,6 @@
         }
 
         public GetQueueAttributesResponse GetQueueAttributes(GetQueueAttributesRequest request)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<GetQueueAttributesResponse> GetQueueAttributesAsync(string queueUrl, List<string> attributeNames, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
         }
@@ -375,10 +420,7 @@
             throw new NotImplementedException();
         }
 
-        public Task<ReceiveMessageResponse> ReceiveMessageAsync(ReceiveMessageRequest request, CancellationToken cancellationToken = new CancellationToken())
-        {
-            throw new NotImplementedException();
-        }
+
 
         public RemovePermissionResponse RemovePermission(string queueUrl, string label)
         {
