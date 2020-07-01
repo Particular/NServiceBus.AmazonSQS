@@ -113,8 +113,12 @@ namespace NServiceBus.Transport.SQS
         internal async Task ConsumeDelayedMessages(ReceiveMessageRequest request, CancellationToken token)
         {
             var receivedMessages = await sqsClient.ReceiveMessageAsync(request, token).ConfigureAwait(false);
-            var clockCorrection = CorrectClockSkew.GetClockCorrectionForEndpoint(awsEndpointUrl);
+            if (receivedMessages.Messages.Count == 0)
+            {
+                return;
+            }
 
+            var clockCorrection = CorrectClockSkew.GetClockCorrectionForEndpoint(awsEndpointUrl);
             var preparedMessages = PrepareMessages(token, receivedMessages, clockCorrection);
 
             token.ThrowIfCancellationRequested();

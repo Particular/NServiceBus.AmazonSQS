@@ -142,6 +142,19 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
+        public async Task Consume_no_messages_received_doesnt_throw()
+        {
+            await SetupInitializedPump();
+
+            mockSqsClient.ReceiveMessagesRequestResponse = (req, token) => new ReceiveMessageResponse
+            {
+                Messages = new List<Message>()
+            };
+
+            Assert.DoesNotThrowAsync(async () => await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token));
+        }
+
+        [Test]
         public async Task Consume_sends_due_messages_in_batches_to_the_input_queue()
         {
             await SetupInitializedPump();
