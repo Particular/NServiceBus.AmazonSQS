@@ -6,7 +6,7 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.3.111.21" />
+    <PackageReference Include="AWSSDK.S3" Version="3.3.111.27" />
     <PackageReference Include="AWSSDK.SQS" Version="3.3.103.11" />
     <PackageReference Include="NServiceBus" Version="7.3.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.6.1" />
