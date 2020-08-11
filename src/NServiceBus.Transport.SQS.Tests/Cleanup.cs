@@ -135,10 +135,10 @@ namespace NServiceBus.Transport.SQS.Tests
 
             try
             {
-                ListSubscriptionsResponse subscriptions;
+                ListSubscriptionsResponse subscriptions = null;
                 do
                 {
-                    subscriptions = await snsClient.ListSubscriptionsAsync();
+                    subscriptions = await snsClient.ListSubscriptionsAsync(subscriptions?.NextToken);
 
                     // if everything returned here has already been deleted it is probably a good time to stop trying due to the eventual consistency
                     if (subscriptions.Subscriptions.All(subscription => deletedSubscriptionArns.Contains(subscription.SubscriptionArn)))
