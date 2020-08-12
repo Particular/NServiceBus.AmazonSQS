@@ -23,4 +23,8 @@
       <Link>Cleanup.cs</Link>
     </Compile>
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="\**\NSB.AcceptanceTests\Routing\When_publishing_an_event_implementing_two_unrelated_interfaces.cs" />
+  </ItemGroup>
 </Project>
