@@ -43,11 +43,16 @@
 
             public class MyMessageHandler : IHandleMessages<MyMessage>
             {
-                public Context Context { get; set; }
+                Context testContext;
+
+                public MyMessageHandler(Context testContext)
+                {
+                    this.testContext = testContext;
+                }
 
                 public Task Handle(MyMessage messageWithLargePayload, IMessageHandlerContext context)
                 {
-                    Context.ReceivedPayload = messageWithLargePayload.Payload;
+                    testContext.ReceivedPayload = messageWithLargePayload.Payload;
 
                     return Task.FromResult(0);
                 }
