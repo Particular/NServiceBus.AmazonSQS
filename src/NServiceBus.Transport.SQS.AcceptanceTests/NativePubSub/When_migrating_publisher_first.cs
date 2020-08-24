@@ -60,7 +60,9 @@
                     b.CustomConfig(c =>
                     {
                         c.UsePersistence<TestingInMemoryPersistence, StorageType.Subscriptions>().UseStorage(subscriptionStorage);
+#pragma warning disable 618
                         c.ConfigureSqsTransport().EnableMessageDrivenPubSubCompatibilityMode();
+#pragma warning restore 618
                     });
                     b.When(c => c.EndpointsStarted, (session, ctx) => session.Publish(new MyEvent()));
                 })
@@ -96,7 +98,9 @@
                     b.CustomConfig(c =>
                     {
                         c.UsePersistence<TestingInMemoryPersistence, StorageType.Subscriptions>().UseStorage(subscriptionStorage);
+#pragma warning disable 618
                         c.ConfigureSqsTransport().EnableMessageDrivenPubSubCompatibilityMode();
+#pragma warning restore 618
                     });
                     b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, (session, ctx) => session.Publish(new MyEvent()));
                 })
@@ -105,7 +109,9 @@
                 {
                     b.CustomConfig(c =>
                     {
+#pragma warning disable 618
                         var compatModeSettings = c.ConfigureSqsTransport().EnableMessageDrivenPubSubCompatibilityMode();
+#pragma warning restore 618
                         // not needed but left here to enforce duplicates
                         compatModeSettings.RegisterPublisher(typeof(MyEvent), PublisherEndpoint);
                     });

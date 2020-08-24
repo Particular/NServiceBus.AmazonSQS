@@ -29,6 +29,9 @@ namespace NServiceBus
     {
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> ClientFactory(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Func<Amazon.SQS.IAmazonSQS> factory) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> ClientFactory(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Func<Amazon.SimpleNotificationService.IAmazonSimpleNotificationService> factory) { }
+        [System.ObsoleteAttribute("The compatibility mode will be deprecated in the next major version of the transp" +
+            "ort. Switch to native publish/subscribe mode using SNS instead. Will be treated " +
+            "as an error from version 6.0.0. Will be removed in version 7.0.0.", false)]
         public static NServiceBus.SubscriptionMigrationModeSettings EnableMessageDrivenPubSubCompatibilityMode(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> EnableV1CompatibilityMode(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
         public static void MapEvent<TSubscribedEvent>(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string customTopicName) { }

@@ -113,7 +113,9 @@
         {
             var extensions = new TransportExtensions<SqsTransport>(new SettingsHolder());
 
+            #pragma warning disable 618
             var result = extensions.EnableMessageDrivenPubSubCompatibilityMode();
+            #pragma warning restore 618
 
             Assert.IsTrue( result.GetSettings().Get<bool>("NServiceBus.Subscriptions.EnableMigrationMode"));
         }
