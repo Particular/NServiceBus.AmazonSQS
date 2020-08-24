@@ -55,7 +55,9 @@
             {
                 EndpointSetup<DefaultServer>(c =>
                 {
+#pragma warning disable 618
                     var compatMode = c.ConfigureSqsTransport().EnableMessageDrivenPubSubCompatibilityMode();
+#pragma warning restore 618
                     compatMode.RegisterPublisher(typeof(MyEvent), PublisherEndpoint);
                     c.DisableFeature<AutoSubscribe>();
                 });

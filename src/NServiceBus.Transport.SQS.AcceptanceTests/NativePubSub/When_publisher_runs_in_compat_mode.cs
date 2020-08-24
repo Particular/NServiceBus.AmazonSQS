@@ -39,7 +39,9 @@
             {
                 EndpointSetup<DefaultPublisher>(c =>
                 {
+#pragma warning disable 618
                     c.ConfigureSqsTransport().EnableMessageDrivenPubSubCompatibilityMode();
+#pragma warning restore 618
                     c.OnEndpointSubscribed<Context>((s, context) =>
                     {
                         if (s.SubscriberEndpoint.Contains(Conventions.EndpointNamingConvention(typeof(Subscriber))))
