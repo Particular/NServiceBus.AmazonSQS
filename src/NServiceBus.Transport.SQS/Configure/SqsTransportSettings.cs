@@ -18,14 +18,12 @@
         /// </summary>
         /// <param name="transportExtensions">The transport to enable pub-sub compatibility on</param>
         [ObsoleteEx(
-            Message = @"The compatibility mode will be deprecated in the next major version of the transport. Switch to native publish/subscribe mode using SNS instead.",
+            Message = @"The compatibility mode is deprecated. Switch to native publish/subscribe mode using SNS instead.",
             TreatAsErrorFromVersion = "6.0",
             RemoveInVersion = "7.0")]
         public static SubscriptionMigrationModeSettings EnableMessageDrivenPubSubCompatibilityMode(this TransportExtensions<SqsTransport> transportExtensions)
         {
-            var settings = transportExtensions.GetSettings();
-            settings.Set("NServiceBus.Subscriptions.EnableMigrationMode", true);
-            return new SubscriptionMigrationModeSettings(settings);
+            throw new NotImplementedException();
         }
 
         /// <summary>

@@ -36,11 +36,16 @@
 
             public class Handler : IHandleMessages<Reply>
             {
-                public Context Context { get; set; }
-                
+                Context testContext;
+
+                public Handler(Context testContext)
+                {
+                    this.testContext = testContext;
+                }
+
                 public Task Handle(Reply message, IMessageHandlerContext context)
                 {
-                    Context.Received = true;
+                    testContext.Received = true;
 
                     return Task.FromResult(0);
                 }
@@ -67,7 +72,7 @@
         public class Message : ICommand
         {
         }
-        
+
         public class Reply : IMessage
         {
         }

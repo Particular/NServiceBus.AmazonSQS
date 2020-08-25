@@ -96,13 +96,18 @@
 
             public class MyMessageHandler : IHandleMessages<DelayedMessage>
             {
-                public Context Context { get; set; }
+                Context testContext;
+
+                public MyMessageHandler(Context testContext)
+                {
+                    this.testContext = testContext;
+                }
 
                 public Task Handle(DelayedMessage message, IMessageHandlerContext context)
                 {
-                    Context.Received = true;
-                    Context.Payload = message.Payload;
-                    Context.ReceivedAt = DateTime.UtcNow;
+                    testContext.Received = true;
+                    testContext.Payload = message.Payload;
+                    testContext.ReceivedAt = DateTime.UtcNow;
 
                     return Task.FromResult(0);
                 }

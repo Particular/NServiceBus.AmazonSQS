@@ -24,7 +24,7 @@ namespace NServiceBus.AcceptanceTests.Batching
             {
                 listOfMessagesForBatching.Add(Guid.NewGuid().ToString());
             }
-            
+
             var listOfMessagesForBatchingWithCustomIds = new List<string>();
             for (var i = 0; i < 50; i++)
             {
@@ -69,7 +69,7 @@ namespace NServiceBus.AcceptanceTests.Batching
             {
                 StringAssert.Contains(messageIdForBatching, logoutput, $"{messageIdForBatching} not found in any of the batches. Output: {logoutput}");
             }
-            
+
             foreach (var messageWithCustomMessageId in listOfMessagesForBatchingWithCustomIds)
             {
                 StringAssert.Contains(messageWithCustomMessageId, logoutput, $"{messageWithCustomMessageId} not found in any of the batches. Output: {logoutput}");
@@ -118,19 +118,16 @@ namespace NServiceBus.AcceptanceTests.Batching
 
             public class BatchHandler : IHandleMessages<SendMessagesInBatches>
             {
-                public Context Context { get; set; }
+                Context testContext;
+
+                public BatchHandler(Context testContext)
+                {
+                    this.testContext = testContext;
+                }
 
                 public async Task Handle(SendMessagesInBatches message, IMessageHandlerContext context)
                 {
-                    foreach (var messageId in Context.MessageIdsForBatching)
-                    {
-                        var options = new SendOptions();
-                        options.SetMessageId(messageId);
-
-                        await context.Send(new MyMessage(), options);
-                    }
-                    
-                    foreach (var messageId in Context.CustomMessageIdsForBatching)
+                    foreach (var messageId in testContext.MessageIdsForBatching)
                     {
                         var options = new SendOptions();
                         options.SetMessageId(messageId);
@@ -138,7 +135,15 @@ namespace NServiceBus.AcceptanceTests.Batching
                         await context.Send(new MyMessage(), options);
                     }
 
-                    foreach (var messageId in Context.MessageIdsForImmediateDispatch)
+                    foreach (var messageId in testContext.CustomMessageIdsForBatching)
+                    {
+                        var options = new SendOptions();
+                        options.SetMessageId(messageId);
+
+                        await context.Send(new MyMessage(), options);
+                    }
+
+                    foreach (var messageId in testContext.MessageIdsForImmediateDispatch)
                     {
                         var options = new SendOptions();
                         options.SetMessageId(messageId);
@@ -159,11 +164,16 @@ namespace NServiceBus.AcceptanceTests.Batching
 
             public class MyMessageHandler : IHandleMessages<MyMessage>
             {
-                public Context Context { get; set; }
+                Context testContext;
+
+                public MyMessageHandler(Context testContext)
+                {
+                    this.testContext = testContext;
+                }
 
                 public Task Handle(MyMessage messageWithLargePayload, IMessageHandlerContext context)
                 {
-                    Context.MessageIdsReceived.Add(context.MessageId);
+                    testContext.MessageIdsReceived.Add(context.MessageId);
                     return Task.FromResult(0);
                 }
             }

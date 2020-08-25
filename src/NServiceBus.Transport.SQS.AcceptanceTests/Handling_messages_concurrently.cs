@@ -57,18 +57,23 @@
 
             public class MyMessageHandler : IHandleMessages<MyMessage>
             {
-                public Context Context { get; set; }
+                Context testContext;
+
+                public MyMessageHandler(Context testContext)
+                {
+                    this.testContext = testContext;
+                }
 
                 public async Task Handle(MyMessage message, IMessageHandlerContext context)
                 {
-                    Interlocked.Increment(ref Context.CurrentConcurrency);
+                    Interlocked.Increment(ref testContext.CurrentConcurrency);
 
                     // simulate some work
                     await Task.Delay(10);
-                    Interlocked.Increment(ref Context.ReceiveCount);
+                    Interlocked.Increment(ref testContext.ReceiveCount);
 
-                    Context.MaxConcurrency = Math.Max(Context.MaxConcurrency, Context.CurrentConcurrency);
-                    Interlocked.Decrement(ref Context.CurrentConcurrency);
+                    testContext.MaxConcurrency = Math.Max(testContext.MaxConcurrency, testContext.CurrentConcurrency);
+                    Interlocked.Decrement(ref testContext.CurrentConcurrency);
                 }
             }
         }
