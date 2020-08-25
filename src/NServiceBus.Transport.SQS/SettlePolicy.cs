@@ -1,5 +1,7 @@
 namespace NServiceBus.Transport.SQS
 {
+    using System;
+    using System.Reflection;
     using System.Threading.Tasks;
     using Configure;
     using Features;
@@ -13,10 +15,18 @@ namespace NServiceBus.Transport.SQS
 
         protected override void Setup(FeatureConfigurationContext context)
         {
-            var transportInfrastructure = (SqsTransportInfrastructure)context.Settings.Get<TransportInfrastructure>();
+            var transportInfrastructure = context.Settings.Get<TransportInfrastructure>();
 
             // with Core 7.2.4 the startup task will run after the auto subscribe startup task
-            context.RegisterStartupTask(b => new SettlePolicyTask(transportInfrastructure.SubscriptionManager));
+            context.RegisterStartupTask(b => new SettlePolicyTask(CreateSubscriptionManager(transportInfrastructure)));
+        }
+
+        static IManageSubscriptions CreateSubscriptionManager(TransportInfrastructure transportInfra)
+        {
+            var subscriptionInfra = transportInfra.ConfigureSubscriptionInfrastructure();
+            var factoryProperty = typeof(TransportSubscriptionInfrastructure).GetProperty("SubscriptionManagerFactory", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var factoryInstance = (Func<IManageSubscriptions>)factoryProperty.GetValue(subscriptionInfra, new object[0]);
+            return factoryInstance();
         }
 
         class SettlePolicyTask : FeatureStartupTask
