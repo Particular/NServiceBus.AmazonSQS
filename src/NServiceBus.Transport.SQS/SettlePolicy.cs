@@ -3,7 +3,6 @@ namespace NServiceBus.Transport.SQS
     using System;
     using System.Reflection;
     using System.Threading.Tasks;
-    using Configure;
     using Features;
 
     class SettlePolicy : Feature
