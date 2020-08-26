@@ -10,6 +10,7 @@ namespace NServiceBus.Transport.SQS
         public SettlePolicy()
         {
             DependsOnOptionally<AutoSubscribe>(); // will enforce this feature to run after AutoSubscribe if present
+            Prerequisite(context => !context.Settings.GetOrDefault<bool>("Endpoint.SendOnly"), "Subscribing to events is only allowed in non-send-only endpoints.");
         }
 
         protected override void Setup(FeatureConfigurationContext context)

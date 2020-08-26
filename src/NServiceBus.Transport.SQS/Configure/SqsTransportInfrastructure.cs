@@ -126,12 +126,6 @@
 
         public override TransportSubscriptionInfrastructure ConfigureSubscriptionInfrastructure()
         {
-            //NServiceBus core only calls this method if endpoint is not send-only. The null path is only used by SettlePolicy class
-            //that retrieves the subscription manager in order to call Settle on it
-            if (settings.GetOrDefault<bool>("Endpoint.SendOnly"))
-            {
-                return new TransportSubscriptionInfrastructure(() => null);
-            }
             if (SubscriptionManager == null)
             {
                 SubscriptionManager = new SubscriptionManager(sqsClient,
