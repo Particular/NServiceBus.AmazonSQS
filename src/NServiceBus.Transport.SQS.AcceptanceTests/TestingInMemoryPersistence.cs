@@ -7,6 +7,7 @@
     using Configuration.AdvancedExtensibility;
     using Extensibility;
     using Features;
+    using Microsoft.Extensions.DependencyInjection;
     using NServiceBus;
     using Persistence;
     using Unicast.Subscriptions;
@@ -40,7 +41,7 @@
         protected override void Setup(FeatureConfigurationContext context)
         {
             var storageInstance = context.Settings.GetOrDefault<TestingInMemorySubscriptionStorage>("InMemoryPersistence.StorageInstance");
-            context.Container.RegisterSingleton<ISubscriptionStorage>(storageInstance ?? new TestingInMemorySubscriptionStorage());
+            context.Services.AddSingleton<ISubscriptionStorage>(storageInstance ?? new TestingInMemorySubscriptionStorage());
         }
     }
 
