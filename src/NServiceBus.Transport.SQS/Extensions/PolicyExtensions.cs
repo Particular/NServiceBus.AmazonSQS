@@ -13,7 +13,6 @@ namespace NServiceBus.Transport.SQS.Extensions
             {
                 // See if the statement contains the topic as a resource
                 var containsResource = false;
-                // ReSharper disable once LoopCanBeConvertedToQuery
                 foreach (var resource in statement.Resources)
                 {
                     if (resource.Id.Equals(addStatement.Resources[0].Id))
@@ -29,7 +28,6 @@ namespace NServiceBus.Transport.SQS.Extensions
                     continue;
                 }
 
-                // ReSharper disable once LoopCanBeConvertedToQuery
                 foreach (var condition in statement.Conditions)
                 {
                     if ((string.Equals(condition.Type, ConditionFactory.StringComparisonType.StringLike.ToString(), StringComparison.OrdinalIgnoreCase) ||

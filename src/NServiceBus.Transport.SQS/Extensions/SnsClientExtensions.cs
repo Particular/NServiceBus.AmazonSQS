@@ -37,7 +37,6 @@ namespace NServiceBus.Transport.SQS.Extensions
                 upToAHundredSubscriptions = await snsClient.ListSubscriptionsByTopicAsync(topic.TopicArn, upToAHundredSubscriptions?.NextToken)
                     .ConfigureAwait(false);
 
-                // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
                 foreach (var upToAHundredSubscription in upToAHundredSubscriptions.Subscriptions)
                 {
                     if (upToAHundredSubscription.Endpoint.EndsWith($":{physicalQueueName}", StringComparison.Ordinal))
@@ -45,7 +44,8 @@ namespace NServiceBus.Transport.SQS.Extensions
                         return upToAHundredSubscription.SubscriptionArn;
                     }
                 }
-            } while (upToAHundredSubscriptions.NextToken != null && upToAHundredSubscriptions.Subscriptions.Count > 0);
+            }
+            while (upToAHundredSubscriptions.NextToken != null && upToAHundredSubscriptions.Subscriptions.Count > 0);
 
             return null;
         }

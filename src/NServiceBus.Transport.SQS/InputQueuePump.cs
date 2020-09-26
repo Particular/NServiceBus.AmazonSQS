@@ -116,7 +116,6 @@ namespace NServiceBus.Transport.SQS
                 {
                     var receivedMessages = await sqsClient.ReceiveMessageAsync(receiveMessagesRequest, token).ConfigureAwait(false);
 
-                    // ReSharper disable once LoopCanBeConvertedToQuery
                     foreach (var receivedMessage in receivedMessages.Messages)
                     {
                         try

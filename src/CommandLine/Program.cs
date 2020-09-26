@@ -8,12 +8,10 @@
     // sqs-transport endpoint add name large-message-support bucket-name [--other-options]
     // sqs-transport endpoint add name delay-delivery-support [--other-options]
     // sqs-transport endpoint subscribe name event-type [--other-options]
-
     // sqs-transport endpoint unsubscribe name event-type [--other-options]
     // sqs-transport endpoint remove large-message-support bucket-name [--other-options]
     // sqs-transport endpoint remove remove delay-delivery-support [--other-options]
     // sqs-transport endpoint delete name [--other-options]
-
     class Program
     {
         static int Main(string[] args)

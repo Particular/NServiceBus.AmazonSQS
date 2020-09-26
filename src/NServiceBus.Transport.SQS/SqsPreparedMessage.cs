@@ -36,7 +36,6 @@
                 size += attributeValue.DataType?.Length ?? 0;
                 size += attributeValue.StringValue?.Length ?? 0;
                 var stringValuesSum = 0;
-                // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
                 foreach (var x in attributeValue.StringListValues)
                 {
                     stringValuesSum += x?.Length ?? 0;
@@ -54,7 +53,6 @@
                 }
 
                 var binaryValuesSum = 0L;
-                // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
                 foreach (var x in attributeValue.BinaryListValues)
                 {
                     try

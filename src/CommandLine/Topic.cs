@@ -68,7 +68,8 @@
                         return upToAHundredSubscription.SubscriptionArn;
                     }
                 }
-            } while (upToAHundredSubscriptions.NextToken != null && upToAHundredSubscriptions.Subscriptions.Count > 0);
+            }
+            while (upToAHundredSubscriptions.NextToken != null && upToAHundredSubscriptions.Subscriptions.Count > 0);
 
             return null;
         }
