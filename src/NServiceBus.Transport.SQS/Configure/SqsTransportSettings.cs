@@ -61,7 +61,7 @@
         /// <remarks>
         /// If not specified, the endpoint uses a max TTL of 4 days.
         /// </remarks>
-        /// <param name="transportExtensions"></param>
+        /// <param name="transportExtensions">SQS transport extensions.</param>
         /// <param name="maxTimeToLive">The max time to live. Must be a value between 60 seconds and not greater than 14 days.</param>
         public static TransportExtensions<SqsTransport> MaxTimeToLive(this TransportExtensions<SqsTransport> transportExtensions, TimeSpan maxTimeToLive)
         {
@@ -131,7 +131,6 @@
         /// </summary>
         /// <param name="transportExtensions">The transport extensions.</param>
         /// <param name="topicNameGenerator">A Func that receives the event type and the topic name prefix and returns a topic name.</param>
-        /// <returns></returns>
         public static TransportExtensions<SqsTransport> TopicNameGenerator(this TransportExtensions<SqsTransport> transportExtensions, Func<Type, string, string> topicNameGenerator)
         {
             Guard.AgainstNull(nameof(transportExtensions), transportExtensions);
@@ -154,8 +153,7 @@
         /// <summary>
         /// Configures the SQS transport to be compatible with 1.x versions of the transport.
         /// </summary>
-        /// <param name="transportExtensions"></param>
-        /// <returns></returns>
+        /// <param name="transportExtensions">SQS transport extensions.</param>
         public static TransportExtensions<SqsTransport> EnableV1CompatibilityMode(this TransportExtensions<SqsTransport> transportExtensions)
         {
             transportExtensions.GetSettings().Set(SettingsKeys.V1CompatibilityMode, true);
@@ -169,7 +167,7 @@
         /// </summary>
         public static void MapEvent<TSubscribedEvent>(this TransportExtensions<SqsTransport> transportExtensions, string customTopicName)
         {
-            MapEvent(transportExtensions, typeof(TSubscribedEvent), new []{ customTopicName});
+            MapEvent(transportExtensions, typeof(TSubscribedEvent), new[] { customTopicName });
         }
 
         /// <summary>
@@ -178,7 +176,7 @@
         /// </summary>
         public static void MapEvent(this TransportExtensions<SqsTransport> transportExtensions, Type eventType, string customTopicName)
         {
-            MapEvent(transportExtensions, eventType, new []{ customTopicName});
+            MapEvent(transportExtensions, eventType, new[] { customTopicName });
         }
 
         /// <summary>

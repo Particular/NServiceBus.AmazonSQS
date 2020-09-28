@@ -168,7 +168,8 @@ namespace NServiceBus.Transport.SQS.Tests
                         }));
 
                     await Task.WhenAll(deletionTasks).ConfigureAwait(false);
-                } while (subscriptions.NextToken != null && subscriptions.Subscriptions.Count > 0);
+                }
+            while (subscriptions.NextToken != null && subscriptions.Subscriptions.Count > 0);
             }
             catch (Exception)
             {
@@ -213,7 +214,8 @@ namespace NServiceBus.Transport.SQS.Tests
                             }
                         }));
                     await Task.WhenAll(deletionTasks).ConfigureAwait(false);
-                } while (upToHundredTopics.NextToken != null && upToHundredTopics.Topics.Count > 0);
+                }
+            while (upToHundredTopics.NextToken != null && upToHundredTopics.Topics.Count > 0);
             }
             catch (Exception)
             {
@@ -252,7 +254,8 @@ namespace NServiceBus.Transport.SQS.Tests
                             }
                         }));
                     await Task.WhenAll(deletionTasks).ConfigureAwait(false);
-                } while (upToAThousandQueues.QueueUrls.Count > 0);
+                }
+            while (upToAThousandQueues.QueueUrls.Count > 0);
             }
             catch (Exception)
             {

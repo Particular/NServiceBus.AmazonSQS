@@ -65,11 +65,9 @@
             }
         }
 
-        // ReSharper disable once SuggestBaseTypeForParameter
         Task DispatchMulticast(List<MulticastTransportOperation> multicastTransportOperations, HashSet<string> messageIdsOfMulticastEvents)
         {
             List<Task> tasks = null;
-            // ReSharper disable once LoopCanBeConvertedToQuery
             foreach (var operation in multicastTransportOperations)
             {
                 messageIdsOfMulticastEvents.Add(operation.Message.MessageId);
@@ -83,7 +81,6 @@
         Task DispatchIsolated(IEnumerable<UnicastTransportOperation> isolatedTransportOperations, HashSet<string> messageIdsOfMulticastEvents)
         {
             List<Task> tasks = null;
-            // ReSharper disable once LoopCanBeConvertedToQuery
             foreach (var operation in isolatedTransportOperations)
             {
                 tasks = tasks ?? new List<Task>();
@@ -96,7 +93,6 @@
         async Task DispatchBatched(IEnumerable<UnicastTransportOperation> toBeBatchedTransportOperations, HashSet<string> messageIdsOfMulticastEvents)
         {
             var tasks = new List<Task<SqsPreparedMessage>>();
-            // ReSharper disable once LoopCanBeConvertedToQuery
             foreach (var operation in toBeBatchedTransportOperations)
             {
                 tasks.Add(PrepareMessage<SqsPreparedMessage>(operation, messageIdsOfMulticastEvents));
@@ -171,7 +167,6 @@
             }
         }
 
-        // ReSharper disable once SuggestBaseTypeForParameter
         async Task Dispatch(MulticastTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents)
         {
             var message = await PrepareMessage<SnsPreparedMessage>(transportOperation, messageIdsOfMulticastedEvents)
@@ -203,7 +198,6 @@
             }
         }
 
-        // ReSharper disable once SuggestBaseTypeForParameter
         async Task Dispatch(UnicastTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents)
         {
             var message = await PrepareMessage<SqsPreparedMessage>(transportOperation, messageIdsOfMulticastedEvents)

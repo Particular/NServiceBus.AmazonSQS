@@ -456,7 +456,8 @@
 
                 var lifecycleConfig = await s3.GetLifecycleConfigurationAsync(bucketName).ConfigureAwait(false);
                 setLifeCycleConfig = lifecycleConfig.Configuration.Rules.FirstOrDefault(x => x.Id == "NServiceBus.SQS.DeleteMessageBodies");
-            } while (setLifeCycleConfig == null && backOff < maximumBackoffInterval);
+            }
+            while (setLifeCycleConfig == null && backOff < maximumBackoffInterval);
 
             Assert.IsNotNull(setLifeCycleConfig);
             Assert.AreEqual(expiration, setLifeCycleConfig.Expiration.Days);
@@ -480,7 +481,8 @@
                         subscription = upToAHundredSubscription;
                     }
                 }
-            } while (upToAHundredSubscriptions.NextToken != null && upToAHundredSubscriptions.Subscriptions.Count > 0);
+            }
+            while (upToAHundredSubscriptions.NextToken != null && upToAHundredSubscriptions.Subscriptions.Count > 0);
 
             Assert.IsNotNull(subscription);
         }
@@ -502,7 +504,8 @@
                         subscription = upToAHundredSubscription;
                     }
                 }
-            } while (upToAHundredSubscriptions.NextToken != null && upToAHundredSubscriptions.Subscriptions.Count > 0);
+            }
+            while (upToAHundredSubscriptions.NextToken != null && upToAHundredSubscriptions.Subscriptions.Count > 0);
 
             Assert.IsNull(subscription);
         }
@@ -552,7 +555,8 @@
                     // expected
                     queueUrlResponse = null;
                 }
-            } while (queueUrlResponse != null && backOff < maximumBackoffInterval);
+            }
+            while (queueUrlResponse != null && backOff < maximumBackoffInterval);
 
             Assert.IsNull(queueUrlResponse);
         }
@@ -583,7 +587,8 @@
                     // expected
                     queueUrlResponse = null;
                 }
-            } while (queueUrlResponse != null && backOff < maximumBackoffInterval);
+            }
+            while (queueUrlResponse != null && backOff < maximumBackoffInterval);
 
             Assert.IsNull(queueUrlResponse);
         }
@@ -600,7 +605,8 @@
                 executions++;
 
                 bucketExists = await s3.DoesS3BucketExistAsync(bucketName);
-            } while (bucketExists && backOff < maximumBackoffInterval);
+            }
+            while (bucketExists && backOff < maximumBackoffInterval);
 
             Assert.IsFalse(bucketExists);
         }
