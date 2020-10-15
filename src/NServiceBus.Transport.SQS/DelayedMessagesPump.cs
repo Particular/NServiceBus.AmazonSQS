@@ -152,7 +152,7 @@ namespace NServiceBus.Transport.SQS
 
                 if (Convert.ToInt32(receivedMessage.Attributes["ApproximateReceiveCount"]) > 1)
                 {
-                    received = DateTime.UtcNow;
+                    received = DateTimeOffset.UtcNow;
                 }
 
                 var elapsed = received - sent;
