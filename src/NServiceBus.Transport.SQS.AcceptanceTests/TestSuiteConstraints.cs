@@ -21,7 +21,7 @@ namespace NServiceBus.AcceptanceTests
 
         public IConfigureEndpointTestExecution CreatePersistenceConfiguration()
         {
-            return new ConfigureEndpointInMemoryPersistence();
+            return new ConfigureEndpointAcceptanceTestingPersistence();
         }
     }
 }
