@@ -286,7 +286,7 @@ namespace NServiceBus.Transport.SQS
             }
 
             // Message has expired.
-            Logger.Info($"Discarding expired message with Id {messageId}, expired {utcNow - expiresAt} ago at {expiresAt} utc.");
+            Logger.Info($"Discarding expired message with Id {messageId}, expired {now - expiresAt} ago at {expiresAt} utc.");
             return true;
         }
 
