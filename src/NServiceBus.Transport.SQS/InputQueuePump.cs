@@ -279,8 +279,8 @@ namespace NServiceBus.Transport.SQS
 
             var sentAt = receivedMessage.GetAdjustedDateTimeFromServerSetAttributes("SentTimestamp", clockOffset);
             var expiresAt = sentAt + timeToBeReceived;
-            var utcNow = DateTimeOffset.UtcNow;
-            if (expiresAt > utcNow)
+            var now = DateTimeOffset.UtcNow;
+            if (expiresAt > now)
             {
                 return false;
             }
