@@ -231,7 +231,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.Settle();
 
-            var policy = Policy.FromJson(sqsClient.SetAttributesRequestsSent[0].attributes["Policy"]);
+            var policy = SimpleJson.SimpleJson.DeserializeObject<Extensions.Policy>(sqsClient.SetAttributesRequestsSent[0].attributes["Policy"]);
 
             Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
             Assert.AreEqual(2, policy.Statements.Count);
