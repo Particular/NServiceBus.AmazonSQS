@@ -277,16 +277,16 @@ namespace NServiceBus.Transport.SQS
                 return false;
             }
 
-            var sentDateTime = receivedMessage.GetAdjustedDateTimeFromServerSetAttributes("SentTimestamp", clockOffset);
-            var expiresAt = sentDateTime + timeToBeReceived;
-            var utcNow = DateTime.UtcNow;
-            if (expiresAt > utcNow)
+            var sentAt = receivedMessage.GetAdjustedDateTimeFromServerSetAttributes("SentTimestamp", clockOffset);
+            var expiresAt = sentAt + timeToBeReceived;
+            var now = DateTimeOffset.UtcNow;
+            if (expiresAt > now)
             {
                 return false;
             }
 
             // Message has expired.
-            Logger.Info($"Discarding expired message with Id {messageId}, expired {utcNow - expiresAt} ago at {expiresAt} utc.");
+            Logger.Info($"Discarding expired message with Id {messageId}, expired {now - expiresAt} ago at {expiresAt} utc.");
             return true;
         }
 
