@@ -10,9 +10,11 @@
 
     class MockSqsClient : IAmazonSQS
     {
-        public IClientConfig Config { get; } = new AmazonSQSConfig();
+        public IClientConfig Config { get; } = new AmazonSQSConfig
+        {
+            ServiceURL = "http://fakeServiceUrl"
+        };
         public List<string> QueueUrlRequestsSent { get; } = new List<string>();
-
 
         public Task<GetQueueUrlResponse> GetQueueUrlAsync(string queueName, CancellationToken cancellationToken = new CancellationToken())
         {
@@ -511,6 +513,8 @@
         {
             throw new NotImplementedException();
         }
+
+        public ISQSPaginatorFactory Paginators { get; }
 
         #endregion
     }
