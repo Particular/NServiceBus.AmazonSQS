@@ -273,7 +273,7 @@ namespace NServiceBus.Transport.SQS
                         break;
                     }
 
-                    var setAttributes = new Dictionary<string, string> {{"Policy", policy.ToJson()}};
+                    var setAttributes = new Dictionary<string, string> {{"Policy", SimpleJson.SimpleJson.SerializeObject(policy)}};
                     await sqsClient.SetAttributesAsync(queueUrl, setAttributes).ConfigureAwait(false);
                 }
 
@@ -296,9 +296,9 @@ namespace NServiceBus.Transport.SQS
             return Task.Delay(millisecondsDelay, token);
         }
 
-        static Policy ExtractPolicy(Dictionary<string, string> queueAttributes)
+        static Extensions.Policy ExtractPolicy(Dictionary<string, string> queueAttributes)
         {
-            Policy policy;
+            Extensions.Policy policy;
             string policyStr = null;
             if (queueAttributes.ContainsKey("Policy"))
             {
@@ -307,11 +307,11 @@ namespace NServiceBus.Transport.SQS
 
             if (string.IsNullOrEmpty(policyStr))
             {
-                policy = new Policy();
+                policy = new Extensions.Policy();
             }
             else
             {
-                policy = Policy.FromJson(policyStr);
+                policy = SimpleJson.SimpleJson.DeserializeObject<Extensions.Policy>(policyStr);
             }
 
             return policy;
@@ -344,7 +344,7 @@ namespace NServiceBus.Transport.SQS
 
         class PolicyStatement
         {
-            public PolicyStatement(string topicName, string topicArn, Statement statement, string queueArn)
+            public PolicyStatement(string topicName, string topicArn, Extensions.Statement statement, string queueArn)
             {
                 TopicName = topicName;
                 TopicArn = topicArn;
@@ -356,7 +356,7 @@ namespace NServiceBus.Transport.SQS
 
             public string TopicName { get; }
             public string TopicArn { get; }
-            public Statement Statement { get; }
+            public Extensions.Statement Statement { get; }
         }
     }
 }

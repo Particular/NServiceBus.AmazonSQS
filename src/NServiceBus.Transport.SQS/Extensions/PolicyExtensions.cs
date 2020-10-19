@@ -2,8 +2,6 @@ namespace NServiceBus.Transport.SQS.Extensions
 {
     using System;
     using System.Linq;
-    using Amazon.Auth.AccessControlPolicy;
-    using Amazon.Auth.AccessControlPolicy.ActionIdentifiers;
 
     static class PolicyExtensions
     {
@@ -30,11 +28,11 @@ namespace NServiceBus.Transport.SQS.Extensions
 
                 foreach (var condition in statement.Conditions)
                 {
-                    if ((string.Equals(condition.Type, ConditionFactory.StringComparisonType.StringLike.ToString(), StringComparison.OrdinalIgnoreCase) ||
-                         string.Equals(condition.Type, ConditionFactory.StringComparisonType.StringEquals.ToString(), StringComparison.OrdinalIgnoreCase) ||
-                         string.Equals(condition.Type, ConditionFactory.ArnComparisonType.ArnEquals.ToString(), StringComparison.OrdinalIgnoreCase) ||
-                         string.Equals(condition.Type, ConditionFactory.ArnComparisonType.ArnLike.ToString(), StringComparison.OrdinalIgnoreCase)) &&
-                        string.Equals(condition.ConditionKey, ConditionFactory.SOURCE_ARN_CONDITION_KEY, StringComparison.OrdinalIgnoreCase) &&
+                    if ((string.Equals(condition.Type, "StringLike", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(condition.Type, "StringEquals", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(condition.Type, "ArnEquals", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(condition.Type, "ArnLike", StringComparison.OrdinalIgnoreCase)) &&
+                        string.Equals(condition.ConditionKey, "aws:SourceArn", StringComparison.OrdinalIgnoreCase) &&
                         condition.Values.Contains(addStatement.Conditions[0].Values[0]))
                     {
                         return true;
@@ -53,10 +51,10 @@ namespace NServiceBus.Transport.SQS.Extensions
         internal static Statement CreateSQSPermissionStatement(string topicArn, string sqsQueueArn)
         {
             var statement = new Statement(Statement.StatementEffect.Allow);
-            statement.Actions.Add(SQSActionIdentifiers.SendMessage);
-            statement.Resources.Add(new Resource(sqsQueueArn));
-            statement.Conditions.Add(ConditionFactory.NewSourceArnCondition(topicArn));
-            statement.Principals.Add(new Principal("*"));
+            statement.Actions.Add(new ActionIdentifier { ActionName = "sqs:SendMessage" });
+            statement.Resources.Add(new Resource { Id = sqsQueueArn });
+            statement.Conditions.Add(new Condition { Type = "ArnLike", ConditionKey = "aws:SourceArn", Values = new[] { topicArn }});
+            statement.Principals.Add(new Principal{ Provider = "AWS", Id = "*" });
             return statement;
         }
     }
