@@ -320,6 +320,17 @@
             throw new NotImplementedException();
         }
 
+        public DeleteBucketOwnershipControlsResponse DeleteBucketOwnershipControls(DeleteBucketOwnershipControlsRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<DeleteBucketOwnershipControlsResponse> DeleteBucketOwnershipControlsAsync(DeleteBucketOwnershipControlsRequest request,
+            CancellationToken cancellationToken = new CancellationToken())
+        {
+            throw new NotImplementedException();
+        }
+
         public DeleteBucketPolicyResponse DeleteBucketPolicy(string bucketName)
         {
             throw new NotImplementedException();
@@ -626,6 +637,17 @@
         }
 
         public Task<GetBucketNotificationResponse> GetBucketNotificationAsync(GetBucketNotificationRequest request, CancellationToken cancellationToken = new CancellationToken())
+        {
+            throw new NotImplementedException();
+        }
+
+        public GetBucketOwnershipControlsResponse GetBucketOwnershipControls(GetBucketOwnershipControlsRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<GetBucketOwnershipControlsResponse> GetBucketOwnershipControlsAsync(GetBucketOwnershipControlsRequest request,
+            CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
         }
@@ -1200,6 +1222,17 @@
             throw new NotImplementedException();
         }
 
+        public PutBucketOwnershipControlsResponse PutBucketOwnershipControls(PutBucketOwnershipControlsRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<PutBucketOwnershipControlsResponse> PutBucketOwnershipControlsAsync(PutBucketOwnershipControlsRequest request,
+            CancellationToken cancellationToken = new CancellationToken())
+        {
+            throw new NotImplementedException();
+        }
+
         public PutBucketPolicyResponse PutBucketPolicy(string bucketName, string policy)
         {
             throw new NotImplementedException();
@@ -1444,6 +1477,8 @@
         {
             throw new NotImplementedException();
         }
+
+        public IS3PaginatorFactory Paginators { get; }
 
         #endregion
     }

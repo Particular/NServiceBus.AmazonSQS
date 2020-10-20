@@ -5,6 +5,7 @@ namespace NServiceBus.Transport.SQS.Extensions
     using Amazon.Auth.AccessControlPolicy;
     using Amazon.Auth.AccessControlPolicy.ActionIdentifiers;
 
+#pragma warning disable 618
     static class PolicyExtensions
     {
         internal static bool HasSQSPermission(this Policy policy, Statement addStatement)
@@ -62,4 +63,5 @@ namespace NServiceBus.Transport.SQS.Extensions
             return statement;
         }
     }
+#pragma warning restore 618
 }
