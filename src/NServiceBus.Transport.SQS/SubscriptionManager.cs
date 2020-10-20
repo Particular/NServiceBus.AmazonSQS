@@ -296,6 +296,7 @@ namespace NServiceBus.Transport.SQS
             return Task.Delay(millisecondsDelay, token);
         }
 
+#pragma warning disable 618
         static Policy ExtractPolicy(Dictionary<string, string> queueAttributes)
         {
             Policy policy;
@@ -316,6 +317,7 @@ namespace NServiceBus.Transport.SQS
 
             return policy;
         }
+#pragma warning restore 618
 
         void MarkTypeConfigured(Type eventType)
         {
@@ -342,6 +344,7 @@ namespace NServiceBus.Transport.SQS
 
         static ILog Logger = LogManager.GetLogger(typeof(SubscriptionManager));
 
+#pragma warning disable 618
         class PolicyStatement
         {
             public PolicyStatement(string topicName, string topicArn, Statement statement, string queueArn)
@@ -359,4 +362,5 @@ namespace NServiceBus.Transport.SQS
             public Statement Statement { get; }
         }
     }
+#pragma warning restore 618
 }

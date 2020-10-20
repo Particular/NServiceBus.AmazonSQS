@@ -231,7 +231,9 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.Settle();
 
+#pragma warning disable 618
             var policy = Policy.FromJson(sqsClient.SetAttributesRequestsSent[0].attributes["Policy"]);
+#pragma warning restore 618
 
             Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
             Assert.AreEqual(2, policy.Statements.Count);
