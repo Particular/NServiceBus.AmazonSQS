@@ -8,7 +8,7 @@ namespace NServiceBus.AcceptanceTests
 
         public bool SupportsDtc => false;
 
-        public bool SupportsNativeDeferral => true;
+        public bool SupportsDelayedDelivery => true;
 
         public bool SupportsNativePubSub => true;
 
