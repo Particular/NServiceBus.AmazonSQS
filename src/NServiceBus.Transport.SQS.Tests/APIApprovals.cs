@@ -11,7 +11,10 @@
         [Test]
         public void ApproveSqsTransport()
         {
-            var publicApi = ApiGenerator.GeneratePublicApi(typeof(SqsTransport).Assembly, excludeAttributes: new[] { "System.Runtime.Versioning.TargetFrameworkAttribute" });
+            var publicApi = typeof(SqsTransport).Assembly.GeneratePublicApi(new ApiGeneratorOptions
+            {
+                ExcludeAttributes = new[] { "System.Runtime.Versioning.TargetFrameworkAttribute" }
+            });
             Approver.Verify(publicApi);
         }
     }
