@@ -167,6 +167,7 @@ namespace NServiceBus.Transport.SQS
 
                     transportMessage = SimpleJson.DeserializeObject<TransportMessage>(receivedMessage.Body);
                     messageBody = await transportMessage.RetrieveBody(s3Client, configuration, token).ConfigureAwait(false);
+
                 }
                 catch (OperationCanceledException)
                 {
@@ -200,7 +201,7 @@ namespace NServiceBus.Transport.SQS
                 if (!IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, CorrectClockSkew.GetClockCorrectionForEndpoint(awsEndpointUrl)))
                 {
                     // here we also want to use the native message id because the core demands it like that
-                    await ProcessMessageWithInMemoryRetries(transportMessage.Headers, nativeMessageId, messageBody, token).ConfigureAwait(false);
+                    await ProcessMessageWithInMemoryRetries(transportMessage.Headers, nativeMessageId, messageBody, receivedMessage, token).ConfigureAwait(false);
                 }
 
                 // Always delete the message from the queue.
@@ -214,7 +215,7 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        async Task ProcessMessageWithInMemoryRetries(Dictionary<string, string> headers, string nativeMessageId, byte[] body, CancellationToken token)
+        async Task ProcessMessageWithInMemoryRetries(Dictionary<string, string> headers, string nativeMessageId, byte[] body, Message nativeMessage, CancellationToken token)
         {
             var immediateProcessingAttempts = 0;
             var messageProcessedOk = false;
@@ -224,6 +225,10 @@ namespace NServiceBus.Transport.SQS
             {
                 try
                 {
+                    // set the native message on the context for advanced usage scenario's
+                    var context = new ContextBag();
+                    context.Set(nativeMessage);
+
                     using (var messageContextCancellationTokenSource = new CancellationTokenSource())
                     {
                         var messageContext = new MessageContext(
@@ -232,7 +237,7 @@ namespace NServiceBus.Transport.SQS
                             body,
                             transportTransaction,
                             messageContextCancellationTokenSource,
-                            new ContextBag());
+                            context);
 
                         await onMessage(messageContext).ConfigureAwait(false);
 
