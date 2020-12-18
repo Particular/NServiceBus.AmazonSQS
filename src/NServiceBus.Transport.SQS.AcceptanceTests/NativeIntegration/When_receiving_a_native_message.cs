@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.AcceptanceTests
+﻿namespace NServiceBus.AcceptanceTests.NativeIntegration
 {
     using System;
     using System.Collections.Generic;
@@ -18,8 +18,10 @@
 
     public class When_receiving_a_native_message : NServiceBusAcceptanceTest
     {
+        static readonly string MessageToSend = new XDocument(new XElement("Message", new XElement("ThisIsTheMessage", "Hello!"))).ToString();
+
         [Test]
-        public async Task Should_process_it_when_messagetypefullname_attribute_is_available()
+        public async Task Should_be_processed_when_messagetypefullname_present()
         {
             await Scenario.Define<Context>()
                 .WithEndpoint<Receiver>(c => c.When(async context =>
@@ -34,10 +36,21 @@
         }
 
         [Test]
-        public async Task Should_process_it_when_message_payload_on_s3()
+        public async Task Should_fail_when_messagetypefullname_not_present()
         {
             await Scenario.Define<Context>()
-                .WithEndpoint<Receiver>(c => c.When(async context =>
+                .WithEndpoint<Receiver>(c =>
+                    c.When(async _ => { await SendNativeMessage(new Dictionary<string, MessageAttributeValue>()); })
+                        .DoNotFailOnErrorMessages())
+                .Done(c => c.FailedMessages.Any())
+                .Run();
+        }
+
+        [Test]
+        public async Task Should_support_loading_body_from_s3()
+        {
+            await Scenario.Define<Context>()
+                .WithEndpoint<Receiver>(c => c.When(async _ =>
                 {
                     var key = Guid.NewGuid().ToString();
                     await UploadMessageBodyToS3(key);
@@ -48,16 +61,6 @@
                     });
                 }))
                 .Done(c => c.MessageReceived)
-                .Run();
-        }
-
-        [Test]
-        public async Task Should_fail_when_no_attributes_available()
-        {
-            await Scenario.Define<Context>()
-                .WithEndpoint<Receiver>(c =>
-                    c.When(async context => { await SendNativeMessage(new Dictionary<string, MessageAttributeValue>()); }).DoNotFailOnErrorMessages())
-                .Done(c => c.FailedMessages.Any())
                 .Run();
         }
 
@@ -73,11 +76,10 @@
                     QueueName = QueueCache.GetSqsQueueName(Conventions.EndpointNamingConvention(typeof(Receiver)), transportConfiguration)
                 }).ConfigureAwait(false);
 
-                var xMessage = new XDocument(new XElement("Message", new XElement("ThisIsTheMessage", "Hello!"))).ToString();
                 var sendMessageRequest = new SendMessageRequest
                 {
                     QueueUrl = getQueueUrlResponse.QueueUrl,
-                    MessageBody = Convert.ToBase64String(Encoding.UTF8.GetBytes(xMessage)),
+                    MessageBody = Convert.ToBase64String(Encoding.UTF8.GetBytes(MessageToSend)),
                     MessageAttributes = messageAttributeValues
                 };
                 await sqsClient.SendMessageAsync(sendMessageRequest).ConfigureAwait(false);
@@ -86,14 +88,15 @@
 
         static async Task UploadMessageBodyToS3(string key)
         {
-            var s3Client = SqsTransportExtensions.CreateS3Client();
-            var xMessage = new XDocument(new XElement("Message", new XElement("ThisIsTheMessage", "Hello!"))).ToString();
-            await s3Client.PutObjectAsync(new PutObjectRequest
+            using (var s3Client = SqsTransportExtensions.CreateS3Client())
             {
-                Key = key,
-                BucketName = SqsTransportExtensions.S3BucketName,
-                ContentBody = xMessage
-            });
+                await s3Client.PutObjectAsync(new PutObjectRequest
+                {
+                    Key = key,
+                    BucketName = SqsTransportExtensions.S3BucketName,
+                    ContentBody = MessageToSend
+                });
+            }
         }
 
         public class Receiver : EndpointConfigurationBuilder
