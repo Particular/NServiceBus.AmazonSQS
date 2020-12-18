@@ -1,14 +1,16 @@
 ﻿namespace NServiceBus.AcceptanceTests
 {
+    using System;
     using System.Threading.Tasks;
     using AcceptanceTesting;
     using EndpointTemplates;
+    using NServiceBus.Pipeline;
     using NUnit.Framework;
 
     class When_requiring_the_native_message : NServiceBusAcceptanceTest
     {
         [Test]
-        public async Task Should_have_access_to_the_native_message_from_messagehandler()
+        public async Task Should_have_access_to_the_native_message_from_the_pipeline()
         {
             var scenario = await Scenario.Define<Context>()
                 .WithEndpoint<Receiver>(b => b.When((bus, c) => bus.SendLocal(new Message())))
@@ -16,13 +18,31 @@
                 .Run();
 
             Assert.True(scenario.HandlerHasAccessToNativeSqsMessage, "The handler should have access to the native message");
+            Assert.True(scenario.BehaviorHasAccessToNativeSqsMessage, "The behavior should have access to the native message");
         }
 
         public class Receiver : EndpointConfigurationBuilder
         {
             public Receiver()
             {
-                EndpointSetup<DefaultServer>(c => c.UseTransport<SqsTransport>());
+                EndpointSetup<DefaultServer>(c =>
+                    c.Pipeline.Register(typeof(MyCustomBehavior), "Behavior that needs access to native message"));
+            }
+
+            class MyCustomBehavior : Behavior<IIncomingPhysicalMessageContext>
+            {
+                private Context testContext;
+
+                public MyCustomBehavior(Context testContext)
+                {
+                    this.testContext = testContext;
+                }
+
+                public override Task Invoke(IIncomingPhysicalMessageContext context, Func<Task> next)
+                {
+                    testContext.BehaviorHasAccessToNativeSqsMessage = context.Extensions.TryGet<Amazon.SQS.Model.Message>(out _);
+                    return next();
+                }
             }
 
             class MyEventHandler : IHandleMessages<Message>
@@ -51,7 +71,7 @@
         class Context : ScenarioContext
         {
             public bool MessageReceived { get; set; }
-
+            public bool BehaviorHasAccessToNativeSqsMessage { get; set; }
             public bool HandlerHasAccessToNativeSqsMessage { get; set; }
         }
     }
