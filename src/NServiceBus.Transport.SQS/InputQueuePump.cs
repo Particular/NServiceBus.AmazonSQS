@@ -164,7 +164,25 @@ namespace NServiceBus.Transport.SQS
                         messageId = nativeMessageId;
                     }
 
-                    transportMessage = SimpleJson.DeserializeObject<TransportMessage>(receivedMessage.Body);
+                    var messageContainsTypeAttribute = receivedMessage.MessageAttributes.TryGetValue("MessageTypeFullName", out var enclosedMessageType);
+                    receivedMessage.MessageAttributes.TryGetValue("S3BodyKey", out var s3bodyKey);
+                    if (messageContainsTypeAttribute) // When the MessageTypeFullName attribute is available, we're assuming native integration
+                    {
+                        transportMessage = new TransportMessage
+                        {
+                            Headers = new Dictionary<string, string>
+                            {
+                                {Headers.MessageId, messageId},
+                                {Headers.EnclosedMessageTypes, enclosedMessageType.StringValue}
+                            },
+                            S3BodyKey = s3bodyKey?.StringValue ?? string.Empty
+                        };
+                    }
+                    else
+                    {
+                        transportMessage = SimpleJson.DeserializeObject<TransportMessage>(receivedMessage.Body);
+                    }
+
                     messageBody = await transportMessage.RetrieveBody(s3Client, configuration, token).ConfigureAwait(false);
 
                 }
@@ -180,20 +198,7 @@ namespace NServiceBus.Transport.SQS
                     isPoisonMessage = true;
                 }
 
-                var messageContainsTypeAttribute = receivedMessage.MessageAttributes.TryGetValue(Headers.EnclosedMessageTypes, out var enclosedMessageType);
-                if (isPoisonMessage && messageContainsTypeAttribute)
-                {
-                    transportMessage = new TransportMessage
-                    {
-                        Headers = new Dictionary<string, string>
-                        {
-                            {Headers.MessageId, messageId},
-                            {Headers.EnclosedMessageTypes, enclosedMessageType.StringValue}
-                        }
-                    };
-                    messageBody = await transportMessage.RetrieveBody(s3Client, configuration, token).ConfigureAwait(false);
-                }
-                else if (isPoisonMessage || messageBody == null || transportMessage == null)
+                if (isPoisonMessage || messageBody == null || transportMessage == null)
                 {
                     var logMessage = $"Treating message with {messageId} as a poison message. Moving to error queue.";
 
