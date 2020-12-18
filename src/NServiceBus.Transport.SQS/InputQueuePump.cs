@@ -107,7 +107,6 @@ namespace NServiceBus.Transport.SQS
             maxConcurrencySemaphore?.Dispose();
         }
 
-
         async Task ConsumeMessages(CancellationToken token)
         {
             while (!token.IsCancellationRequested)
@@ -164,11 +163,8 @@ namespace NServiceBus.Transport.SQS
                         messageId = nativeMessageId;
                     }
 
-
-
-                    var messageContainsTypeAttribute = receivedMessage.MessageAttributes.TryGetValue("MessageTypeFullName", out var enclosedMessageType);
-                    receivedMessage.MessageAttributes.TryGetValue("S3BodyKey", out var s3bodyKey);
-                    if (messageContainsTypeAttribute) // When the MessageTypeFullName attribute is available, we're assuming native integration
+                    // When the MessageTypeFullName attribute is available, we're assuming native integration
+                    if (receivedMessage.MessageAttributes.TryGetValue("MessageTypeFullName", out var enclosedMessageType))
                     {
                         transportMessage = new TransportMessage
                         {
@@ -177,7 +173,7 @@ namespace NServiceBus.Transport.SQS
                                 {Headers.MessageId, messageId},
                                 {Headers.EnclosedMessageTypes, enclosedMessageType.StringValue}
                             },
-                            S3BodyKey = s3bodyKey?.StringValue ?? string.Empty,
+                            S3BodyKey = receivedMessage.MessageAttributes.TryGetValue("S3BodyKey", out var s3bodyKey) ? s3bodyKey?.StringValue : null,
                             Body = receivedMessage.Body
                         };
                     }
@@ -187,7 +183,6 @@ namespace NServiceBus.Transport.SQS
                     }
 
                     messageBody = await transportMessage.RetrieveBody(s3Client, configuration, token).ConfigureAwait(false);
-
                 }
                 catch (OperationCanceledException)
                 {
