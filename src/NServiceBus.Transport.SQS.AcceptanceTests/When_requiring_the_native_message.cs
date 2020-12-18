@@ -7,7 +7,7 @@
     using NServiceBus.Pipeline;
     using NUnit.Framework;
 
-    class When_requiring_the_native_message : NServiceBusAcceptanceTest
+    public class When_requiring_the_native_message : NServiceBusAcceptanceTest
     {
         [Test]
         public async Task Should_have_access_to_the_native_message_from_the_pipeline()
