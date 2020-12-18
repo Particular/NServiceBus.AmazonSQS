@@ -180,7 +180,20 @@ namespace NServiceBus.Transport.SQS
                     isPoisonMessage = true;
                 }
 
-                if (isPoisonMessage || messageBody == null || transportMessage == null)
+                var messageContainsTypeAttribute = receivedMessage.MessageAttributes.TryGetValue(Headers.EnclosedMessageTypes, out var enclosedMessageType);
+                if (isPoisonMessage && messageContainsTypeAttribute)
+                {
+                    transportMessage = new TransportMessage
+                    {
+                        Headers = new Dictionary<string, string>
+                        {
+                            {Headers.MessageId, messageId},
+                            {Headers.EnclosedMessageTypes, enclosedMessageType.StringValue}
+                        }
+                    };
+                    messageBody = await transportMessage.RetrieveBody(s3Client, configuration, token).ConfigureAwait(false);
+                }
+                else if (isPoisonMessage || messageBody == null || transportMessage == null)
                 {
                     var logMessage = $"Treating message with {messageId} as a poison message. Moving to error queue.";
 
