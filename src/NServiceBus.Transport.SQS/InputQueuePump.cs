@@ -82,7 +82,7 @@ namespace NServiceBus.Transport.SQS
                 QueueUrl = inputQueueUrl,
                 WaitTimeSeconds = 20,
                 AttributeNames = new List<string> {"SentTimestamp"},
-                MessageAttributeNames = new List<string> {Headers.MessageId}
+                MessageAttributeNames = new List<string> {"*"}
             };
 
             maxConcurrencySemaphore = new SemaphoreSlim(maxConcurrency);
@@ -164,6 +164,8 @@ namespace NServiceBus.Transport.SQS
                         messageId = nativeMessageId;
                     }
 
+
+
                     var messageContainsTypeAttribute = receivedMessage.MessageAttributes.TryGetValue("MessageTypeFullName", out var enclosedMessageType);
                     receivedMessage.MessageAttributes.TryGetValue("S3BodyKey", out var s3bodyKey);
                     if (messageContainsTypeAttribute) // When the MessageTypeFullName attribute is available, we're assuming native integration
@@ -175,7 +177,8 @@ namespace NServiceBus.Transport.SQS
                                 {Headers.MessageId, messageId},
                                 {Headers.EnclosedMessageTypes, enclosedMessageType.StringValue}
                             },
-                            S3BodyKey = s3bodyKey?.StringValue ?? string.Empty
+                            S3BodyKey = s3bodyKey?.StringValue ?? string.Empty,
+                            Body = receivedMessage.Body
                         };
                     }
                     else
