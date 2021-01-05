@@ -9,6 +9,7 @@ namespace NServiceBus.Transport.SQS.Tests
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS;
     using Configure;
+    using Extensions;
     using NUnit.Framework;
     using Settings;
     using Unicast.Messages;
@@ -224,6 +225,42 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var eventType = typeof(Event);
             await manager.Subscribe(eventType, null);
+            var anotherEvent = typeof(AnotherEvent);
+            await manager.Subscribe(anotherEvent, null);
+
+            var setAttributeRequestsSentBeforeSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
+
+            await manager.Settle();
+
+#pragma warning disable 618
+            var policy = Policy.FromJson(sqsClient.SetAttributesRequestsSent[0].attributes["Policy"]);
+#pragma warning restore 618
+
+            Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
+            Assert.AreEqual(2, policy.Statements.Count);
+            CollectionAssert.AreEquivalent(new[]
+            {
+                "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event",
+                "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"
+            }, policy.Statements.SelectMany(s => s.Conditions).SelectMany(c => c.Values));
+        }
+
+        [Test]
+        public async Task SettlePolicy_with_existing_policy_does_extend_policy()
+        {
+            manager = CreateBatchingSubscriptionManager();
+
+#pragma warning disable 618
+            var existingPolicy = new Policy();
+            existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event", "arn:fakeQueue"));
+#pragma warning restore 618
+
+            sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
+            {
+                {"QueueArn", "arn:fakeQueue"},
+                { "Policy", existingPolicy.ToJson()}
+            };
+
             var anotherEvent = typeof(AnotherEvent);
             await manager.Subscribe(anotherEvent, null);
 
