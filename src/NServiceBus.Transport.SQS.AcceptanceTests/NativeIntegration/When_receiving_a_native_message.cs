@@ -25,36 +25,43 @@
         [Test]
         public async Task Should_be_processed_when_messagetypefullname_present()
         {
-            await Scenario.Define<Context>()
-                .WithEndpoint<Receiver>(c => c.When(async context =>
+            var context = await Scenario.Define<Context>()
+                .WithEndpoint<Receiver>(c => c.When(async _ =>
                 {
                     await SendNativeMessage(new Dictionary<string, MessageAttributeValue>
                     {
                         {"MessageTypeFullName", new MessageAttributeValue {DataType = "String", StringValue = typeof(Message).FullName}}
                     });
                 }))
-                .Done(c => c.MessageReceived)
+                .Done(c => c.MessageReceived != null)
                 .Run();
+
+            Assert.AreEqual("Hello!", context.MessageReceived);
         }
 
         [Test]
         public async Task Should_fail_when_messagetypefullname_not_present()
         {
             var cancellationTokenSource = new CancellationTokenSource();
-           try
+            try
             {
-                Context ctx;
-                await Scenario.Define<Context>(context => ctx = context)
+                await Scenario.Define<Context>()
                     .WithEndpoint<Receiver>(c =>
-                        c.When(async (session,context) =>
+                    {
+                        c.CustomConfig((cfg, ctx) =>
+                        {
+                            ctx.ErrorQueueAddress = cfg.GetSettings().ErrorQueueAddress();
+                        });
+                        c.When(async (session, ctx) =>
+                        {
+                            await SendNativeMessage(new Dictionary<string, MessageAttributeValue>
                             {
-                                await SendNativeMessage(new Dictionary<string, MessageAttributeValue>
-                                {
-                                    {"TestId", new MessageAttributeValue {DataType = "String", StringValue = SetupFixture.NamePrefix}},
-                                });
-                                _ = CheckErrorQueue(context, SetupFixture.NamePrefix + "error", cancellationTokenSource.Token);
-                            })
-                            .DoNotFailOnErrorMessages())
+                                // unfortunately only the message id attribute is preserved when moving to the poison queue
+                                { Headers.MessageId, new MessageAttributeValue {DataType = "String", StringValue = ctx.TestRunId.ToString()} },
+                            });
+                            _ = CheckErrorQueue(ctx, cancellationTokenSource.Token);
+                        }).DoNotFailOnErrorMessages();
+                    })
                     .Done(c => c.MessageMovedToPoisonQueue)
                     .Run();
             }
@@ -67,7 +74,7 @@
         [Test]
         public async Task Should_support_loading_body_from_s3()
         {
-            await Scenario.Define<Context>()
+            var context = await Scenario.Define<Context>()
                 .WithEndpoint<Receiver>(c => c.When(async _ =>
                 {
                     var key = Guid.NewGuid().ToString();
@@ -78,11 +85,13 @@
                         {"S3BodyKey", new MessageAttributeValue {DataType = "String", StringValue = key}},
                     });
                 }))
-                .Done(c => c.MessageReceived)
+                .Done(c => c.MessageReceived != null)
                 .Run();
+
+            Assert.AreEqual("Hello!", context.MessageReceived);
         }
 
-        async Task CheckErrorQueue(Context context, string errorQueueName, CancellationToken cancellationToken)
+        async Task CheckErrorQueue(Context context, CancellationToken cancellationToken)
         {
             var transport = new TransportExtensions<SqsTransport>(new SettingsHolder());
             transport = transport.ConfigureSqsTransport(SetupFixture.NamePrefix);
@@ -91,7 +100,7 @@
             {
                 var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
                 {
-                    QueueName = QueueCache.GetSqsQueueName(errorQueueName, transportConfiguration)
+                    QueueName = QueueCache.GetSqsQueueName(context.ErrorQueueAddress, transportConfiguration)
                 }, cancellationToken).ConfigureAwait(false);
 
                 ReceiveMessageResponse receiveMessageResponse = null;
@@ -101,20 +110,17 @@
                     receiveMessageResponse = await sqsClient.ReceiveMessageAsync(new ReceiveMessageRequest
                     {
                         QueueUrl = getQueueUrlResponse.QueueUrl,
-                        WaitTimeSeconds = 20
+                        WaitTimeSeconds = 20,
+                        MessageAttributeNames = new List<string> { Headers.MessageId }
                     }, cancellationToken).ConfigureAwait(false);
 
-                    if (receiveMessageResponse.Messages.Any())
+                    foreach (var msg in receiveMessageResponse.Messages)
                     {
-                        foreach (var msg in receiveMessageResponse.Messages)
+                        msg.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute);
+                        if (messageIdAttribute?.StringValue == context.TestRunId.ToString())
                         {
-                            msg.MessageAttributes.TryGetValue("TestId", out var testIdAttr);
-                            if (testIdAttr.StringValue == SetupFixture.NamePrefix)
-                            {
-                                context.MessageMovedToPoisonQueue = true;
-                            }
+                            context.MessageMovedToPoisonQueue = true;
                         }
-
                     }
                 }
 
@@ -161,7 +167,7 @@
         {
             public Receiver()
             {
-                EndpointSetup<DefaultServer>(endpointConfiguration => endpointConfiguration.SendFailedMessagesTo(SetupFixture.NamePrefix + "error"));
+                EndpointSetup<DefaultServer>();
             }
 
             class MyEventHandler : IHandleMessages<Message>
@@ -173,7 +179,7 @@
 
                 public Task Handle(Message message, IMessageHandlerContext context)
                 {
-                    testContext.MessageReceived = true;
+                    testContext.MessageReceived = message.ThisIsTheMessage;
 
                     return Task.CompletedTask;
                 }
@@ -189,7 +195,8 @@
 
         class Context : ScenarioContext
         {
-            public bool MessageReceived { get; set; }
+            public string ErrorQueueAddress { get; set; }
+            public string MessageReceived { get; set; }
             public bool MessageMovedToPoisonQueue { get; set; }
         }
     }
