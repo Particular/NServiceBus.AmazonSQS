@@ -292,6 +292,13 @@ namespace NServiceBus.Transport.SQS
                             }
                         }
                     }
+
+                    // var policy = transport.Policies();
+                    // policy.AddAccountCondition();
+                    // policy.AddTopicNamePrefixCondition(); // extracted from transport.TopicNamePrefix("DEV-")
+                    // policy.AddNamespaceCondition("Sales."); // dots turned to dashes and if prefix set it would be taken into account
+                    // policy.AddNamespaceCondition("Shipping."); // dots turned to dashes and if prefix set it would be taken into account
+                    // default we use TopicArn, if any of the Add*Conditions are called we no longer add the full topic arns
                     var queuePermissionStatement = PolicyExtensions.CreateSQSPermissionStatement(sqsQueueArn, addPolicyStatements.Select(s => s.TopicArn));
                     if (!policy.CheckIfStatementExists(queuePermissionStatement))
                     {

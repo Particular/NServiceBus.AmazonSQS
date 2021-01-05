@@ -24,23 +24,14 @@ namespace NServiceBus.Transport.SQS.Extensions
             return statement;
         }
 
-        internal static Statement CreateSQSPermissionStatement(string sqsQueueArn, IEnumerable<string> topicArns)
+        internal static Statement CreateSQSPermissionStatement(string sqsQueueArn, IEnumerable<string> topicArnMatchPatterns)
         {
             var statement = new Statement(Statement.StatementEffect.Allow);
             statement.Actions.Add(SQSActionIdentifiers.SendMessage);
             statement.Resources.Add(new Resource(sqsQueueArn));
             statement.Principals.Add(new Principal("*"));
-            var queuePermissionCondition = new Condition(ConditionFactory.ArnComparisonType.ArnLike.ToString(), "aws:SourceArn", topicArns.ToArray());
+            var queuePermissionCondition = new Condition(ConditionFactory.ArnComparisonType.ArnLike.ToString(), "aws:SourceArn", topicArnMatchPatterns.ToArray());
             statement.Conditions.Add(queuePermissionCondition);
-            return statement;
-        }
-
-        internal static Statement CreateSQSPermissionStatement(string sqsQueueArn)
-        {
-            var statement = new Statement(Statement.StatementEffect.Allow);
-            statement.Actions.Add(SQSActionIdentifiers.SendMessage);
-            statement.Resources.Add(new Resource(sqsQueueArn));
-            statement.Principals.Add(new Principal("*"));
             return statement;
         }
 
