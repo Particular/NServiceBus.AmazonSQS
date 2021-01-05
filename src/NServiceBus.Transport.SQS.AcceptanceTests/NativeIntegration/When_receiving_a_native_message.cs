@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
     using System.Xml.Linq;
     using AcceptanceTesting;
@@ -13,6 +14,7 @@
     using Configuration.AdvancedExtensibility;
     using EndpointTemplates;
     using NUnit.Framework;
+    using Recoverability;
     using Settings;
     using Transport.SQS;
 
@@ -38,12 +40,28 @@
         [Test]
         public async Task Should_fail_when_messagetypefullname_not_present()
         {
-            await Scenario.Define<Context>()
-                .WithEndpoint<Receiver>(c =>
-                    c.When(async _ => { await SendNativeMessage(new Dictionary<string, MessageAttributeValue>()); })
-                        .DoNotFailOnErrorMessages())
-                .Done(c => c.FailedMessages.Any())
-                .Run();
+            var cancellationTokenSource = new CancellationTokenSource();
+           try
+            {
+                Context ctx;
+                await Scenario.Define<Context>(context => ctx = context)
+                    .WithEndpoint<Receiver>(c =>
+                        c.When(async (session,context) =>
+                            {
+                                await SendNativeMessage(new Dictionary<string, MessageAttributeValue>
+                                {
+                                    {"TestId", new MessageAttributeValue {DataType = "String", StringValue = SetupFixture.NamePrefix}},
+                                });
+                                _ = CheckErrorQueue(context, SetupFixture.NamePrefix + "error", cancellationTokenSource.Token);
+                            })
+                            .DoNotFailOnErrorMessages())
+                    .Done(c => c.MessageMovedToPoisonQueue)
+                    .Run();
+            }
+            catch (TimeoutException)
+            {
+                cancellationTokenSource.Cancel();
+            }
         }
 
         [Test]
@@ -62,6 +80,46 @@
                 }))
                 .Done(c => c.MessageReceived)
                 .Run();
+        }
+
+        async Task CheckErrorQueue(Context context, string errorQueueName, CancellationToken cancellationToken)
+        {
+            var transport = new TransportExtensions<SqsTransport>(new SettingsHolder());
+            transport = transport.ConfigureSqsTransport(SetupFixture.NamePrefix);
+            var transportConfiguration = new TransportConfiguration(transport.GetSettings());
+            using (var sqsClient = SqsTransportExtensions.CreateSQSClient())
+            {
+                var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
+                {
+                    QueueName = QueueCache.GetSqsQueueName(errorQueueName, transportConfiguration)
+                }, cancellationToken).ConfigureAwait(false);
+
+                ReceiveMessageResponse receiveMessageResponse = null;
+
+                while (context.MessageMovedToPoisonQueue == false && !cancellationToken.IsCancellationRequested)
+                {
+                    receiveMessageResponse = await sqsClient.ReceiveMessageAsync(new ReceiveMessageRequest
+                    {
+                        QueueUrl = getQueueUrlResponse.QueueUrl,
+                        WaitTimeSeconds = 20
+                    }, cancellationToken).ConfigureAwait(false);
+
+                    if (receiveMessageResponse.Messages.Any())
+                    {
+                        foreach (var msg in receiveMessageResponse.Messages)
+                        {
+                            msg.MessageAttributes.TryGetValue("TestId", out var testIdAttr);
+                            if (testIdAttr.StringValue == SetupFixture.NamePrefix)
+                            {
+                                context.MessageMovedToPoisonQueue = true;
+                            }
+                        }
+
+                    }
+                }
+
+                Assert.NotNull(receiveMessageResponse);
+            }
         }
 
         static async Task SendNativeMessage(Dictionary<string, MessageAttributeValue> messageAttributeValues)
@@ -103,7 +161,7 @@
         {
             public Receiver()
             {
-                EndpointSetup<DefaultServer>();
+                EndpointSetup<DefaultServer>(endpointConfiguration => endpointConfiguration.SendFailedMessagesTo(SetupFixture.NamePrefix + "error"));
             }
 
             class MyEventHandler : IHandleMessages<Message>
@@ -132,6 +190,7 @@
         class Context : ScenarioContext
         {
             public bool MessageReceived { get; set; }
+            public bool MessageMovedToPoisonQueue { get; set; }
         }
     }
 }
