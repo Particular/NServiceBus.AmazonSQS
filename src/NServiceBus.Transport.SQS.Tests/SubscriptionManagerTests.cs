@@ -1,7 +1,9 @@
 namespace NServiceBus.Transport.SQS.Tests
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.Auth.AccessControlPolicy;
@@ -11,6 +13,7 @@ namespace NServiceBus.Transport.SQS.Tests
     using Configure;
     using Extensions;
     using NUnit.Framework;
+    using Particular.Approvals;
     using Settings;
     using Unicast.Messages;
 
@@ -232,17 +235,8 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.Settle();
 
-#pragma warning disable 618
-            var policy = Policy.FromJson(sqsClient.SetAttributesRequestsSent[0].attributes["Policy"]);
-#pragma warning restore 618
-
             Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
-            Assert.AreEqual(2, policy.Statements.Count);
-            CollectionAssert.AreEquivalent(new[]
-            {
-                "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event",
-                "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"
-            }, policy.Statements.SelectMany(s => s.Conditions).SelectMany(c => c.Values));
+            Approver.Verify(sqsClient.SetAttributesRequestsSent[0].attributes["Policy"], ScrubPolicy);
         }
 
         [Test]
@@ -268,17 +262,8 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.Settle();
 
-#pragma warning disable 618
-            var policy = Policy.FromJson(sqsClient.SetAttributesRequestsSent[0].attributes["Policy"]);
-#pragma warning restore 618
-
             Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
-            Assert.AreEqual(2, policy.Statements.Count);
-            CollectionAssert.AreEquivalent(new[]
-            {
-                "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event",
-                "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"
-            }, policy.Statements.SelectMany(s => s.Conditions).SelectMany(c => c.Values));
+            Approver.Verify(sqsClient.SetAttributesRequestsSent[0].attributes["Policy"], ScrubPolicy);
         }
 
         [Test]
@@ -463,6 +448,23 @@ namespace NServiceBus.Transport.SQS.Tests
             {
                 "arn:subscription"
             }, snsClient.UnsubscribeRequests);
+        }
+
+        private string ScrubPolicy(string policyAsString)
+        {
+            var scrubbed = Regex.Replace(policyAsString, "\"Sid\" : \"(.*)\",", string.Empty);
+            return RemoveUnnecessaryWhiteSpace(scrubbed);
+        }
+
+        private static string RemoveUnnecessaryWhiteSpace(string policyAsString)
+        {
+            return string.Join(Environment.NewLine, policyAsString.Split(new[]
+                {
+                    Environment.NewLine
+                }, StringSplitOptions.RemoveEmptyEntries)
+                .Where(l => !string.IsNullOrWhiteSpace(l))
+                .Select(l => l.TrimEnd())
+            );
         }
 
         MockSqsClient sqsClient;
