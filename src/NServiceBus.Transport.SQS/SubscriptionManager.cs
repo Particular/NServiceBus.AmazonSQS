@@ -3,6 +3,7 @@ namespace NServiceBus.Transport.SQS
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.Auth.AccessControlPolicy;
@@ -181,7 +182,7 @@ namespace NServiceBus.Transport.SQS
         {
             var sqsQueueArn = await queueCache.GetQueueArn(queueUrl).ConfigureAwait(false);
 
-            var permissionStatement = PolicyExtensions.CreateSQSPermissionStatement(topicArn, sqsQueueArn);
+            var permissionStatement = PolicyExtensions.CreateSQSPermissionStatement(sqsQueueArn, topicArn);
             var addPolicyStatement = new PolicyStatement(topicName, topicArn, permissionStatement, sqsQueueArn);
 
             if (endpointStartingMode)
@@ -246,7 +247,8 @@ namespace NServiceBus.Transport.SQS
                     if (i > 1)
                     {
                         var millisecondsDelay = i * 1000;
-                        Logger.Debug($"Policy not yet propagated to write to '{sqsQueueArn}'! Retrying in {millisecondsDelay} ms.");
+                        Logger.Debug(
+                            $"Policy not yet propagated to write to '{sqsQueueArn}'! Retrying in {millisecondsDelay} ms.");
                         await Delay(millisecondsDelay).ConfigureAwait(false);
                     }
 
@@ -255,26 +257,56 @@ namespace NServiceBus.Transport.SQS
 
                     var policy = ExtractPolicy(queueAttributes);
 
-                    var policyAdded = false;
-
+                    var policyModified = false;
+#pragma warning disable 618
                     foreach (var addPolicyStatement in addPolicyStatements)
                     {
-                        if (policy.HasSQSPermission(addPolicyStatement.Statement))
+                        var addStatement = addPolicyStatement.Statement;
+                        for (var statementIndex = 0; statementIndex < policy.Statements.Count; statementIndex++)
                         {
-                            continue;
-                        }
+                            var statement = policy.Statements[statementIndex];
+                            // See if the statement contains the queue as a resource
+                            var containsResource = false;
+                            foreach (var resource in statement.Resources)
+                            {
+                                if (resource.Id.Equals(addStatement.Resources[0].Id))
+                                {
+                                    containsResource = true;
+                                    break;
+                                }
+                            }
 
-                        policy.AddSQSPermission(addPolicyStatement.Statement);
-                        policyAdded = true;
+                            // If queue found as the resource see if the condition is for this topic
+                            if (!containsResource)
+                            {
+                                continue;
+                            }
+
+                            foreach (var condition in statement.Conditions)
+                            {
+                                if (PolicyExtensions.ExactlyOneConditionContainedInStatement(condition, addStatement))
+                                {
+                                    policy.Statements.RemoveAt(statementIndex);
+                                    policyModified = true;
+                                }
+                            }
+                        }
+                    }
+                    var queuePermissionStatement = PolicyExtensions.CreateSQSPermissionStatement(sqsQueueArn, addPolicyStatements.Select(s => s.TopicArn));
+                    if (!policy.CheckIfStatementExists(queuePermissionStatement))
+                    {
+                        policy.AddSQSPermission(queuePermissionStatement);
+                        policyModified = true;
                     }
 
-                    if (!policyAdded)
+                    if (!policyModified)
                     {
                         break;
                     }
 
                     var setAttributes = new Dictionary<string, string> {{"Policy", policy.ToJson()}};
                     await sqsClient.SetAttributesAsync(queueUrl, setAttributes).ConfigureAwait(false);
+#pragma warning restore 618
                 }
 
                 if (string.IsNullOrEmpty(sqsQueueArn))

@@ -246,7 +246,8 @@ namespace NServiceBus.Transport.SQS.Tests
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
-            existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event", "arn:fakeQueue"));
+            var sqsPermissionStatement = PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", new[] { "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event" });
+            existingPolicy.Statements.Add(sqsPermissionStatement);
 #pragma warning restore 618
 
             sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
@@ -273,8 +274,12 @@ namespace NServiceBus.Transport.SQS.Tests
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
-            existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event", "arn:fakeQueue"));
-            existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent", "arn:fakeQueue"));
+            var sqsPermissionStatement = PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", new[]
+            {
+                "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event",
+                "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"
+            });
+            existingPolicy.Statements.Add(sqsPermissionStatement);
 #pragma warning restore 618
 
             sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
@@ -294,6 +299,94 @@ namespace NServiceBus.Transport.SQS.Tests
 
             Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
             Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
+        }
+
+        [Test]
+        public async Task SettlePolicy_with_existing_legacy_policy_does_migrate_policy()
+        {
+            manager = CreateBatchingSubscriptionManager();
+
+#pragma warning disable 618
+            var existingPolicy = new Policy();
+            existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event"));
+            existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"));
+#pragma warning restore 618
+
+            sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
+            {
+                {"QueueArn", "arn:fakeQueue"},
+                { "Policy", existingPolicy.ToJson()}
+            };
+
+            var eventType = typeof(Event);
+            await manager.Subscribe(eventType, null);
+            var anotherEvent = typeof(AnotherEvent);
+            await manager.Subscribe(anotherEvent, null);
+
+            var setAttributeRequestsSentBeforeSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
+
+            await manager.Settle();
+
+            Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
+            Approver.Verify(sqsClient.SetAttributesRequestsSent[0].attributes["Policy"], ScrubPolicy);
+        }
+
+        [Test]
+        public async Task SettlePolicy_with_existing_partial_legacy_policy_does_migrate_policy()
+        {
+            manager = CreateBatchingSubscriptionManager();
+
+#pragma warning disable 618
+            var existingPolicy = new Policy();
+            existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"));
+#pragma warning restore 618
+
+            sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
+            {
+                {"QueueArn", "arn:fakeQueue"},
+                { "Policy", existingPolicy.ToJson()}
+            };
+
+            var eventType = typeof(Event);
+            await manager.Subscribe(eventType, null);
+            var anotherEvent = typeof(AnotherEvent);
+            await manager.Subscribe(anotherEvent, null);
+
+            var setAttributeRequestsSentBeforeSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
+
+            await manager.Settle();
+
+            Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
+            Approver.Verify(sqsClient.SetAttributesRequestsSent[0].attributes["Policy"], ScrubPolicy);
+        }
+
+        [Test]
+        public async Task SettlePolicy_with_existing_partial_legacy_policy_migration_leaves_unrelated_permissions()
+        {
+            manager = CreateBatchingSubscriptionManager();
+
+#pragma warning disable 618
+            var existingPolicy = new Policy();
+            existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:UnrelatedEvent"));
+#pragma warning restore 618
+
+            sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
+            {
+                {"QueueArn", "arn:fakeQueue"},
+                { "Policy", existingPolicy.ToJson()}
+            };
+
+            var eventType = typeof(Event);
+            await manager.Subscribe(eventType, null);
+            var anotherEvent = typeof(AnotherEvent);
+            await manager.Subscribe(anotherEvent, null);
+
+            var setAttributeRequestsSentBeforeSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
+
+            await manager.Settle();
+
+            Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
+            Approver.Verify(sqsClient.SetAttributesRequestsSent[0].attributes["Policy"], ScrubPolicy);
         }
 
         [Test]

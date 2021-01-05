@@ -10,6 +10,19 @@
             "Resource"  : "arn:fakeQueue",
             "Condition" : {
                 "ArnLike" : {
+                    "aws:SourceArn" : "arn:aws:sns:us-west-2:123456789012:UnrelatedEvent"
+                }
+            }
+        },
+        {
+            "Effect" : "Allow",
+            "Principal" : {
+                "AWS" : "*"
+            },
+            "Action"    : "sqs:SendMessage",
+            "Resource"  : "arn:fakeQueue",
+            "Condition" : {
+                "ArnLike" : {
                     "aws:SourceArn" : [
                         "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent",
                         "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event"
