@@ -14,6 +14,47 @@ namespace NServiceBus.Transport.SQS.Extensions
             policy.Statements.Add(addStatement);
         }
 
+        internal static bool ContainsPermission(this Policy policy, Statement statement)
+        {
+            if (policy.Statements == null)
+            {
+                return false;
+            }
+
+            return policy.Statements.Any(stmt => stmt.Effect == statement.Effect &&
+                                                       stmt.StatementContainsResources(statement.Resources) &&
+                                                       stmt.StatementContainsActions(statement.Actions) &&
+                                                       stmt.StatementContainsConditions(statement.Conditions) &&
+                                                       stmt.StatementContainsPrincipals(statement.Principals));
+        }
+
+        internal static bool ContainsPermission(this Statement statement, Statement permission) =>
+            statement.Effect == permission.Effect &&
+            statement.StatementContainsResources(permission.Resources) &&
+            statement.StatementContainsActions(permission.Actions) &&
+            statement.StatementContainsConditions(permission.Conditions) &&
+            statement.StatementContainsPrincipals(permission.Principals);
+
+        private static bool StatementContainsResources(this Statement statement, IEnumerable<Resource> resources) =>
+            resources.All(resource => statement.Resources.FirstOrDefault(x => string.Equals(x.Id, resource.Id)) != null);
+
+        private static bool StatementContainsActions(
+            this Statement statement,
+            IEnumerable<ActionIdentifier> actions) =>
+            actions.All(action => statement.Actions.FirstOrDefault(x => string.Equals(x.ActionName, action.ActionName)) != null);
+
+        private static bool StatementContainsPrincipals(
+            this Statement statement,
+            IEnumerable<Principal> principals) =>
+            principals.All(principal => statement.Principals.FirstOrDefault(x => string.Equals(x.Id, principal.Id) && string.Equals(x.Provider, principal.Provider)) != null);
+
+        private static bool StatementContainsConditions(
+            this Statement statement,
+            IEnumerable<Condition> conditions) =>
+            conditions.All(condition => statement.Conditions.FirstOrDefault(x => string.Equals(x.Type, condition.Type) &&
+                string.Equals(x.ConditionKey, condition.ConditionKey) &&
+                x.Values.OrderBy(v => v, StringComparer.OrdinalIgnoreCase).SequenceEqual(condition.Values.OrderBy(v => v, StringComparer.OrdinalIgnoreCase), StringComparer.OrdinalIgnoreCase)) != null);
+
         internal static Statement CreateSQSPermissionStatement(string sqsQueueArn, string topicArn)
         {
             var statement = new Statement(Statement.StatementEffect.Allow);
@@ -33,18 +74,6 @@ namespace NServiceBus.Transport.SQS.Extensions
             var queuePermissionCondition = new Condition(ConditionFactory.ArnComparisonType.ArnLike.ToString(), "aws:SourceArn", topicArnMatchPatterns.ToArray());
             statement.Conditions.Add(queuePermissionCondition);
             return statement;
-        }
-
-        // Checks whether exactly one condition is present that matches the add statement condition
-        public static bool ExactlyOneConditionContainedInStatement(Condition condition, Statement addStatement)
-        {
-            return (string.Equals(condition.Type, ConditionFactory.StringComparisonType.StringLike.ToString(), StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(condition.Type, ConditionFactory.StringComparisonType.StringEquals.ToString(), StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(condition.Type, ConditionFactory.ArnComparisonType.ArnEquals.ToString(), StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(condition.Type, ConditionFactory.ArnComparisonType.ArnLike.ToString(), StringComparison.OrdinalIgnoreCase)) &&
-                   string.Equals(condition.ConditionKey, ConditionFactory.SOURCE_ARN_CONDITION_KEY, StringComparison.OrdinalIgnoreCase) &&
-                   condition.Values.Contains(addStatement.Conditions[0].Values[0]) &&
-                   condition.Values.Length == 1;
         }
     }
 #pragma warning restore 618

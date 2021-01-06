@@ -259,40 +259,6 @@ namespace NServiceBus.Transport.SQS
 
                     var policyModified = false;
 #pragma warning disable 618
-                    foreach (var addPolicyStatement in addPolicyStatements)
-                    {
-                        var addStatement = addPolicyStatement.Statement;
-                        for (var statementIndex = 0; statementIndex < policy.Statements.Count; statementIndex++)
-                        {
-                            var statement = policy.Statements[statementIndex];
-                            // See if the statement contains the queue as a resource
-                            var containsResource = false;
-                            foreach (var resource in statement.Resources)
-                            {
-                                if (resource.Id.Equals(addStatement.Resources[0].Id))
-                                {
-                                    containsResource = true;
-                                    break;
-                                }
-                            }
-
-                            // If queue found as the resource see if the condition is for this topic
-                            if (!containsResource)
-                            {
-                                continue;
-                            }
-
-                            foreach (var condition in statement.Conditions)
-                            {
-                                if (PolicyExtensions.ExactlyOneConditionContainedInStatement(condition, addStatement))
-                                {
-                                    policy.Statements.RemoveAt(statementIndex);
-                                    policyModified = true;
-                                }
-                            }
-                        }
-                    }
-
                     // var policy = transport.Policies();
                     // policy.AddAccountCondition();
                     // policy.AddTopicNamePrefixCondition(); // extracted from transport.TopicNamePrefix("DEV-")
@@ -300,9 +266,29 @@ namespace NServiceBus.Transport.SQS
                     // policy.AddNamespaceCondition("Shipping."); // dots turned to dashes and if prefix set it would be taken into account
                     // default we use TopicArn, if any of the Add*Conditions are called we no longer add the full topic arns
                     var queuePermissionStatement = PolicyExtensions.CreateSQSPermissionStatement(sqsQueueArn, addPolicyStatements.Select(s => s.TopicArn));
-                    if (!policy.CheckIfStatementExists(queuePermissionStatement))
+
+                    if (!policy.ContainsPermission(queuePermissionStatement))
                     {
+                        // TODO: Potentially check the number of statements and refuse to start but provide an override option
+                        // transport.Policies(forceSettlement: true);
+                        foreach (var addPolicyStatement in addPolicyStatements)
+                        {
+                            var addStatement = addPolicyStatement.Statement;
+                            for (var statementIndex = 0; statementIndex < policy.Statements.Count; statementIndex++)
+                            {
+                                var statement = policy.Statements[statementIndex];
+
+                                if (!statement.ContainsPermission(addStatement))
+                                {
+                                    continue;
+                                }
+
+                                policy.Statements.RemoveAt(statementIndex);
+                            }
+                        }
+
                         policy.AddSQSPermission(queuePermissionStatement);
+
                         policyModified = true;
                     }
 
