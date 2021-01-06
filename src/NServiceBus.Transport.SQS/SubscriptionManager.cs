@@ -233,6 +233,11 @@ namespace NServiceBus.Transport.SQS
 
         async Task SetNecessaryDeliveryPolicyWithRetries(string queueUrl, IReadOnlyCollection<PolicyStatement> addPolicyStatements)
         {
+            if (addPolicyStatements.Count == 0)
+            {
+                return;
+            }
+
             try
             {
                 // need to safe guard the subscribe section so that policy are not overwritten
