@@ -258,7 +258,6 @@ namespace NServiceBus.Transport.SQS
                     var policy = ExtractPolicy(queueAttributes);
 
                     var policyModified = false;
-#pragma warning disable 618
                     // var policy = transport.Policies();
                     // policy.AddAccountCondition();
                     // policy.AddTopicNamePrefixCondition(); // extracted from transport.TopicNamePrefix("DEV-")
@@ -299,7 +298,6 @@ namespace NServiceBus.Transport.SQS
 
                     var setAttributes = new Dictionary<string, string> {{"Policy", policy.ToJson()}};
                     await sqsClient.SetAttributesAsync(queueUrl, setAttributes).ConfigureAwait(false);
-#pragma warning restore 618
                 }
 
                 if (string.IsNullOrEmpty(sqsQueueArn))
