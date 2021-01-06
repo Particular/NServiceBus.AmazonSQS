@@ -270,6 +270,58 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
+        public async Task SettlePolicy_with_nothing_to_subscribe_doesnt_override_existing_policy()
+        {
+            manager = CreateBatchingSubscriptionManager();
+
+#pragma warning disable 618
+            var existingPolicy = new Policy();
+            var sqsPermissionStatement = PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", new[]
+            {
+                "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event",
+                "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"
+            });
+            existingPolicy.Statements.Add(sqsPermissionStatement);
+#pragma warning restore 618
+
+            sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
+            {
+                {"QueueArn", "arn:fakeQueue"},
+                { "Policy", existingPolicy.ToJson()}
+            };
+
+            var setAttributeRequestsSentBeforeSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
+
+            await manager.Settle();
+
+            Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
+            Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
+        }
+
+        [Test]
+        public async Task SettlePolicy_with_nothing_to_subscribe_and_no_policy_doesnt_create_policy()
+        {
+            manager = CreateBatchingSubscriptionManager();
+
+#pragma warning disable 618
+            var existingPolicy = new Policy();
+#pragma warning restore 618
+
+            sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
+            {
+                {"QueueArn", "arn:fakeQueue"},
+                { "Policy", existingPolicy.ToJson()}
+            };
+
+            var setAttributeRequestsSentBeforeSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
+
+            await manager.Settle();
+
+            Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
+            Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
+        }
+
+        [Test]
         public async Task SettlePolicy_with_existing_policy_matching_doesnt_override_policy()
         {
             manager = CreateBatchingSubscriptionManager();
