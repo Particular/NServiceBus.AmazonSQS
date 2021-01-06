@@ -270,20 +270,10 @@ namespace NServiceBus.Transport.SQS
                     {
                         // TODO: Potentially check the number of statements and refuse to start but provide an override option
                         // transport.Policies(forceSettlement: true);
-                        foreach (var addPolicyStatement in addPolicyStatements)
+                        var statementToRemoves = policy.Statements.Where(statement => statement.CoveredByPermission(queuePermissionStatement)).ToList();
+                        foreach (var statementToRemove in statementToRemoves)
                         {
-                            var addStatement = addPolicyStatement.Statement;
-                            for (var statementIndex = 0; statementIndex < policy.Statements.Count; statementIndex++)
-                            {
-                                var statement = policy.Statements[statementIndex];
-
-                                if (!statement.ContainsPermission(addStatement))
-                                {
-                                    continue;
-                                }
-
-                                policy.Statements.RemoveAt(statementIndex);
-                            }
+                            policy.Statements.Remove(statementToRemove);
                         }
 
                         policy.AddSQSPermission(queuePermissionStatement);

@@ -28,11 +28,13 @@ namespace NServiceBus.Transport.SQS.Extensions
                                                        stmt.StatementContainsPrincipals(statement.Principals));
         }
 
-        internal static bool ContainsPermission(this Statement statement, Statement permission) =>
+        internal static bool CoveredByPermission(this Statement statement, Statement permission) =>
             statement.Effect == permission.Effect &&
             statement.StatementContainsResources(permission.Resources) &&
             statement.StatementContainsActions(permission.Actions) &&
-            statement.StatementContainsConditions(permission.Conditions) &&
+
+            statement.StatementCoveredByConditions(permission.Conditions) &&
+            
             statement.StatementContainsPrincipals(permission.Principals);
 
         private static bool StatementContainsResources(this Statement statement, IEnumerable<Resource> resources) =>
@@ -54,6 +56,11 @@ namespace NServiceBus.Transport.SQS.Extensions
             conditions.All(condition => statement.Conditions.FirstOrDefault(x => string.Equals(x.Type, condition.Type) &&
                 string.Equals(x.ConditionKey, condition.ConditionKey) &&
                 x.Values.OrderBy(v => v, StringComparer.OrdinalIgnoreCase).SequenceEqual(condition.Values.OrderBy(v => v, StringComparer.OrdinalIgnoreCase), StringComparer.OrdinalIgnoreCase)) != null);
+
+        private static bool StatementCoveredByConditions(
+            this Statement statement,
+            IList<Condition> conditions) =>
+            statement.Conditions.Any(condition => conditions.Any(x => string.Equals(x.Type, condition.Type) && string.Equals(x.ConditionKey, condition.ConditionKey) && condition.Values.All(v => x.Values.Contains(v, StringComparer.OrdinalIgnoreCase))));
 
         internal static Statement CreateSQSPermissionStatement(string sqsQueueArn, string topicArn)
         {
