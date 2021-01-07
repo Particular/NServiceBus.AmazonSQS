@@ -31,7 +31,9 @@
         /// <summary>
         ///
         /// </summary>
-        public void AddNamespaceCondition()
+        /// <param name="topicNamespace">The namespace of the topic.</param>
+        /// <remarks>It is possible to use dots in the provided namespace. The namespaces will be translated into a compliant format.</remarks>
+        public void AddNamespaceCondition(string topicNamespace)
         {
 
         }

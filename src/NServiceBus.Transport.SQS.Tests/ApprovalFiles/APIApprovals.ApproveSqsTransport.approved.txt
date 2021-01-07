@@ -6,7 +6,7 @@ namespace NServiceBus
     public class PolicySettings : NServiceBus.Configuration.AdvancedExtensibility.ExposeSettings
     {
         public void AddAccountCondition() { }
-        public void AddNamespaceCondition() { }
+        public void AddNamespaceCondition(string topicNamespace) { }
         public void AddTopicNamePrefixCondition() { }
     }
     public class S3Settings : NServiceBus.Configuration.AdvancedExtensibility.ExposeSettings
