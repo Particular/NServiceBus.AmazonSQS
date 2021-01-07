@@ -37,16 +37,14 @@ namespace NServiceBus.Transport.SQS.Tests
             messageMetadataRegistry = settings.SetupMessageMetadataRegistry();
             queueName = "fakeQueue";
 
-            manager = CreateNonBatchingSubscriptionManager();
+            transportSettings = new TransportExtensions<SqsTransport>(settings);
         }
 
-        TestableSubscriptionManager CreateNonBatchingSubscriptionManager(Action<TransportExtensions<SqsTransport>> configure = null)
+        TestableSubscriptionManager CreateNonBatchingSubscriptionManager()
         {
             settings.Set(SettingsKeys.DisableSubscribeBatchingOnStart, true);
 
             var transportConfiguration = new TransportConfiguration(settings);
-            var transportExtensions = new TransportExtensions<SqsTransport>(settings);
-            configure?.Invoke(transportExtensions);
 
             return new TestableSubscriptionManager(
                 transportConfiguration,
@@ -62,13 +60,11 @@ namespace NServiceBus.Transport.SQS.Tests
                 );
         }
 
-        TestableSubscriptionManager CreateBatchingSubscriptionManager(Action<TransportExtensions<SqsTransport>> configure = null)
+        TestableSubscriptionManager CreateBatchingSubscriptionManager()
         {
             settings.Set(SettingsKeys.DisableSubscribeBatchingOnStart, false);
 
             var transportConfiguration = new TransportConfiguration(settings);
-            var transportExtensions = new TransportExtensions<SqsTransport>(settings);
-            configure?.Invoke(transportExtensions);
 
             return new TestableSubscriptionManager(
                 transportConfiguration,
@@ -87,6 +83,8 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task Subscribe_object_should_work()
         {
+            var manager = CreateNonBatchingSubscriptionManager();
+
             var eventType = typeof(object);
 
             await manager.Subscribe(eventType, null);
@@ -97,6 +95,8 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task Subscribe_again_should_ignore_because_cached()
         {
+            var manager = CreateNonBatchingSubscriptionManager();
+
             var eventType = typeof(Event);
 
             await manager.Subscribe(eventType, null);
@@ -113,6 +113,8 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task Subscribe_Unsubscribe_and_Subscribe_again()
         {
+            var manager = CreateNonBatchingSubscriptionManager();
+
             var eventType = typeof(Event);
 
             await manager.Subscribe(eventType, null);
@@ -126,6 +128,8 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task Subscribe_always_creates_topic()
         {
+            var manager = CreateNonBatchingSubscriptionManager();
+
             var eventType = typeof(Event);
 
             await manager.Subscribe(eventType, null);
@@ -137,6 +141,8 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task Subscribe_with_event_to_topics_mapping_creates_custom_defined_topic()
         {
+            var manager = CreateNonBatchingSubscriptionManager();
+
             var eventType = typeof(Event);
             customEventToTopicsMappings.Add(eventType, new[] {"custom-topic-name"});
 
@@ -153,6 +159,8 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task Subscribe_with_event_to_events_mapping_creates_custom_defined_topic()
         {
+            var manager = CreateNonBatchingSubscriptionManager();
+
             var subscribedEventType = typeof(IEvent);
             var concreteEventType = typeof(Event);
             var concreteAnotherEventType = typeof(AnotherEvent);
@@ -173,6 +181,8 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task Subscribe_creates_subscription_with_raw_message_mode()
         {
+            var manager = CreateNonBatchingSubscriptionManager();
+
             var eventType = typeof(Event);
 
             await manager.Subscribe(eventType, null);
@@ -190,6 +200,8 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public void Subscribe_retries_setting_policies_eight_times_with_linear_delays_and_gives_up()
         {
+            var manager = CreateNonBatchingSubscriptionManager();
+
             sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
             {
                 {"QueueArn", "arn:fakeQueue"}
@@ -203,6 +215,8 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public void Subscribe_retries_setting_policies_seven_times_with_linear_delays()
         {
+            var manager = CreateNonBatchingSubscriptionManager();
+
             var invocationCount = 0;
             var original = sqsClient.GetAttributeRequestsResponse;
             sqsClient.GetAttributeRequestsResponse = s =>
@@ -227,7 +241,7 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task Subscribe_endpointstarting_creates_topic_but_not_policies_and_subscriptions()
         {
-            manager = CreateBatchingSubscriptionManager();
+            var manager = CreateBatchingSubscriptionManager();
 
             var eventType = typeof(Event);
             await manager.Subscribe(eventType, null);
@@ -240,7 +254,7 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task SettlePolicy_sets_full_policy()
         {
-            manager = CreateBatchingSubscriptionManager();
+            var manager = CreateBatchingSubscriptionManager();
 
             var eventType = typeof(Event);
             await manager.Subscribe(eventType, null);
@@ -258,7 +272,7 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task SettlePolicy_with_existing_policy_does_extend_policy()
         {
-            manager = CreateBatchingSubscriptionManager();
+            var manager = CreateBatchingSubscriptionManager();
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
@@ -288,7 +302,7 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task SettlePolicy_with_nothing_to_subscribe_doesnt_override_existing_policy()
         {
-            manager = CreateBatchingSubscriptionManager();
+            var manager = CreateBatchingSubscriptionManager();
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
@@ -317,7 +331,7 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task SettlePolicy_with_nothing_to_subscribe_and_no_policy_doesnt_create_policy()
         {
-            manager = CreateBatchingSubscriptionManager();
+            var manager = CreateBatchingSubscriptionManager();
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
@@ -340,7 +354,7 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task SettlePolicy_with_existing_policy_matching_doesnt_override_policy()
         {
-            manager = CreateBatchingSubscriptionManager();
+            var manager = CreateBatchingSubscriptionManager();
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
@@ -374,7 +388,7 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task SettlePolicy_with_existing_policy_matching_but_different_order_doesnt_override_policy()
         {
-            manager = CreateBatchingSubscriptionManager();
+            var manager = CreateBatchingSubscriptionManager();
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
@@ -414,7 +428,7 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task SettlePolicy_with_existing_legacy_policy_does_migrate_policy()
         {
-            manager = CreateBatchingSubscriptionManager();
+            var manager = CreateBatchingSubscriptionManager();
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
@@ -444,7 +458,7 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task SettlePolicy_with_existing_partial_legacy_policy_does_migrate_policy()
         {
-            manager = CreateBatchingSubscriptionManager();
+            var manager = CreateBatchingSubscriptionManager();
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
@@ -473,7 +487,7 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task SettlePolicy_with_existing_partial_legacy_policy_migration_leaves_unrelated_permissions()
         {
-            manager = CreateBatchingSubscriptionManager();
+            var manager = CreateBatchingSubscriptionManager();
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
@@ -503,7 +517,7 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task SettlePolicy_with_existing_partial_policy_migration_leaves_unrelated_permissions()
         {
-            manager = CreateBatchingSubscriptionManager();
+            var manager = CreateBatchingSubscriptionManager();
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
@@ -540,7 +554,7 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task After_settle_policy_does_not_batch_subscriptions()
         {
-            manager = CreateBatchingSubscriptionManager();
+            var manager = CreateBatchingSubscriptionManager();
 
             await manager.Subscribe(typeof(Event), null);
             await manager.Subscribe(typeof(AnotherEvent), null);
@@ -564,6 +578,8 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task Unsubscribe_object_should_ignore()
         {
+            var manager = CreateNonBatchingSubscriptionManager();
+
             var eventType = typeof(object);
 
             await manager.Unsubscribe(eventType, null);
@@ -574,6 +590,8 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task Unsubscribe_if_no_subscription_doesnt_unsubscribe()
         {
+            var manager = CreateNonBatchingSubscriptionManager();
+
             snsClient.ListSubscriptionsByTopicResponse = topic => new ListSubscriptionsByTopicResponse
             {
                 Subscriptions = new List<Subscription>
@@ -593,6 +611,8 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task Unsubscribe_should_unsubscribe_matching_subscription()
         {
+            var manager = CreateNonBatchingSubscriptionManager();
+
             snsClient.ListSubscriptionsByTopicResponse = topic => new ListSubscriptionsByTopicResponse
             {
                 Subscriptions = new List<Subscription>
@@ -615,6 +635,8 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task Unsubscribe_with_events_to_events_mapping_should_unsubscribe_matching_subscription()
         {
+            var manager = CreateNonBatchingSubscriptionManager();
+
             var unsubscribedEvent = typeof(IEvent);
             var concreteEventType = typeof(Event);
             customEventToEventsMappings.Add(unsubscribedEvent, concreteEventType);
@@ -655,6 +677,8 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task Unsubscribe_with_event_to_topics_mapping_should_unsubscribe_matching_subscription()
         {
+            var manager = CreateNonBatchingSubscriptionManager();
+
             var unsubscribedEvent = typeof(IEvent);
             customEventToTopicsMappings.Add(unsubscribedEvent, new[] {"custom-topic-name"});
 
@@ -709,13 +733,13 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         MockSqsClient sqsClient;
-        TestableSubscriptionManager manager;
         MockSnsClient snsClient;
         MessageMetadataRegistry messageMetadataRegistry;
         SettingsHolder settings;
         string queueName;
         EventToTopicsMappings customEventToTopicsMappings;
         EventToEventsMappings customEventToEventsMappings;
+        TransportExtensions<SqsTransport> transportSettings;
 
         class TestableSubscriptionManager : SubscriptionManager
         {
