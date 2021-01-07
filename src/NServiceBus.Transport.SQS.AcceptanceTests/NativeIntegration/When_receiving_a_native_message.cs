@@ -57,7 +57,9 @@
                             await SendNativeMessage(new Dictionary<string, MessageAttributeValue>
                             {
                                 // unfortunately only the message id attribute is preserved when moving to the poison queue
-                                { Headers.MessageId, new MessageAttributeValue {DataType = "String", StringValue = ctx.TestRunId.ToString()} },
+                                {
+                                    Headers.MessageId, new MessageAttributeValue {DataType = "String", StringValue = ctx.TestRunId.ToString()}
+                                }
                             });
                             _ = CheckErrorQueue(ctx, cancellationTokenSource.Token);
                         }).DoNotFailOnErrorMessages();
@@ -65,7 +67,7 @@
                     .Done(c => c.MessageMovedToPoisonQueue)
                     .Run();
             }
-            catch (TimeoutException)
+            finally
             {
                 cancellationTokenSource.Cancel();
             }
