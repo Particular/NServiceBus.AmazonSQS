@@ -42,10 +42,9 @@ namespace NServiceBus.Transport.SQS.Tests
 
         TestableSubscriptionManager CreateNonBatchingSubscriptionManager(Action<TransportExtensions<SqsTransport>> configure = null)
         {
-            var settingsHolder = new SettingsHolder();
-            settingsHolder.Set(SettingsKeys.DisableSubscribeBatchingOnStart, true);
+            settings.Set(SettingsKeys.DisableSubscribeBatchingOnStart, true);
 
-            var transportConfiguration = new TransportConfiguration(settingsHolder);
+            var transportConfiguration = new TransportConfiguration(settings);
             var transportExtensions = new TransportExtensions<SqsTransport>(settings);
             configure?.Invoke(transportExtensions);
 
@@ -65,9 +64,9 @@ namespace NServiceBus.Transport.SQS.Tests
 
         TestableSubscriptionManager CreateBatchingSubscriptionManager(Action<TransportExtensions<SqsTransport>> configure = null)
         {
-            var settingsHolder = new SettingsHolder();
+            settings.Set(SettingsKeys.DisableSubscribeBatchingOnStart, false);
 
-            var transportConfiguration = new TransportConfiguration(settingsHolder);
+            var transportConfiguration = new TransportConfiguration(settings);
             var transportExtensions = new TransportExtensions<SqsTransport>(settings);
             configure?.Invoke(transportExtensions);
 

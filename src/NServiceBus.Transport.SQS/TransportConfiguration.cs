@@ -264,7 +264,7 @@
             {
                 if (!disableSubscriptionBatchingOnStartInitialized)
                 {
-                    disableSubscriptionBatchingOnStart = settings.HasSetting(SettingsKeys.DisableSubscribeBatchingOnStart);
+                    disableSubscriptionBatchingOnStart = settings.GetOrDefault<bool>(SettingsKeys.DisableSubscribeBatchingOnStart);
                     disableSubscriptionBatchingOnStartInitialized = true;
                 }
 
