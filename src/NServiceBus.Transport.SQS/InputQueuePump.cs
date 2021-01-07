@@ -2,6 +2,7 @@ namespace NServiceBus.Transport.SQS
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.Runtime;
@@ -334,18 +335,17 @@ namespace NServiceBus.Transport.SQS
         {
             try
             {
+                var messageAttributeValues = message.MessageAttributes.ToDictionary(x => x.Key, x => new MessageAttributeValue
+                {
+                    DataType = x.Value.DataType,
+                    StringValue = x.Value.StringValue,
+                    BinaryValue = x.Value.BinaryValue,
+                });
                 await sqsClient.SendMessageAsync(new SendMessageRequest
                 {
                     QueueUrl = errorQueueUrl,
                     MessageBody = message.Body,
-                    MessageAttributes =
-                    {
-                        [Headers.MessageId] = new MessageAttributeValue
-                        {
-                            StringValue = messageId,
-                            DataType = "String"
-                        }
-                    }
+                    MessageAttributes = messageAttributeValues
                 }, CancellationToken.None).ConfigureAwait(false);
                 // The MessageAttributes on message are read-only attributes provided by SQS
                 // and can't be re-sent. Unfortunately all the SQS metadata

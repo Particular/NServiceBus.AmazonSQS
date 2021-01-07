@@ -291,7 +291,15 @@
             await ApplyMulticastOperationMappingIfNecessary(transportOperation as MulticastTransportOperation, preparedMessage as SnsPreparedMessage).ConfigureAwait(false);
 
             preparedMessage.Body = serializedMessage;
+            // preparedMessage.MessageAttributes = message.MessageAttributes.ToDictionary(x => x.Key, x => new MessageAttributeValue
+            // {
+            //     DataType = x.Value.DataType,
+            //     StringValue = x.Value.StringValue,
+            //     BinaryValue = x.Value.BinaryValue,
+            // })
             preparedMessage.MessageId = messageId;
+
+
             preparedMessage.CalculateSize();
             if (preparedMessage.Size <= TransportConfiguration.MaximumMessageSize)
             {
