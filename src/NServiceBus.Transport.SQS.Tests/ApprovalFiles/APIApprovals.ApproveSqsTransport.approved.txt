@@ -3,6 +3,12 @@
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo(@"NServiceBus.Transport.SQS.TransportTests, PublicKey=00240000048000009400000006020000002400005253413100040000010001007f16e21368ff041183fab592d9e8ed37e7be355e93323147a1d29983d6e591b04282e4da0c9e18bd901e112c0033925eb7d7872c2f1706655891c5c9d57297994f707d16ee9a8f40d978f064ee1ffc73c0db3f4712691b23bf596f75130f4ec978cf78757ec034625a5f27e6bb50c618931ea49f6f628fd74271c32959efb1c5")]
 namespace NServiceBus
 {
+    public class PolicySettings : NServiceBus.Configuration.AdvancedExtensibility.ExposeSettings
+    {
+        public void AddAccountCondition() { }
+        public void AddNamespaceCondition() { }
+        public void AddTopicNamePrefixCondition() { }
+    }
     public class S3Settings : NServiceBus.Configuration.AdvancedExtensibility.ExposeSettings
     {
         public void ClientFactory(System.Func<Amazon.S3.IAmazonS3> factory) { }
@@ -32,6 +38,7 @@ namespace NServiceBus
         public static void MapEvent<TSubscribedEvent>(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string customTopicName) { }
         public static void MapEvent<TSubscribedEvent, TPublishedEvent>(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> MaxTimeToLive(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.TimeSpan maxTimeToLive) { }
+        public static NServiceBus.PolicySettings Policies(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, bool forceSettlement = false) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> QueueNamePrefix(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string queueNamePrefix) { }
         public static NServiceBus.S3Settings S3(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string bucketForLargeMessages, string keyPrefix) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> TopicNameGenerator(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Func<System.Type, string, string> topicNameGenerator) { }

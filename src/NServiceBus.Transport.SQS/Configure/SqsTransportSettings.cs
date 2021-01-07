@@ -96,6 +96,17 @@
         }
 
         /// <summary>
+        /// Configures the policy creation during subscription.
+        /// </summary>
+        /// <param name="transportExtensions">The transport extensions.</param>
+        /// <param name="forceSettlement">When set to <c>true</c> the endpoint will enforce the current policy instead of throwing at startup when the policy might exceed the statement limitations.</param>
+        public static PolicySettings Policies(this TransportExtensions<SqsTransport> transportExtensions, bool forceSettlement = false)
+        {
+            Guard.AgainstNull(nameof(transportExtensions), transportExtensions);
+            return new PolicySettings(transportExtensions.GetSettings(), forceSettlement);
+        }
+
+        /// <summary>
         /// Specifies a string value that will be prepended to the name of every SQS queue
         /// referenced by the endpoint. This is useful when deploying many environments of the
         /// same application in the same AWS region (say, a development environment, a QA environment
