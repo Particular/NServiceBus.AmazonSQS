@@ -1,7 +1,9 @@
 ﻿namespace NServiceBus
 {
     using Settings;
+    using System.Collections.Generic;
     using Configuration.AdvancedExtensibility;
+    using Transport.SQS.Configure;
 
     /// <summary>
     /// Exposes the settings to configure policy creation
@@ -10,6 +12,7 @@
     {
         internal PolicySettings(SettingsHolder settings, bool forceSettlement = false) : base(settings)
         {
+            this.GetSettings().Set(SettingsKeys.ForceSettlementForPolicies, forceSettlement);
         }
 
         /// <summary>
@@ -17,7 +20,7 @@
         /// </summary>
         public void AddAccountCondition()
         {
-
+            this.GetSettings().Set(SettingsKeys.AddAccountConditionForPolicies, true);
         }
 
         /// <summary>
@@ -25,7 +28,7 @@
         /// </summary>
         public void AddTopicNamePrefixCondition()
         {
-
+            this.GetSettings().Set(SettingsKeys.AddTopicNamePrefixConditionForPolicies, true);
         }
 
         /// <summary>
@@ -35,7 +38,13 @@
         /// <remarks>It is possible to use dots in the provided namespace. The namespaces will be translated into a compliant format.</remarks>
         public void AddNamespaceCondition(string topicNamespace)
         {
-
+            if (!this.GetSettings()
+                .TryGet<List<string>>(SettingsKeys.AddNamespaceConditionForPolicies, out var topicNamespaces))
+            {
+                topicNamespaces = new List<string>();
+                this.GetSettings().Set(SettingsKeys.AddNamespaceConditionForPolicies, topicNamespaces);
+            }
+            topicNamespaces.Add(topicNamespace);
         }
     }
 
