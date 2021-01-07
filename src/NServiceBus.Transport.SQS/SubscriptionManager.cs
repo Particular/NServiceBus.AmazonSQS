@@ -17,15 +17,16 @@ namespace NServiceBus.Transport.SQS
 
     class SubscriptionManager : IManageSubscriptions
     {
-        public SubscriptionManager(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, MessageMetadataRegistry messageMetadataRegistry, TopicCache topicCache, bool disableSubscribeBatchingOnStart)
+        public SubscriptionManager(TransportConfiguration configuration, IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, MessageMetadataRegistry messageMetadataRegistry, TopicCache topicCache)
         {
+            this.configuration = configuration;
             this.topicCache = topicCache;
             this.messageMetadataRegistry = messageMetadataRegistry;
             this.queueCache = queueCache;
             this.sqsClient = sqsClient;
             this.snsClient = snsClient;
             this.queueName = queueName;
-            endpointStartingMode = !disableSubscribeBatchingOnStart;
+            endpointStartingMode = !configuration.DisableSubscriptionBatchingOnStart;
         }
 
         public async Task Subscribe(Type eventType, ContextBag context)
@@ -357,6 +358,7 @@ namespace NServiceBus.Transport.SQS
         readonly string queueName;
         readonly MessageMetadataRegistry messageMetadataRegistry;
         readonly TopicCache topicCache;
+        readonly TransportConfiguration configuration;
         readonly SemaphoreSlim subscribeQueueLimiter = new SemaphoreSlim(1);
         volatile bool endpointStartingMode;
 

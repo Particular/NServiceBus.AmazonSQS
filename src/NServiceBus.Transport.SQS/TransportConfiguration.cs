@@ -258,6 +258,20 @@
             }
         }
 
+        public bool DisableSubscriptionBatchingOnStart
+        {
+            get
+            {
+                if (!disableSubscriptionBatchingOnStartInitialized)
+                {
+                    disableSubscriptionBatchingOnStart = settings.HasSetting(SettingsKeys.DisableSubscribeBatchingOnStart);
+                    disableSubscriptionBatchingOnStartInitialized = true;
+                }
+
+                return disableSubscriptionBatchingOnStart;
+            }
+        }
+
         public EventToTopicsMappings CustomEventToTopicsMappings => settings.GetOrDefault<EventToTopicsMappings>();
         public EventToEventsMappings CustomEventToEventsMappings => settings.GetOrDefault<EventToEventsMappings>();
 
@@ -284,6 +298,8 @@
         bool serverSideEncryptionCustomerProvidedKeyInitialized;
         string serverSideEncryptionCustomerProvidedKeyMD5;
         bool serverSideEncryptionCustomerProvidedKeyMD5Initialized;
+        bool disableSubscriptionBatchingOnStartInitialized;
+        bool disableSubscriptionBatchingOnStart;
         bool? isDelayedDeliveryEnabled;
         bool? preTruncateQueueNames;
         bool? preTruncateTopicNames;

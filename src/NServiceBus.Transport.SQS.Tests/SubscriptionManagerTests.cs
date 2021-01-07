@@ -42,7 +42,15 @@ namespace NServiceBus.Transport.SQS.Tests
 
         TestableSubscriptionManager CreateNonBatchingSubscriptionManager()
         {
-            return new TestableSubscriptionManager(sqsClient,
+            var settingsHolder = new SettingsHolder();
+            settingsHolder.Set(SettingsKeys.DisableSubscribeBatchingOnStart, true);
+
+            var transportConfiguration = new TransportConfiguration(settingsHolder);
+            var transportExtensions = new TransportExtensions<SqsTransport>(settings);
+
+            return new TestableSubscriptionManager(
+                transportConfiguration,
+                sqsClient,
                 snsClient,
                 queueName,
                 new QueueCache(sqsClient,
@@ -50,13 +58,20 @@ namespace NServiceBus.Transport.SQS.Tests
                 messageMetadataRegistry,
                 new TopicCache(snsClient,
                     messageMetadataRegistry,
-                    new TransportConfiguration(settings)),
-                disableSubscribeBatchingOnStart: true);
+                    new TransportConfiguration(settings))
+                );
         }
 
         TestableSubscriptionManager CreateBatchingSubscriptionManager()
         {
-            return new TestableSubscriptionManager(sqsClient,
+            var settingsHolder = new SettingsHolder();
+
+            var transportConfiguration = new TransportConfiguration(settingsHolder);
+            var transportExtensions = new TransportExtensions<SqsTransport>(settings);
+
+            return new TestableSubscriptionManager(
+                transportConfiguration,
+                sqsClient,
                 snsClient,
                 queueName,
                 new QueueCache(sqsClient,
@@ -64,8 +79,8 @@ namespace NServiceBus.Transport.SQS.Tests
                 messageMetadataRegistry,
                 new TopicCache(snsClient,
                     messageMetadataRegistry,
-                    new TransportConfiguration(settings)),
-                disableSubscribeBatchingOnStart: false);
+                    new TransportConfiguration(settings))
+                );
         }
 
         [Test]
@@ -703,7 +718,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
         class TestableSubscriptionManager : SubscriptionManager
         {
-            public TestableSubscriptionManager(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, MessageMetadataRegistry messageMetadataRegistry, TopicCache topicCache, bool disableSubscribeBatchingOnStart) : base(sqsClient, snsClient, queueName, queueCache, messageMetadataRegistry, topicCache, disableSubscribeBatchingOnStart)
+            public TestableSubscriptionManager(TransportConfiguration configuration, IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, MessageMetadataRegistry messageMetadataRegistry, TopicCache topicCache) : base(configuration, sqsClient, snsClient, queueName, queueCache, messageMetadataRegistry, topicCache)
             {
             }
 
