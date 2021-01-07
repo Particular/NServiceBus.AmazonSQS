@@ -17,7 +17,6 @@
         public const string QueueNamePrefix = Prefix + nameof(QueueNamePrefix);
         public const string TopicNamePrefix = Prefix + nameof(TopicNamePrefix);
         public const string TopicNameGenerator = Prefix + nameof(TopicNameGenerator);
-        public const string CredentialSource = Prefix + nameof(CredentialSource);
         public const string PreTruncateQueueNames = Prefix + nameof(PreTruncateQueueNames);
         public const string PreTruncateTopicNames = Prefix + nameof(PreTruncateTopicNames);
         public const string UnrestrictedDurationDelayedDeliveryQueueDelayTime = Prefix + nameof(UnrestrictedDurationDelayedDeliveryQueueDelayTime);
