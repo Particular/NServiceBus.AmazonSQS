@@ -270,6 +270,11 @@ namespace NServiceBus.Transport.SQS
                         wildcardConditions.AddRange(addPolicyStatements.Select(s => $"{s.AccountArn}:*").Distinct());
                     }
 
+                    if (configuration.AddTopicNamePrefixConditionForPolicies)
+                    {
+                        wildcardConditions.AddRange(addPolicyStatements.Select(s => $"{s.AccountArn}:{configuration.TopicNamePrefix}*").Distinct());
+                    }
+
                     var wildCardQueuePermissionStatements = PolicyExtensions.CreateSQSPermissionStatement(sqsQueueArn, wildcardConditions);
                     var explicitQueuePermissionStatements = PolicyExtensions.CreateSQSPermissionStatement(sqsQueueArn, addPolicyStatements.Select(s => s.TopicArn));
 

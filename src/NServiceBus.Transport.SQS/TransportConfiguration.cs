@@ -286,6 +286,20 @@
             }
         }
 
+        public bool AddTopicNamePrefixConditionForPolicies
+        {
+            get
+            {
+                if (!addTopicNamePrefixConditionForPoliciesInitialized)
+                {
+                    addTopicNamePrefixConditionForPolicies = settings.GetOrDefault<bool>(SettingsKeys.AddTopicNamePrefixConditionForPolicies);
+                    addTopicNamePrefixConditionForPoliciesInitialized = true;
+                }
+
+                return addTopicNamePrefixConditionForPolicies;
+            }
+        }
+
         public EventToTopicsMappings CustomEventToTopicsMappings => settings.GetOrDefault<EventToTopicsMappings>();
         public EventToEventsMappings CustomEventToEventsMappings => settings.GetOrDefault<EventToEventsMappings>();
 
@@ -316,6 +330,8 @@
         bool disableSubscriptionBatchingOnStart;
         bool addAccountConditionForPoliciesInitialized;
         bool addAccountConditionForPolicies;
+        bool addTopicNamePrefixConditionForPoliciesInitialized;
+        bool addTopicNamePrefixConditionForPolicies;
         bool? isDelayedDeliveryEnabled;
         bool? preTruncateQueueNames;
         bool? preTruncateTopicNames;
