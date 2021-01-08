@@ -34,7 +34,7 @@ namespace NServiceBus.Transport.SQS.Extensions
             statement.StatementContainsActions(permission.Actions) &&
 
             statement.StatementCoveredByConditions(permission.Conditions) &&
-            
+
             statement.StatementContainsPrincipals(permission.Principals);
 
         private static bool StatementContainsResources(this Statement statement, IEnumerable<Resource> resources) =>
@@ -55,12 +55,12 @@ namespace NServiceBus.Transport.SQS.Extensions
             IEnumerable<Condition> conditions) =>
             conditions.All(condition => statement.Conditions.FirstOrDefault(x => string.Equals(x.Type, condition.Type) &&
                 string.Equals(x.ConditionKey, condition.ConditionKey) &&
-                x.Values.OrderBy(v => v, StringComparer.OrdinalIgnoreCase).SequenceEqual(condition.Values.OrderBy(v => v, StringComparer.OrdinalIgnoreCase), StringComparer.OrdinalIgnoreCase)) != null);
+                x.Values.OrderBy(v => v, OrdinalComparer).SequenceEqual(condition.Values.OrderBy(v => v, OrdinalComparer), OrdinalComparer)) != null);
 
         private static bool StatementCoveredByConditions(
             this Statement statement,
             IList<Condition> conditions) =>
-            statement.Conditions.Any(condition => conditions.Any(x => string.Equals(x.Type, condition.Type) && string.Equals(x.ConditionKey, condition.ConditionKey) && condition.Values.All(v => x.Values.Contains(v, StringComparer.OrdinalIgnoreCase))));
+            statement.Conditions.Any(condition => conditions.Any(x => string.Equals(x.Type, condition.Type) && string.Equals(x.ConditionKey, condition.ConditionKey) && condition.Values.All(v => x.Values.Contains(v, OrdinalComparer))));
 
         internal static Statement CreateSQSPermissionStatement(string sqsQueueArn, string topicArn)
         {
@@ -78,10 +78,14 @@ namespace NServiceBus.Transport.SQS.Extensions
             statement.Actions.Add(SQSActionIdentifiers.SendMessage);
             statement.Resources.Add(new Resource(sqsQueueArn));
             statement.Principals.Add(new Principal("*"));
-            var queuePermissionCondition = new Condition(ConditionFactory.ArnComparisonType.ArnLike.ToString(), "aws:SourceArn", topicArnMatchPatterns.ToArray());
+            var queuePermissionCondition = new Condition(ConditionFactory.ArnComparisonType.ArnLike.ToString(), "aws:SourceArn", topicArnMatchPatterns.OrderBy(t => t, OrdinalComparer).ToArray());
             statement.Conditions.Add(queuePermissionCondition);
             return statement;
         }
+
+        // conditions are case sensitive
+        // https://stackoverflow.com/a/47769284/290290
+        private static readonly StringComparer OrdinalComparer = StringComparer.Ordinal;
     }
 #pragma warning restore 618
 }

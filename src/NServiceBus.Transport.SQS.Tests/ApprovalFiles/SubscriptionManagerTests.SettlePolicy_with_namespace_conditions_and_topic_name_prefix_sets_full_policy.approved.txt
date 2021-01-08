@@ -11,8 +11,8 @@
             "Condition" : {
                 "ArnLike" : {
                     "aws:SourceArn" : [
-                        "arn:aws:sns:us-west-2:123456789012:DEV-Shipping-*",
-                        "arn:aws:sns:us-west-2:123456789012:DEV-Sales-HighValueOrders-*"
+                        "arn:aws:sns:us-west-2:123456789012:DEV-Sales-HighValueOrders-*",
+                        "arn:aws:sns:us-west-2:123456789012:DEV-Shipping-*"
                     ]
                 }
             }
