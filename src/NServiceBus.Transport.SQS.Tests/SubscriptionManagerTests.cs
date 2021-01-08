@@ -335,6 +335,30 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
+        public async Task SettlePolicy_with_namespace_conditions_and_topic_name_prefix_sets_full_policy()
+        {
+            transportSettings.TopicNamePrefix("DEV-");
+
+            var policies = transportSettings.Policies();
+            policies.AddNamespaceCondition("Shipping.");
+            policies.AddNamespaceCondition("Sales.HighValueOrders.");
+
+            var manager = CreateBatchingSubscriptionManager();
+
+            var eventType = typeof(Event);
+            await manager.Subscribe(eventType, null);
+            var anotherEvent = typeof(AnotherEvent);
+            await manager.Subscribe(anotherEvent, null);
+
+            var setAttributeRequestsSentBeforeSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
+
+            await manager.Settle();
+
+            Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
+            Approver.Verify(sqsClient.SetAttributesRequestsSent[0].attributes["Policy"], ScrubPolicy);
+        }
+
+        [Test]
         public async Task SettlePolicy_with_existing_policy_does_extend_policy()
         {
             var manager = CreateBatchingSubscriptionManager();

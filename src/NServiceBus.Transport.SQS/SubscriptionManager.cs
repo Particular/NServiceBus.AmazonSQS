@@ -4,7 +4,6 @@ namespace NServiceBus.Transport.SQS
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.Auth.AccessControlPolicy;
@@ -15,6 +14,8 @@ namespace NServiceBus.Transport.SQS
     using Extensions;
     using Logging;
     using Unicast.Messages;
+    using static Extensions.PolicyExtensions;
+    using static PolicyNamespaceSanitizationLogic;
 
     class SubscriptionManager : IManageSubscriptions
     {
@@ -184,7 +185,7 @@ namespace NServiceBus.Transport.SQS
         {
             var sqsQueueArn = await queueCache.GetQueueArn(queueUrl).ConfigureAwait(false);
 
-            var permissionStatement = PolicyExtensions.CreateSQSPermissionStatement(sqsQueueArn, topicArn);
+            var permissionStatement = CreateSQSPermissionStatement(sqsQueueArn, topicArn);
             var addPolicyStatement = new PolicyStatement(topicName, topicArn, permissionStatement, sqsQueueArn);
 
             if (endpointStartingMode)
@@ -278,12 +279,15 @@ namespace NServiceBus.Transport.SQS
 
                     if (configuration.NamespaceConditionsForPolicies.Count > 0)
                     {
-                        var accountArns = addPolicyStatements.Select(s => $"{s.AccountArn}").Distinct();
-                        wildcardConditions.AddRange(configuration.NamespaceConditionsForPolicies.SelectMany(ns => accountArns.Select(arn => $"{arn}:{PolicyNamespaceSanitizationLogic.GetNamespaceName(new StringBuilder(ns))}*")));
+                        wildcardConditions.AddRange(configuration.NamespaceConditionsForPolicies
+                            .SelectMany(ns => addPolicyStatements
+                                .Select(s => $"{s.AccountArn}")
+                                .Distinct()
+                                .Select(arn => $"{arn}:{GetNamespaceName(configuration.TopicNamePrefix, ns)}*")));
                     }
 
-                    var wildCardQueuePermissionStatements = PolicyExtensions.CreateSQSPermissionStatement(sqsQueueArn, wildcardConditions);
-                    var explicitQueuePermissionStatements = PolicyExtensions.CreateSQSPermissionStatement(sqsQueueArn, addPolicyStatements.Select(s => s.TopicArn));
+                    var wildCardQueuePermissionStatements = CreateSQSPermissionStatement(sqsQueueArn, wildcardConditions);
+                    var explicitQueuePermissionStatements = CreateSQSPermissionStatement(sqsQueueArn, addPolicyStatements.Select(s => s.TopicArn));
 
                     if (!policy.ContainsPermission(explicitQueuePermissionStatements))
                     {
