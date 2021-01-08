@@ -272,6 +272,20 @@
             }
         }
 
+        public bool AddAccountConditionForPolicies
+        {
+            get
+            {
+                if (!addAccountConditionForPoliciesInitialized)
+                {
+                    addAccountConditionForPolicies = settings.GetOrDefault<bool>(SettingsKeys.AddAccountConditionForPolicies);
+                    addAccountConditionForPoliciesInitialized = true;
+                }
+
+                return addAccountConditionForPolicies;
+            }
+        }
+
         public EventToTopicsMappings CustomEventToTopicsMappings => settings.GetOrDefault<EventToTopicsMappings>();
         public EventToEventsMappings CustomEventToEventsMappings => settings.GetOrDefault<EventToEventsMappings>();
 
@@ -300,6 +314,8 @@
         bool serverSideEncryptionCustomerProvidedKeyMD5Initialized;
         bool disableSubscriptionBatchingOnStartInitialized;
         bool disableSubscriptionBatchingOnStart;
+        bool addAccountConditionForPoliciesInitialized;
+        bool addAccountConditionForPolicies;
         bool? isDelayedDeliveryEnabled;
         bool? preTruncateQueueNames;
         bool? preTruncateTopicNames;

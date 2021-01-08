@@ -264,28 +264,49 @@ namespace NServiceBus.Transport.SQS
                     var policy = ExtractPolicy(queueAttributes);
 
                     var policyModified = false;
-                    // var policy = transport.Policies();
-                    // policy.AddAccountCondition();
-                    // policy.AddTopicNamePrefixCondition(); // extracted from transport.TopicNamePrefix("DEV-")
-                    // policy.AddNamespaceCondition("Sales."); // dots turned to dashes and if prefix set it would be taken into account
-                    // policy.AddNamespaceCondition("Shipping."); // dots turned to dashes and if prefix set it would be taken into account
-                    // default we use TopicArn, if any of the Add*Conditions are called we no longer add the full topic arns
-                    var queuePermissionStatement = PolicyExtensions.CreateSQSPermissionStatement(sqsQueueArn, addPolicyStatements.Select(s => s.TopicArn));
+                    var wildcardConditions = new List<string>();
+                    if (configuration.AddAccountConditionForPolicies)
+                    {
+                        wildcardConditions.AddRange(addPolicyStatements.Select(s => $"{s.AccountArn}:*").Distinct());
+                    }
 
-                    if (!policy.ContainsPermission(queuePermissionStatement))
+                    var wildCardQueuePermissionStatements = PolicyExtensions.CreateSQSPermissionStatement(sqsQueueArn, wildcardConditions);
+                    var explicitQueuePermissionStatements = PolicyExtensions.CreateSQSPermissionStatement(sqsQueueArn, addPolicyStatements.Select(s => s.TopicArn));
+
+                    if (!policy.ContainsPermission(explicitQueuePermissionStatements))
                     {
                         // TODO: Potentially check the number of statements and refuse to start but provide an override option
                         // transport.Policies(forceSettlement: true);
-                        var statementToRemoves = policy.Statements.Where(statement => statement.CoveredByPermission(queuePermissionStatement)).ToList();
+                        var statementToRemoves = policy.Statements.Where(statement => statement.CoveredByPermission(explicitQueuePermissionStatements)).ToList();
                         foreach (var statementToRemove in statementToRemoves)
                         {
                             policy.Statements.Remove(statementToRemove);
                         }
 
-                        policy.AddSQSPermission(queuePermissionStatement);
-
                         policyModified = true;
                     }
+
+                    // if (wildcardConditions.Count > 0 && !policy.ContainsPermission(wildCardQueuePermissionStatements))
+                    // {
+                    //     // TODO: Potentially check the number of statements and refuse to start but provide an override option
+                    //     // transport.Policies(forceSettlement: true);
+                    //     var statementToRemoves = policy.Statements.Where(statement => statement.CoveredByPermission(wildCardQueuePermissionStatements)).ToList();
+                    //     foreach (var statementToRemove in statementToRemoves)
+                    //     {
+                    //         policy.Statements.Remove(statementToRemove);
+                    //     }
+                    //
+                    //     policyModified = true;
+                    // }
+                    if (wildcardConditions.Count > 0)
+                    {
+                        policy.AddSQSPermission(wildCardQueuePermissionStatements);
+                    }
+                    else
+                    {
+                        policy.AddSQSPermission(explicitQueuePermissionStatements);
+                    }
+
 
                     if (!policyModified)
                     {
@@ -373,13 +394,19 @@ namespace NServiceBus.Transport.SQS
                 TopicArn = topicArn;
                 Statement = statement;
                 QueueArn = queueArn;
+
+                var splittedTopicArn = TopicArn.Split(ArnSeperator, StringSplitOptions.RemoveEmptyEntries);
+                AccountArn = string.Join(":", splittedTopicArn.Take(5));
             }
 
             public string QueueArn { get; }
 
             public string TopicName { get; }
             public string TopicArn { get; }
+            public string AccountArn { get; }
             public Statement Statement { get; }
+
+            private static readonly string[] ArnSeperator = { ":" };
         }
     }
 #pragma warning restore 618
