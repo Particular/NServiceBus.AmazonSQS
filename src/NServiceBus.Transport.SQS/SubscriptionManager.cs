@@ -4,6 +4,7 @@ namespace NServiceBus.Transport.SQS
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.Auth.AccessControlPolicy;
@@ -273,6 +274,12 @@ namespace NServiceBus.Transport.SQS
                     if (configuration.AddTopicNamePrefixConditionForPolicies)
                     {
                         wildcardConditions.AddRange(addPolicyStatements.Select(s => $"{s.AccountArn}:{configuration.TopicNamePrefix}*").Distinct());
+                    }
+
+                    if (configuration.NamespaceConditionsForPolicies.Count > 0)
+                    {
+                        var accountArns = addPolicyStatements.Select(s => $"{s.AccountArn}").Distinct();
+                        wildcardConditions.AddRange(configuration.NamespaceConditionsForPolicies.SelectMany(ns => accountArns.Select(arn => $"{arn}:{PolicyNamespaceSanitizationLogic.GetNamespaceName(new StringBuilder(ns))}*")));
                     }
 
                     var wildCardQueuePermissionStatements = PolicyExtensions.CreateSQSPermissionStatement(sqsQueueArn, wildcardConditions);

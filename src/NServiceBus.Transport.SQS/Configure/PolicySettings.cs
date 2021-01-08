@@ -39,10 +39,10 @@
         public void AddNamespaceCondition(string topicNamespace)
         {
             if (!this.GetSettings()
-                .TryGet<List<string>>(SettingsKeys.AddNamespaceConditionForPolicies, out var topicNamespaces))
+                .TryGet<List<string>>(SettingsKeys.NamespaceConditionForPolicies, out var topicNamespaces))
             {
                 topicNamespaces = new List<string>();
-                this.GetSettings().Set(SettingsKeys.AddNamespaceConditionForPolicies, topicNamespaces);
+                this.GetSettings().Set(SettingsKeys.NamespaceConditionForPolicies, topicNamespaces);
             }
             topicNamespaces.Add(topicNamespace);
         }

@@ -25,7 +25,7 @@
         public const string FullTopicNameForPolicies = Prefix + nameof(FullTopicNameForPolicies);
         public const string AddAccountConditionForPolicies = Prefix + nameof(AddAccountConditionForPolicies);
         public const string AddTopicNamePrefixConditionForPolicies = Prefix + nameof(AddTopicNamePrefixConditionForPolicies);
-        public const string AddNamespaceConditionForPolicies = Prefix + nameof(AddNamespaceConditionForPolicies);
+        public const string NamespaceConditionForPolicies = Prefix + nameof(NamespaceConditionForPolicies);
 
         public const string V1CompatibilityMode = Prefix + nameof(V1CompatibilityMode);
         public const string DisableNativePubSub = Prefix + nameof(DisableNativePubSub);

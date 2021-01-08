@@ -1,6 +1,7 @@
 ﻿namespace NServiceBus.Transport.SQS
 {
     using System;
+    using System.Collections.Generic;
     using Amazon.S3;
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
@@ -300,6 +301,20 @@
             }
         }
 
+        public IReadOnlyList<string> NamespaceConditionsForPolicies
+        {
+            get
+            {
+                if (!namespaceConditionsForPoliciesInitialized)
+                {
+                    namespaceConditionsForPolicies = settings.GetOrDefault<List<string>>(SettingsKeys.NamespaceConditionForPolicies) ?? new List<string>();
+                    namespaceConditionsForPoliciesInitialized = true;
+                }
+
+                return namespaceConditionsForPolicies;
+            }
+        }
+
         public EventToTopicsMappings CustomEventToTopicsMappings => settings.GetOrDefault<EventToTopicsMappings>();
         public EventToEventsMappings CustomEventToEventsMappings => settings.GetOrDefault<EventToEventsMappings>();
 
@@ -332,6 +347,8 @@
         bool addAccountConditionForPolicies;
         bool addTopicNamePrefixConditionForPoliciesInitialized;
         bool addTopicNamePrefixConditionForPolicies;
+        bool namespaceConditionsForPoliciesInitialized;
+        IReadOnlyList<string> namespaceConditionsForPolicies;
         bool? isDelayedDeliveryEnabled;
         bool? preTruncateQueueNames;
         bool? preTruncateTopicNames;
