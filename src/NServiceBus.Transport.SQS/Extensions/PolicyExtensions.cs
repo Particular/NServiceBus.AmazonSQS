@@ -37,6 +37,15 @@ namespace NServiceBus.Transport.SQS.Extensions
 
             statement.StatementContainsPrincipals(permission.Principals);
 
+        internal static bool CoveredByWildcard(this Statement statement, Statement permission) =>
+            statement.Effect == permission.Effect &&
+            statement.StatementContainsResources(permission.Resources) &&
+            statement.StatementContainsActions(permission.Actions) &&
+
+            statement.StatementCoveredByWildcardConditions() &&
+
+            statement.StatementContainsPrincipals(permission.Principals);
+
         private static bool StatementContainsResources(this Statement statement, IEnumerable<Resource> resources) =>
             resources.All(resource => statement.Resources.FirstOrDefault(x => string.Equals(x.Id, resource.Id)) != null);
 
@@ -61,6 +70,10 @@ namespace NServiceBus.Transport.SQS.Extensions
             this Statement statement,
             IList<Condition> conditions) =>
             statement.Conditions.Any(condition => conditions.Any(x => string.Equals(x.Type, condition.Type) && string.Equals(x.ConditionKey, condition.ConditionKey) && condition.Values.All(v => x.Values.Contains(v, OrdinalComparer))));
+
+        private static bool StatementCoveredByWildcardConditions(
+            this Statement statement) =>
+            statement.Conditions.Any(condition => condition.Values.All(v => v.Contains("*")));
 
         internal static Statement CreateSQSPermissionStatement(string sqsQueueArn, string topicArn)
         {

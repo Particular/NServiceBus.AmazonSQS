@@ -385,6 +385,40 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
+        public async Task SettlePolicy_with_all_conditions_sets_full_policy_with_replaced_wildcard()
+        {
+            transportSettings.TopicNamePrefix("DEV-");
+
+            var policies = transportSettings.Policies();
+            policies.AddAccountCondition();
+#pragma warning disable 618
+            var existingPolicy = new Policy();
+            var sqsPermissionStatement = PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", new[]
+            {
+                "arn:aws:sns:us-west-2:123456789012:DEV-*",
+                "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-*"
+            });
+            existingPolicy.Statements.Add(sqsPermissionStatement);
+#pragma warning restore 618
+
+            EmulateImmediateSettlementOfPolicy(existingPolicy);
+
+            var manager = CreateBatchingSubscriptionManager();
+
+            var eventType = typeof(Event);
+            await manager.Subscribe(eventType, null);
+            var anotherEvent = typeof(AnotherEvent);
+            await manager.Subscribe(anotherEvent, null);
+
+            var setAttributeRequestsSentBeforeSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
+
+            await manager.Settle();
+
+            Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
+            Approver.Verify(sqsClient.SetAttributesRequestsSent[0].attributes["Policy"], ScrubPolicy);
+        }
+
+        [Test]
         public async Task SettlePolicy_with_existing_policy_does_extend_policy()
         {
             var manager = CreateBatchingSubscriptionManager();
@@ -395,11 +429,7 @@ namespace NServiceBus.Transport.SQS.Tests
             existingPolicy.Statements.Add(sqsPermissionStatement);
 #pragma warning restore 618
 
-            sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
-            {
-                {"QueueArn", "arn:fakeQueue"},
-                { "Policy", existingPolicy.ToJson()}
-            };
+            EmulateImmediateSettlementOfPolicy(existingPolicy);
 
             var eventType = typeof(Event);
             await manager.Subscribe(eventType, null);
@@ -436,11 +466,38 @@ namespace NServiceBus.Transport.SQS.Tests
             existingPolicy.Statements.Add(sqsPermissionStatement);
 #pragma warning restore 618
 
-            sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
+            EmulateImmediateSettlementOfPolicy(existingPolicy);
+
+            var eventType = typeof(Event);
+            await manager.Subscribe(eventType, null);
+            var anotherEvent = typeof(AnotherEvent);
+            await manager.Subscribe(anotherEvent, null);
+
+            var setAttributeRequestsSentBeforeSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
+
+            await manager.Settle();
+
+            Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
+            Approver.Verify(sqsClient.SetAttributesRequestsSent[0].attributes["Policy"], ScrubPolicy);
+        }
+
+        [Test]
+        public async Task SettlePolicy_with_existing_wildcard_policy_switched_to_events_will_replace_wildcards()
+        {
+            var manager = CreateBatchingSubscriptionManager();
+
+#pragma warning disable 618
+            var existingPolicy = new Policy();
+            var sqsPermissionStatement = PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", new[]
             {
-                {"QueueArn", "arn:fakeQueue"},
-                { "Policy", existingPolicy.ToJson()}
-            };
+                "arn:aws:sns:us-west-2:123456789012:*",
+                "arn:aws:sns:us-west-2:123456789012:DEV-*",
+                "arn:aws:sns:us-west-2:123456789012:DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-*",
+            });
+            existingPolicy.Statements.Add(sqsPermissionStatement);
+#pragma warning restore 618
+
+            EmulateImmediateSettlementOfPolicy(existingPolicy);
 
             var eventType = typeof(Event);
             await manager.Subscribe(eventType, null);
@@ -470,11 +527,7 @@ namespace NServiceBus.Transport.SQS.Tests
             existingPolicy.Statements.Add(sqsPermissionStatement);
 #pragma warning restore 618
 
-            sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
-            {
-                {"QueueArn", "arn:fakeQueue"},
-                { "Policy", existingPolicy.ToJson()}
-            };
+            EmulateImmediateSettlementOfPolicy(existingPolicy);
 
             var setAttributeRequestsSentBeforeSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
 
@@ -493,11 +546,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var existingPolicy = new Policy();
 #pragma warning restore 618
 
-            sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
-            {
-                {"QueueArn", "arn:fakeQueue"},
-                { "Policy", existingPolicy.ToJson()}
-            };
+            EmulateImmediateSettlementOfPolicy(existingPolicy);
 
             var setAttributeRequestsSentBeforeSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
 
@@ -522,11 +571,7 @@ namespace NServiceBus.Transport.SQS.Tests
             existingPolicy.Statements.Add(sqsPermissionStatement);
 #pragma warning restore 618
 
-            sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
-            {
-                {"QueueArn", "arn:fakeQueue"},
-                { "Policy", existingPolicy.ToJson()}
-            };
+            EmulateImmediateSettlementOfPolicy(existingPolicy);
 
             var eventType = typeof(Event);
             await manager.Subscribe(eventType, null);
@@ -558,11 +603,7 @@ namespace NServiceBus.Transport.SQS.Tests
             existingPolicy.Statements.Add(sqsPermissionStatement);
 #pragma warning restore 618
 
-            sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
-            {
-                {"QueueArn", "arn:fakeQueue"},
-                { "Policy", existingPolicy.ToJson()}
-            };
+            EmulateImmediateSettlementOfPolicy(existingPolicy);
 
             var eventType = typeof(Event);
             await manager.Subscribe(eventType, null);
@@ -592,11 +633,7 @@ namespace NServiceBus.Transport.SQS.Tests
             existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"));
 #pragma warning restore 618
 
-            sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
-            {
-                {"QueueArn", "arn:fakeQueue"},
-                { "Policy", existingPolicy.ToJson()}
-            };
+            EmulateImmediateSettlementOfPolicy(existingPolicy);
 
             var eventType = typeof(Event);
             await manager.Subscribe(eventType, null);
@@ -629,11 +666,7 @@ namespace NServiceBus.Transport.SQS.Tests
             existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"));
 #pragma warning restore 618
 
-            sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
-            {
-                {"QueueArn", "arn:fakeQueue"},
-                { "Policy", existingPolicy.ToJson()}
-            };
+            EmulateImmediateSettlementOfPolicy(existingPolicy);
 
             var eventType = typeof(Event);
             await manager.Subscribe(eventType, null);
@@ -658,11 +691,7 @@ namespace NServiceBus.Transport.SQS.Tests
             existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"));
 #pragma warning restore 618
 
-            sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
-            {
-                {"QueueArn", "arn:fakeQueue"},
-                { "Policy", existingPolicy.ToJson()}
-            };
+            EmulateImmediateSettlementOfPolicy(existingPolicy);
 
             var eventType = typeof(Event);
             await manager.Subscribe(eventType, null);
@@ -694,11 +723,7 @@ namespace NServiceBus.Transport.SQS.Tests
             existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"));
 #pragma warning restore 618
 
-            sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
-            {
-                {"QueueArn", "arn:fakeQueue"},
-                { "Policy", existingPolicy.ToJson()}
-            };
+            EmulateImmediateSettlementOfPolicy(existingPolicy);
 
             var eventType = typeof(Event);
             await manager.Subscribe(eventType, null);
@@ -724,11 +749,7 @@ namespace NServiceBus.Transport.SQS.Tests
             existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"));
 #pragma warning restore 618
 
-            sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
-            {
-                {"QueueArn", "arn:fakeQueue"},
-                { "Policy", existingPolicy.ToJson()}
-            };
+            EmulateImmediateSettlementOfPolicy(existingPolicy);
 
             var eventType = typeof(Event);
             await manager.Subscribe(eventType, null);
@@ -761,11 +782,7 @@ namespace NServiceBus.Transport.SQS.Tests
             existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"));
 #pragma warning restore 618
 
-            sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
-            {
-                {"QueueArn", "arn:fakeQueue"},
-                { "Policy", existingPolicy.ToJson()}
-            };
+            EmulateImmediateSettlementOfPolicy(existingPolicy);
 
             var eventType = typeof(Event);
             await manager.Subscribe(eventType, null);
@@ -796,11 +813,7 @@ namespace NServiceBus.Transport.SQS.Tests
             existingPolicy.Statements.Add(sqsPermissionStatement);
 #pragma warning restore 618
 
-            sqsClient.GetAttributeRequestsResponse = s => new Dictionary<string, string>
-            {
-                {"QueueArn", "arn:fakeQueue"},
-                { "Policy", existingPolicy.ToJson()}
-            };
+            EmulateImmediateSettlementOfPolicy(existingPolicy);
 
             var eventType = typeof(Event);
             await manager.Subscribe(eventType, null);
@@ -979,6 +992,30 @@ namespace NServiceBus.Transport.SQS.Tests
             {
                 "arn:subscription"
             }, snsClient.UnsubscribeRequests);
+        }
+
+#pragma warning disable 618
+        private void EmulateImmediateSettlementOfPolicy(Policy initialPolicy)
+#pragma warning restore 618
+        {
+            var invocationCount = 0;
+            var original = sqsClient.GetAttributeRequestsResponse;
+            sqsClient.GetAttributeRequestsResponse = s =>
+            {
+                invocationCount++;
+
+                // three calls because one from the QueueCache and two from the settlement
+                if (invocationCount < 3)
+                {
+                    return new Dictionary<string, string>
+                    {
+                        {"QueueArn", "arn:fakeQueue"},
+                        {"Policy", initialPolicy.ToJson()}
+                    };
+                }
+
+                return original(s);
+            };
         }
 
         private string ScrubPolicy(string policyAsString)

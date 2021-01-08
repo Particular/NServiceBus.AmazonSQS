@@ -289,7 +289,7 @@ namespace NServiceBus.Transport.SQS
                     var wildCardQueuePermissionStatements = CreateSQSPermissionStatement(sqsQueueArn, wildcardConditions);
                     var explicitQueuePermissionStatements = CreateSQSPermissionStatement(sqsQueueArn, addPolicyStatements.Select(s => s.TopicArn));
 
-                    if (!policy.ContainsPermission(explicitQueuePermissionStatements))
+                    if (wildcardConditions.Count > 0 || !policy.ContainsPermission(explicitQueuePermissionStatements))
                     {
                         // TODO: Potentially check the number of statements and refuse to start but provide an override option
                         // transport.Policies(forceSettlement: true);
@@ -297,32 +297,37 @@ namespace NServiceBus.Transport.SQS
                         foreach (var statementToRemove in statementToRemoves)
                         {
                             policy.Statements.Remove(statementToRemove);
+                            policyModified = true;
                         }
+
+                        if (wildcardConditions.Count == 0)
+                        {
+                            policy.AddSQSPermission(explicitQueuePermissionStatements);
+
+                            var wildCardStatementsToRemove = policy.Statements.Where(statement => statement.CoveredByWildcard(explicitQueuePermissionStatements)).ToList();
+                            foreach (var statementToRemove in wildCardStatementsToRemove)
+                            {
+                                policy.Statements.Remove(statementToRemove);
+                            }
+
+                            policyModified = true;
+                        }
+                    }
+
+                    if (wildcardConditions.Count > 0 && !policy.ContainsPermission(wildCardQueuePermissionStatements))
+                    {
+                        // TODO: Potentially check the number of statements and refuse to start but provide an override option
+                        // transport.Policies(forceSettlement: true);
+                        var statementToRemoves = policy.Statements.Where(statement => statement.CoveredByWildcard(wildCardQueuePermissionStatements)).ToList();
+                        foreach (var statementToRemove in statementToRemoves)
+                        {
+                            policy.Statements.Remove(statementToRemove);
+                        }
+
+                        policy.AddSQSPermission(wildCardQueuePermissionStatements);
 
                         policyModified = true;
                     }
-
-                    // if (wildcardConditions.Count > 0 && !policy.ContainsPermission(wildCardQueuePermissionStatements))
-                    // {
-                    //     // TODO: Potentially check the number of statements and refuse to start but provide an override option
-                    //     // transport.Policies(forceSettlement: true);
-                    //     var statementToRemoves = policy.Statements.Where(statement => statement.CoveredByPermission(wildCardQueuePermissionStatements)).ToList();
-                    //     foreach (var statementToRemove in statementToRemoves)
-                    //     {
-                    //         policy.Statements.Remove(statementToRemove);
-                    //     }
-                    //
-                    //     policyModified = true;
-                    // }
-                    if (wildcardConditions.Count > 0)
-                    {
-                        policy.AddSQSPermission(wildCardQueuePermissionStatements);
-                    }
-                    else
-                    {
-                        policy.AddSQSPermission(explicitQueuePermissionStatements);
-                    }
-
 
                     if (!policyModified)
                     {
