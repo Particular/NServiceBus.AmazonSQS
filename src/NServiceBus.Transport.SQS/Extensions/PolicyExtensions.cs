@@ -36,9 +36,9 @@ namespace NServiceBus.Transport.SQS.Extensions
                         .Select(arn => $"{arn}:{GetNamespaceName(topicNamePrefix, ns)}*")));
             }
 
-            var wildCardQueuePermissionStatements = CreateSQSPermissionStatement(sqsQueueArn, wildcardConditions);
+            var wildCardQueuePermissionStatements = CreatePermissionStatementForQueueMatching(sqsQueueArn, wildcardConditions);
             var explicitQueuePermissionStatements =
-                CreateSQSPermissionStatement(sqsQueueArn, addPolicyStatements.Select(s => s.TopicArn));
+                CreatePermissionStatementForQueueMatching(sqsQueueArn, addPolicyStatements.Select(s => s.TopicArn));
 
             if (wildcardConditions.Count > 0 || !policy.ContainsPermission(explicitQueuePermissionStatements))
             {
@@ -54,7 +54,7 @@ namespace NServiceBus.Transport.SQS.Extensions
 
                 if (wildcardConditions.Count == 0)
                 {
-                    policy.AddSQSPermission(explicitQueuePermissionStatements);
+                    policy.Statements.Add(explicitQueuePermissionStatements);
 
                     var wildCardStatementsToRemove = policy.Statements
                         .Where(statement => statement.CoveredByWildcard(explicitQueuePermissionStatements)).ToList();
@@ -78,7 +78,7 @@ namespace NServiceBus.Transport.SQS.Extensions
                     policy.Statements.Remove(statementToRemove);
                 }
 
-                policy.AddSQSPermission(wildCardQueuePermissionStatements);
+                policy.Statements.Add(wildCardQueuePermissionStatements);
 
                 policyModified = true;
             }
@@ -127,12 +127,7 @@ namespace NServiceBus.Transport.SQS.Extensions
             return policy;
         }
 
-        internal static void AddSQSPermission(this Policy policy, Statement addStatement)
-        {
-            policy.Statements.Add(addStatement);
-        }
-
-        internal static bool ContainsPermission(this Policy policy, Statement statement)
+        private static bool ContainsPermission(this Policy policy, Statement statement)
         {
             if (policy.Statements == null)
             {
@@ -146,7 +141,7 @@ namespace NServiceBus.Transport.SQS.Extensions
                                                        stmt.StatementContainsPrincipals(statement.Principals));
         }
 
-        internal static bool CoveredByPermission(this Statement statement, Statement permission) =>
+        private static bool CoveredByPermission(this Statement statement, Statement permission) =>
             statement.Effect == permission.Effect &&
             statement.StatementContainsResources(permission.Resources) &&
             statement.StatementContainsActions(permission.Actions) &&
@@ -155,7 +150,7 @@ namespace NServiceBus.Transport.SQS.Extensions
 
             statement.StatementContainsPrincipals(permission.Principals);
 
-        internal static bool CoveredByWildcard(this Statement statement, Statement permission) =>
+        private static bool CoveredByWildcard(this Statement statement, Statement permission) =>
             statement.Effect == permission.Effect &&
             statement.StatementContainsResources(permission.Resources) &&
             statement.StatementContainsActions(permission.Actions) &&
@@ -193,21 +188,11 @@ namespace NServiceBus.Transport.SQS.Extensions
             this Statement statement) =>
             statement.Conditions.Any(condition => condition.Values.All(v => v.Contains("*")));
 
-        internal static Statement CreateSQSPermissionStatement(string sqsQueueArn, string topicArn)
+        internal static Statement CreatePermissionStatementForQueueMatching(string queueArn, IEnumerable<string> topicArnMatchPatterns)
         {
             var statement = new Statement(Statement.StatementEffect.Allow);
             statement.Actions.Add(SQSActionIdentifiers.SendMessage);
-            statement.Resources.Add(new Resource(sqsQueueArn));
-            statement.Conditions.Add(ConditionFactory.NewSourceArnCondition(topicArn));
-            statement.Principals.Add(new Principal("*"));
-            return statement;
-        }
-
-        internal static Statement CreateSQSPermissionStatement(string sqsQueueArn, IEnumerable<string> topicArnMatchPatterns)
-        {
-            var statement = new Statement(Statement.StatementEffect.Allow);
-            statement.Actions.Add(SQSActionIdentifiers.SendMessage);
-            statement.Resources.Add(new Resource(sqsQueueArn));
+            statement.Resources.Add(new Resource(queueArn));
             statement.Principals.Add(new Principal("*"));
             var queuePermissionCondition = new Condition(ConditionFactory.ArnComparisonType.ArnLike.ToString(), "aws:SourceArn", topicArnMatchPatterns.OrderBy(t => t, OrdinalComparer).ToArray());
             statement.Conditions.Add(queuePermissionCondition);

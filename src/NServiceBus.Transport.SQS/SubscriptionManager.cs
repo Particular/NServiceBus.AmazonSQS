@@ -184,8 +184,7 @@ namespace NServiceBus.Transport.SQS
         {
             var sqsQueueArn = await queueCache.GetQueueArn(queueUrl).ConfigureAwait(false);
 
-            var permissionStatement = CreateSQSPermissionStatement(sqsQueueArn, topicArn);
-            var addPolicyStatement = new PolicyStatement(topicName, topicArn, permissionStatement, sqsQueueArn);
+            var addPolicyStatement = new PolicyStatement(topicName, topicArn, sqsQueueArn);
 
             if (endpointStartingMode)
             {
@@ -193,7 +192,7 @@ namespace NServiceBus.Transport.SQS
                 return;
             }
 
-            var addPolicyStatements = new List<PolicyStatement> {addPolicyStatement};
+            var addPolicyStatements = new List<PolicyStatement> { addPolicyStatement };
             await SettlePolicy(queueUrl, addPolicyStatements).ConfigureAwait(false);
         }
 

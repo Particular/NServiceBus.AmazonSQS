@@ -393,7 +393,7 @@ namespace NServiceBus.Transport.SQS.Tests
             policies.AddAccountCondition();
 #pragma warning disable 618
             var existingPolicy = new Policy();
-            var sqsPermissionStatement = PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", new[]
+            var sqsPermissionStatement = PolicyExtensions.CreatePermissionStatementForQueueMatching("arn:fakeQueue", new[]
             {
                 "arn:aws:sns:us-west-2:123456789012:DEV-*",
                 "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-*"
@@ -425,7 +425,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
-            var sqsPermissionStatement = PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", new[] { "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event" });
+            var sqsPermissionStatement = PolicyExtensions.CreatePermissionStatementForQueueMatching("arn:fakeQueue", new[] { "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event" });
             existingPolicy.Statements.Add(sqsPermissionStatement);
 #pragma warning restore 618
 
@@ -458,7 +458,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
-            var sqsPermissionStatement = PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", new[]
+            var sqsPermissionStatement = PolicyExtensions.CreatePermissionStatementForQueueMatching("arn:fakeQueue", new[]
             {
                 "arn:aws:sns:us-west-2:123456789012:DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event",
                 "arn:aws:sns:us-west-2:123456789012:DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"
@@ -488,7 +488,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
-            var sqsPermissionStatement = PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", new[]
+            var sqsPermissionStatement = PolicyExtensions.CreatePermissionStatementForQueueMatching("arn:fakeQueue", new[]
             {
                 "arn:aws:sns:us-west-2:123456789012:*",
                 "arn:aws:sns:us-west-2:123456789012:DEV-*",
@@ -519,7 +519,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
-            var sqsPermissionStatement = PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", new[]
+            var sqsPermissionStatement = PolicyExtensions.CreatePermissionStatementForQueueMatching("arn:fakeQueue", new[]
             {
                 "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event",
                 "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"
@@ -563,7 +563,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
-            var sqsPermissionStatement = PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", new[]
+            var sqsPermissionStatement = PolicyExtensions.CreatePermissionStatementForQueueMatching("arn:fakeQueue", new[]
             {
                 "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event",
                 "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"
@@ -593,7 +593,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
-            var sqsPermissionStatement = PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", new[]
+            var sqsPermissionStatement = PolicyExtensions.CreatePermissionStatementForQueueMatching("arn:fakeQueue", new[]
             {
                 "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-YetAnotherEvent",
                 "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event",
@@ -629,8 +629,8 @@ namespace NServiceBus.Transport.SQS.Tests
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
-            existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event"));
-            existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"));
+            existingPolicy.Statements.Add(PolicyStatement.CreatePermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event"));
+            existingPolicy.Statements.Add(PolicyStatement.CreatePermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"));
 #pragma warning restore 618
 
             EmulateImmediateSettlementOfPolicy(existingPolicy);
@@ -662,8 +662,8 @@ namespace NServiceBus.Transport.SQS.Tests
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
-            existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event"));
-            existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"));
+            existingPolicy.Statements.Add(PolicyStatement.CreatePermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event"));
+            existingPolicy.Statements.Add(PolicyStatement.CreatePermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"));
 #pragma warning restore 618
 
             EmulateImmediateSettlementOfPolicy(existingPolicy);
@@ -688,7 +688,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
-            existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"));
+            existingPolicy.Statements.Add(PolicyStatement.CreatePermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"));
 #pragma warning restore 618
 
             EmulateImmediateSettlementOfPolicy(existingPolicy);
@@ -720,7 +720,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
-            existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"));
+            existingPolicy.Statements.Add(PolicyStatement.CreatePermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"));
 #pragma warning restore 618
 
             EmulateImmediateSettlementOfPolicy(existingPolicy);
@@ -745,8 +745,8 @@ namespace NServiceBus.Transport.SQS.Tests
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
-            existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:UnrelatedEvent"));
-            existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"));
+            existingPolicy.Statements.Add(PolicyStatement.CreatePermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:UnrelatedEvent"));
+            existingPolicy.Statements.Add(PolicyStatement.CreatePermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"));
 #pragma warning restore 618
 
             EmulateImmediateSettlementOfPolicy(existingPolicy);
@@ -778,8 +778,8 @@ namespace NServiceBus.Transport.SQS.Tests
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
-            existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:DEV-UnrelatedEvent"));
-            existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"));
+            existingPolicy.Statements.Add(PolicyStatement.CreatePermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:DEV-UnrelatedEvent"));
+            existingPolicy.Statements.Add(PolicyStatement.CreatePermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"));
 #pragma warning restore 618
 
             EmulateImmediateSettlementOfPolicy(existingPolicy);
@@ -804,8 +804,8 @@ namespace NServiceBus.Transport.SQS.Tests
 
 #pragma warning disable 618
             var existingPolicy = new Policy();
-            existingPolicy.Statements.Add(PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:UnrelatedEvent"));
-            var sqsPermissionStatement = PolicyExtensions.CreateSQSPermissionStatement("arn:fakeQueue", new[]
+            existingPolicy.Statements.Add(PolicyStatement.CreatePermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:UnrelatedEvent"));
+            var sqsPermissionStatement = PolicyExtensions.CreatePermissionStatementForQueueMatching("arn:fakeQueue", new[]
             {
                 "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event",
                 "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"
