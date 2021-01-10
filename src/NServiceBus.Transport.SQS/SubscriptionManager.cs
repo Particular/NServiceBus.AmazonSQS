@@ -3,7 +3,6 @@ namespace NServiceBus.Transport.SQS
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.Auth.AccessControlPolicy;
@@ -263,73 +262,14 @@ namespace NServiceBus.Transport.SQS
                     var queueAttributes = await sqsClient.GetAttributesAsync(queueUrl).ConfigureAwait(false);
                     sqsQueueArn = queueAttributes["QueueArn"];
 
-                    var policy = ExtractPolicy(queueAttributes);
+                    var policy = queueAttributes.ExtractPolicy();
 
-                    var policyModified = false;
-                    var wildcardConditions = new List<string>();
-                    if (configuration.AddAccountConditionForPolicies)
-                    {
-                        wildcardConditions.AddRange(addPolicyStatements.Select(s => $"{s.AccountArn}:*").Distinct());
-                    }
-
-                    if (configuration.AddTopicNamePrefixConditionForPolicies)
-                    {
-                        wildcardConditions.AddRange(addPolicyStatements.Select(s => $"{s.AccountArn}:{configuration.TopicNamePrefix}*").Distinct());
-                    }
-
-                    if (configuration.NamespaceConditionsForPolicies.Count > 0)
-                    {
-                        wildcardConditions.AddRange(configuration.NamespaceConditionsForPolicies
-                            .SelectMany(ns => addPolicyStatements
-                                .Select(s => $"{s.AccountArn}")
-                                .Distinct()
-                                .Select(arn => $"{arn}:{GetNamespaceName(configuration.TopicNamePrefix, ns)}*")));
-                    }
-
-                    var wildCardQueuePermissionStatements = CreateSQSPermissionStatement(sqsQueueArn, wildcardConditions);
-                    var explicitQueuePermissionStatements = CreateSQSPermissionStatement(sqsQueueArn, addPolicyStatements.Select(s => s.TopicArn));
-
-                    if (wildcardConditions.Count > 0 || !policy.ContainsPermission(explicitQueuePermissionStatements))
-                    {
-                        // TODO: Potentially check the number of statements and refuse to start but provide an override option
-                        // transport.Policies(forceSettlement: true);
-                        var statementToRemoves = policy.Statements.Where(statement => statement.CoveredByPermission(explicitQueuePermissionStatements)).ToList();
-                        foreach (var statementToRemove in statementToRemoves)
-                        {
-                            policy.Statements.Remove(statementToRemove);
-                            policyModified = true;
-                        }
-
-                        if (wildcardConditions.Count == 0)
-                        {
-                            policy.AddSQSPermission(explicitQueuePermissionStatements);
-
-                            var wildCardStatementsToRemove = policy.Statements.Where(statement => statement.CoveredByWildcard(explicitQueuePermissionStatements)).ToList();
-                            foreach (var statementToRemove in wildCardStatementsToRemove)
-                            {
-                                policy.Statements.Remove(statementToRemove);
-                            }
-
-                            policyModified = true;
-                        }
-                    }
-
-                    if (wildcardConditions.Count > 0 && !policy.ContainsPermission(wildCardQueuePermissionStatements))
-                    {
-                        // TODO: Potentially check the number of statements and refuse to start but provide an override option
-                        // transport.Policies(forceSettlement: true);
-                        var statementToRemoves = policy.Statements.Where(statement => statement.CoveredByWildcard(wildCardQueuePermissionStatements)).ToList();
-                        foreach (var statementToRemove in statementToRemoves)
-                        {
-                            policy.Statements.Remove(statementToRemove);
-                        }
-
-                        policy.AddSQSPermission(wildCardQueuePermissionStatements);
-
-                        policyModified = true;
-                    }
-
-                    if (!policyModified)
+                    if (!policy.Update(addPolicyStatements,
+                        configuration.AddAccountConditionForPolicies,
+                        configuration.AddTopicNamePrefixConditionForPolicies,
+                        configuration.NamespaceConditionsForPolicies,
+                        configuration.TopicNamePrefix,
+                        sqsQueueArn))
                     {
                         break;
                     }
@@ -357,29 +297,6 @@ namespace NServiceBus.Transport.SQS
             return Task.Delay(millisecondsDelay, token);
         }
 
-#pragma warning disable 618
-        static Policy ExtractPolicy(Dictionary<string, string> queueAttributes)
-        {
-            Policy policy;
-            string policyStr = null;
-            if (queueAttributes.ContainsKey("Policy"))
-            {
-                policyStr = queueAttributes["Policy"];
-            }
-
-            if (string.IsNullOrEmpty(policyStr))
-            {
-                policy = new Policy();
-            }
-            else
-            {
-                policy = Policy.FromJson(policyStr);
-            }
-
-            return policy;
-        }
-#pragma warning restore 618
-
         void MarkTypeConfigured(Type eventType)
         {
             typeTopologyConfiguredSet[eventType] = null;
@@ -405,30 +322,5 @@ namespace NServiceBus.Transport.SQS
         volatile bool endpointStartingMode;
 
         static ILog Logger = LogManager.GetLogger(typeof(SubscriptionManager));
-
-#pragma warning disable 618
-        class PolicyStatement
-        {
-            public PolicyStatement(string topicName, string topicArn, Statement statement, string queueArn)
-            {
-                TopicName = topicName;
-                TopicArn = topicArn;
-                Statement = statement;
-                QueueArn = queueArn;
-
-                var splittedTopicArn = TopicArn.Split(ArnSeperator, StringSplitOptions.RemoveEmptyEntries);
-                AccountArn = string.Join(":", splittedTopicArn.Take(5));
-            }
-
-            public string QueueArn { get; }
-
-            public string TopicName { get; }
-            public string TopicArn { get; }
-            public string AccountArn { get; }
-            public Statement Statement { get; }
-
-            private static readonly string[] ArnSeperator = { ":" };
-        }
     }
-#pragma warning restore 618
 }

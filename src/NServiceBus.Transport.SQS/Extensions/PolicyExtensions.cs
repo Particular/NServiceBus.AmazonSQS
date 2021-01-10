@@ -3,12 +3,130 @@ namespace NServiceBus.Transport.SQS.Extensions
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text;
     using Amazon.Auth.AccessControlPolicy;
     using Amazon.Auth.AccessControlPolicy.ActionIdentifiers;
 
 #pragma warning disable 618
     static class PolicyExtensions
     {
+        internal static bool Update(this Policy policy, IReadOnlyCollection<PolicyStatement> addPolicyStatements,
+            bool addAccountConditionForPolicies, bool addTopicNamePrefixConditionForPolicies,
+            IReadOnlyList<string> namespaceConditionsForPolicies, string topicNamePrefix, string sqsQueueArn)
+        {
+            var policyModified = false;
+            var wildcardConditions = new List<string>();
+            if (addAccountConditionForPolicies)
+            {
+                wildcardConditions.AddRange(addPolicyStatements.Select(s => $"{s.AccountArn}:*").Distinct());
+            }
+
+            if (addTopicNamePrefixConditionForPolicies)
+            {
+                wildcardConditions.AddRange(addPolicyStatements
+                    .Select(s => $"{s.AccountArn}:{topicNamePrefix}*").Distinct());
+            }
+
+            if (namespaceConditionsForPolicies.Count > 0)
+            {
+                wildcardConditions.AddRange(namespaceConditionsForPolicies
+                    .SelectMany(ns => addPolicyStatements
+                        .Select(s => $"{s.AccountArn}")
+                        .Distinct()
+                        .Select(arn => $"{arn}:{GetNamespaceName(topicNamePrefix, ns)}*")));
+            }
+
+            var wildCardQueuePermissionStatements = CreateSQSPermissionStatement(sqsQueueArn, wildcardConditions);
+            var explicitQueuePermissionStatements =
+                CreateSQSPermissionStatement(sqsQueueArn, addPolicyStatements.Select(s => s.TopicArn));
+
+            if (wildcardConditions.Count > 0 || !policy.ContainsPermission(explicitQueuePermissionStatements))
+            {
+                // TODO: Potentially check the number of statements and refuse to start but provide an override option
+                // transport.Policies(forceSettlement: true);
+                var statementToRemoves = policy.Statements
+                    .Where(statement => statement.CoveredByPermission(explicitQueuePermissionStatements)).ToList();
+                foreach (var statementToRemove in statementToRemoves)
+                {
+                    policy.Statements.Remove(statementToRemove);
+                    policyModified = true;
+                }
+
+                if (wildcardConditions.Count == 0)
+                {
+                    policy.AddSQSPermission(explicitQueuePermissionStatements);
+
+                    var wildCardStatementsToRemove = policy.Statements
+                        .Where(statement => statement.CoveredByWildcard(explicitQueuePermissionStatements)).ToList();
+                    foreach (var statementToRemove in wildCardStatementsToRemove)
+                    {
+                        policy.Statements.Remove(statementToRemove);
+                    }
+
+                    policyModified = true;
+                }
+            }
+
+            if (wildcardConditions.Count > 0 && !policy.ContainsPermission(wildCardQueuePermissionStatements))
+            {
+                // TODO: Potentially check the number of statements and refuse to start but provide an override option
+                // transport.Policies(forceSettlement: true);
+                var statementToRemoves = policy.Statements
+                    .Where(statement => statement.CoveredByWildcard(wildCardQueuePermissionStatements)).ToList();
+                foreach (var statementToRemove in statementToRemoves)
+                {
+                    policy.Statements.Remove(statementToRemove);
+                }
+
+                policy.AddSQSPermission(wildCardQueuePermissionStatements);
+
+                policyModified = true;
+            }
+
+            return policyModified;
+        }
+
+        private static string GetNamespaceName(string topicNamePrefix, string namespaceName)
+        {
+            // SNS topic names can only have alphanumeric characters, hyphens and underscores.
+            // Any other characters will be replaced with a hyphen.
+            var namespaceNameBuilder = new StringBuilder(namespaceName);
+            for (var i = 0; i < namespaceNameBuilder.Length; ++i)
+            {
+                var c = namespaceNameBuilder[i];
+                if (!char.IsLetterOrDigit(c)
+                    && c != '-'
+                    && c != '_')
+                {
+                    namespaceNameBuilder[i] = '-';
+                }
+            }
+
+            // topicNamePrefix should not be sanitized
+            return topicNamePrefix + namespaceNameBuilder;
+        }
+
+        internal static Policy ExtractPolicy(this Dictionary<string, string> queueAttributes)
+        {
+            Policy policy;
+            string policyStr = null;
+            if (queueAttributes.ContainsKey("Policy"))
+            {
+                policyStr = queueAttributes["Policy"];
+            }
+
+            if (string.IsNullOrEmpty(policyStr))
+            {
+                policy = new Policy();
+            }
+            else
+            {
+                policy = Policy.FromJson(policyStr);
+            }
+
+            return policy;
+        }
+
         internal static void AddSQSPermission(this Policy policy, Statement addStatement)
         {
             policy.Statements.Add(addStatement);
