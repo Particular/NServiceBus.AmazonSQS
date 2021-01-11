@@ -47,8 +47,6 @@ namespace NServiceBus.Transport.SQS.Extensions
 
             if (wildcardConditions.Count > 0 || !policy.ContainsPermission(explicitQueuePermissionStatements))
             {
-                // TODO: Potentially check the number of statements and refuse to start but provide an override option
-                // transport.Policies(forceSettlement: true);
                 var statementToRemoves = policy.Statements
                     .Where(statement => statement.CoveredByPermission(explicitQueuePermissionStatements)).ToList();
                 foreach (var statementToRemove in statementToRemoves)
@@ -74,8 +72,6 @@ namespace NServiceBus.Transport.SQS.Extensions
 
             if (wildcardConditions.Count > 0 && !policy.ContainsPermission(wildCardQueuePermissionStatements))
             {
-                // TODO: Potentially check the number of statements and refuse to start but provide an override option
-                // transport.Policies(forceSettlement: true);
                 var statementToRemoves = policy.Statements
                     .Where(statement => statement.CoveredByWildcard(wildCardQueuePermissionStatements)).ToList();
                 foreach (var statementToRemove in statementToRemoves)

@@ -10,9 +10,8 @@
     /// </summary>
     public class PolicySettings : ExposeSettings
     {
-        internal PolicySettings(SettingsHolder settings, bool forceSettlement = false) : base(settings)
+        internal PolicySettings(SettingsHolder settings) : base(settings)
         {
-            this.GetSettings().Set(SettingsKeys.ForceSettlementForPolicies, forceSettlement);
         }
 
         /// <summary>

@@ -99,11 +99,10 @@
         /// Configures the policy creation during subscription.
         /// </summary>
         /// <param name="transportExtensions">The transport extensions.</param>
-        /// <param name="forceSettlement">When set to <c>true</c> the endpoint will enforce the current policy instead of throwing at startup when the policy might exceed the statement limitations.</param>
-        public static PolicySettings Policies(this TransportExtensions<SqsTransport> transportExtensions, bool forceSettlement = false)
+        public static PolicySettings Policies(this TransportExtensions<SqsTransport> transportExtensions)
         {
             Guard.AgainstNull(nameof(transportExtensions), transportExtensions);
-            return new PolicySettings(transportExtensions.GetSettings(), forceSettlement);
+            return new PolicySettings(transportExtensions.GetSettings());
         }
 
         /// <summary>

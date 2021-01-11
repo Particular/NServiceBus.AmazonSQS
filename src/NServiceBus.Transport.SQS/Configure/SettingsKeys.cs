@@ -22,7 +22,6 @@
         public const string PreTruncateTopicNames = Prefix + nameof(PreTruncateTopicNames);
         public const string UnrestrictedDurationDelayedDeliveryQueueDelayTime = Prefix + nameof(UnrestrictedDurationDelayedDeliveryQueueDelayTime);
 
-        public const string ForceSettlementForPolicies = Prefix + nameof(ForceSettlementForPolicies);
         public const string FullTopicNameForPolicies = Prefix + nameof(FullTopicNameForPolicies);
         public const string AddAccountConditionForPolicies = Prefix + nameof(AddAccountConditionForPolicies);
         public const string AddTopicNamePrefixConditionForPolicies = Prefix + nameof(AddTopicNamePrefixConditionForPolicies);
