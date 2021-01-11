@@ -270,27 +270,6 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
-        public async Task SettlePolicy_with_account_condition_sets_full_policy()
-        {
-            var policies = transportSettings.Policies();
-            policies.AddAccountCondition();
-
-            var manager = CreateBatchingSubscriptionManager();
-
-            var eventType = typeof(Event);
-            await manager.Subscribe(eventType, null);
-            var anotherEvent = typeof(AnotherEvent);
-            await manager.Subscribe(anotherEvent, null);
-
-            var setAttributeRequestsSentBeforeSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
-
-            await manager.Settle();
-
-            Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
-            Approver.Verify(sqsClient.SetAttributesRequestsSent[0].attributes["Policy"], ScrubPolicy);
-        }
-
-        [Test]
         public async Task SettlePolicy_with_topic_name_prefix_sets_full_policy()
         {
             transportSettings.TopicNamePrefix("DEV-");

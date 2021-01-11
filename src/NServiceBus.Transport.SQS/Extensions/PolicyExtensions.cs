@@ -14,6 +14,11 @@ namespace NServiceBus.Transport.SQS.Extensions
             bool addAccountConditionForPolicies, bool addTopicNamePrefixConditionForPolicies,
             IReadOnlyList<string> namespaceConditionsForPolicies, string topicNamePrefix, string sqsQueueArn)
         {
+            if (addPolicyStatements.Count == 0)
+            {
+                return false;
+            }
+
             var policyModified = false;
             var wildcardConditions = new List<string>();
             if (addAccountConditionForPolicies)
