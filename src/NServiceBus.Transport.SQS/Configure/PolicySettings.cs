@@ -69,8 +69,8 @@
         ///    policies.AddNamespaceCondition("Some.Namespace.");
         ///    policies.AddNamespaceCondition("SomeOther.Namespace");
         /// </code> and subscribing to
-        /// - arn:aws:sns:some-region:some-account:DEV-Some-Namespace-Event
-        /// - arn:aws:sns:some-region:some-account:DEV-Some-Namespace-AnotherEvent
+        /// - arn:aws:sns:some-region:some-account:Some-Namespace-Event
+        /// - arn:aws:sns:some-region:some-account:Some-Namespace-AnotherEvent
         /// would lead to
         /// <![CDATA[
         /// "Condition" : { "ArnLike" : { "aws:SourceArn" :
