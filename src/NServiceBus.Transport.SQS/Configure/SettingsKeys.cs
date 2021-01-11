@@ -3,6 +3,7 @@
     static class SettingsKeys
     {
         const string Prefix = "NServiceBus.AmazonSQS.";
+
         public const string SqsClientFactory = Prefix + nameof(SqsClientFactory);
         public const string SnsClientFactory = Prefix + nameof(SnsClientFactory);
         public const string MaxTimeToLive = Prefix + nameof(MaxTimeToLive);
@@ -26,6 +27,7 @@
         public const string AddAccountConditionForPolicies = Prefix + nameof(AddAccountConditionForPolicies);
         public const string AddTopicNamePrefixConditionForPolicies = Prefix + nameof(AddTopicNamePrefixConditionForPolicies);
         public const string NamespaceConditionForPolicies = Prefix + nameof(NamespaceConditionForPolicies);
+        public const string AssumePolicyHasAppropriatePermissions = Prefix + nameof(AssumePolicyHasAppropriatePermissions);
 
         public const string V1CompatibilityMode = Prefix + nameof(V1CompatibilityMode);
         public const string DisableNativePubSub = Prefix + nameof(DisableNativePubSub);

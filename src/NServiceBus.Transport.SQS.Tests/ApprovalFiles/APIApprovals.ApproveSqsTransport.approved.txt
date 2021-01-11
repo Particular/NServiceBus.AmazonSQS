@@ -8,6 +8,7 @@ namespace NServiceBus
         public void AddAccountCondition() { }
         public void AddNamespaceCondition(string topicNamespace) { }
         public void AddTopicNamePrefixCondition() { }
+        public void AssumePolicyHasAppropriatePermissions() { }
     }
     public class S3Settings : NServiceBus.Configuration.AdvancedExtensibility.ExposeSettings
     {

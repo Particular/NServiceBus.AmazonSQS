@@ -234,7 +234,7 @@ namespace NServiceBus.Transport.SQS
 
         async Task SetNecessaryDeliveryPolicyWithRetries(string queueUrl, IReadOnlyCollection<PolicyStatement> addPolicyStatements)
         {
-            if (addPolicyStatements.Count == 0)
+            if (configuration.AssumePolicyHasAppropriatePermissions || addPolicyStatements.Count == 0)
             {
                 return;
             }

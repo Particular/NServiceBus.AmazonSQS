@@ -35,6 +35,7 @@
             settings.SetDefault(SettingsKeys.TopicNamePrefix, string.Empty);
             settings.SetDefault(SettingsKeys.FullTopicNameForPolicies, true);
             settings.SetDefault(SettingsKeys.ForceSettlementForPolicies, false);
+            settings.SetDefault(SettingsKeys.AssumePolicyHasAppropriatePermissions, false);
 
             // needed to only enable the feature when the transport is used
             settings.Set(typeof(SettlePolicy).FullName, FeatureState.Enabled);

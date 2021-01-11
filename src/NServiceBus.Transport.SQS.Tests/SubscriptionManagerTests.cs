@@ -286,6 +286,30 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
+        public async Task SettlePolicy_with_policy_assumed_to_have_permissions_doesnt_acquire_policy_but_creates_topics_and_subscriptions()
+        {
+            var policies = transportSettings.Policies();
+            policies.AssumePolicyHasAppropriatePermissions();
+
+            var manager = CreateBatchingSubscriptionManager();
+
+            var eventType = typeof(Event);
+            await manager.Subscribe(eventType, null);
+            var anotherEvent = typeof(AnotherEvent);
+            await manager.Subscribe(anotherEvent, null);
+
+            var setAttributeRequestsSentBeforeSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
+
+            await manager.Settle();
+
+            Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
+            Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
+            Assert.AreEqual(1, sqsClient.GetAttributeRequestsSent.Count, "One queue attribute get request should have been sent only.");
+            Assert.AreEqual(2, snsClient.SubscribeRequestsSent.Count, "A subscribe request per topic should have been sent");
+            Assert.AreEqual(2, snsClient.CreateTopicRequests.Count, "A create topic request per topic should have been sent");
+        }
+
+        [Test]
         public async Task After_settle_policy_does_not_batch_subscriptions()
         {
             var manager = CreateBatchingSubscriptionManager();

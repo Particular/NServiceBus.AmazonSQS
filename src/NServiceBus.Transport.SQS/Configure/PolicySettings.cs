@@ -18,6 +18,14 @@
         /// <summary>
         ///
         /// </summary>
+        public void AssumePolicyHasAppropriatePermissions()
+        {
+            this.GetSettings().Set(SettingsKeys.AssumePolicyHasAppropriatePermissions, true);
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
         public void AddAccountCondition()
         {
             this.GetSettings().Set(SettingsKeys.AddAccountConditionForPolicies, true);
@@ -47,10 +55,4 @@
             topicNamespaces.Add(topicNamespace);
         }
     }
-
-    // policy.AddAccountCondition();
-    // policy.AddTopicNamePrefixCondition(); // extracted from transport.TopicNamePrefix("DEV-")
-    // policy.AddNamespaceCondition("Sales."); // dots turned to dashes and if prefix set it would be taken into account
-    // policy.AddNamespaceCondition("Shipping."); // dots turned to dashes and if prefix set it would be taken into account
-    // default we use TopicArn, if any of the Add*Conditions are called we no longer add the full topic arns
 }

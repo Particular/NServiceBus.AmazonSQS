@@ -273,6 +273,20 @@
             }
         }
 
+        public bool AssumePolicyHasAppropriatePermissions
+        {
+            get
+            {
+                if (!assumePolicyHasAppropriatePermissionsInitialized)
+                {
+                    assumePolicyHasAppropriatePermissions = settings.GetOrDefault<bool>(SettingsKeys.AssumePolicyHasAppropriatePermissions);
+                    assumePolicyHasAppropriatePermissionsInitialized = true;
+                }
+
+                return assumePolicyHasAppropriatePermissions;
+            }
+        }
+
         public bool AddAccountConditionForPolicies
         {
             get
@@ -343,6 +357,8 @@
         bool serverSideEncryptionCustomerProvidedKeyMD5Initialized;
         bool disableSubscriptionBatchingOnStartInitialized;
         bool disableSubscriptionBatchingOnStart;
+        bool assumePolicyHasAppropriatePermissionsInitialized;
+        bool assumePolicyHasAppropriatePermissions;
         bool addAccountConditionForPoliciesInitialized;
         bool addAccountConditionForPolicies;
         bool addTopicNamePrefixConditionForPoliciesInitialized;
