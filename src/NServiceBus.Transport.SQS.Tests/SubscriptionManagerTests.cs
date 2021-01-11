@@ -1,9 +1,7 @@
 namespace NServiceBus.Transport.SQS.Tests
 {
-    using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.Auth.AccessControlPolicy;
@@ -265,7 +263,7 @@ namespace NServiceBus.Transport.SQS.Tests
             await manager.Settle();
 
             Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
-            Approver.Verify(sqsClient.SetAttributesRequestsSent[0].attributes["Policy"], ScrubPolicy);
+            Approver.Verify(sqsClient.SetAttributesRequestsSent[0].attributes["Policy"], PolicyScrubber.ScrubPolicy);
         }
 
         [Test]
@@ -473,23 +471,6 @@ namespace NServiceBus.Transport.SQS.Tests
 
                 return original(s);
             };
-        }
-
-        private string ScrubPolicy(string policyAsString)
-        {
-            var scrubbed = Regex.Replace(policyAsString, "\"Sid\" : \"(.*)\",", string.Empty);
-            return RemoveUnnecessaryWhiteSpace(scrubbed);
-        }
-
-        private static string RemoveUnnecessaryWhiteSpace(string policyAsString)
-        {
-            return string.Join(Environment.NewLine, policyAsString.Split(new[]
-                {
-                    Environment.NewLine
-                }, StringSplitOptions.RemoveEmptyEntries)
-                .Where(l => !string.IsNullOrWhiteSpace(l))
-                .Select(l => l.TrimEnd())
-            );
         }
 
         MockSqsClient sqsClient;

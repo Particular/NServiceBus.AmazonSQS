@@ -1,8 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Text.RegularExpressions;
-
-#pragma warning disable 618
+﻿#pragma warning disable 618
 namespace NServiceBus.Transport.SQS.Tests
 {
     using NUnit.Framework;
@@ -49,7 +45,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 sqsQueueArn: "arn:fakeQueue");
 
             Assert.IsFalse(updated, "Policy was updated but shouldn't have been");
-            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+            Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
         [Test]
@@ -71,7 +67,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 sqsQueueArn: "arn:fakeQueue");
 
             Assert.IsTrue(updated, "Policy was not updated but should have been");
-            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+            Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
         [Test]
@@ -93,7 +89,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 sqsQueueArn: "arn:fakeQueue");
 
             Assert.IsTrue(updated, "Policy was not updated but should have been");
-            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+            Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
         [Test]
@@ -115,7 +111,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 sqsQueueArn: "arn:fakeQueue");
 
             Assert.IsTrue(updated, "Policy was not updated but should have been");
-            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+            Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
         [Test]
@@ -141,7 +137,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 sqsQueueArn: "arn:fakeQueue");
 
             Assert.IsTrue(updated, "Policy was not updated but should have been");
-            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+            Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
         [Test]
@@ -167,7 +163,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 sqsQueueArn: "arn:fakeQueue");
 
             Assert.IsTrue(updated, "Policy was not updated but should have been");
-            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+            Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
         [Test]
@@ -193,7 +189,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 sqsQueueArn: "arn:fakeQueue");
 
             Assert.IsTrue(updated, "Policy was not updated but should have been");
-            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+            Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
         [Test]
@@ -221,7 +217,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 sqsQueueArn: "arn:fakeQueue");
 
             Assert.IsTrue(updated, "Policy was not updated but should have been");
-            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+            Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
         [Test]
@@ -245,7 +241,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 sqsQueueArn: "arn:fakeQueue");
 
             Assert.IsTrue(updated, "Policy was not updated but should have been");
-            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+            Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
         [Test]
@@ -276,7 +272,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 sqsQueueArn: "arn:fakeQueue");
 
             Assert.IsTrue(updated, "Policy was not updated but should have been");
-            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+            Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
         [Test]
@@ -305,7 +301,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 sqsQueueArn: "arn:fakeQueue");
 
             Assert.IsTrue(updated, "Policy was not updated but should have been");
-            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+            Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
         [Test]
@@ -329,7 +325,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 sqsQueueArn: "arn:fakeQueue");
 
             Assert.IsFalse(updated, "Policy was updated but shouldn't have been");
-            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+            Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
         [Test]
@@ -357,7 +353,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 sqsQueueArn: "arn:fakeQueue");
 
             Assert.IsFalse(updated, "Policy was updated but shouldn't have been");
-            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+            Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
         [Test]
@@ -389,7 +385,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 sqsQueueArn: "arn:fakeQueue");
 
             Assert.IsFalse(updated, "Policy was updated but shouldn't have been");
-            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+            Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
         [Test]
@@ -413,7 +409,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 sqsQueueArn: "arn:fakeQueue");
 
             Assert.IsTrue(updated, "Policy was not updated but should have been");
-            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+            Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
         [Test]
@@ -436,7 +432,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 sqsQueueArn: "arn:fakeQueue");
 
             Assert.IsTrue(updated, "Policy was not updated but should have been");
-            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+            Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
         [Test]
@@ -463,7 +459,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 sqsQueueArn: "arn:fakeQueue");
 
             Assert.IsTrue(updated, "Policy was not updated but should have been");
-            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+            Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
         [Test]
@@ -489,7 +485,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 sqsQueueArn: "arn:fakeQueue");
 
             Assert.IsTrue(updated, "Policy was not updated but should have been");
-            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+            Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
         [Test]
@@ -513,7 +509,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 sqsQueueArn: "arn:fakeQueue");
 
             Assert.IsTrue(updated, "Policy was not updated but should have been");
-            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+            Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
         [Test]
@@ -540,7 +536,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 sqsQueueArn: "arn:fakeQueue");
 
             Assert.IsTrue(updated, "Policy was not updated but should have been");
-            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+            Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
         [Test]
@@ -570,25 +566,10 @@ namespace NServiceBus.Transport.SQS.Tests
                 sqsQueueArn: "arn:fakeQueue");
 
             Assert.IsTrue(updated, "Policy was not updated but should have been");
-            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+            Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
-        private string ScrubPolicy(string policyAsString)
-        {
-            var scrubbed = Regex.Replace(policyAsString, "\"Sid\" : \"(.*)\",", string.Empty);
-            return RemoveUnnecessaryWhiteSpace(scrubbed);
-        }
 
-        private static string RemoveUnnecessaryWhiteSpace(string policyAsString)
-        {
-            return string.Join(Environment.NewLine, policyAsString.Split(new[]
-                {
-                    Environment.NewLine
-                }, StringSplitOptions.RemoveEmptyEntries)
-                .Where(l => !string.IsNullOrWhiteSpace(l))
-                .Select(l => l.TrimEnd())
-            );
-        }
     }
 }
 #pragma warning restore 618
