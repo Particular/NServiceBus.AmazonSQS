@@ -86,6 +86,17 @@ namespace NServiceBus.Transport.SQS.Extensions
             return policyModified;
         }
 
+        internal static Policy ExtractPolicy(this Dictionary<string, string> queueAttributes)
+        {
+            string policyStr = null;
+            if (queueAttributes.ContainsKey("Policy"))
+            {
+                policyStr = queueAttributes["Policy"];
+            }
+
+            return string.IsNullOrEmpty(policyStr) ? new Policy() : Policy.FromJson(policyStr);
+        }
+
         private static string GetNamespaceName(string topicNamePrefix, string namespaceName)
         {
             // SNS topic names can only have alphanumeric characters, hyphens and underscores.
@@ -104,27 +115,6 @@ namespace NServiceBus.Transport.SQS.Extensions
 
             // topicNamePrefix should not be sanitized
             return topicNamePrefix + namespaceNameBuilder;
-        }
-
-        internal static Policy ExtractPolicy(this Dictionary<string, string> queueAttributes)
-        {
-            Policy policy;
-            string policyStr = null;
-            if (queueAttributes.ContainsKey("Policy"))
-            {
-                policyStr = queueAttributes["Policy"];
-            }
-
-            if (string.IsNullOrEmpty(policyStr))
-            {
-                policy = new Policy();
-            }
-            else
-            {
-                policy = Policy.FromJson(policyStr);
-            }
-
-            return policy;
         }
 
         private static bool ContainsPermission(this Policy policy, Statement statement)
