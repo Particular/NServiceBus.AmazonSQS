@@ -1,5 +1,7 @@
 ﻿namespace NServiceBus
 {
+    using System;
+    using System.Linq;
     using Settings;
     using System.Collections.Generic;
     using Configuration.AdvancedExtensibility;
@@ -19,6 +21,18 @@
         /// </summary>
         public void AssumePolicyHasAppropriatePermissions()
         {
+            var settings = this.GetSettings();
+            if (settings.HasExplicitValue(SettingsKeys.AddAccountConditionForPolicies) &&
+                settings.Get<bool>(SettingsKeys.AddAccountConditionForPolicies) ||
+                settings.HasExplicitValue(SettingsKeys.AddTopicNamePrefixConditionForPolicies) &&
+                settings.Get<bool>(SettingsKeys.AddTopicNamePrefixConditionForPolicies) ||
+                settings.HasExplicitValue(SettingsKeys.NamespaceConditionForPolicies) &&
+                settings.Get<List<string>>(SettingsKeys.NamespaceConditionForPolicies).Any() )
+            {
+                throw new InvalidOperationException(
+                    $"When the policy modification is disabled no other condition like `{nameof(AddAccountCondition)}`, `{nameof(AddTopicNamePrefixCondition)}` or `{nameof(AddNamespaceCondition)}` can be used.");
+            }
+
             this.GetSettings().Set(SettingsKeys.AssumePolicyHasAppropriatePermissions, true);
         }
 
@@ -37,6 +51,14 @@
         /// <remarks>Calling this method will opt-in for wildcard policy and no longer populate the policy with the explicit topic ARNs the endpoint subscribes to.</remarks>
         public void AddAccountCondition()
         {
+            var settings = this.GetSettings();
+            if (settings.HasExplicitValue(SettingsKeys.AssumePolicyHasAppropriatePermissions) &&
+                settings.Get<bool>(SettingsKeys.AssumePolicyHasAppropriatePermissions))
+            {
+                throw new InvalidOperationException(
+                    $"The policy modification was disabled by calling `{nameof(AssumePolicyHasAppropriatePermissions)}`. `{nameof(AddAccountCondition)}` requires `{nameof(AssumePolicyHasAppropriatePermissions)}` to be removed.");
+            }
+
             this.GetSettings().Set(SettingsKeys.AddAccountConditionForPolicies, true);
         }
 
@@ -57,6 +79,14 @@
         /// <remarks>Calling this method will opt-in for wildcard policy and no longer populate the policy with the explicit topic ARNs the endpoint subscribes to.</remarks>
         public void AddTopicNamePrefixCondition()
         {
+            var settings = this.GetSettings();
+            if (settings.HasExplicitValue(SettingsKeys.AssumePolicyHasAppropriatePermissions) &&
+                settings.Get<bool>(SettingsKeys.AssumePolicyHasAppropriatePermissions))
+            {
+                throw new InvalidOperationException(
+                    $"The policy modification was disabled by calling `{nameof(AssumePolicyHasAppropriatePermissions)}`. `{nameof(AddTopicNamePrefixCondition)}` requires `{nameof(AssumePolicyHasAppropriatePermissions)}` to be removed.");
+            }
+
             this.GetSettings().Set(SettingsKeys.AddTopicNamePrefixConditionForPolicies, true);
         }
 
@@ -84,6 +114,14 @@
         /// <remarks>Calling this method will opt-in for wildcard policy and no longer populate the policy with the explicit topic ARNs the endpoint subscribes to.</remarks>
         public void AddNamespaceCondition(string topicNamespace)
         {
+            var settings = this.GetSettings();
+            if (settings.HasExplicitValue(SettingsKeys.AssumePolicyHasAppropriatePermissions) &&
+                settings.Get<bool>(SettingsKeys.AssumePolicyHasAppropriatePermissions))
+            {
+                throw new InvalidOperationException(
+                    $"The policy modification was disabled by calling `{nameof(AssumePolicyHasAppropriatePermissions)}`. `{nameof(AddNamespaceCondition)}` requires `{nameof(AssumePolicyHasAppropriatePermissions)}` to be removed.");
+            }
+
             if (!this.GetSettings()
                 .TryGet<List<string>>(SettingsKeys.NamespaceConditionForPolicies, out var topicNamespaces))
             {
