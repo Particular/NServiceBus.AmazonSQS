@@ -466,6 +466,113 @@ namespace NServiceBus.Transport.SQS.Tests
             Approver.Verify(value: policy.ToJson(), ScrubPolicy);
         }
 
+        [Test]
+        public void Update_with_existing_partial_legacy_policy_with_conditions_does_migrate_to_wildcard_policy()
+        {
+            var policy = new Policy();
+            policy.Statements.Add(PolicyStatement.CreatePermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"));
+
+            var addStatements = new List<PolicyStatement>
+            {
+                new PolicyStatement("DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event", "arn:aws:sns:us-west-2:123456789012:DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event", "arn:fakeQueue"),
+                new PolicyStatement("DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent", "arn:aws:sns:us-west-2:123456789012:DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent", "arn:fakeQueue")
+            };
+
+            var updated = policy.Update(addPolicyStatements: addStatements,
+                addAccountConditionForPolicies: true,
+                addTopicNamePrefixConditionForPolicies: true,
+                namespaceConditionsForPolicies: new List<string>
+                {
+                    "NServiceBus.Transport.SQS.Tests.SubscriptionManagerTests."
+                },
+                topicNamePrefix: "DEV-",
+                sqsQueueArn: "arn:fakeQueue");
+
+            Assert.IsTrue(updated, "Policy was not updated but should have been");
+            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+        }
+
+        [Test]
+        public void Update_with_existing_partial_legacy_policy_migration_leaves_unrelated_permissions()
+        {
+            var policy = new Policy();
+            policy.Statements.Add(PolicyStatement.CreatePermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:UnrelatedEvent"));
+            policy.Statements.Add(PolicyStatement.CreatePermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"));
+
+            var addStatements = new List<PolicyStatement>
+            {
+                new PolicyStatement("NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event", "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event", "arn:fakeQueue"),
+                new PolicyStatement("NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent", "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent", "arn:fakeQueue")
+            };
+
+            var updated = policy.Update(addPolicyStatements: addStatements,
+                addAccountConditionForPolicies: false,
+                addTopicNamePrefixConditionForPolicies: false,
+                namespaceConditionsForPolicies: new List<string>(),
+                topicNamePrefix: string.Empty,
+                sqsQueueArn: "arn:fakeQueue");
+
+            Assert.IsTrue(updated, "Policy was not updated but should have been");
+            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+        }
+
+        [Test]
+        public void Update_with_existing_partial_legacy_policy_with_condition_migration_leaves_unrelated_permissions()
+        {
+            var policy = new Policy();
+            policy.Statements.Add(PolicyStatement.CreatePermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:DEV-UnrelatedEvent"));
+            policy.Statements.Add(PolicyStatement.CreatePermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"));
+
+            var addStatements = new List<PolicyStatement>
+            {
+                new PolicyStatement("DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event", "arn:aws:sns:us-west-2:123456789012:DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event", "arn:fakeQueue"),
+                new PolicyStatement("DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent", "arn:aws:sns:us-west-2:123456789012:DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent", "arn:fakeQueue")
+            };
+
+            var updated = policy.Update(addPolicyStatements: addStatements,
+                addAccountConditionForPolicies: true,
+                addTopicNamePrefixConditionForPolicies: true,
+                namespaceConditionsForPolicies: new List<string>
+                {
+                    "NServiceBus.Transport.SQS.Tests.SubscriptionManagerTests."
+                },
+                topicNamePrefix: "DEV-",
+                sqsQueueArn: "arn:fakeQueue");
+
+            Assert.IsTrue(updated, "Policy was not updated but should have been");
+            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+        }
+
+        [Test]
+        public void Update_with_existing_partial_policy_migration_leaves_unrelated_permissions()
+        {
+            var policy = new Policy();
+            policy.Statements.Add(PolicyStatement.CreatePermissionStatement("arn:fakeQueue", "arn:aws:sns:us-west-2:123456789012:UnrelatedEvent"));
+            var permissionStatement = PolicyExtensions.CreatePermissionStatementForQueueMatching("arn:fakeQueue", new[]
+            {
+                "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event",
+                "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent"
+            });
+            policy.Statements.Add(permissionStatement);
+
+            var addStatements = new List<PolicyStatement>
+            {
+                new PolicyStatement("NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event", "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event", "arn:fakeQueue"),
+                new PolicyStatement("NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent", "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent", "arn:fakeQueue"),
+                new PolicyStatement("NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-YetAnotherEvent", "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-YetAnotherEvent", "arn:fakeQueue")
+            };
+
+            var updated = policy.Update(addPolicyStatements: addStatements,
+                addAccountConditionForPolicies: false,
+                addTopicNamePrefixConditionForPolicies: false,
+                namespaceConditionsForPolicies: new List<string>(),
+                topicNamePrefix: string.Empty,
+                sqsQueueArn: "arn:fakeQueue");
+
+            Assert.IsTrue(updated, "Policy was not updated but should have been");
+            Approver.Verify(value: policy.ToJson(), ScrubPolicy);
+        }
+
         private string ScrubPolicy(string policyAsString)
         {
             var scrubbed = Regex.Replace(policyAsString, "\"Sid\" : \"(.*)\",", string.Empty);
