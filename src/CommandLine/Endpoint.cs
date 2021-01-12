@@ -1,6 +1,7 @@
 ﻿namespace NServiceBus.Transport.SQS.CommandLine
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading.Tasks;
     using Amazon.S3;
     using Amazon.SimpleNotificationService;
@@ -70,9 +71,7 @@
         {
             await Console.Out.WriteLineAsync($"Subscribing endpoint '{endpointName}' to '{eventType}'.");
 
-            var queueUrl = await Queue.GetUrl(sqs, prefix, endpointName);
-            var queueAttributes = await sqs.GetAttributesAsync(queueUrl).ConfigureAwait(false);
-            var queueArn = queueAttributes["QueueArn"];
+            var queueArn = await Queue.GetArn(sqs, prefix, endpointName);
             var topicArn = await Topic.Create(sns, prefix, eventType);
             await Topic.Subscribe(sqs, sns, topicArn, queueArn);
 
@@ -93,6 +92,39 @@
             {
                 await Topic.Delete(sns, topicArn);
             }
+        }
+
+        public static async Task SetEventsBasedPolicy(IAmazonSQS sqs, IAmazonSimpleNotificationService sns, string prefix, string endpointName, IEnumerable<string> eventTypes)
+        {
+            await Console.Out.WriteLineAsync($"Setting event based delivery policies on endpoint '{endpointName}'.");
+
+            var policyStatements = new List<PolicyStatement>();
+            var queueUrl = await Queue.GetUrl(sqs, prefix, endpointName);
+            var queueAttributes = await sqs.GetAttributesAsync(queueUrl).ConfigureAwait(false);
+            var queueArn = queueAttributes["QueueArn"];
+
+            foreach(var eventType in eventTypes){
+                var topicArn = await Topic.Get(sns, prefix, eventType);
+                policyStatements.Add(new PolicyStatement($"{prefix}{eventType}", topicArn, queueArn));
+            }
+
+            var policy = queueAttributes.ExtractPolicy();
+
+            if (!policy.Update(policyStatements,
+                false, // configuration.AddAccountConditionForPolicies,
+                false, // configuration.AddTopicNamePrefixConditionForPolicies,
+                new List<string>(), // configuration.NamespaceConditionsForPolicies,
+                prefix, // configuration.TopicNamePrefix,
+                queueArn))
+            {
+                await Console.Out.WriteLineAsync($"Policy on endpoint '{endpointName}' not set.");
+                return;
+            }
+
+            var setAttributes = new Dictionary<string, string> {{"Policy", policy.ToJson()}};
+            await sqs.SetAttributesAsync(queueUrl, setAttributes).ConfigureAwait(false);
+
+            await Console.Out.WriteLineAsync($"Policy on endpoint '{endpointName}' not set.");
         }
     }
 }

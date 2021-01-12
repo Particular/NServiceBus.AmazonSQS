@@ -12,6 +12,8 @@
     // sqs-transport endpoint remove large-message-support bucket-name [--other-options]
     // sqs-transport endpoint remove remove delay-delivery-support [--other-options]
     // sqs-transport endpoint delete name [--other-options]
+    // sqs-transport endpoint policy wildcard --account --namespace "namespacename" --prefix "prefix" [--other-options] 
+    // sqs-transport endpoint policy events --event-type "event-type1" --event-type "event-type2" [--other-options] 
     class Program
     {
         static int Main(string[] args)
@@ -234,6 +236,66 @@
                         await Console.Out.WriteLineAsync($"Endpoint '{endpointName}' unsubscribed from '{eventType}'.");
                     });
                 });
+            
+                endpointCommand.Command("policy", policyCommand => 
+                {
+                    policyCommand.Description = "Sets the IAM policy for an endpoint.";
+
+                    policyCommand.OnExecute(() =>
+                    {
+                        Console.WriteLine("Specify a subcommand");
+                        policyCommand.ShowHelp();
+                        return 1;
+                    });
+
+                    policyCommand.Command("events", policyBasedOneventsCommand =>
+                    {
+                        policyBasedOneventsCommand.Options.Add(accessKeyOption);
+                        policyBasedOneventsCommand.Options.Add(regionOption);
+                        policyBasedOneventsCommand.Options.Add(secretOption);
+                        policyBasedOneventsCommand.Options.Add(prefixOption);
+
+                        var eventTypeOption = new CommandOption("-evt|--event-type", CommandOptionType.MultipleValue)
+                        {
+                            Description = "Allow subscription to topic for specific event type."
+                        };
+                        policyBasedOneventsCommand.Options.Add(eventTypeOption);
+
+                        policyBasedOneventsCommand.OnExecute(() =>
+                        {
+                            // TODO
+                            return 1;
+                        });
+
+                    });
+
+                    policyCommand.Command("wildcard", policyBasedOnWildcardsCommand =>
+                    {
+                        policyBasedOnWildcardsCommand.Options.Add(accessKeyOption);
+                        policyBasedOnWildcardsCommand.Options.Add(regionOption);
+                        policyBasedOnWildcardsCommand.Options.Add(secretOption);
+                        policyBasedOnWildcardsCommand.Options.Add(prefixOption);
+
+                        var accountOption = new CommandOption("-a|--account", CommandOptionType.SingleValue)
+                        {
+                            Description = "Allow subscription to all topics in an account."
+                        };
+                        policyBasedOnWildcardsCommand.Options.Add(accountOption);
+
+                        var namespaceOption = new CommandOption("-n|--namespace", CommandOptionType.MultipleValue)
+                        {
+                            Description = "Allow subscription to topics for events in a specific namespace."
+                        };
+                        policyBasedOnWildcardsCommand.Options.Add(namespaceOption);
+
+                        policyBasedOnWildcardsCommand.OnExecute(() =>
+                        {
+                            // TODO
+                            return 1;
+                        });
+                    });
+                });
+            
             });
 
             app.OnExecute(() =>
