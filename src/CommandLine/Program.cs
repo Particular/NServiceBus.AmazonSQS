@@ -1,19 +1,24 @@
 ﻿namespace NServiceBus.Transport.SQS.CommandLine
 {
     using System;
+    using System.Collections.Generic;
     using McMaster.Extensions.CommandLineUtils;
 
     // usage:
     // sqs-transport endpoint create name [--other-options]
     // sqs-transport endpoint add name large-message-support bucket-name [--other-options]
     // sqs-transport endpoint add name delay-delivery-support [--other-options]
-    // sqs-transport endpoint subscribe name event-type [--other-options]
+
 
     // sqs-transport endpoint unsubscribe name event-type [--other-options]
     // sqs-transport endpoint remove large-message-support bucket-name [--other-options]
     // sqs-transport endpoint remove remove delay-delivery-support [--other-options]
     // sqs-transport endpoint delete name [--other-options]
 
+    // sqs-transport endpoint subscribe name event-type [--other-options]
+    // sqs-transport endpoint set-policy "endpointname"  events  --event-type "event-type1" --event-type "event-type2" [--other-options]
+    // sqs-transport endpoint set-policy name wildcard --account-condition --namespace-condition "namespacename" --prefix-condition --prefix "prefix" --remove-event-type "event-type2" [--other-options]
+    // sqs-transport endpoint list-policy name [--other-options]
     class Program
     {
         static int Main(string[] args)
@@ -64,7 +69,8 @@
                     createCommand.Options.Add(secretOption);
                     createCommand.Options.Add(prefixOption);
 
-                    var retentionPeriodInSecondsCommand = createCommand.Option("-t|--retention", "Retention Period in seconds (defaults to " + DefaultConfigurationValues.RetentionPeriod.TotalSeconds + " ) ", CommandOptionType.SingleValue);
+                    var retentionPeriodInSecondsCommand = createCommand.Option("-t|--retention",
+                        $"Retention Period in seconds (defaults to {DefaultConfigurationValues.RetentionPeriod.TotalSeconds} ) ", CommandOptionType.SingleValue);
 
                     createCommand.OnExecuteAsync(async ct =>
                     {
@@ -109,14 +115,15 @@
                         largeMessageSupportCommand.Options.Add(secretOption);
 
                         var keyPrefixCommand = largeMessageSupportCommand.Option("-k|--key-prefix", "S3 Key prefix.", CommandOptionType.SingleValue);
-                        var expirationInDaysCommand = largeMessageSupportCommand.Option("-e|--expiration", "Experation time in days (defaults to " + DefaultConfigurationValues.RetentionPeriod.TotalDays + " ) ", CommandOptionType.SingleValue);
+                        var expirationInDaysCommand = largeMessageSupportCommand.Option("-e|--expiration",
+                            $"Expiration time in days (defaults to {DefaultConfigurationValues.RetentionPeriod.TotalDays} ) ", CommandOptionType.SingleValue);
 
                         largeMessageSupportCommand.OnExecuteAsync(async ct =>
                         {
                             var endpointName = nameArgument.Value;
                             var bucketName = bucketArgument.Value;
                             var keyPrefix = keyPrefixCommand.HasValue() ? keyPrefixCommand.Value() : DefaultConfigurationValues.S3KeyPrefix;
-                            var expirationInDays = expirationInDaysCommand.HasValue() ? int.Parse(expirationInDaysCommand.Value()) : (int)(Math.Ceiling(DefaultConfigurationValues.RetentionPeriod.TotalDays));
+                            var expirationInDays = expirationInDaysCommand.HasValue() ? int.Parse(expirationInDaysCommand.Value()) : (int)Math.Ceiling(DefaultConfigurationValues.RetentionPeriod.TotalDays);
 
                             await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.AddLargeMessageSupport(s3, endpointName, bucketName, keyPrefix, expirationInDays));
                         });
@@ -236,6 +243,106 @@
                         await Console.Out.WriteLineAsync($"Endpoint '{endpointName}' unsubscribed from '{eventType}'.");
                     });
                 });
+
+                endpointCommand.Command("set-policy", policyCommand =>
+                {
+                    policyCommand.Description = "Sets the IAM policy for an endpoint.";
+                    var nameArgument = policyCommand.Argument("name", "Name of the endpoint (required)").IsRequired();
+
+                    policyCommand.OnExecute(() =>
+                    {
+                        Console.WriteLine("Specify a subcommand");
+                        policyCommand.ShowHelp();
+                        return 1;
+                    });
+
+                    policyCommand.Command("events", policyBasedOnEventsCommand =>
+                    {
+                        policyBasedOnEventsCommand.Options.Add(accessKeyOption);
+                        policyBasedOnEventsCommand.Options.Add(regionOption);
+                        policyBasedOnEventsCommand.Options.Add(secretOption);
+                        policyBasedOnEventsCommand.Options.Add(prefixOption);
+
+                        var eventTypeOption = new CommandOption("-evt|--event-type", CommandOptionType.MultipleValue)
+                        {
+                            Description = "Allow subscription to topic for specific event type."
+                        };
+                        policyBasedOnEventsCommand.Options.Add(eventTypeOption);
+
+                        policyBasedOnEventsCommand.OnExecuteAsync(async ct =>
+                        {
+                            var endpointName = nameArgument.Value;
+                            var prefix = prefixOption.HasValue() ? prefixOption.Value() : DefaultConfigurationValues.QueueNamePrefix;
+                            var eventTypes = eventTypeOption.HasValue() ? eventTypeOption.Values : new List<string>();
+
+                            await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.SetPolicy(sqs, sns, prefix, endpointName, eventTypes, false, false, new List<string>()));
+                        });
+                    });
+
+                    policyCommand.Command("wildcard", policyBasedOnWildcardsCommand =>
+                    {
+                        policyBasedOnWildcardsCommand.Options.Add(accessKeyOption);
+                        policyBasedOnWildcardsCommand.Options.Add(regionOption);
+                        policyBasedOnWildcardsCommand.Options.Add(secretOption);
+                        policyBasedOnWildcardsCommand.Options.Add(prefixOption);
+
+                        var accountWildcardOption = new CommandOption("-ac|--account-condition", CommandOptionType.NoValue)
+                        {
+                            Description = "Allow subscription to all topics in an account."
+                        };
+                        policyBasedOnWildcardsCommand.Options.Add(accountWildcardOption);
+
+                        var prefixWildcardOption = new CommandOption("-pc|--prefix-condition", CommandOptionType.NoValue)
+                        {
+                            Description = "Allow subscription to topics with a specific wildcard."
+                        };
+                        policyBasedOnWildcardsCommand.Options.Add(prefixWildcardOption);
+
+                        var namespaceWildcardOption = new CommandOption("-nc|--namespace-condition", CommandOptionType.MultipleValue)
+                        {
+                            Description = "Allow subscription to topics for events in a specific namespace."
+                        };
+                        policyBasedOnWildcardsCommand.Options.Add(namespaceWildcardOption);
+
+                        var removeEventTypeOption = new CommandOption("-revt|--remove-event-type", CommandOptionType.MultipleValue)
+                        {
+                            Description = "Remove topic for specific event type."
+                        };
+                        policyBasedOnWildcardsCommand.Options.Add(removeEventTypeOption);
+
+                        policyBasedOnWildcardsCommand.OnExecuteAsync(async ct =>
+                        {
+                            var endpointName = nameArgument.Value;
+                            var addAccountCondition = accountWildcardOption.HasValue();
+                            var addPrefixCondition = prefixWildcardOption.HasValue();
+                            var prefix = prefixOption.HasValue() ? prefixOption.Value() : DefaultConfigurationValues.QueueNamePrefix;
+                            var namespaceConditions = namespaceWildcardOption.HasValue() ? namespaceWildcardOption.Values : new List<string>();
+                            var eventTypes = removeEventTypeOption.HasValue() ? removeEventTypeOption.Values : new List<string>();
+
+                            await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.SetPolicy(sqs, sns, prefix, endpointName, eventTypes, addAccountCondition, addPrefixCondition, namespaceConditions));
+                        });
+                    });
+                });
+
+                endpointCommand.Command("list-policy", listPolicyCommand =>
+                {
+                    listPolicyCommand.Description = "Sets the IAM policy for an endpoint.";
+                    var nameArgument = listPolicyCommand.Argument("name", "Name of the endpoint (required)").IsRequired();
+
+                    listPolicyCommand.Options.Add(accessKeyOption);
+                    listPolicyCommand.Options.Add(regionOption);
+                    listPolicyCommand.Options.Add(secretOption);
+                    listPolicyCommand.Options.Add(prefixOption);
+
+                    listPolicyCommand.OnExecuteAsync(async ct =>
+                    {
+                        var endpointName = nameArgument.Value;
+                        var prefix = prefixOption.HasValue() ? prefixOption.Value() : DefaultConfigurationValues.QueueNamePrefix;
+
+                        await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.ListPolicy(sqs, sns, prefix, endpointName));
+                    });
+                });
+
             });
 
             app.OnExecute(() =>

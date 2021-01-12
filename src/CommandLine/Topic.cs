@@ -1,6 +1,7 @@
 ﻿namespace NServiceBus.Transport.SQS.CommandLine
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading.Tasks;
     using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
@@ -13,7 +14,7 @@
             var topicName = $"{prefix}{eventType}";
             var sanitized = TopicSanitization.GetSanitizedTopicName(topicName);
             var findTopicResponse = await sns.FindTopicAsync(sanitized).ConfigureAwait(false);
-            return findTopicResponse.TopicArn;
+            return findTopicResponse?.TopicArn;
         }
 
         public static async Task<string> Create(IAmazonSimpleNotificationService sns, string prefix, string eventType)
@@ -26,20 +27,25 @@
             return createTopicResponse.TopicArn;
         }
 
-        public static async Task<string> Subscribe(IAmazonSQS sqs, IAmazonSimpleNotificationService sns, string topicArn, string queueUrl)
+        public static async Task<string> Subscribe(IAmazonSQS sqs, IAmazonSimpleNotificationService sns, string topicArn, string queueArn)
         {
-            await Console.Out.WriteLineAsync($"Subscribing queue with url '{queueUrl}' to topic with ARN '{topicArn}'.");
-            var createdSubscription = await sns.SubscribeQueueAsync(topicArn, sqs, queueUrl).ConfigureAwait(false);
-            await Console.Out.WriteLineAsync($"Queue with url '{queueUrl}' subscribed to topic with ARN '{topicArn}'.");
-            await Console.Out.WriteLineAsync($"Setting raw delivery for subscription with arn '{createdSubscription}'.");
-            await sns.SetSubscriptionAttributesAsync(new SetSubscriptionAttributesRequest
+            await Console.Out.WriteLineAsync($"Subscribing queue with ARN '{queueArn}' to topic with ARN '{topicArn}'.");
+
+            var createdSubscription = await sns.SubscribeAsync(new SubscribeRequest
             {
-                SubscriptionArn = createdSubscription,
-                AttributeName = "RawMessageDelivery",
-                AttributeValue = "true"
+                TopicArn = topicArn,
+                Protocol = "sqs",
+                Endpoint = queueArn,
+                ReturnSubscriptionArn = true,
+                Attributes = new Dictionary<string, string>
+                {
+                    { "RawMessageDelivery", "true" }
+                }
             }).ConfigureAwait(false);
-            await Console.Out.WriteLineAsync($"Raw delivery for subscription with arn '{createdSubscription}' set.");
-            return createdSubscription;
+            
+            await Console.Out.WriteLineAsync($"Queue with ARN '{queueArn}' subscribed to topic with ARN '{topicArn}'.");
+
+            return createdSubscription.SubscriptionArn;
         }
 
         public static async Task Unsubscribe(IAmazonSimpleNotificationService sns, string topicArn, string queueArn)
