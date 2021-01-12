@@ -177,7 +177,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
         // it is crucial to settle one consistent topology for all the topics determined when mapping is at play to avoid
         // running into eventual consistency problems and eventually create a policy that is partial/malformed causing
-        // subscriptions to not work. This problem was seen by the flakyness of When_multiple_versions_of_a_message_is_published
+        // subscriptions to not work. This problem was seen by the flakiness of When_multiple_versions_of_a_message_is_published
         [Test]
         public async Task Subscribe_with_event_to_events_mapping_settles_policy_once_instead_of_for_all_topics()
         {
