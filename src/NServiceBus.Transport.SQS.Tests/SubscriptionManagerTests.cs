@@ -176,6 +176,20 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
+        public async Task Subscribe_with_event_to_events_mapping_settles_policy_once_instead_of_for_all_topics()
+        {
+            var subscribedEventType = typeof(IEvent);
+            var concreteEventType = typeof(Event);
+            var concreteAnotherEventType = typeof(AnotherEvent);
+            customEventToEventsMappings.Add(subscribedEventType, concreteEventType);
+            customEventToEventsMappings.Add(subscribedEventType, concreteAnotherEventType);
+
+            await manager.Subscribe(subscribedEventType, null);
+
+            Assert.AreEqual(1, sqsClient.SetAttributesRequestsSent.Count);
+        }
+
+        [Test]
         public async Task Subscribe_creates_subscription_with_raw_message_mode()
         {
             var manager = CreateNonBatchingSubscriptionManager();
