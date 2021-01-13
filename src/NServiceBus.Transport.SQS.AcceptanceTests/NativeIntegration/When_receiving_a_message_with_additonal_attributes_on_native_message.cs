@@ -6,10 +6,8 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Xml.Linq;
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
-    using Amazon.S3.Model;
     using Amazon.SQS.Model;
     using Configuration.AdvancedExtensibility;
     using EndpointTemplates;
@@ -70,8 +68,6 @@
                         c.CustomConfig((cfg, ctx) =>
                         {
                             cfg.SendFailedMessagesTo(Conventions.EndpointNamingConvention(typeof(ErrorSpy)));
-                            cfg.Recoverability().Immediate(settings => settings.NumberOfRetries(0));
-                            cfg.Recoverability().Delayed(settings => settings.NumberOfRetries(0));
                         });
                         c.When(async (session, ctx) =>
                         {
