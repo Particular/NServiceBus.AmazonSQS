@@ -221,6 +221,27 @@
             Assert.IsNotNull(output);
             Assert.IsTrue(output.Contains("Statement"));
         }
+        
+        [Test]
+        public async Task Set_policy_single_event()
+        {
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+            
+            (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} events --event-type {EventType} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            await VerifyPolicyContainsTopicFor(EndpointName, prefix, EventType);
+        }
 
         [Test]
         public async Task Unsubscribe_from_event_with_remove_shared_resources()
@@ -442,7 +463,7 @@
         }
         
 #pragma warning disable 618
-        async Task VerifyPolicy(string queueName, string prefix = null)
+        async Task VerifyPolicyContainsTopicFor(string queueName, string prefix, string eventType)
         {
             if (prefix == null)
             {
@@ -451,15 +472,16 @@
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
             var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
-
-             var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
+            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
             {
                 QueueAttributeName.Policy
             }).ConfigureAwait(false);
-
             var policy = Policy.FromJson(queueAttributesResponse.Policy);
-            
-            //Assert.AreEqual(retentionPeriodInSeconds, queueAttributesResponse.MessageRetentionPeriod);
+             
+            var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
+            var findTopicResponse = await sns.FindTopicAsync(topicName).ConfigureAwait(false);
+           
+            Assert.IsTrue(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(findTopicResponse.TopicArn))));
         }
 #pragma warning restore 618
 
