@@ -1,6 +1,7 @@
 ﻿namespace NServiceBus.Transport.SQS
 {
     using System;
+    using System.Collections.Generic;
     using Amazon.S3;
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
@@ -258,6 +259,76 @@
             }
         }
 
+        public bool DisableSubscriptionBatchingOnStart
+        {
+            get
+            {
+                if (!disableSubscriptionBatchingOnStartInitialized)
+                {
+                    disableSubscriptionBatchingOnStart = settings.GetOrDefault<bool>(SettingsKeys.DisableSubscribeBatchingOnStart);
+                    disableSubscriptionBatchingOnStartInitialized = true;
+                }
+
+                return disableSubscriptionBatchingOnStart;
+            }
+        }
+
+        public bool AssumePolicyHasAppropriatePermissions
+        {
+            get
+            {
+                if (!assumePolicyHasAppropriatePermissionsInitialized)
+                {
+                    assumePolicyHasAppropriatePermissions = settings.GetOrDefault<bool>(SettingsKeys.AssumePolicyHasAppropriatePermissions);
+                    assumePolicyHasAppropriatePermissionsInitialized = true;
+                }
+
+                return assumePolicyHasAppropriatePermissions;
+            }
+        }
+
+        public bool AddAccountConditionForPolicies
+        {
+            get
+            {
+                if (!addAccountConditionForPoliciesInitialized)
+                {
+                    addAccountConditionForPolicies = settings.GetOrDefault<bool>(SettingsKeys.AddAccountConditionForPolicies);
+                    addAccountConditionForPoliciesInitialized = true;
+                }
+
+                return addAccountConditionForPolicies;
+            }
+        }
+
+        public bool AddTopicNamePrefixConditionForPolicies
+        {
+            get
+            {
+                if (!addTopicNamePrefixConditionForPoliciesInitialized)
+                {
+                    addTopicNamePrefixConditionForPolicies = settings.GetOrDefault<bool>(SettingsKeys.AddTopicNamePrefixConditionForPolicies);
+                    addTopicNamePrefixConditionForPoliciesInitialized = true;
+                }
+
+                return addTopicNamePrefixConditionForPolicies;
+            }
+        }
+
+        public IReadOnlyList<string> NamespaceConditionsForPolicies
+        {
+            get
+            {
+                if (!namespaceConditionsForPoliciesInitialized)
+                {
+                    namespaceConditionsForPolicies = settings.GetOrDefault<List<string>>(SettingsKeys.NamespaceConditionForPolicies) ?? new List<string>();
+                    namespaceConditionsForPoliciesInitialized = true;
+                }
+
+                return namespaceConditionsForPolicies;
+            }
+        }
+
         public EventToTopicsMappings CustomEventToTopicsMappings => settings.GetOrDefault<EventToTopicsMappings>();
         public EventToEventsMappings CustomEventToEventsMappings => settings.GetOrDefault<EventToEventsMappings>();
 
@@ -284,6 +355,16 @@
         bool serverSideEncryptionCustomerProvidedKeyInitialized;
         string serverSideEncryptionCustomerProvidedKeyMD5;
         bool serverSideEncryptionCustomerProvidedKeyMD5Initialized;
+        bool disableSubscriptionBatchingOnStartInitialized;
+        bool disableSubscriptionBatchingOnStart;
+        bool assumePolicyHasAppropriatePermissionsInitialized;
+        bool assumePolicyHasAppropriatePermissions;
+        bool addAccountConditionForPoliciesInitialized;
+        bool addAccountConditionForPolicies;
+        bool addTopicNamePrefixConditionForPoliciesInitialized;
+        bool addTopicNamePrefixConditionForPolicies;
+        bool namespaceConditionsForPoliciesInitialized;
+        IReadOnlyList<string> namespaceConditionsForPolicies;
         bool? isDelayedDeliveryEnabled;
         bool? preTruncateQueueNames;
         bool? preTruncateTopicNames;
