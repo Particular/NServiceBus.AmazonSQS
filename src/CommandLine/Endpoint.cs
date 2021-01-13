@@ -103,7 +103,8 @@
             var queueAttributes = await sqs.GetAttributesAsync(queueUrl).ConfigureAwait(false);
             var queueArn = queueAttributes["QueueArn"];
 
-            foreach(var eventType in eventTypes){
+            foreach (var eventType in eventTypes)
+            {
                 var topicArn = await Topic.Get(sns, prefix, eventType);
                 policyStatements.Add(new PolicyStatement($"{prefix}{eventType}", topicArn, queueArn));
             }
@@ -124,7 +125,25 @@
             var setAttributes = new Dictionary<string, string> {{"Policy", policy.ToJson()}};
             await sqs.SetAttributesAsync(queueUrl, setAttributes).ConfigureAwait(false);
 
-            await Console.Out.WriteLineAsync($"Policy on endpoint '{endpointName}' not set.");
+            await Console.Out.WriteLineAsync($"Policy on endpoint '{endpointName}' set.");
+        }
+
+        public static async Task ListPolicy(IAmazonSQS sqs, IAmazonSimpleNotificationService sns, string prefix, string endpointName)
+        {
+            try
+            {
+                await Console.Out.WriteLineAsync($"Listing policy on endpoint '{endpointName}':");
+
+                var queueUrl = await Queue.GetUrl(sqs, prefix, endpointName);
+                var queueAttributes = await sqs.GetAttributesAsync(queueUrl).ConfigureAwait(false);
+                var policy = queueAttributes.ExtractPolicy();
+
+                await Console.Out.WriteLineAsync(policy.ToJson());
+            }
+            catch (Exception ex)
+            {
+                await Console.Out.WriteLineAsync($"Failed to list policy: {ex.Message}");
+            }
         }
     }
 }

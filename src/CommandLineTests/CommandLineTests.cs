@@ -13,6 +13,7 @@
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS;
     using Amazon.SQS.Model;
+    using Amazon.Auth.AccessControlPolicy;
     using NUnit.Framework;
     using SQS.Tests;
 
@@ -202,6 +203,23 @@
 
             await VerifySubscriptionDeleted(topicArn, queueArn);
             await VerifyTopic(EventType, prefix);
+        }
+
+        [Test]
+        public async Task List_policy()
+        {
+            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            (output, error, exitCode) = await Execute($"endpoint list-policy {EndpointName} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            Assert.IsNotNull(output);
+            Assert.IsTrue(output.Contains("Statement"));
         }
 
         [Test]
@@ -422,6 +440,28 @@
 
             return findTopicResponse.TopicArn;
         }
+        
+#pragma warning disable 618
+        async Task VerifyPolicy(string queueName, string prefix = null)
+        {
+            if (prefix == null)
+            {
+                prefix = DefaultConfigurationValues.QueueNamePrefix;
+            }
+
+            var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
+            var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+
+             var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
+            {
+                QueueAttributeName.Policy
+            }).ConfigureAwait(false);
+
+            var policy = Policy.FromJson(queueAttributesResponse.Policy);
+            
+            //Assert.AreEqual(retentionPeriodInSeconds, queueAttributesResponse.MessageRetentionPeriod);
+        }
+#pragma warning restore 618
 
         async Task<string> VerifyBucket(string bucketName)
         {

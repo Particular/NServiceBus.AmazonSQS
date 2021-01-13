@@ -13,8 +13,9 @@
     // sqs-transport endpoint remove large-message-support bucket-name [--other-options]
     // sqs-transport endpoint remove remove delay-delivery-support [--other-options]
     // sqs-transport endpoint delete name [--other-options]
-    // sqs-transport endpoint policy name wildcard --account --namespace "namespacename" --prefix "prefix" [--other-options] 
-    // sqs-transport endpoint policy name events --event-type "event-type1" --event-type "event-type2" [--other-options] 
+    // sqs-transport endpoint set-policy name wildcard --account --namespace "namespacename" --prefix "prefix" [--other-options] 
+    // sqs-transport endpoint set-policy name events --event-type "event-type1" --event-type "event-type2" [--other-options] 
+    // sqs-transport endpoint list-policy name [--other-options]
     class Program
     {
         static int Main(string[] args)
@@ -238,7 +239,7 @@
                     });
                 });
             
-                endpointCommand.Command("policy", policyCommand => 
+                endpointCommand.Command("set-policy", policyCommand => 
                 {
                     policyCommand.Description = "Sets the IAM policy for an endpoint.";
                     var nameArgument = policyCommand.Argument("name", "Name of the endpoint (required)").IsRequired();
@@ -252,7 +253,6 @@
 
                     policyCommand.Command("events", policyBasedOneventsCommand =>
                     {
-                         
                         policyBasedOneventsCommand.Options.Add(accessKeyOption);
                         policyBasedOneventsCommand.Options.Add(regionOption);
                         policyBasedOneventsCommand.Options.Add(secretOption);
@@ -264,7 +264,7 @@
                         };
                         policyBasedOneventsCommand.Options.Add(eventTypeOption);
 
-                        policyBasedOneventsCommand.OnExecute(async () =>
+                        policyBasedOneventsCommand.OnExecuteAsync(async ct =>
                         {
                             var endpointName = nameArgument.Value;
                             var prefix = prefixOption.HasValue() ? prefixOption.Value() : DefaultConfigurationValues.QueueNamePrefix;
@@ -272,7 +272,6 @@
 
                             await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.SetPolicy(sqs, sns, prefix, endpointName, eventTypes, false, false, new List<string>()));
                         });
-
                     });
 
                     policyCommand.Command("wildcard", policyBasedOnWildcardsCommand =>
@@ -294,7 +293,7 @@
                         };
                         policyBasedOnWildcardsCommand.Options.Add(namespaceOption);
 
-                        policyBasedOnWildcardsCommand.OnExecute(async () =>
+                        policyBasedOnWildcardsCommand.OnExecuteAsync(async ct =>
                         {
                             var endpointName = nameArgument.Value;
                             var addAccountCondition = accountOption.HasValue();
@@ -305,6 +304,25 @@
 
                             await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.SetPolicy(sqs, sns, prefix, endpointName, eventTypes, addAccountCondition, addPrefixcondition, namespaceConditions));
                         });
+                    });
+                });
+                
+                endpointCommand.Command("list-policy", listPolicyCommand =>
+                {
+                    listPolicyCommand.Description = "Sets the IAM policy for an endpoint.";
+                    var nameArgument = listPolicyCommand.Argument("name", "Name of the endpoint (required)").IsRequired();
+
+                    listPolicyCommand.Options.Add(accessKeyOption);
+                    listPolicyCommand.Options.Add(regionOption);                        
+                    listPolicyCommand.Options.Add(secretOption);
+                    listPolicyCommand.Options.Add(prefixOption);
+
+                    listPolicyCommand.OnExecuteAsync(async ct =>
+                    {
+                        var endpointName = nameArgument.Value;
+                        var prefix = prefixOption.HasValue() ? prefixOption.Value() : DefaultConfigurationValues.QueueNamePrefix;                            
+
+                        await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.ListPolicy(sqs, sns, prefix, endpointName));
                     });
                 });
             
