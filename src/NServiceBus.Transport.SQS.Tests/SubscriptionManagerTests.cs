@@ -150,6 +150,25 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.IsEmpty(snsClient.FindTopicRequests);
         }
 
+        // it is crucial to settle one consistent topology for all the topics determined when mapping is at play to avoid
+        // running into eventual consistency problems and eventually create a policy that is partial/malformed causing
+        // subscriptions to not work. This problem was seen by the flakiness of When_multiple_versions_of_a_message_is_published
+        [Test]
+        public async Task Subscribe_with_event_to_events_mapping_settles_policy_once_instead_of_for_all_topics()
+        {
+            var manager = CreateNonBatchingSubscriptionManager();
+
+            var subscribedEventType = typeof(IEvent);
+            var concreteEventType = typeof(Event);
+            var concreteAnotherEventType = typeof(AnotherEvent);
+            customEventToEventsMappings.Add(subscribedEventType, concreteEventType);
+            customEventToEventsMappings.Add(subscribedEventType, concreteAnotherEventType);
+
+            await manager.Subscribe(subscribedEventType, null);
+
+            Assert.AreEqual(1, sqsClient.SetAttributesRequestsSent.Count);
+        }
+
         [Test]
         public async Task Subscribe_creates_subscription_with_raw_message_mode()
         {
