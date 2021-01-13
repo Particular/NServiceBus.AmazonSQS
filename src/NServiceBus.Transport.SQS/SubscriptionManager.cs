@@ -196,7 +196,7 @@ namespace NServiceBus.Transport.SQS
             policyStatementsToBeSettled.Add(addPolicyStatement);
         }
 
-        async Task SettlePolicy(string queueUrl, IReadOnlyCollection<PolicyStatement> policyStatementsToBeSettled)
+        async Task SettlePolicy(string queueUrl, ConcurrentBag<PolicyStatement> policyStatementsToBeSettled)
         {
             Logger.Debug($"Settling policy for queue '{queueName}'.");
 
@@ -236,7 +236,7 @@ namespace NServiceBus.Transport.SQS
             Logger.Debug($"Created subscription with arn '{createdSubscription.SubscriptionArn}' for '{policyStatement.TopicName}' with arn '{policyStatement.TopicArn}' for queue '{queueName}");
         }
 
-        async Task SetNecessaryDeliveryPolicyWithRetries(string queueUrl, IReadOnlyCollection<PolicyStatement> addPolicyStatements)
+        async Task SetNecessaryDeliveryPolicyWithRetries(string queueUrl, ConcurrentBag<PolicyStatement> addPolicyStatements)
         {
             try
             {
