@@ -32,8 +32,22 @@ namespace NServiceBus.Transport.SQS
             var queueUrl = await queueCache.GetQueueUrl(queueName)
                 .ConfigureAwait(false);
 
+            // currently we are not doing fanout but better safe than sorry later
+            var policyStatementsToBeSettled = new ConcurrentBag<PolicyStatement>();
+
             var metadata = messageMetadataRegistry.GetMessageMetadata(eventType);
-            await SetupTypeSubscriptions(metadata, queueUrl).ConfigureAwait(false);
+            await SetupTypeSubscriptions(metadata, queueUrl, policyStatementsToBeSettled).ConfigureAwait(false);
+
+            if (endpointStartingMode)
+            {
+                foreach (var addStatement in policyStatementsToBeSettled)
+                {
+                    preparedPolicyStatements.Add(addStatement);
+                }
+                return;
+            }
+
+            await SettlePolicy(queueUrl, policyStatementsToBeSettled).ConfigureAwait(false);
         }
 
         public async Task Unsubscribe(Type eventType, ContextBag context)
@@ -50,25 +64,20 @@ namespace NServiceBus.Transport.SQS
                 return;
             }
 
-            Logger.Debug($"Settling policy for queue '{queueName}'.");
-
             var queueUrl = await queueCache.GetQueueUrl(queueName)
                 .ConfigureAwait(false);
 
-            var statements = new List<PolicyStatement>(preparedPolicyStatements.Count);
+            await SettlePolicy(queueUrl, preparedPolicyStatements).ConfigureAwait(false);
+
+            // unfortunately there is no clear
             while (!preparedPolicyStatements.IsEmpty)
             {
-                if (preparedPolicyStatements.TryTake(out var statement))
+                if (preparedPolicyStatements.TryTake(out _))
                 {
-                    statements.Add(statement);
                 }
             }
 
-            await SettlePolicy(queueUrl, statements).ConfigureAwait(false);
-
             endpointStartingMode = false;
-
-            Logger.Debug($"Settled policy for queue '{queueName}'.");
         }
 
         async Task DeleteSubscription(MessageMetadata metadata)
@@ -119,14 +128,14 @@ namespace NServiceBus.Transport.SQS
             MarkTypeNotConfigured(metadata.MessageType);
         }
 
-        async Task SetupTypeSubscriptions(MessageMetadata metadata, string queueUrl)
+        async Task SetupTypeSubscriptions(MessageMetadata metadata, string queueUrl, ConcurrentBag<PolicyStatement> policyStatementsToBeSettled)
         {
             var mappedTopicsNames = topicCache.CustomEventToTopicsMappings.GetMappedTopicsNames(metadata.MessageType);
             foreach (var mappedTopicName in mappedTopicsNames)
             {
                 //we skip the topic name generation assuming the topic name is already good
                 Logger.Debug($"Creating topic/subscription to '{mappedTopicName}' for queue '{queueName}'");
-                await CreateTopicAndSubscribe(mappedTopicName, queueUrl).ConfigureAwait(false);
+                await CreateTopicAndSubscribe(mappedTopicName, queueUrl, policyStatementsToBeSettled).ConfigureAwait(false);
                 Logger.Debug($"Created topic/subscription to '{mappedTopicName}' for queue '{queueName}'");
             }
 
@@ -142,7 +151,7 @@ namespace NServiceBus.Transport.SQS
 
                 // doesn't need to be cached since we never publish to it
                 Logger.Debug($"Creating topic/subscription for '{mappedTypeMetadata.MessageType.FullName}' for queue '{queueName}'");
-                await CreateTopicAndSubscribe(mappedTypeMetadata, queueUrl).ConfigureAwait(false);
+                await CreateTopicAndSubscribe(mappedTypeMetadata, queueUrl, policyStatementsToBeSettled).ConfigureAwait(false);
                 Logger.Debug($"Created topic/subscription for '{mappedTypeMetadata.MessageType.FullName}' for queue '{queueName}'");
             }
 
@@ -153,54 +162,51 @@ namespace NServiceBus.Transport.SQS
             }
 
             Logger.Debug($"Creating topic/subscription for '{metadata.MessageType.FullName}' for queue '{queueName}'");
-            await CreateTopicAndSubscribe(metadata, queueUrl).ConfigureAwait(false);
+            await CreateTopicAndSubscribe(metadata, queueUrl, policyStatementsToBeSettled).ConfigureAwait(false);
             Logger.Debug($"Created topic/subscription for '{metadata.MessageType.FullName}' for queue '{queueName}'");
             MarkTypeConfigured(metadata.MessageType);
         }
 
-        async Task CreateTopicAndSubscribe(string topicName, string queueUrl)
+        async Task CreateTopicAndSubscribe(string topicName, string queueUrl, ConcurrentBag<PolicyStatement> policyStatementsToBeSettled)
         {
             Logger.Debug($"Getting or creating topic '{topicName}' for queue '{queueName}");
             var createTopicResponse = await snsClient.CreateTopicAsync(topicName).ConfigureAwait(false);
             Logger.Debug($"Got or created topic '{topicName}' with arn '{createTopicResponse.TopicArn}' for queue '{queueName}");
 
-            await SubscribeTo(createTopicResponse.TopicArn, topicName, queueUrl).ConfigureAwait(false);
+            await SubscribeTo(createTopicResponse.TopicArn, topicName, queueUrl, policyStatementsToBeSettled).ConfigureAwait(false);
         }
 
-        async Task CreateTopicAndSubscribe(MessageMetadata metadata, string queueUrl)
+        async Task CreateTopicAndSubscribe(MessageMetadata metadata, string queueUrl, ConcurrentBag<PolicyStatement> policyStatementsToBeSettled)
         {
             var topicName = topicCache.GetTopicName(metadata);
             Logger.Debug($"Getting or creating topic '{topicName}' for queue '{queueName}");
             var createTopicResponse = await snsClient.CreateTopicAsync(topicName).ConfigureAwait(false);
             Logger.Debug($"Got or created topic '{topicName}' with arn '{createTopicResponse.TopicArn}' for queue '{queueName}");
 
-            await SubscribeTo(createTopicResponse.TopicArn, topicName, queueUrl).ConfigureAwait(false);
+            await SubscribeTo(createTopicResponse.TopicArn, topicName, queueUrl, policyStatementsToBeSettled).ConfigureAwait(false);
         }
 
-        async Task SubscribeTo(string topicArn, string topicName, string queueUrl)
+        async Task SubscribeTo(string topicArn, string topicName, string queueUrl, ConcurrentBag<PolicyStatement> policyStatementsToBeSettled)
         {
             var sqsQueueArn = await queueCache.GetQueueArn(queueUrl).ConfigureAwait(false);
 
             var permissionStatement = PolicyExtensions.CreateSQSPermissionStatement(topicArn, sqsQueueArn);
             var addPolicyStatement = new PolicyStatement(topicName, topicArn, permissionStatement, sqsQueueArn);
 
-            if (endpointStartingMode)
-            {
-                preparedPolicyStatements.Add(addPolicyStatement);
-                return;
-            }
-
-            var addPolicyStatements = new List<PolicyStatement> {addPolicyStatement};
-            await SettlePolicy(queueUrl, addPolicyStatements).ConfigureAwait(false);
+            policyStatementsToBeSettled.Add(addPolicyStatement);
         }
 
-        async Task SettlePolicy(string queueUrl, IReadOnlyCollection<PolicyStatement> addPolicyStatements)
+        async Task SettlePolicy(string queueUrl, ConcurrentBag<PolicyStatement> policyStatementsToBeSettled)
         {
-            await SetNecessaryDeliveryPolicyWithRetries(queueUrl, addPolicyStatements).ConfigureAwait(false);
-            foreach (var addPolicyStatement in addPolicyStatements)
+            Logger.Debug($"Settling policy for queue '{queueName}'.");
+
+            await SetNecessaryDeliveryPolicyWithRetries(queueUrl, policyStatementsToBeSettled).ConfigureAwait(false);
+            foreach (var addPolicyStatement in policyStatementsToBeSettled)
             {
                 await SubscribeQueueToTopic(addPolicyStatement).ConfigureAwait(false);
             }
+
+            Logger.Debug($"Settled policy for queue '{queueName}'.");
         }
 
         async Task SubscribeQueueToTopic(PolicyStatement policyStatement)
@@ -230,7 +236,7 @@ namespace NServiceBus.Transport.SQS
             Logger.Debug($"Created subscription with arn '{createdSubscription.SubscriptionArn}' for '{policyStatement.TopicName}' with arn '{policyStatement.TopicArn}' for queue '{queueName}");
         }
 
-        async Task SetNecessaryDeliveryPolicyWithRetries(string queueUrl, IReadOnlyCollection<PolicyStatement> addPolicyStatements)
+        async Task SetNecessaryDeliveryPolicyWithRetries(string queueUrl, ConcurrentBag<PolicyStatement> addPolicyStatements)
         {
             try
             {
