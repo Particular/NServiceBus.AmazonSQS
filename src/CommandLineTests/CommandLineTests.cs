@@ -242,6 +242,33 @@
 
             await VerifyPolicyContainsTopicFor(EndpointName, prefix, EventType);
         }
+        
+        [Test]
+        public async Task Set_policy_multiple_events()
+        {
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+            
+            (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix {prefix}");
+            
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+            
+            (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType2} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} events --event-type {EventType} --event-type {EventType2} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            await VerifyPolicyContainsTopicFor(EndpointName, prefix, EventType);
+            await VerifyPolicyContainsTopicFor(EndpointName, prefix, EventType2);
+        }
 
         [Test]
         public async Task Unsubscribe_from_event_with_remove_shared_resources()
@@ -708,6 +735,7 @@
         const string EndpointName = "nsb-cli-test";
         const string BucketName = "nsb-cli-test-bucket";
         const string EventType = "MyNamespace.MyMessage1";
+        const string EventType2 = "MyNamespace.MyMessage2";
         const int verificationBackoffInterval = 200;
         const int maximumBackoffInterval = 20000; // totals up to 77000
     }
