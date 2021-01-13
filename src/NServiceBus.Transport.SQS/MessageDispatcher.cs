@@ -281,16 +281,22 @@
 
             var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.DeliveryConstraints);
 
-            var serializedMessage = SimpleJson.SerializeObject(sqsTransportMessage, serializerStrategy);
-
             var messageId = transportOperation.Message.MessageId;
 
             var preparedMessage = new TMessage();
 
-            await ApplyUnicastOperationMappingIfNecessary(unicastTransportOperation, preparedMessage as SqsPreparedMessage, delaySeconds, messageId, transportTransaction).ConfigureAwait(false);
+            // In case we're handling a message of which the incoming message id equals the outgoing message id, we're essentially handling an error or audit scenario, in which case we want copy over the message attributes
+            // from the native message, so we don't lose part of the message
+            var forwardingANativeMessage = transportTransaction.TryGet<Message>(out var nativeMessage) &&
+                                           transportTransaction.TryGet<string>("IncomingMessageId", out var incomingMessageId) &&
+                                           incomingMessageId == transportOperation.Message.MessageId;
+
+            var nativeMessageAttributes = forwardingANativeMessage ? nativeMessage.MessageAttributes : null;
+
+            await ApplyUnicastOperationMappingIfNecessary(unicastTransportOperation, preparedMessage as SqsPreparedMessage, delaySeconds, messageId, nativeMessageAttributes).ConfigureAwait(false);
             await ApplyMulticastOperationMappingIfNecessary(transportOperation as MulticastTransportOperation, preparedMessage as SnsPreparedMessage).ConfigureAwait(false);
 
-            preparedMessage.Body = serializedMessage;
+            preparedMessage.Body = forwardingANativeMessage ? nativeMessage.Body : SimpleJson.SerializeObject(sqsTransportMessage, serializerStrategy);
             preparedMessage.MessageId = messageId;
 
             preparedMessage.CalculateSize();
@@ -304,23 +310,32 @@
                 throw new Exception("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
             }
 
-            var key = $"{configuration.S3KeyPrefix}/{messageId}";
-            using (var bodyStream = new MemoryStream(transportOperation.Message.Body))
+            if (!forwardingANativeMessage)
             {
-                var putObjectRequest = new PutObjectRequest
+                var key = $"{configuration.S3KeyPrefix}/{messageId}";
+                using (var bodyStream = new MemoryStream(transportOperation.Message.Body))
                 {
-                    BucketName = configuration.S3BucketForLargeMessages,
-                    InputStream = bodyStream,
-                    Key = key
-                };
-                ApplyServerSideEncryptionConfiguration(putObjectRequest);
+                    var putObjectRequest = new PutObjectRequest
+                    {
+                        BucketName = configuration.S3BucketForLargeMessages,
+                        InputStream = bodyStream,
+                        Key = key
+                    };
+                    ApplyServerSideEncryptionConfiguration(putObjectRequest);
 
-                await s3Client.PutObjectAsync(putObjectRequest).ConfigureAwait(false);
+                    await s3Client.PutObjectAsync(putObjectRequest).ConfigureAwait(false);
+                }
+
+                sqsTransportMessage.S3BodyKey = key;
+                sqsTransportMessage.Body = string.Empty;
+                preparedMessage.Body = SimpleJson.SerializeObject(sqsTransportMessage, serializerStrategy);
+            }
+            else
+            {
+                sqsTransportMessage.S3BodyKey = nativeMessage.MessageAttributes["S3BodyKey"].StringValue;
+                sqsTransportMessage.Body = nativeMessage.Body;
             }
 
-            sqsTransportMessage.S3BodyKey = key;
-            sqsTransportMessage.Body = string.Empty;
-            preparedMessage.Body = SimpleJson.SerializeObject(sqsTransportMessage, serializerStrategy);
             preparedMessage.CalculateSize();
 
             return preparedMessage;
@@ -337,31 +352,18 @@
             snsPreparedMessage.Destination = existingTopicArn;
         }
 
-        async Task ApplyUnicastOperationMappingIfNecessary(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, string messageId, TransportTransaction transportTransaction)
+        async Task ApplyUnicastOperationMappingIfNecessary(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, string messageId, Dictionary<string, MessageAttributeValue> nativeMessageAttributes)
         {
             if (transportOperation == null || sqsPreparedMessage == null)
             {
                 return;
             }
 
-            // In case we're handling a message of which the incoming message id equals the outgoing message id, we're essentially handling an error or audit scenario, in which case we want copy over the message attributes
-            // from the native message, so we don't lose part of the message
-            var nativeMessageFoundOnContext = transportTransaction.TryGet<Message>(out var nativeMessage);
-            var nativeMessageIdFoundOnContext = transportTransaction.TryGet<string>("IncomingMessageId", out var incomingMessageId);
-            if (nativeMessageFoundOnContext && nativeMessageIdFoundOnContext && incomingMessageId == transportOperation.Message.MessageId)
+            // copy over the message attributes that were set on the incoming message for error/audit scenario's
+            foreach (var messageAttribute in nativeMessageAttributes ??
+                                             Enumerable.Empty<KeyValuePair<string, MessageAttributeValue>>())
             {
-                var messageAttributes = nativeMessage.MessageAttributes.ToDictionary(x => x.Key, x => new MessageAttributeValue
-                {
-                    DataType = x.Value.DataType,
-                    StringValue = x.Value.StringValue,
-                    BinaryValue = x.Value.BinaryValue,
-                });
-
-                // copy over the message attributes that were set on the incoming message for error/audit scenario's
-                foreach (var messageAttribute in messageAttributes)
-                {
-                    sqsPreparedMessage.MessageAttributes.Add(messageAttribute.Key, messageAttribute.Value);
-                }
+                sqsPreparedMessage.MessageAttributes.Add(messageAttribute.Key, messageAttribute.Value);
             }
 
             var delayLongerThanConfiguredDelayedDeliveryQueueDelayTime = configuration.IsDelayedDeliveryEnabled && delaySeconds > configuration.DelayedDeliveryQueueDelayTime;
