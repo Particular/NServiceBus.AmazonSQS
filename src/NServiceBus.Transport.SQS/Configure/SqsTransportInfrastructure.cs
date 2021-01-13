@@ -128,13 +128,14 @@
         {
             if (SubscriptionManager == null)
             {
-                SubscriptionManager = new SubscriptionManager(sqsClient,
+                SubscriptionManager = new SubscriptionManager(
+                    configuration,
+                    sqsClient,
                     snsClient,
                     settings.LocalAddress(),
                     queueCache,
                     messageMetadataRegistry,
-                    topicCache,
-                    settings.HasSetting(SettingsKeys.DisableSubscribeBatchingOnStart));
+                    topicCache);
             }
             return new TransportSubscriptionInfrastructure(() => SubscriptionManager);
         }

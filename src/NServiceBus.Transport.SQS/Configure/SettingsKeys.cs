@@ -3,6 +3,7 @@
     static class SettingsKeys
     {
         const string Prefix = "NServiceBus.AmazonSQS.";
+
         public const string SqsClientFactory = Prefix + nameof(SqsClientFactory);
         public const string SnsClientFactory = Prefix + nameof(SnsClientFactory);
         public const string MaxTimeToLive = Prefix + nameof(MaxTimeToLive);
@@ -17,10 +18,16 @@
         public const string QueueNamePrefix = Prefix + nameof(QueueNamePrefix);
         public const string TopicNamePrefix = Prefix + nameof(TopicNamePrefix);
         public const string TopicNameGenerator = Prefix + nameof(TopicNameGenerator);
-        public const string CredentialSource = Prefix + nameof(CredentialSource);
         public const string PreTruncateQueueNames = Prefix + nameof(PreTruncateQueueNames);
         public const string PreTruncateTopicNames = Prefix + nameof(PreTruncateTopicNames);
         public const string UnrestrictedDurationDelayedDeliveryQueueDelayTime = Prefix + nameof(UnrestrictedDurationDelayedDeliveryQueueDelayTime);
+
+        public const string FullTopicNameForPolicies = Prefix + nameof(FullTopicNameForPolicies);
+        public const string AddAccountConditionForPolicies = Prefix + nameof(AddAccountConditionForPolicies);
+        public const string AddTopicNamePrefixConditionForPolicies = Prefix + nameof(AddTopicNamePrefixConditionForPolicies);
+        public const string NamespaceConditionForPolicies = Prefix + nameof(NamespaceConditionForPolicies);
+        public const string AssumePolicyHasAppropriatePermissions = Prefix + nameof(AssumePolicyHasAppropriatePermissions);
+
         public const string V1CompatibilityMode = Prefix + nameof(V1CompatibilityMode);
         public const string DisableNativePubSub = Prefix + nameof(DisableNativePubSub);
         public const string DisableSubscribeBatchingOnStart = Prefix + nameof(DisableSubscribeBatchingOnStart);
