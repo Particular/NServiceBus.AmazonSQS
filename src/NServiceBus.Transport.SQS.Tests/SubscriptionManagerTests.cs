@@ -181,6 +181,8 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task Subscribe_with_event_to_events_mapping_settles_policy_once_instead_of_for_all_topics()
         {
+            var manager = CreateNonBatchingSubscriptionManager();
+
             var subscribedEventType = typeof(IEvent);
             var concreteEventType = typeof(Event);
             var concreteAnotherEventType = typeof(AnotherEvent);
