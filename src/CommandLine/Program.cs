@@ -1,6 +1,7 @@
 ﻿namespace NServiceBus.Transport.SQS.CommandLine
 {
     using System;
+    using System.Collections.Generic;
     using McMaster.Extensions.CommandLineUtils;
 
     // usage:
@@ -12,8 +13,8 @@
     // sqs-transport endpoint remove large-message-support bucket-name [--other-options]
     // sqs-transport endpoint remove remove delay-delivery-support [--other-options]
     // sqs-transport endpoint delete name [--other-options]
-    // sqs-transport endpoint policy wildcard --account --namespace "namespacename" --prefix "prefix" [--other-options] 
-    // sqs-transport endpoint policy events --event-type "event-type1" --event-type "event-type2" [--other-options] 
+    // sqs-transport endpoint policy name wildcard --account --namespace "namespacename" --prefix "prefix" [--other-options] 
+    // sqs-transport endpoint policy name events --event-type "event-type1" --event-type "event-type2" [--other-options] 
     class Program
     {
         static int Main(string[] args)
@@ -240,7 +241,8 @@
                 endpointCommand.Command("policy", policyCommand => 
                 {
                     policyCommand.Description = "Sets the IAM policy for an endpoint.";
-
+                    var nameArgument = policyCommand.Argument("name", "Name of the endpoint (required)").IsRequired();
+                       
                     policyCommand.OnExecute(() =>
                     {
                         Console.WriteLine("Specify a subcommand");
@@ -250,6 +252,7 @@
 
                     policyCommand.Command("events", policyBasedOneventsCommand =>
                     {
+                         
                         policyBasedOneventsCommand.Options.Add(accessKeyOption);
                         policyBasedOneventsCommand.Options.Add(regionOption);
                         policyBasedOneventsCommand.Options.Add(secretOption);
@@ -261,10 +264,13 @@
                         };
                         policyBasedOneventsCommand.Options.Add(eventTypeOption);
 
-                        policyBasedOneventsCommand.OnExecute(() =>
+                        policyBasedOneventsCommand.OnExecute(async () =>
                         {
-                            // TODO
-                            return 1;
+                            var endpointName = nameArgument.Value;
+                            var prefix = prefixOption.HasValue() ? prefixOption.Value() : DefaultConfigurationValues.QueueNamePrefix;
+                            var eventTypes = eventTypeOption.HasValue() ? eventTypeOption.Values : new List<string>();
+
+                            await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.SetPolicy(sqs, sns, prefix, endpointName, eventTypes, false, false, new List<string>()));
                         });
 
                     });
@@ -272,7 +278,7 @@
                     policyCommand.Command("wildcard", policyBasedOnWildcardsCommand =>
                     {
                         policyBasedOnWildcardsCommand.Options.Add(accessKeyOption);
-                        policyBasedOnWildcardsCommand.Options.Add(regionOption);
+                        policyBasedOnWildcardsCommand.Options.Add(regionOption);                        
                         policyBasedOnWildcardsCommand.Options.Add(secretOption);
                         policyBasedOnWildcardsCommand.Options.Add(prefixOption);
 
@@ -288,10 +294,16 @@
                         };
                         policyBasedOnWildcardsCommand.Options.Add(namespaceOption);
 
-                        policyBasedOnWildcardsCommand.OnExecute(() =>
+                        policyBasedOnWildcardsCommand.OnExecute(async () =>
                         {
-                            // TODO
-                            return 1;
+                            var endpointName = nameArgument.Value;
+                            var addAccountCondition = accountOption.HasValue();
+                            var addPrefixcondition = prefixOption.HasValue();
+                            var prefix = addPrefixcondition ? prefixOption.Value() : DefaultConfigurationValues.QueueNamePrefix;                            
+                            var namespaceConditions = namespaceOption.HasValue() ? namespaceOption.Values : new List<string>();
+                            var eventTypes = new List<string>();
+
+                            await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.SetPolicy(sqs, sns, prefix, endpointName, eventTypes, addAccountCondition, addPrefixcondition, namespaceConditions));
                         });
                     });
                 });

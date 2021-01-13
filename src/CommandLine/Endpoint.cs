@@ -94,9 +94,9 @@
             }
         }
 
-        public static async Task SetEventsBasedPolicy(IAmazonSQS sqs, IAmazonSimpleNotificationService sns, string prefix, string endpointName, IEnumerable<string> eventTypes)
+        public static async Task SetPolicy(IAmazonSQS sqs, IAmazonSimpleNotificationService sns, string prefix, string endpointName, IEnumerable<string> eventTypes, bool addAccountCondition, bool addPrefixcondition, IReadOnlyList<string> namespaceConditions)
         {
-            await Console.Out.WriteLineAsync($"Setting event based delivery policies on endpoint '{endpointName}'.");
+            await Console.Out.WriteLineAsync($"Setting policy on endpoint '{endpointName}'.");
 
             var policyStatements = new List<PolicyStatement>();
             var queueUrl = await Queue.GetUrl(sqs, prefix, endpointName);
@@ -111,10 +111,10 @@
             var policy = queueAttributes.ExtractPolicy();
 
             if (!policy.Update(policyStatements,
-                false, // configuration.AddAccountConditionForPolicies,
-                false, // configuration.AddTopicNamePrefixConditionForPolicies,
-                new List<string>(), // configuration.NamespaceConditionsForPolicies,
-                prefix, // configuration.TopicNamePrefix,
+                addAccountCondition, 
+                addPrefixcondition,
+                namespaceConditions,
+                prefix,
                 queueArn))
             {
                 await Console.Out.WriteLineAsync($"Policy on endpoint '{endpointName}' not set.");
