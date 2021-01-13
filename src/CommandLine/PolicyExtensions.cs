@@ -18,31 +18,24 @@ namespace NServiceBus.Transport.SQS.CommandLine
             string topicNamePrefix, 
             string sqsQueueArn)
         {
-            if (addPolicyStatements.Count == 0)
-            {
-                return false;
-            }
+            var parts = sqsQueueArn.Split(":", StringSplitOptions.RemoveEmptyEntries);
+            var accountArn = $"{parts[0]}:{parts[1]}:sns:{parts[3]}:{parts[4]}";
 
             var policyModified = false;
             var wildcardConditions = new List<string>();
             if (addAccountConditionForPolicies)
             {
-                wildcardConditions.AddRange(addPolicyStatements.Select(s => $"{s.AccountArn}:*").Distinct());
+                wildcardConditions.Add($"{accountArn}:*" );
             }
 
             if (addTopicNamePrefixConditionForPolicies)
             {
-                wildcardConditions.AddRange(addPolicyStatements
-                    .Select(s => $"{s.AccountArn}:{topicNamePrefix}*").Distinct());
+                wildcardConditions.Add($"{accountArn}:{topicNamePrefix}*" );
             }
 
             if (namespaceConditionsForPolicies.Count > 0)
             {
-                wildcardConditions.AddRange(namespaceConditionsForPolicies
-                    .SelectMany(ns => addPolicyStatements
-                        .Select(s => $"{s.AccountArn}")
-                        .Distinct()
-                        .Select(arn => $"{arn}:{GetNamespaceName(topicNamePrefix, ns)}*")));
+                wildcardConditions.AddRange(namespaceConditionsForPolicies.Select(ns => $"{accountArn}:{GetNamespaceName(topicNamePrefix, ns)}*") );
             }
 
             var wildCardQueuePermissionStatements = CreatePermissionStatementForQueueMatching(sqsQueueArn, wildcardConditions);

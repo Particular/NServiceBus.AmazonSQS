@@ -281,7 +281,7 @@
                         policyBasedOnWildcardsCommand.Options.Add(secretOption);
                         policyBasedOnWildcardsCommand.Options.Add(prefixOption);
 
-                        var accountOption = new CommandOption("-a|--account", CommandOptionType.SingleValue)
+                        var accountOption = new CommandOption("-a|--account", CommandOptionType.NoValue)
                         {
                             Description = "Allow subscription to all topics in an account."
                         };

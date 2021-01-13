@@ -14,15 +14,11 @@ namespace NServiceBus.Transport.SQS.CommandLine
             TopicArn = topicArn;
             Statement = CreatePermissionStatement(queueArn, topicArn);
             QueueArn = queueArn;
-
-            var splittedTopicArn = TopicArn.Split(ArnSeperator, StringSplitOptions.RemoveEmptyEntries);
-            AccountArn = string.Join(":", splittedTopicArn.Take(5));
         }
 
         public string QueueArn { get; }
         public string TopicName { get; }
         public string TopicArn { get; }
-        public string AccountArn { get; }
         public Statement Statement { get; }
 
         internal static Statement CreatePermissionStatement(string queueArn, string topicArn)

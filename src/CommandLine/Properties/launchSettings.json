@@ -2,7 +2,7 @@
   "profiles": {
     "NServiceBus.Transports.SQS.CommandLine": {
       "commandName": "Project",
-      "commandLineArgs": "endpoint list-policy test --prefix yves-"
+      "commandLineArgs": "endpoint set-policy test wildcard --account --prefix yves-"
     }
   }
 }

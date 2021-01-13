@@ -269,6 +269,22 @@
             await VerifyPolicyContainsTopicFor(EndpointName, prefix, EventType);
             await VerifyPolicyContainsTopicFor(EndpointName, prefix, EventType2);
         }
+        
+        [Test]
+        public async Task Set_policy_account_wildcard()
+        {
+            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+            
+            (output, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --account --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            await VerifyPolicyContainsAccountWildCard(EndpointName, prefix);
+        }
 
         [Test]
         public async Task Unsubscribe_from_event_with_remove_shared_resources()
@@ -509,6 +525,28 @@
             var findTopicResponse = await sns.FindTopicAsync(topicName).ConfigureAwait(false);
            
             Assert.IsTrue(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(findTopicResponse.TopicArn))));
+        }
+        
+        async Task VerifyPolicyContainsAccountWildCard(string queueName, string prefix)
+        {
+            if (prefix == null)
+            {
+                prefix = DefaultConfigurationValues.QueueNamePrefix;
+            }
+
+            var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
+            var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
+            {
+                QueueAttributeName.QueueArn,
+                QueueAttributeName.Policy
+            }).ConfigureAwait(false);
+            var policy = Policy.FromJson(queueAttributesResponse.Policy);
+            
+            var parts = queueAttributesResponse.QueueARN.Split(":", StringSplitOptions.RemoveEmptyEntries);
+            var accountArn = $"{parts[0]}:{parts[1]}:sns:{parts[3]}:{parts[4]}:*";
+           
+            Assert.IsTrue(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(accountArn))));
         }
 #pragma warning restore 618
 
