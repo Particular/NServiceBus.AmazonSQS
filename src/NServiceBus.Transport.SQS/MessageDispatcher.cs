@@ -44,7 +44,7 @@
                 switch (dispatchConsistencyGroup.Key)
                 {
                     case DispatchConsistency.Isolated:
-                        concurrentDispatchTasks.Add(DispatchIsolated(dispatchConsistencyGroup, messageIdsOfMulticastEvents));
+                        concurrentDispatchTasks.Add(DispatchIsolated(dispatchConsistencyGroup, messageIdsOfMulticastEvents, context, transaction));
                         break;
                     case DispatchConsistency.Default:
                         concurrentDispatchTasks.Add(DispatchBatched(dispatchConsistencyGroup, messageIdsOfMulticastEvents));
@@ -78,13 +78,14 @@
             return tasks != null ? Task.WhenAll(tasks) : TaskExtensions.Completed;
         }
 
-        Task DispatchIsolated(IEnumerable<UnicastTransportOperation> isolatedTransportOperations, HashSet<string> messageIdsOfMulticastEvents)
+        Task DispatchIsolated(IEnumerable<UnicastTransportOperation> isolatedTransportOperations,
+            HashSet<string> messageIdsOfMulticastEvents, ContextBag context, TransportTransaction transportTransaction)
         {
             List<Task> tasks = null;
             foreach (var operation in isolatedTransportOperations)
             {
                 tasks = tasks ?? new List<Task>();
-                tasks.Add(Dispatch(operation, messageIdsOfMulticastEvents));
+                tasks.Add(Dispatch(operation, messageIdsOfMulticastEvents, context, transportTransaction));
             }
 
             return tasks != null ? Task.WhenAll(tasks) : TaskExtensions.Completed;
@@ -198,9 +199,24 @@
             }
         }
 
-        async Task Dispatch(UnicastTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents)
+        async Task Dispatch(UnicastTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents,
+            ContextBag contextBag, TransportTransaction transportTransaction)
         {
-            var message = await PrepareMessage<SqsPreparedMessage>(transportOperation, messageIdsOfMulticastedEvents)
+            // In case we're handling a message of which the incoming message id equals the outgoing message id, we're essentially handling an error or audit scenario, in which case we want copy over the message attributes
+            // from the native message, so we don't lose part of the message
+            var nativeMessageFoundOnContext = transportTransaction.TryGet<Message>(out var nativeMessage);
+            var nativeMessageIdFoundOnContext = transportTransaction.TryGet<string>("IncomingMessageId", out var incomingMessageId);
+            var messageAttributes = new Dictionary<string, MessageAttributeValue>();
+            if (nativeMessageFoundOnContext && nativeMessageIdFoundOnContext && incomingMessageId == transportOperation.Message.MessageId)
+            {
+                messageAttributes = nativeMessage.MessageAttributes.ToDictionary(x => x.Key, x => new MessageAttributeValue
+                {
+                    DataType = x.Value.DataType,
+                    StringValue = x.Value.StringValue,
+                    BinaryValue = x.Value.BinaryValue,
+                });
+            }
+            var message = await PrepareMessage<SqsPreparedMessage>(transportOperation, messageIdsOfMulticastedEvents, messageAttributes)
                 .ConfigureAwait(false);
 
             if (message == null)
@@ -236,7 +252,7 @@
             }
         }
 
-        async Task<TMessage> PrepareMessage<TMessage>(IOutgoingTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents)
+        async Task<TMessage> PrepareMessage<TMessage>(IOutgoingTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, Dictionary<string, MessageAttributeValue> messageAttributes = null)
             where TMessage : PreparedMessage, new()
         {
             var unicastTransportOperation = transportOperation as UnicastTransportOperation;
@@ -291,14 +307,18 @@
             await ApplyMulticastOperationMappingIfNecessary(transportOperation as MulticastTransportOperation, preparedMessage as SnsPreparedMessage).ConfigureAwait(false);
 
             preparedMessage.Body = serializedMessage;
-            // preparedMessage.MessageAttributes = message.MessageAttributes.ToDictionary(x => x.Key, x => new MessageAttributeValue
-            // {
-            //     DataType = x.Value.DataType,
-            //     StringValue = x.Value.StringValue,
-            //     BinaryValue = x.Value.BinaryValue,
-            // })
-            preparedMessage.MessageId = messageId;
 
+            // copy over the message attributes that were set on the incoming message for error/audit scenario's
+            if (messageAttributes != null)
+            {
+                var msg = preparedMessage as SqsPreparedMessage;
+                foreach (var messageAttribute in messageAttributes)
+                {
+                    msg.MessageAttributes.Add(messageAttribute.Key, messageAttribute.Value);
+                }
+            }
+
+            preparedMessage.MessageId = messageId;
 
             preparedMessage.CalculateSize();
             if (preparedMessage.Size <= TransportConfiguration.MaximumMessageSize)

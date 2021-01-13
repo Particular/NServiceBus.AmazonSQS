@@ -244,6 +244,9 @@ namespace NServiceBus.Transport.SQS
                     // set the native message on the context for advanced usage scenario's
                     var context = new ContextBag();
                     context.Set(nativeMessage);
+                    // We add it to the transport transaction to make it available in dispatching scenario's so we copy over message attributes when moving messages to the error/audit queue
+                    transportTransaction.Set(nativeMessage);
+                    transportTransaction.Set("IncomingMessageId", headers[Headers.MessageId]);
 
                     using (var messageContextCancellationTokenSource = new CancellationTokenSource())
                     {

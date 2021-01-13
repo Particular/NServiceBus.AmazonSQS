@@ -70,6 +70,8 @@
                         c.CustomConfig((cfg, ctx) =>
                         {
                             cfg.SendFailedMessagesTo(Conventions.EndpointNamingConvention(typeof(ErrorSpy)));
+                            cfg.Recoverability().Immediate(settings => settings.NumberOfRetries(0));
+                            cfg.Recoverability().Delayed(settings => settings.NumberOfRetries(0));
                         });
                         c.When(async (session, ctx) =>
                         {
@@ -233,9 +235,9 @@
                 EndpointSetup<DefaultServer>(config => config.LimitMessageProcessingConcurrencyTo(1));
             }
 
-            class InitiatingMessageHandler : IHandleMessages<Message>
+            class ErrorMessageHandler : IHandleMessages<Message>
             {
-                public InitiatingMessageHandler(Context testContext)
+                public ErrorMessageHandler(Context testContext)
                 {
                     this.testContext = testContext;
                 }

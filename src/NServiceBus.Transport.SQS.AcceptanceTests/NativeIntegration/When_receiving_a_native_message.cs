@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -14,7 +13,6 @@
     using Configuration.AdvancedExtensibility;
     using EndpointTemplates;
     using NUnit.Framework;
-    using Recoverability;
     using Settings;
     using Transport.SQS;
 
@@ -145,8 +143,8 @@
                 var sendMessageRequest = new SendMessageRequest
                 {
                     QueueUrl = getQueueUrlResponse.QueueUrl,
-                    MessageBody = Convert.ToBase64String(Encoding.UTF8.GetBytes(MessageToSend)),
-                    MessageAttributes = messageAttributeValues
+                    MessageAttributes = messageAttributeValues,
+                    MessageBody = Convert.ToBase64String(Encoding.UTF8.GetBytes(MessageToSend))
                 };
                 await sqsClient.SendMessageAsync(sendMessageRequest).ConfigureAwait(false);
             }
