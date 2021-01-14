@@ -1,4 +1,6 @@
-﻿namespace NServiceBus.Transport.SQS.CommandLine.Tests
+﻿using System.Text;
+
+namespace NServiceBus.Transport.SQS.CommandLine.Tests
 {
     using System;
     using System.Collections.Generic;
@@ -301,6 +303,24 @@
 
             await VerifyPolicyContainsPrefixWildCard(EndpointName, prefix);
         }
+        
+        [Test]
+        public async Task Set_policy_namespace_wildcard()
+        {
+            var ns = "MyNamespace";
+            
+            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+            
+            (output, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --namespace-wildcard {ns} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            await VerifyPolicyContainsNamespaceWildCard(EndpointName, prefix, ns);
+        }
 
         [Test]
         public async Task Unsubscribe_from_event_with_remove_shared_resources()
@@ -585,6 +605,48 @@
             var prefixArn = $"{parts[0]}:{parts[1]}:sns:{parts[3]}:{parts[4]}:{prefix}*";
            
             Assert.IsTrue(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(prefixArn))));
+        }
+        
+        async Task VerifyPolicyContainsNamespaceWildCard(string queueName, string prefix, string ns)
+        {
+            if (prefix == null)
+            {
+                prefix = DefaultConfigurationValues.QueueNamePrefix;
+            }
+
+            var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
+            var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
+            {
+                QueueAttributeName.QueueArn,
+                QueueAttributeName.Policy
+            }).ConfigureAwait(false);
+            var policy = Policy.FromJson(queueAttributesResponse.Policy);
+
+            var parts = queueAttributesResponse.QueueARN.Split(":", StringSplitOptions.RemoveEmptyEntries);
+            var namespaceArn = $"{parts[0]}:{parts[1]}:sns:{parts[3]}:{parts[4]}:{GetNamespaceName(prefix, ns)}*";
+           
+            Assert.IsTrue(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(namespaceArn))));
+        }
+        
+        private static string GetNamespaceName(string topicNamePrefix, string namespaceName)
+        {
+            // SNS topic names can only have alphanumeric characters, hyphens and underscores.
+            // Any other characters will be replaced with a hyphen.
+            var namespaceNameBuilder = new StringBuilder(namespaceName);
+            for (var i = 0; i < namespaceNameBuilder.Length; ++i)
+            {
+                var c = namespaceNameBuilder[i];
+                if (!char.IsLetterOrDigit(c)
+                    && c != '-'
+                    && c != '_')
+                {
+                    namespaceNameBuilder[i] = '-';
+                }
+            }
+
+            // topicNamePrefix should not be sanitized
+            return topicNamePrefix + namespaceNameBuilder;
         }
 #pragma warning restore 618
 
