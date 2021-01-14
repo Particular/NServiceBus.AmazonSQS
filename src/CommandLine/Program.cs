@@ -13,7 +13,7 @@
     // sqs-transport endpoint remove large-message-support bucket-name [--other-options]
     // sqs-transport endpoint remove remove delay-delivery-support [--other-options]
     // sqs-transport endpoint delete name [--other-options]
-    // sqs-transport endpoint set-policy name wildcard --account-wildcard --namespace "namespacename" --prefix "prefix" [--other-options] 
+    // sqs-transport endpoint set-policy name wildcard --account-wildcard --namespace "namespacename" --prefix "prefix" --remove-event-type "event-type2" [--other-options] 
     // sqs-transport endpoint set-policy name events --event-type "event-type1" --event-type "event-type2" [--other-options] 
     // sqs-transport endpoint list-policy name [--other-options]
     class Program
@@ -297,7 +297,13 @@
                         {
                             Description = "Allow subscription to topics for events in a specific namespace."
                         };
-                        policyBasedOnWildcardsCommand.Options.Add(namespaceWildcardOption);                        
+                        policyBasedOnWildcardsCommand.Options.Add(namespaceWildcardOption);   
+                        
+                        var removeEventTypeOption = new CommandOption("-revt|--remove-event-type", CommandOptionType.MultipleValue)
+                        {
+                            Description = "Remove topic for specific event type."
+                        };
+                        policyBasedOnWildcardsCommand.Options.Add(removeEventTypeOption);
 
                         policyBasedOnWildcardsCommand.OnExecuteAsync(async ct =>
                         {
@@ -306,7 +312,7 @@
                             var addPrefixcondition = prefixWildcardOption.HasValue();
                             var prefix = prefixOption.HasValue() ? prefixOption.Value() : DefaultConfigurationValues.QueueNamePrefix;                            
                             var namespaceConditions = namespaceWildcardOption.HasValue() ? namespaceWildcardOption.Values : new List<string>();
-                            var eventTypes = new List<string>();
+                            var eventTypes = removeEventTypeOption.HasValue() ? removeEventTypeOption.Values : new List<string>();
 
                             await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.SetPolicy(sqs, sns, prefix, endpointName, eventTypes, addAccountCondition, addPrefixcondition, namespaceConditions));
                         });

@@ -353,6 +353,38 @@ namespace NServiceBus.Transport.SQS.CommandLine.Tests
 
             await VerifyPolicyContainsNamespaceWildCard(EndpointName, prefix, ns);
         }
+        
+        [Test]
+        public async Task Remove_multiple_events_when_setting_wildcard_policy()
+        {
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+            
+            (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix {prefix}");
+            
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+            
+            (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType2} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} events --event-type {EventType} --event-type {EventType2} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --account-wildcard --remove-event-type {EventType} --remove-event-type {EventType2} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+            
+            await VerifyPolicyDoesNotContainTopicFor(EndpointName, prefix, EventType);
+            await VerifyPolicyDoesNotContainTopicFor(EndpointName, prefix, EventType2);
+        }
 
         [Test]
         public async Task Unsubscribe_from_event_with_remove_shared_resources()
@@ -593,6 +625,27 @@ namespace NServiceBus.Transport.SQS.CommandLine.Tests
             var findTopicResponse = await sns.FindTopicAsync(topicName).ConfigureAwait(false);
            
             Assert.IsTrue(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(findTopicResponse.TopicArn))));
+        }
+        
+        async Task VerifyPolicyDoesNotContainTopicFor(string queueName, string prefix, string eventType)
+        {
+            if (prefix == null)
+            {
+                prefix = DefaultConfigurationValues.QueueNamePrefix;
+            }
+
+            var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
+            var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
+            {
+                QueueAttributeName.Policy
+            }).ConfigureAwait(false);
+            var policy = Policy.FromJson(queueAttributesResponse.Policy);
+             
+            var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
+            var findTopicResponse = await sns.FindTopicAsync(topicName).ConfigureAwait(false);
+           
+            Assert.IsFalse(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(findTopicResponse.TopicArn))));
         }
         
         async Task VerifyPolicyContainsAccountWildCard(string queueName, string prefix)
