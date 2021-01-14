@@ -278,12 +278,28 @@
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
             
-            (output, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --account --prefix {prefix}");
+            (output, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --account-wildcard --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
             await VerifyPolicyContainsAccountWildCard(EndpointName, prefix);
+        }
+        
+        [Test]
+        public async Task Set_policy_prefix_wildcard()
+        {
+            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+            
+            (output, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --prefix-wildcard --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            await VerifyPolicyContainsPrefixWildCard(EndpointName, prefix);
         }
 
         [Test]
@@ -547,6 +563,28 @@
             var accountArn = $"{parts[0]}:{parts[1]}:sns:{parts[3]}:{parts[4]}:*";
            
             Assert.IsTrue(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(accountArn))));
+        }
+        
+        async Task VerifyPolicyContainsPrefixWildCard(string queueName, string prefix)
+        {
+            if (prefix == null)
+            {
+                prefix = DefaultConfigurationValues.QueueNamePrefix;
+            }
+
+            var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
+            var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
+            {
+                QueueAttributeName.QueueArn,
+                QueueAttributeName.Policy
+            }).ConfigureAwait(false);
+            var policy = Policy.FromJson(queueAttributesResponse.Policy);
+            
+            var parts = queueAttributesResponse.QueueARN.Split(":", StringSplitOptions.RemoveEmptyEntries);
+            var prefixArn = $"{parts[0]}:{parts[1]}:sns:{parts[3]}:{parts[4]}:{prefix}*";
+           
+            Assert.IsTrue(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(prefixArn))));
         }
 #pragma warning restore 618
 

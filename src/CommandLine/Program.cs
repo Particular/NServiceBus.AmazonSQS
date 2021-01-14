@@ -13,7 +13,7 @@
     // sqs-transport endpoint remove large-message-support bucket-name [--other-options]
     // sqs-transport endpoint remove remove delay-delivery-support [--other-options]
     // sqs-transport endpoint delete name [--other-options]
-    // sqs-transport endpoint set-policy name wildcard --account --namespace "namespacename" --prefix "prefix" [--other-options] 
+    // sqs-transport endpoint set-policy name wildcard --account-wildcard --namespace "namespacename" --prefix "prefix" [--other-options] 
     // sqs-transport endpoint set-policy name events --event-type "event-type1" --event-type "event-type2" [--other-options] 
     // sqs-transport endpoint list-policy name [--other-options]
     class Program
@@ -281,25 +281,31 @@
                         policyBasedOnWildcardsCommand.Options.Add(secretOption);
                         policyBasedOnWildcardsCommand.Options.Add(prefixOption);
 
-                        var accountOption = new CommandOption("-a|--account", CommandOptionType.NoValue)
+                        var accountWildcardOption = new CommandOption("-aw|--account-wildcard", CommandOptionType.NoValue)
                         {
                             Description = "Allow subscription to all topics in an account."
                         };
-                        policyBasedOnWildcardsCommand.Options.Add(accountOption);
+                        policyBasedOnWildcardsCommand.Options.Add(accountWildcardOption);
 
-                        var namespaceOption = new CommandOption("-n|--namespace", CommandOptionType.MultipleValue)
+                        var prefixWildcardOption = new CommandOption("-nw|--prefix-wildcard", CommandOptionType.NoValue)
+                        {
+                            Description = "Allow subscription to topics with a specific wildcard."
+                        };
+                        policyBasedOnWildcardsCommand.Options.Add(prefixWildcardOption);
+
+                        var namespaceWildcardOption = new CommandOption("-nw|--namespace-wildcard", CommandOptionType.MultipleValue)
                         {
                             Description = "Allow subscription to topics for events in a specific namespace."
                         };
-                        policyBasedOnWildcardsCommand.Options.Add(namespaceOption);
+                        policyBasedOnWildcardsCommand.Options.Add(namespaceWildcardOption);                        
 
                         policyBasedOnWildcardsCommand.OnExecuteAsync(async ct =>
                         {
                             var endpointName = nameArgument.Value;
-                            var addAccountCondition = accountOption.HasValue();
-                            var addPrefixcondition = prefixOption.HasValue();
-                            var prefix = addPrefixcondition ? prefixOption.Value() : DefaultConfigurationValues.QueueNamePrefix;                            
-                            var namespaceConditions = namespaceOption.HasValue() ? namespaceOption.Values : new List<string>();
+                            var addAccountCondition = accountWildcardOption.HasValue();
+                            var addPrefixcondition = prefixWildcardOption.HasValue();
+                            var prefix = prefixOption.HasValue() ? prefixOption.Value() : DefaultConfigurationValues.QueueNamePrefix;                            
+                            var namespaceConditions = namespaceWildcardOption.HasValue() ? namespaceWildcardOption.Values : new List<string>();
                             var eventTypes = new List<string>();
 
                             await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.SetPolicy(sqs, sns, prefix, endpointName, eventTypes, addAccountCondition, addPrefixcondition, namespaceConditions));
