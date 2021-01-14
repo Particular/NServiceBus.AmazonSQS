@@ -1,11 +1,10 @@
-﻿using System.Text;
-
-namespace NServiceBus.Transport.SQS.CommandLine.Tests
+﻿namespace NServiceBus.Transport.SQS.CommandLine.Tests
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading.Tasks;
     using Amazon;
@@ -312,7 +311,7 @@ namespace NServiceBus.Transport.SQS.CommandLine.Tests
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
             
-            (output, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --account-wildcard --prefix {prefix}");
+            (output, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --account-condition --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -328,7 +327,7 @@ namespace NServiceBus.Transport.SQS.CommandLine.Tests
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
             
-            (output, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --prefix-wildcard --prefix {prefix}");
+            (output, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --prefix-condition --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -346,7 +345,7 @@ namespace NServiceBus.Transport.SQS.CommandLine.Tests
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
             
-            (output, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --namespace-wildcard {ns} --prefix {prefix}");
+            (output, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --namespace-condition {ns} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -377,7 +376,7 @@ namespace NServiceBus.Transport.SQS.CommandLine.Tests
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --account-wildcard --remove-event-type {EventType} --remove-event-type {EventType2} --prefix {prefix}");
+            (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --account-condition --remove-event-type {EventType} --remove-event-type {EventType2} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);

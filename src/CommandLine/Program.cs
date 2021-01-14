@@ -8,13 +8,15 @@
     // sqs-transport endpoint create name [--other-options]
     // sqs-transport endpoint add name large-message-support bucket-name [--other-options]
     // sqs-transport endpoint add name delay-delivery-support [--other-options]
-    // sqs-transport endpoint subscribe name event-type [--other-options]
+    
     // sqs-transport endpoint unsubscribe name event-type [--other-options]
     // sqs-transport endpoint remove large-message-support bucket-name [--other-options]
     // sqs-transport endpoint remove remove delay-delivery-support [--other-options]
     // sqs-transport endpoint delete name [--other-options]
-    // sqs-transport endpoint set-policy name wildcard --account-wildcard --namespace "namespacename" --prefix "prefix" --remove-event-type "event-type2" [--other-options] 
-    // sqs-transport endpoint set-policy name events --event-type "event-type1" --event-type "event-type2" [--other-options] 
+
+    // sqs-transport endpoint subscribe name event-type [--other-options]
+    // sqs-transport endpoint set-policy "endpointname"  events  --event-type "event-type1" --event-type "event-type2" [--other-options]  
+    // sqs-transport endpoint set-policy name wildcard --account-condition --namespace-condition "namespacename" --prefix-condition --prefix "prefix" --remove-event-type "event-type2" [--other-options] 
     // sqs-transport endpoint list-policy name [--other-options]
     class Program
     {
@@ -281,19 +283,19 @@
                         policyBasedOnWildcardsCommand.Options.Add(secretOption);
                         policyBasedOnWildcardsCommand.Options.Add(prefixOption);
 
-                        var accountWildcardOption = new CommandOption("-aw|--account-wildcard", CommandOptionType.NoValue)
+                        var accountWildcardOption = new CommandOption("-ac|--account-condition", CommandOptionType.NoValue)
                         {
                             Description = "Allow subscription to all topics in an account."
                         };
                         policyBasedOnWildcardsCommand.Options.Add(accountWildcardOption);
 
-                        var prefixWildcardOption = new CommandOption("-nw|--prefix-wildcard", CommandOptionType.NoValue)
+                        var prefixWildcardOption = new CommandOption("-pc|--prefix-condition", CommandOptionType.NoValue)
                         {
                             Description = "Allow subscription to topics with a specific wildcard."
                         };
                         policyBasedOnWildcardsCommand.Options.Add(prefixWildcardOption);
 
-                        var namespaceWildcardOption = new CommandOption("-nw|--namespace-wildcard", CommandOptionType.MultipleValue)
+                        var namespaceWildcardOption = new CommandOption("-nc|--namespace-condition", CommandOptionType.MultipleValue)
                         {
                             Description = "Allow subscription to topics for events in a specific namespace."
                         };
