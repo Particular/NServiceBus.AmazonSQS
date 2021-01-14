@@ -84,6 +84,12 @@
 
             var queueArn = await Queue.GetArn(sqs, prefix, endpointName);
             var topicArn = await Topic.Get(sns, prefix, eventType);
+            if (topicArn == null)
+            {
+                await Console.Out.WriteLineAsync($"No topic detected for event type '{eventType}', please subscribe to the event type first..");
+                return;
+            }
+            
             await Topic.Unsubscribe(sns, topicArn, queueArn);
 
             await Console.Out.WriteLineAsync($"Endpoint '{endpointName}' unsubscribed from '{eventType}'.");
@@ -106,6 +112,12 @@
             foreach (var eventType in eventTypes)
             {
                 var topicArn = await Topic.Get(sns, prefix, eventType);
+                if (topicArn == null)
+                {
+                    await Console.Out.WriteLineAsync($"No topic detected for event type '{eventType}', please subscribe to the event type first..");
+                    await Console.Out.WriteLineAsync($"Policy on endpoint '{endpointName}' not set.");
+                    return;
+                }
                 policyStatements.Add(new PolicyStatement($"{prefix}{eventType}", topicArn, queueArn));
             }
 

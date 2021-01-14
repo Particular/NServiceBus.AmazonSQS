@@ -14,7 +14,7 @@
             var topicName = $"{prefix}{eventType}";
             var sanitized = TopicSanitization.GetSanitizedTopicName(topicName);
             var findTopicResponse = await sns.FindTopicAsync(sanitized).ConfigureAwait(false);
-            return findTopicResponse.TopicArn;
+            return findTopicResponse?.TopicArn;
         }
 
         public static async Task<string> Create(IAmazonSimpleNotificationService sns, string prefix, string eventType)

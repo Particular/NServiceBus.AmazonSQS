@@ -206,6 +206,22 @@ namespace NServiceBus.Transport.SQS.CommandLine.Tests
             await VerifySubscriptionDeleted(topicArn, queueArn);
             await VerifyTopic(EventType, prefix);
         }
+        
+        [Test]
+        public async Task Unsubscribe_from_event_without_topic_warns()
+        {
+            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            (output, error, exitCode) = await Execute($"endpoint unsubscribe {EndpointName} {EventType} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+            
+            Assert.IsTrue(output.Contains($"No topic detected for event type '{EventType}', please subscribe to the event type first."));
+        }
 
         [Test]
         public async Task List_policy()
@@ -243,6 +259,22 @@ namespace NServiceBus.Transport.SQS.CommandLine.Tests
             Assert.IsTrue(error == string.Empty);
 
             await VerifyPolicyContainsTopicFor(EndpointName, prefix, EventType);
+        }
+        
+        [Test]
+        public async Task Set_policy_single_event_without_subscribe_warns()
+        {
+            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+            
+            (output, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} events --event-type {EventType} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            Assert.IsTrue(output.Contains($"No topic detected for event type '{EventType}', please subscribe to the event type first."));
         }
         
         [Test]
