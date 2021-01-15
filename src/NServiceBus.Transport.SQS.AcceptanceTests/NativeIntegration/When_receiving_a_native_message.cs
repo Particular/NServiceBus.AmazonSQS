@@ -2,19 +2,15 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Xml.Linq;
     using AcceptanceTesting;
-    using AcceptanceTesting.Customization;
     using Amazon.S3.Model;
     using Amazon.SQS.Model;
     using Configuration.AdvancedExtensibility;
     using EndpointTemplates;
     using NUnit.Framework;
-    using Settings;
-    using Transport.SQS;
 
     public class When_receiving_a_native_message : NServiceBusAcceptanceTest
     {
@@ -26,10 +22,10 @@
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<Receiver>(c => c.When(async _ =>
                 {
-                    await SendNativeMessage(new Dictionary<string, MessageAttributeValue>
+                    await NativeMessage.SendTo<Receiver>(new Dictionary<string, MessageAttributeValue>
                     {
                         {"MessageTypeFullName", new MessageAttributeValue {DataType = "String", StringValue = typeof(Message).FullName}}
-                    });
+                    }, MessageToSend);
                 }))
                 .Done(c => c.MessageReceived != null)
                 .Run();
@@ -52,14 +48,17 @@
                         });
                         c.When(async (session, ctx) =>
                         {
-                            await SendNativeMessage(new Dictionary<string, MessageAttributeValue>
+                            await NativeMessage.SendTo<Receiver>(new Dictionary<string, MessageAttributeValue>
                             {
                                 // unfortunately only the message id attribute is preserved when moving to the poison queue
                                 {
                                     Headers.MessageId, new MessageAttributeValue {DataType = "String", StringValue = ctx.TestRunId.ToString()}
                                 }
-                            });
-                            _ = CheckErrorQueue(ctx, cancellationTokenSource.Token);
+                            }, MessageToSend);
+                            _ = NativeMessage.ErrorQueue(ctx, ctx.ErrorQueueAddress, (scenarioContext, _) =>
+                            {
+                                scenarioContext.MessageMovedToPoisonQueue = true;
+                            }, cancellationTokenSource.Token);
                         }).DoNotFailOnErrorMessages();
                     })
                     .Done(c => c.MessageMovedToPoisonQueue)
@@ -79,75 +78,16 @@
                 {
                     var key = Guid.NewGuid().ToString();
                     await UploadMessageBodyToS3(key);
-                    await SendNativeMessage(new Dictionary<string, MessageAttributeValue>
+                    await NativeMessage.SendTo<Receiver>(new Dictionary<string, MessageAttributeValue>
                     {
                         {"MessageTypeFullName", new MessageAttributeValue {DataType = "String", StringValue = typeof(Message).FullName}},
                         {"S3BodyKey", new MessageAttributeValue {DataType = "String", StringValue = key}},
-                    });
+                    }, MessageToSend);
                 }))
                 .Done(c => c.MessageReceived != null)
                 .Run();
 
             Assert.AreEqual("Hello!", context.MessageReceived);
-        }
-
-        async Task CheckErrorQueue(Context context, CancellationToken cancellationToken)
-        {
-            var transport = new TransportExtensions<SqsTransport>(new SettingsHolder());
-            transport = transport.ConfigureSqsTransport(SetupFixture.NamePrefix);
-            var transportConfiguration = new TransportConfiguration(transport.GetSettings());
-            using (var sqsClient = SqsTransportExtensions.CreateSQSClient())
-            {
-                var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
-                {
-                    QueueName = QueueCache.GetSqsQueueName(context.ErrorQueueAddress, transportConfiguration)
-                }, cancellationToken).ConfigureAwait(false);
-
-                ReceiveMessageResponse receiveMessageResponse = null;
-
-                while (context.MessageMovedToPoisonQueue == false && !cancellationToken.IsCancellationRequested)
-                {
-                    receiveMessageResponse = await sqsClient.ReceiveMessageAsync(new ReceiveMessageRequest
-                    {
-                        QueueUrl = getQueueUrlResponse.QueueUrl,
-                        WaitTimeSeconds = 20,
-                        MessageAttributeNames = new List<string> { Headers.MessageId }
-                    }, cancellationToken).ConfigureAwait(false);
-
-                    foreach (var msg in receiveMessageResponse.Messages)
-                    {
-                        msg.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute);
-                        if (messageIdAttribute?.StringValue == context.TestRunId.ToString())
-                        {
-                            context.MessageMovedToPoisonQueue = true;
-                        }
-                    }
-                }
-
-                Assert.NotNull(receiveMessageResponse);
-            }
-        }
-
-        static async Task SendNativeMessage(Dictionary<string, MessageAttributeValue> messageAttributeValues)
-        {
-            var transport = new TransportExtensions<SqsTransport>(new SettingsHolder());
-            transport = transport.ConfigureSqsTransport(SetupFixture.NamePrefix);
-            var transportConfiguration = new TransportConfiguration(transport.GetSettings());
-            using (var sqsClient = SqsTransportExtensions.CreateSQSClient())
-            {
-                var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
-                {
-                    QueueName = QueueCache.GetSqsQueueName(Conventions.EndpointNamingConvention(typeof(Receiver)), transportConfiguration)
-                }).ConfigureAwait(false);
-
-                var sendMessageRequest = new SendMessageRequest
-                {
-                    QueueUrl = getQueueUrlResponse.QueueUrl,
-                    MessageAttributes = messageAttributeValues,
-                    MessageBody = Convert.ToBase64String(Encoding.UTF8.GetBytes(MessageToSend))
-                };
-                await sqsClient.SendMessageAsync(sendMessageRequest).ConfigureAwait(false);
-            }
         }
 
         static async Task UploadMessageBodyToS3(string key)
