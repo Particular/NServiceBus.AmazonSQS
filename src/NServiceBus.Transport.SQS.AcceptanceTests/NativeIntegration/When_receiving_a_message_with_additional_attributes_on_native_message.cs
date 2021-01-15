@@ -36,7 +36,8 @@
                             {
                                 // unfortunately only the message id attribute is preserved when moving to the poison queue
                                 { Headers.MessageId, new MessageAttributeValue {DataType = "String", StringValue = ctx.TestRunId.ToString() }},
-                                {"SomethingRandom", new MessageAttributeValue {DataType = "String", StringValue = "bla"}}
+                                {"SomethingRandom", new MessageAttributeValue {DataType = "String", StringValue = "bla"}},
+                                {TransportHeaders.S3BodyKey, new MessageAttributeValue {DataType = "String", StringValue = "bla"}}
                             },
                             null);
                             _ = CheckErrorQueue(ctx, cancellationTokenSource.Token);
@@ -45,6 +46,7 @@
                     .Done(c => c.MessageMovedToPoisonQueue)
                     .Run();
 
+                Assert.That(testContext.MessageAttributesFoundInNativeMessage.ContainsKey(TransportHeaders.S3BodyKey), "We expect that when moving to the poison queue, known native headers are not (re)moved.");
                 Assert.That(testContext.MessageAttributesFoundInNativeMessage.ContainsKey("SomethingRandom"));
                 testContext.MessageAttributesFoundInNativeMessage.TryGetValue("SomethingRandom", out var randomAttribute);
                 Assert.That(randomAttribute, Is.Not.Null);
@@ -90,6 +92,7 @@
                     .Run();
 
                 Assert.That(testContext.MessageAttributesFoundInNativeMessage, Is.Not.Null);
+                Assert.IsFalse(testContext.MessageAttributesFoundInNativeMessage.ContainsKey("MessageTypeFullName"));
                 Assert.That(testContext.MessageAttributesFoundInNativeMessage.ContainsKey("SomethingRandom"));
                 testContext.MessageAttributesFoundInNativeMessage.TryGetValue("SomethingRandom", out var randomAttribute);
                 Assert.That(randomAttribute, Is.Not.Null);
@@ -101,6 +104,113 @@
             }
         }
 
+        [Test]
+        public async Task When_message_moves_through_delayed_delivery_queue_should_copy_message_attributes()
+        {
+            var cancellationTokenSource = new CancellationTokenSource();
+            try
+            {
+                var delay = QueueDelayTime.Add(TimeSpan.FromSeconds(1));
+                var testContext = await Scenario.Define<Context>()
+                    .WithEndpoint<Receiver>(c =>
+                    {
+                        c.CustomConfig((cfg, ctx) =>
+                        {
+                            cfg.SendFailedMessagesTo(Conventions.EndpointNamingConvention(typeof(ErrorSpy)));
+                            cfg.Recoverability().Delayed(settings =>
+                            {
+                                settings.NumberOfRetries(1);
+                                settings.TimeIncrease(delay);
+                            });
+                            cfg.Recoverability().Immediate(settings => settings.NumberOfRetries(0));
+                            cfg.ConfigureSqsTransport().UnrestrictedDurationDelayedDelivery(QueueDelayTime);
+                        });
+                        c.When(async (session, ctx) =>
+                        {
+                            await SendNativeMessage(new Dictionary<string, MessageAttributeValue>
+                            {
+                                { Headers.MessageId, new MessageAttributeValue {DataType = "String", StringValue = ctx.TestRunId.ToString() }},
+                                {"MessageTypeFullName", new MessageAttributeValue {DataType = "String", StringValue = typeof(Message).FullName}},
+                                {"SomethingRandom", new MessageAttributeValue {DataType = "String", StringValue = "bla"}}
+                            },
+                            new Message
+                            {
+                                Id = ctx.TestRunId.ToString(),
+                                ShouldFail = true,
+                                ThisIsTheMessage = "Hello!"
+                            });
+                        }).DoNotFailOnErrorMessages();
+                    })
+                    .WithEndpoint<ErrorSpy>()
+                    .Done(c => c.MessageFoundInErrorQueue)
+                    .Run();
+
+                Assert.That(testContext.MessageAttributesFoundInNativeMessage, Is.Not.Null);
+                Assert.That(testContext.MessageAttributesFoundInNativeMessage.ContainsKey("SomethingRandom"));
+                testContext.MessageAttributesFoundInNativeMessage.TryGetValue("SomethingRandom", out var randomAttribute);
+                Assert.That(randomAttribute, Is.Not.Null);
+                Assert.That(randomAttribute.StringValue, Is.EqualTo("bla"));
+            }
+            finally
+            {
+                cancellationTokenSource.Cancel();
+            }
+        }
+
+        [Test]
+        public async Task When_message_moves_through_delayed_delivery_queue_multiple_times_should_copy_message_attributes()
+        {
+            var cancellationTokenSource = new CancellationTokenSource();
+            try
+            {
+                var delay = QueueDelayTime.Add(QueueDelayTime).Add(TimeSpan.FromSeconds(1));
+                var testContext = await Scenario.Define<Context>()
+                    .WithEndpoint<Receiver>(c =>
+                    {
+                        c.CustomConfig((cfg, ctx) =>
+                        {
+                            cfg.SendFailedMessagesTo(Conventions.EndpointNamingConvention(typeof(ErrorSpy)));
+                            cfg.Recoverability().Delayed(settings =>
+                            {
+                                settings.NumberOfRetries(1);
+                                settings.TimeIncrease(delay);
+                            });
+                            cfg.Recoverability().Immediate(settings => settings.NumberOfRetries(0));
+                            cfg.ConfigureSqsTransport().UnrestrictedDurationDelayedDelivery(QueueDelayTime);
+                        });
+                        c.When(async (session, ctx) =>
+                        {
+                            await SendNativeMessage(new Dictionary<string, MessageAttributeValue>
+                            {
+                                { Headers.MessageId, new MessageAttributeValue {DataType = "String", StringValue = ctx.TestRunId.ToString() }},
+                                {"MessageTypeFullName", new MessageAttributeValue {DataType = "String", StringValue = typeof(Message).FullName}},
+                                {"SomethingRandom", new MessageAttributeValue {DataType = "String", StringValue = "bla"}}
+                            },
+                            new Message
+                            {
+                                Id = ctx.TestRunId.ToString(),
+                                ShouldFail = true,
+                                ThisIsTheMessage = "Hello!"
+                            });
+                        }).DoNotFailOnErrorMessages();
+                    })
+                    .WithEndpoint<ErrorSpy>()
+                    .Done(c => c.MessageFoundInErrorQueue)
+                    .Run();
+
+                Assert.That(testContext.MessageAttributesFoundInNativeMessage, Is.Not.Null);
+                Assert.That(testContext.MessageAttributesFoundInNativeMessage.ContainsKey("SomethingRandom"));
+                testContext.MessageAttributesFoundInNativeMessage.TryGetValue("SomethingRandom", out var randomAttribute);
+                Assert.That(randomAttribute, Is.Not.Null);
+                Assert.That(randomAttribute.StringValue, Is.EqualTo("bla"));
+            }
+            finally
+            {
+                cancellationTokenSource.Cancel();
+            }
+        }
+
+        static readonly TimeSpan QueueDelayTime = TimeSpan.FromSeconds(1);
         static async Task SendNativeMessage(Dictionary<string, MessageAttributeValue> messageAttributeValues, Message theMessage)
         {
             var transport = new TransportExtensions<SqsTransport>(new SettingsHolder());
@@ -194,7 +304,7 @@
 
                 public Task Handle(Message message, IMessageHandlerContext context)
                 {
-                    if (message.ShouldFail)
+                    if (message.ShouldFail && message.Id == testContext.TestRunId.ToString())
                     {
                         throw new Exception("Something failed");
                     }

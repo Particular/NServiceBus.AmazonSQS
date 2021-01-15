@@ -32,6 +32,17 @@ namespace NServiceBus.Transport.SQS
             };
         }
 
+        /// <summary>
+        /// When receiving native messages, we expect some message attributes to be available in order to consume the message
+        /// Once we've been able to process a native message *once*, we move those message attributes into the header collection we use across the framework
+        /// </summary>
+        public static void RemoveNativeHeaders(this SqsPreparedMessage message)
+        {
+            // We're removing these message attributes as we've copied them over into the header dictionary
+            message.MessageAttributes.Remove(TransportHeaders.MessageTypeFullName);
+            message.MessageAttributes.Remove(TransportHeaders.S3BodyKey);
+        }
+
         static SendMessageBatchRequestEntry ToBatchEntry(this SqsPreparedMessage message, string batchEntryId)
         {
             return new SendMessageBatchRequestEntry(batchEntryId, message.Body)

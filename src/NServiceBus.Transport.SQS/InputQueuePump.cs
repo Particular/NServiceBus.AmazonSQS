@@ -165,18 +165,25 @@ namespace NServiceBus.Transport.SQS
                     }
 
                     // When the MessageTypeFullName attribute is available, we're assuming native integration
-                    if (receivedMessage.MessageAttributes.TryGetValue("MessageTypeFullName", out var enclosedMessageType))
+                    if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.MessageTypeFullName, out var enclosedMessageType))
                     {
+                        receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.S3BodyKey, out var s3bodyKey);
                         transportMessage = new TransportMessage
                         {
                             Headers = new Dictionary<string, string>
                             {
                                 {Headers.MessageId, messageId},
-                                {Headers.EnclosedMessageTypes, enclosedMessageType.StringValue}
+                                {Headers.EnclosedMessageTypes, enclosedMessageType.StringValue},
+                                {TransportHeaders.MessageTypeFullName, enclosedMessageType.StringValue} // we're copying over the value of the native message attribute into the headers, converting this into a nsb message
                             },
-                            S3BodyKey = receivedMessage.MessageAttributes.TryGetValue("S3BodyKey", out var s3bodyKey) ? s3bodyKey?.StringValue : null,
+                            S3BodyKey = s3bodyKey?.StringValue,
                             Body = receivedMessage.Body
                         };
+
+                        if (s3bodyKey != null)
+                        {
+                            transportMessage.Headers.Add(TransportHeaders.S3BodyKey, s3bodyKey.StringValue);
+                        }
                     }
                     else
                     {

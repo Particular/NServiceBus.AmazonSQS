@@ -296,7 +296,7 @@
             await ApplyUnicastOperationMappingIfNecessary(unicastTransportOperation, preparedMessage as SqsPreparedMessage, delaySeconds, messageId, nativeMessageAttributes).ConfigureAwait(false);
             await ApplyMulticastOperationMappingIfNecessary(transportOperation as MulticastTransportOperation, preparedMessage as SnsPreparedMessage).ConfigureAwait(false);
 
-            preparedMessage.Body = forwardingANativeMessage ? nativeMessage.Body : SimpleJson.SerializeObject(sqsTransportMessage, serializerStrategy);
+            preparedMessage.Body = SimpleJson.SerializeObject(sqsTransportMessage, serializerStrategy);
             preparedMessage.MessageId = messageId;
 
             preparedMessage.CalculateSize();
@@ -310,32 +310,23 @@
                 throw new Exception("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
             }
 
-            if (!forwardingANativeMessage)
+            var key = $"{configuration.S3KeyPrefix}/{messageId}";
+            using (var bodyStream = new MemoryStream(transportOperation.Message.Body))
             {
-                var key = $"{configuration.S3KeyPrefix}/{messageId}";
-                using (var bodyStream = new MemoryStream(transportOperation.Message.Body))
+                var putObjectRequest = new PutObjectRequest
                 {
-                    var putObjectRequest = new PutObjectRequest
-                    {
-                        BucketName = configuration.S3BucketForLargeMessages,
-                        InputStream = bodyStream,
-                        Key = key
-                    };
-                    ApplyServerSideEncryptionConfiguration(putObjectRequest);
+                    BucketName = configuration.S3BucketForLargeMessages,
+                    InputStream = bodyStream,
+                    Key = key
+                };
+                ApplyServerSideEncryptionConfiguration(putObjectRequest);
 
-                    await s3Client.PutObjectAsync(putObjectRequest).ConfigureAwait(false);
-                }
-
-                sqsTransportMessage.S3BodyKey = key;
-                sqsTransportMessage.Body = string.Empty;
-                preparedMessage.Body = SimpleJson.SerializeObject(sqsTransportMessage, serializerStrategy);
-            }
-            else
-            {
-                sqsTransportMessage.S3BodyKey = nativeMessage.MessageAttributes["S3BodyKey"].StringValue;
-                sqsTransportMessage.Body = nativeMessage.Body;
+                await s3Client.PutObjectAsync(putObjectRequest).ConfigureAwait(false);
             }
 
+            sqsTransportMessage.S3BodyKey = key;
+            sqsTransportMessage.Body = string.Empty;
+            preparedMessage.Body = SimpleJson.SerializeObject(sqsTransportMessage, serializerStrategy);
             preparedMessage.CalculateSize();
 
             return preparedMessage;
@@ -365,6 +356,7 @@
             {
                 sqsPreparedMessage.MessageAttributes.Add(messageAttribute.Key, messageAttribute.Value);
             }
+            sqsPreparedMessage.RemoveNativeHeaders();
 
             var delayLongerThanConfiguredDelayedDeliveryQueueDelayTime = configuration.IsDelayedDeliveryEnabled && delaySeconds > configuration.DelayedDeliveryQueueDelayTime;
             if (delayLongerThanConfiguredDelayedDeliveryQueueDelayTime)
