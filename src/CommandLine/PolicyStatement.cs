@@ -3,7 +3,6 @@ namespace NServiceBus.Transport.SQS.CommandLine
     using Amazon.Auth.AccessControlPolicy;
     using Amazon.Auth.AccessControlPolicy.ActionIdentifiers;
 
-#pragma warning disable 618
     class PolicyStatement
     {
         public PolicyStatement(string topicName, string topicArn, string queueArn)
@@ -19,6 +18,7 @@ namespace NServiceBus.Transport.SQS.CommandLine
         public string TopicArn { get; }
         public Statement Statement { get; }
 
+#pragma warning disable 618
         private static Statement CreatePermissionStatement(string queueArn, string topicArn)
         {
             var statement = new Statement(Statement.StatementEffect.Allow);
@@ -28,6 +28,6 @@ namespace NServiceBus.Transport.SQS.CommandLine
             statement.Principals.Add(new Principal("*"));
             return statement;
         }
-    }
 #pragma warning restore 618
+    }
 }

@@ -7,7 +7,6 @@ namespace NServiceBus.Transport.SQS.CommandLine
     using Amazon.Auth.AccessControlPolicy;
     using Amazon.Auth.AccessControlPolicy.ActionIdentifiers;
 
-#pragma warning disable 618
     static class PolicyExtensions
     {
         internal static bool Update(this Policy policy,
@@ -146,10 +145,12 @@ namespace NServiceBus.Transport.SQS.CommandLine
         private static bool StatementContainsResources(this Statement statement, IEnumerable<Resource> resources) =>
             resources.All(resource => statement.Resources.FirstOrDefault(x => string.Equals(x.Id, resource.Id)) != null);
 
+#pragma warning disable 618
         private static bool StatementContainsActions(
             this Statement statement,
             IEnumerable<ActionIdentifier> actions) =>
             actions.All(action => statement.Actions.FirstOrDefault(x => string.Equals(x.ActionName, action.ActionName)) != null);
+#pragma warning restore 618
 
         private static bool StatementContainsPrincipals(
             this Statement statement,
@@ -172,6 +173,7 @@ namespace NServiceBus.Transport.SQS.CommandLine
             this Statement statement) =>
             statement.Conditions.Any(condition => condition.Values.All(v => v.Contains("*")));
 
+#pragma warning disable 618
         private static Statement CreatePermissionStatementForQueueMatching(string queueArn, IEnumerable<string> topicArnMatchPatterns)
         {
             var statement = new Statement(Statement.StatementEffect.Allow);
@@ -182,10 +184,9 @@ namespace NServiceBus.Transport.SQS.CommandLine
             statement.Conditions.Add(queuePermissionCondition);
             return statement;
         }
-
+#pragma warning restore 618
         // conditions are case sensitive
         // https://stackoverflow.com/a/47769284/290290
         private static readonly StringComparer OrdinalComparer = StringComparer.Ordinal;
     }
-#pragma warning restore 618
 }
