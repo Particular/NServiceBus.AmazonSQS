@@ -6,18 +6,15 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using AcceptanceTesting;
     using AcceptanceTesting.Customization;
     using Amazon.SQS.Model;
     using Configuration.AdvancedExtensibility;
-    using NUnit.Framework;
     using Settings;
     using Transport.SQS;
 
     static class NativeMessage
     {
-        public static async Task ErrorQueue<TContext>(TContext context, string errorQueueAddress, Action<TContext, Message> accessor, CancellationToken cancellationToken)
-            where TContext : ScenarioContext
+        public static async Task ErrorQueue(Guid testRunId, string errorQueueAddress, CancellationToken cancellationToken, Action<Message> nativeMessageAccessor = null)
         {
             var transport = new TransportExtensions<SqsTransport>(new SettingsHolder());
             transport = transport.ConfigureSqsTransport(SetupFixture.NamePrefix);
@@ -43,16 +40,14 @@
                     foreach (var msg in receiveMessageResponse.Messages)
                     {
                         msg.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute);
-                        if (messageIdAttribute?.StringValue == context.TestRunId.ToString())
+                        if (messageIdAttribute?.StringValue == testRunId.ToString())
                         {
-                            accessor(context, msg);
+                            nativeMessageAccessor?.Invoke(msg);
                         }
 
                         await sqsClient.DeleteMessageAsync(getQueueUrlResponse.QueueUrl, msg.ReceiptHandle, CancellationToken.None);
                     }
                 }
-
-                Assert.NotNull(receiveMessageResponse);
             }
         }
 

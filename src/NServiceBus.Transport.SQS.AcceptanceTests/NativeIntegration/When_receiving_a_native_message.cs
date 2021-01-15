@@ -55,10 +55,10 @@
                                     Headers.MessageId, new MessageAttributeValue {DataType = "String", StringValue = ctx.TestRunId.ToString()}
                                 }
                             }, MessageToSend);
-                            _ = NativeMessage.ErrorQueue(ctx, ctx.ErrorQueueAddress, (scenarioContext, _) =>
+                            _ = NativeMessage.ErrorQueue(ctx.TestRunId, ctx.ErrorQueueAddress, cancellationTokenSource.Token, _ =>
                             {
-                                scenarioContext.MessageMovedToPoisonQueue = true;
-                            }, cancellationTokenSource.Token);
+                                ctx.MessageMovedToPoisonQueue = true;
+                            });
                         }).DoNotFailOnErrorMessages();
                     })
                     .Done(c => c.MessageMovedToPoisonQueue)

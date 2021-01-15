@@ -36,11 +36,11 @@
                                 {TransportHeaders.S3BodyKey, new MessageAttributeValue {DataType = "String", StringValue = "bla"}}
                             },
                             "This is a poison message");
-                            _ = NativeMessage.ErrorQueue(ctx, ctx.ErrorQueueAddress, (scenarioContext, nativeMessage) =>
+                            _ = NativeMessage.ErrorQueue(ctx.TestRunId, ctx.ErrorQueueAddress, cancellationTokenSource.Token, nativeMessage =>
                             {
-                                scenarioContext.MessageAttributesFoundInNativeMessage = nativeMessage.MessageAttributes;
-                                scenarioContext.MessageMovedToPoisonQueue = true;
-                            }, cancellationTokenSource.Token);
+                                ctx.MessageAttributesFoundInNativeMessage = nativeMessage.MessageAttributes;
+                                ctx.MessageMovedToPoisonQueue = true;
+                            });
                         }).DoNotFailOnErrorMessages();
                     })
                     .Done(c => c.MessageMovedToPoisonQueue)
