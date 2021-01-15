@@ -178,6 +178,11 @@ namespace NServiceBus.Transport.SQS
                     // for native integration scenario's we copy over all the message attributes so we don't lose part of the message when moving to the delayed delivery queue
                     foreach (var messageAttribute in receivedMessage.MessageAttributes)
                     {
+                        if (preparedMessage.MessageAttributes.ContainsKey(messageAttribute.Key))
+                        {
+                            continue;
+                        }
+
                         preparedMessage.MessageAttributes.Add(messageAttribute.Key, messageAttribute.Value);
                     }
 
@@ -202,6 +207,11 @@ namespace NServiceBus.Transport.SQS
                     // for native integration scenario's we copy over all the message attributes so we don't lose part of the message when moving to the delayed delivery queue
                     foreach (var messageAttribute in receivedMessage.MessageAttributes)
                     {
+                        if (preparedMessage.MessageAttributes.ContainsKey(messageAttribute.Key))
+                        {
+                            continue;
+                        }
+
                         preparedMessage.MessageAttributes.Add(messageAttribute.Key, messageAttribute.Value);
                     }
 

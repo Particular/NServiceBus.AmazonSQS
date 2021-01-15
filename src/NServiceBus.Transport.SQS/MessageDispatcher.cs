@@ -354,6 +354,11 @@
             foreach (var messageAttribute in nativeMessageAttributes ??
                                              Enumerable.Empty<KeyValuePair<string, MessageAttributeValue>>())
             {
+                if (sqsPreparedMessage.MessageAttributes.ContainsKey(messageAttribute.Key))
+                {
+                    continue;
+                }
+
                 sqsPreparedMessage.MessageAttributes.Add(messageAttribute.Key, messageAttribute.Value);
             }
             sqsPreparedMessage.RemoveNativeHeaders();
