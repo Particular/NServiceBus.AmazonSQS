@@ -4,6 +4,7 @@ namespace NServiceBus.Transport.SQS
     using System.Linq;
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS.Model;
+    using MessageAttributeValue = Amazon.SQS.Model.MessageAttributeValue;
     using SnsMessageAttributeValue = Amazon.SimpleNotificationService.Model.MessageAttributeValue;
 
     static class PreparedMessageExtensions
@@ -30,6 +31,20 @@ namespace NServiceBus.Transport.SQS
                     BinaryValue = x.Value.BinaryValue,
                 })
             };
+        }
+
+        public static void CopyMessageAttributes(this SqsPreparedMessage message, Dictionary<string, MessageAttributeValue> nativeMessageAttributes)
+        {
+            foreach (var messageAttribute in nativeMessageAttributes ??
+                                             Enumerable.Empty<KeyValuePair<string, MessageAttributeValue>>())
+            {
+                if (message.MessageAttributes.ContainsKey(messageAttribute.Key))
+                {
+                    continue;
+                }
+
+                message.MessageAttributes.Add(messageAttribute.Key, messageAttribute.Value);
+            }
         }
 
         /// <summary>

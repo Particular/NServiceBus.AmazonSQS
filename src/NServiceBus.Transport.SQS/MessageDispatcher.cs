@@ -350,17 +350,8 @@
                 return;
             }
 
-            // copy over the message attributes that were set on the incoming message for error/audit scenario's
-            foreach (var messageAttribute in nativeMessageAttributes ??
-                                             Enumerable.Empty<KeyValuePair<string, MessageAttributeValue>>())
-            {
-                if (sqsPreparedMessage.MessageAttributes.ContainsKey(messageAttribute.Key))
-                {
-                    continue;
-                }
-
-                sqsPreparedMessage.MessageAttributes.Add(messageAttribute.Key, messageAttribute.Value);
-            }
+            // copy over the message attributes that were set on the incoming message for error/audit scenario's if available
+            sqsPreparedMessage.CopyMessageAttributes(nativeMessageAttributes);
             sqsPreparedMessage.RemoveNativeHeaders();
 
             var delayLongerThanConfiguredDelayedDeliveryQueueDelayTime = configuration.IsDelayedDeliveryEnabled && delaySeconds > configuration.DelayedDeliveryQueueDelayTime;

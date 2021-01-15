@@ -13,6 +13,7 @@ namespace NServiceBus.Transport.SQS
     using Extensions;
     using Logging;
     using SimpleJson;
+    using static TransportHeaders;
 
     class InputQueuePump
     {
@@ -165,25 +166,26 @@ namespace NServiceBus.Transport.SQS
                     }
 
                     // When the MessageTypeFullName attribute is available, we're assuming native integration
-                    if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.MessageTypeFullName, out var enclosedMessageType))
+                    if (receivedMessage.MessageAttributes.TryGetValue(MessageTypeFullName, out var enclosedMessageType))
                     {
-                        receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.S3BodyKey, out var s3bodyKey);
+                        var headers = new Dictionary<string, string>
+                        {
+                            {Headers.MessageId, messageId},
+                            {Headers.EnclosedMessageTypes, enclosedMessageType.StringValue},
+                            {MessageTypeFullName, enclosedMessageType.StringValue} // we're copying over the value of the native message attribute into the headers, converting this into a nsb message
+                        };
+
+                        if (receivedMessage.MessageAttributes.TryGetValue(S3BodyKey, out var s3bodyKey))
+                        {
+                            headers.Add(S3BodyKey, s3bodyKey.StringValue);
+                        }
+
                         transportMessage = new TransportMessage
                         {
-                            Headers = new Dictionary<string, string>
-                            {
-                                {Headers.MessageId, messageId},
-                                {Headers.EnclosedMessageTypes, enclosedMessageType.StringValue},
-                                {TransportHeaders.MessageTypeFullName, enclosedMessageType.StringValue} // we're copying over the value of the native message attribute into the headers, converting this into a nsb message
-                            },
+                            Headers = headers,
                             S3BodyKey = s3bodyKey?.StringValue,
                             Body = receivedMessage.Body
                         };
-
-                        if (s3bodyKey != null)
-                        {
-                            transportMessage.Headers.Add(TransportHeaders.S3BodyKey, s3bodyKey.StringValue);
-                        }
                     }
                     else
                     {
@@ -217,7 +219,7 @@ namespace NServiceBus.Transport.SQS
                         Logger.Warn(logMessage);
                     }
 
-                    await MovePoisonMessageToErrorQueue(receivedMessage, messageId).ConfigureAwait(false);
+                    await MovePoisonMessageToErrorQueue(receivedMessage).ConfigureAwait(false);
                     return;
                 }
 
@@ -297,12 +299,12 @@ namespace NServiceBus.Transport.SQS
 
         static bool IsMessageExpired(Message receivedMessage, Dictionary<string, string> headers, string messageId, TimeSpan clockOffset)
         {
-            if (!headers.TryGetValue(TransportHeaders.TimeToBeReceived, out var rawTtbr))
+            if (!headers.TryGetValue(TimeToBeReceived, out var rawTtbr))
             {
                 return false;
             }
 
-            headers.Remove(TransportHeaders.TimeToBeReceived);
+            headers.Remove(TimeToBeReceived);
             var timeToBeReceived = TimeSpan.Parse(rawTtbr);
             if (timeToBeReceived == TimeSpan.MaxValue)
             {
@@ -341,23 +343,21 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        async Task MovePoisonMessageToErrorQueue(Message message, string messageId)
+        async Task MovePoisonMessageToErrorQueue(Message message)
         {
             try
             {
-                var messageAttributeValues = message.MessageAttributes.ToDictionary(x => x.Key, x => new MessageAttributeValue
-                {
-                    DataType = x.Value.DataType,
-                    StringValue = x.Value.StringValue,
-                    BinaryValue = x.Value.BinaryValue,
-                });
+                // Ok to use LINQ here since this is not really a hot path
+                var messageAttributeValues = message.MessageAttributes
+                    .ToDictionary(pair => pair.Key, messageAttribute => messageAttribute.Value);
+
                 await sqsClient.SendMessageAsync(new SendMessageRequest
                 {
                     QueueUrl = errorQueueUrl,
                     MessageBody = message.Body,
                     MessageAttributes = messageAttributeValues
                 }, CancellationToken.None).ConfigureAwait(false);
-                // The MessageAttributes on message are read-only attributes provided by SQS
+                // The Attributes on message are read-only attributes provided by SQS
                 // and can't be re-sent. Unfortunately all the SQS metadata
                 // such as SentTimestamp is reset with this send.
             }
