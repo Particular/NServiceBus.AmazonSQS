@@ -10,12 +10,12 @@ namespace NServiceBus.Transport.SQS.CommandLine
 #pragma warning disable 618
     static class PolicyExtensions
     {
-        internal static bool Update(this Policy policy, 
+        internal static bool Update(this Policy policy,
             IReadOnlyCollection<PolicyStatement> addPolicyStatements,
-            bool addAccountConditionForPolicies, 
+            bool addAccountConditionForPolicies,
             bool addTopicNamePrefixConditionForPolicies,
-            IReadOnlyList<string> namespaceConditionsForPolicies, 
-            string topicNamePrefix, 
+            IReadOnlyList<string> namespaceConditionsForPolicies,
+            string topicNamePrefix,
             string sqsQueueArn)
         {
             var parts = sqsQueueArn.Split(":", StringSplitOptions.RemoveEmptyEntries);
@@ -172,7 +172,7 @@ namespace NServiceBus.Transport.SQS.CommandLine
             this Statement statement) =>
             statement.Conditions.Any(condition => condition.Values.All(v => v.Contains("*")));
 
-        internal static Statement CreatePermissionStatementForQueueMatching(string queueArn, IEnumerable<string> topicArnMatchPatterns)
+        private static Statement CreatePermissionStatementForQueueMatching(string queueArn, IEnumerable<string> topicArnMatchPatterns)
         {
             var statement = new Statement(Statement.StatementEffect.Allow);
             statement.Actions.Add(SQSActionIdentifiers.SendMessage);

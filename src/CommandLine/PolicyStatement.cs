@@ -1,7 +1,5 @@
 namespace NServiceBus.Transport.SQS.CommandLine
 {
-    using System;
-    using System.Linq;
     using Amazon.Auth.AccessControlPolicy;
     using Amazon.Auth.AccessControlPolicy.ActionIdentifiers;
 
@@ -21,7 +19,7 @@ namespace NServiceBus.Transport.SQS.CommandLine
         public string TopicArn { get; }
         public Statement Statement { get; }
 
-        internal static Statement CreatePermissionStatement(string queueArn, string topicArn)
+        private static Statement CreatePermissionStatement(string queueArn, string topicArn)
         {
             var statement = new Statement(Statement.StatementEffect.Allow);
             statement.Actions.Add(SQSActionIdentifiers.SendMessage);
@@ -30,8 +28,6 @@ namespace NServiceBus.Transport.SQS.CommandLine
             statement.Principals.Add(new Principal("*"));
             return statement;
         }
-
-        private static readonly string[] ArnSeperator = { ":" };
     }
 #pragma warning restore 618
 }
