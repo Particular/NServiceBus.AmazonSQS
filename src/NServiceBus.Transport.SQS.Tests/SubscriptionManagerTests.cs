@@ -312,6 +312,53 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
+        public async Task Subscribe_after_settle_with_all_conditions_should_not_modify_policy()
+        {
+            transportSettings.TopicNamePrefix("DEV-");
+
+            var policies = transportSettings.Policies();
+            policies.AddAccountCondition();
+            policies.AddTopicNamePrefixCondition();
+            policies.AddNamespaceCondition("Shipping.");
+            policies.AddNamespaceCondition("Sales.HighValueOrders.");
+
+            var manager = CreateBatchingSubscriptionManager();
+
+            var eventType = typeof(Event);
+            await manager.Subscribe(eventType, null);
+            var anotherEvent = typeof(AnotherEvent);
+            await manager.Subscribe(anotherEvent, null);
+
+            await manager.Settle();
+
+            var setAttributeRequestsSentAfterSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
+            var invocationCount = 0;
+            var original = sqsClient.GetAttributeRequestsResponse;
+            sqsClient.GetAttributeRequestsResponse = s =>
+            {
+                invocationCount++;
+
+                if (invocationCount < 2)
+                {
+                    return new Dictionary<string, string>
+                    {
+                        {"QueueArn", "arn:fakeQueue"},
+                        {"Policy", setAttributeRequestsSentAfterSettle[0].attributes["Policy"]}
+                    };
+                }
+
+                return original(s);
+            };
+
+            sqsClient.SetAttributesRequestsSent.Clear();
+
+            var yetAnotherEvent = typeof(YetAnotherEvent);
+            await manager.Subscribe(yetAnotherEvent, null);
+
+            Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
+        }
+
+        [Test]
         public async Task SettlePolicy_with_nothing_to_subscribe_and_no_policy_doesnt_create_policy()
         {
             var manager = CreateBatchingSubscriptionManager();
