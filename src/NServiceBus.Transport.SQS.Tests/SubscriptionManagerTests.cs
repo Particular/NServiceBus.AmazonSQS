@@ -436,6 +436,26 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
+        public async Task Unsubscribe_should_not_modify_policy()
+        {
+            var manager = CreateNonBatchingSubscriptionManager();
+
+            snsClient.ListSubscriptionsByTopicResponse = topic => new ListSubscriptionsByTopicResponse
+            {
+                Subscriptions = new List<Subscription>
+                {
+                    new Subscription {Endpoint = $"arn:{queueName}", SubscriptionArn = "arn:subscription"}
+                }
+            };
+
+            var eventType = typeof(Event);
+
+            await manager.Unsubscribe(eventType, null);
+
+            Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
+        }
+
+        [Test]
         public async Task Unsubscribe_with_events_to_events_mapping_should_unsubscribe_matching_subscription()
         {
             var manager = CreateNonBatchingSubscriptionManager();
@@ -478,6 +498,40 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
+        public async Task Unsubscribe_with_events_to_events_mapping_should_not_modify_policy()
+        {
+            var manager = CreateNonBatchingSubscriptionManager();
+
+            var unsubscribedEvent = typeof(IEvent);
+            var concreteEventType = typeof(Event);
+            customEventToEventsMappings.Add(unsubscribedEvent, concreteEventType);
+
+            snsClient.ListSubscriptionsByTopicResponse = topic =>
+            {
+                if (topic.EndsWith("NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event"))
+                {
+                    return new ListSubscriptionsByTopicResponse
+                    {
+                        Subscriptions = new List<Subscription>
+                        {
+                            new Subscription {Endpoint = "arn:someOtherQueue", SubscriptionArn = "arn:someOtherSubscription"},
+                            new Subscription {Endpoint = $"arn:{queueName}", SubscriptionArn = "arn:subscription"}
+                        }
+                    };
+                }
+
+                return new ListSubscriptionsByTopicResponse
+                {
+                    Subscriptions = new List<Subscription>()
+                };
+            };
+
+            await manager.Unsubscribe(unsubscribedEvent, null);
+
+            Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
+        }
+
+        [Test]
         public async Task Unsubscribe_with_event_to_topics_mapping_should_unsubscribe_matching_subscription()
         {
             var manager = CreateNonBatchingSubscriptionManager();
@@ -516,6 +570,39 @@ namespace NServiceBus.Transport.SQS.Tests
             {
                 "arn:subscription"
             }, snsClient.UnsubscribeRequests);
+        }
+
+        [Test]
+        public async Task Unsubscribe_with_event_to_topics_mapping_should_not_modify_policy()
+        {
+            var manager = CreateNonBatchingSubscriptionManager();
+
+            var unsubscribedEvent = typeof(IEvent);
+            customEventToTopicsMappings.Add(unsubscribedEvent, new[] {"custom-topic-name"});
+
+            snsClient.ListSubscriptionsByTopicResponse = topic =>
+            {
+                if (topic.EndsWith("custom-topic-name"))
+                {
+                    return new ListSubscriptionsByTopicResponse
+                    {
+                        Subscriptions = new List<Subscription>
+                        {
+                            new Subscription {Endpoint = "arn:someOtherQueue", SubscriptionArn = "arn:someOtherSubscription"},
+                            new Subscription {Endpoint = $"arn:{queueName}", SubscriptionArn = "arn:subscription"}
+                        }
+                    };
+                }
+
+                return new ListSubscriptionsByTopicResponse
+                {
+                    Subscriptions = new List<Subscription>()
+                };
+            };
+
+            await manager.Unsubscribe(unsubscribedEvent, null);
+
+            Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
         }
 
 #pragma warning disable 618
