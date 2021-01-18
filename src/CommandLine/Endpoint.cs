@@ -130,7 +130,7 @@
                 prefix,
                 queueArn))
             {
-                await Console.Out.WriteLineAsync($"Policy on endpoint '{endpointName}' not set.");
+                await Console.Out.WriteLineAsync($"No updates needed for policy on endpoint '{endpointName}'.");
                 return;
             }
 
