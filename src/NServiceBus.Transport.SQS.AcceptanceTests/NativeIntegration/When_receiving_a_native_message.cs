@@ -22,7 +22,7 @@
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<Receiver>(c => c.When(async _ =>
                 {
-                    await NativeMessage.SendTo<Receiver>(new Dictionary<string, MessageAttributeValue>
+                    await NativeEndpoint.SendTo<Receiver>(new Dictionary<string, MessageAttributeValue>
                     {
                         {"MessageTypeFullName", new MessageAttributeValue {DataType = "String", StringValue = typeof(Message).FullName}}
                     }, MessageToSend);
@@ -48,14 +48,14 @@
                         });
                         c.When(async (session, ctx) =>
                         {
-                            await NativeMessage.SendTo<Receiver>(new Dictionary<string, MessageAttributeValue>
+                            await NativeEndpoint.SendTo<Receiver>(new Dictionary<string, MessageAttributeValue>
                             {
                                 // unfortunately only the message id attribute is preserved when moving to the poison queue
                                 {
                                     Headers.MessageId, new MessageAttributeValue {DataType = "String", StringValue = ctx.TestRunId.ToString()}
                                 }
                             }, MessageToSend);
-                            _ = NativeMessage.ErrorQueue(ctx.TestRunId, ctx.ErrorQueueAddress, cancellationTokenSource.Token, _ =>
+                            _ = NativeEndpoint.ConsumePoisonQueue(ctx.TestRunId, ctx.ErrorQueueAddress, cancellationTokenSource.Token, _ =>
                             {
                                 ctx.MessageMovedToPoisonQueue = true;
                             });
@@ -78,7 +78,7 @@
                 {
                     var key = Guid.NewGuid().ToString();
                     await UploadMessageBodyToS3(key);
-                    await NativeMessage.SendTo<Receiver>(new Dictionary<string, MessageAttributeValue>
+                    await NativeEndpoint.SendTo<Receiver>(new Dictionary<string, MessageAttributeValue>
                     {
                         {"MessageTypeFullName", new MessageAttributeValue {DataType = "String", StringValue = typeof(Message).FullName}},
                         {"S3BodyKey", new MessageAttributeValue {DataType = "String", StringValue = key}},

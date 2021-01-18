@@ -12,9 +12,9 @@
     using Settings;
     using Transport.SQS;
 
-    static class NativeMessage
+    static class NativeEndpoint
     {
-        public static async Task ErrorQueue(Guid testRunId, string errorQueueAddress, CancellationToken cancellationToken, Action<Message> nativeMessageAccessor = null)
+        public static async Task ConsumePoisonQueue(Guid testRunId, string errorQueueAddress, CancellationToken cancellationToken, Action<Message> nativeMessageAccessor = null)
         {
             var transport = new TransportExtensions<SqsTransport>(new SettingsHolder());
             transport = transport.ConfigureSqsTransport(SetupFixture.NamePrefix);
@@ -26,11 +26,9 @@
                     QueueName = QueueCache.GetSqsQueueName(errorQueueAddress, transportConfiguration)
                 }, cancellationToken).ConfigureAwait(false);
 
-                ReceiveMessageResponse receiveMessageResponse = null;
-
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    receiveMessageResponse = await sqsClient.ReceiveMessageAsync(new ReceiveMessageRequest
+                    var receiveMessageResponse = await sqsClient.ReceiveMessageAsync(new ReceiveMessageRequest
                     {
                         QueueUrl = getQueueUrlResponse.QueueUrl,
                         WaitTimeSeconds = 5,

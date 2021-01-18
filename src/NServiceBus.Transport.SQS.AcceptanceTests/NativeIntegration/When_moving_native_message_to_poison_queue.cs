@@ -28,7 +28,7 @@
                         });
                         c.When(async (session, ctx) =>
                         {
-                            await NativeMessage.SendTo<Receiver>(new Dictionary<string, MessageAttributeValue>
+                            await NativeEndpoint.SendTo<Receiver>(new Dictionary<string, MessageAttributeValue>
                             {
                                 // unfortunately only the message id attribute is preserved when moving to the poison queue
                                 { Headers.MessageId, new MessageAttributeValue {DataType = "String", StringValue = ctx.TestRunId.ToString() }},
@@ -36,7 +36,7 @@
                                 {TransportHeaders.S3BodyKey, new MessageAttributeValue {DataType = "String", StringValue = "bla"}}
                             },
                             "This is a poison message");
-                            _ = NativeMessage.ErrorQueue(ctx.TestRunId, ctx.ErrorQueueAddress, cancellationTokenSource.Token, nativeMessage =>
+                            _ = NativeEndpoint.ConsumePoisonQueue(ctx.TestRunId, ctx.ErrorQueueAddress, cancellationTokenSource.Token, nativeMessage =>
                             {
                                 ctx.MessageAttributesFoundInNativeMessage = nativeMessage.MessageAttributes;
                                 ctx.MessageMovedToPoisonQueue = true;

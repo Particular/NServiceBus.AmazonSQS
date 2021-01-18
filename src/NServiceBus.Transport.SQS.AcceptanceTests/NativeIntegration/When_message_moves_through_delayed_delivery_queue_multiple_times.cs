@@ -31,7 +31,7 @@
                     });
                     c.When(async (session, ctx) =>
                     {
-                        await NativeMessage.SendTo<Receiver, Message>(new Dictionary<string, MessageAttributeValue>
+                        await NativeEndpoint.SendTo<Receiver, Message>(new Dictionary<string, MessageAttributeValue>
                             {
                                 { Headers.MessageId, new MessageAttributeValue {DataType = "String", StringValue = ctx.TestRunId.ToString() }},
                                 {"MessageTypeFullName", new MessageAttributeValue {DataType = "String", StringValue = typeof(Message).FullName}},
