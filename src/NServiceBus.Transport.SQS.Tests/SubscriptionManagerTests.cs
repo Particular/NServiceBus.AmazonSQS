@@ -286,6 +286,44 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
+        public async Task Subscribe_after_settle_sets_full_policy()
+        {
+            var manager = CreateBatchingSubscriptionManager();
+
+            var eventType = typeof(Event);
+            await manager.Subscribe(eventType, null);
+            var anotherEvent = typeof(AnotherEvent);
+            await manager.Subscribe(anotherEvent, null);
+
+            await manager.Settle();
+
+            var setAttributeRequestsSentAfterSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
+
+            var invocationCount = 0;
+            var original = sqsClient.GetAttributeRequestsResponse;
+            sqsClient.GetAttributeRequestsResponse = s =>
+            {
+                invocationCount++;
+
+                if (invocationCount < 2)
+                {
+                    return new Dictionary<string, string>
+                    {
+                        {"QueueArn", "arn:fakeQueue"},
+                        {"Policy", setAttributeRequestsSentAfterSettle[0].attributes["Policy"]}
+                    };
+                }
+
+                return original(s);
+            };
+
+            var yetAnotherEvent = typeof(YetAnotherEvent);
+            await manager.Subscribe(yetAnotherEvent, null);
+
+            Approver.Verify(sqsClient.SetAttributesRequestsSent[1].attributes["Policy"], PolicyScrubber.ScrubPolicy);
+        }
+
+        [Test]
         public async Task SettlePolicy_with_all_conditions_sets_full_policy()
         {
             transportSettings.TopicNamePrefix("DEV-");
