@@ -36,7 +36,7 @@ namespace NServiceBus.Transport.SQS
                 .ConfigureAwait(false);
 
             // currently we are not doing fanout but better safe than sorry later
-            var policyStatementsToBeSettled = new ConcurrentBag<PolicyStatement>();
+            var policyStatementsToBeSettled = new ConcurrentBag<PolicyStatement>(settledPolicyStatements);
 
             var metadata = messageMetadataRegistry.GetMessageMetadata(eventType);
             await SetupTypeSubscriptions(metadata, queueUrl, policyStatementsToBeSettled).ConfigureAwait(false);
@@ -75,8 +75,9 @@ namespace NServiceBus.Transport.SQS
             // unfortunately there is no clear
             while (!preparedPolicyStatements.IsEmpty)
             {
-                if (preparedPolicyStatements.TryTake(out _))
+                if (preparedPolicyStatements.TryTake(out var policyStatement))
                 {
+                    settledPolicyStatements.Add(policyStatement);
                 }
             }
 
@@ -316,6 +317,7 @@ namespace NServiceBus.Transport.SQS
 
         readonly ConcurrentDictionary<Type, string> typeTopologyConfiguredSet = new ConcurrentDictionary<Type, string>();
         readonly ConcurrentBag<PolicyStatement> preparedPolicyStatements = new ConcurrentBag<PolicyStatement>();
+        readonly List<PolicyStatement> settledPolicyStatements = new List<PolicyStatement>();
         readonly QueueCache queueCache;
         readonly IAmazonSQS sqsClient;
         readonly IAmazonSimpleNotificationService snsClient;
