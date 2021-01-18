@@ -2,7 +2,7 @@
   "profiles": {
     "NServiceBus.Transports.SQS.CommandLine": {
       "commandName": "Project",
-      "commandLineArgs": "endpoint create test --prefix yves-"
+      "commandLineArgs": "endpoint set-policy test2 events --event-type MyMessages.Message35 --prefix yves-"
     }
   }
 }

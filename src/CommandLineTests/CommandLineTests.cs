@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading.Tasks;
     using Amazon;
@@ -13,6 +14,7 @@
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS;
     using Amazon.SQS.Model;
+    using Amazon.Auth.AccessControlPolicy;
     using NUnit.Framework;
     using SQS.Tests;
 
@@ -205,6 +207,185 @@
         }
 
         [Test]
+        public async Task Unsubscribe_from_event_without_topic_warns()
+        {
+            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            (output, error, exitCode) = await Execute($"endpoint unsubscribe {EndpointName} {EventType} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            Assert.IsTrue(output.Contains($"No topic detected for event type '{EventType}', please subscribe to the event type first."));
+        }
+
+        [Test]
+        public async Task List_policy()
+        {
+            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            (output, error, exitCode) = await Execute($"endpoint list-policy {EndpointName} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            Assert.IsNotNull(output);
+            Assert.IsTrue(output.Contains("Statement"));
+        }
+
+        [Test]
+        public async Task Set_policy_single_event()
+        {
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} events --event-type {EventType} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            await VerifyPolicyContainsTopicFor(EndpointName, prefix, EventType);
+        }
+
+        [Test]
+        public async Task Set_policy_single_event_without_subscribe_warns()
+        {
+            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            (output, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} events --event-type {EventType} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            StringAssert.Contains($"No topic detected for event type '{EventType}', please subscribe to the event type first.", output);
+        }
+
+        [Test]
+        public async Task Set_policy_multiple_events()
+        {
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType2} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} events --event-type {EventType} --event-type {EventType2} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            await VerifyPolicyContainsTopicFor(EndpointName, prefix, EventType);
+            await VerifyPolicyContainsTopicFor(EndpointName, prefix, EventType2);
+        }
+
+        [Test]
+        public async Task Set_policy_account_wildcard()
+        {
+            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            (output, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --account-condition --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            await VerifyPolicyContainsAccountWildCard(EndpointName, prefix);
+        }
+
+        [Test]
+        public async Task Set_policy_prefix_wildcard()
+        {
+            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            (output, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --prefix-condition --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            await VerifyPolicyContainsPrefixWildCard(EndpointName, prefix);
+        }
+
+        [Test]
+        public async Task Set_policy_namespace_wildcard()
+        {
+            var ns = "MyNamespace";
+
+            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            (output, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --namespace-condition {ns} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            await VerifyPolicyContainsNamespaceWildCard(EndpointName, prefix, ns);
+        }
+
+        [Test]
+        public async Task Remove_multiple_events_when_setting_wildcard_policy()
+        {
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType2} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} events --event-type {EventType} --event-type {EventType2} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --account-condition --remove-event-type {EventType} --remove-event-type {EventType2} --prefix {prefix}");
+
+            Assert.AreEqual(0, exitCode);
+            Assert.IsTrue(error == string.Empty);
+
+            await VerifyPolicyDoesNotContainTopicFor(EndpointName, prefix, EventType);
+            await VerifyPolicyDoesNotContainTopicFor(EndpointName, prefix, EventType2);
+        }
+
+        [Test]
         public async Task Unsubscribe_from_event_with_remove_shared_resources()
         {
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
@@ -319,12 +500,18 @@
 
         async Task<(string output, string error, int exitCode)> Execute(string command)
         {
-            var process = new Process();
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.RedirectStandardError = true;
-            process.StartInfo.WorkingDirectory = TestContext.CurrentContext.TestDirectory;
-            process.StartInfo.FileName = "dotnet";
-            process.StartInfo.Arguments = "NServiceBus.Transports.SQS.CommandLine.dll " + command + " -i " + accessKey + " -s " + secret + " -r " + region;
+            var process = new Process
+            {
+                StartInfo =
+                {
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    WorkingDirectory = TestContext.CurrentContext.TestDirectory,
+                    FileName = "dotnet",
+                    Arguments =
+                        $"NServiceBus.Transports.SQS.CommandLine.dll {command} -i {accessKeyId} -s {secretAccessKey} -r {region}"
+                }
+            };
 
             process.Start();
             var outputTask = process.StandardOutput.ReadToEndAsync();
@@ -349,15 +536,8 @@
 
         async Task<string> VerifyQueue(string queueName, string prefix = null, double? retentionPeriodInSeconds = null)
         {
-            if (prefix == null)
-            {
-                prefix = DefaultConfigurationValues.QueueNamePrefix;
-            }
-
-            if (retentionPeriodInSeconds == null)
-            {
-                retentionPeriodInSeconds = DefaultConfigurationValues.RetentionPeriod.TotalSeconds;
-            }
+            prefix ??= DefaultConfigurationValues.QueueNamePrefix;
+            retentionPeriodInSeconds ??= DefaultConfigurationValues.RetentionPeriod.TotalSeconds;
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
             var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
@@ -369,27 +549,12 @@
             return queueAttributesResponse.QueueARN;
         }
 
-        async Task<string> VerifyDelayDeliveryQueue(string queueName, string prefix = null, double? retentionPeriodInSeconds = null, double? delayInSeconds = null, string suffix = null)
+        private async Task<string> VerifyDelayDeliveryQueue(string queueName, string prefix = null, double? retentionPeriodInSeconds = null, double? delayInSeconds = null, string suffix = null)
         {
-            if (prefix == null)
-            {
-                prefix = DefaultConfigurationValues.QueueNamePrefix;
-            }
-
-            if (retentionPeriodInSeconds == null)
-            {
-                retentionPeriodInSeconds = DefaultConfigurationValues.RetentionPeriod.TotalSeconds;
-            }
-
-            if (delayInSeconds == null)
-            {
-                delayInSeconds = DefaultConfigurationValues.MaximumQueueDelayTime.TotalSeconds;
-            }
-
-            if (suffix == null)
-            {
-                suffix = DefaultConfigurationValues.DelayedDeliveryQueueSuffix;
-            }
+            prefix ??= DefaultConfigurationValues.QueueNamePrefix;
+            retentionPeriodInSeconds ??= DefaultConfigurationValues.RetentionPeriod.TotalSeconds;
+            delayInSeconds ??= DefaultConfigurationValues.MaximumQueueDelayTime.TotalSeconds;
+            suffix ??= DefaultConfigurationValues.DelayedDeliveryQueueSuffix;
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}{suffix}");
             var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
@@ -407,12 +572,9 @@
             return queueAttributesResponse.QueueARN;
         }
 
-        async Task<string> VerifyTopic(string eventType, string prefix = null)
+        private async Task<string> VerifyTopic(string eventType, string prefix = null)
         {
-            if (prefix == null)
-            {
-                prefix = DefaultConfigurationValues.TopicNamePrefix;
-            }
+            prefix ??= DefaultConfigurationValues.TopicNamePrefix;
 
             var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
 
@@ -423,7 +585,121 @@
             return findTopicResponse.TopicArn;
         }
 
-        async Task<string> VerifyBucket(string bucketName)
+#pragma warning disable 618
+        private async Task VerifyPolicyContainsTopicFor(string queueName, string prefix, string eventType)
+        {
+            prefix ??= DefaultConfigurationValues.QueueNamePrefix;
+
+            var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
+            var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
+            {
+                QueueAttributeName.Policy
+            }).ConfigureAwait(false);
+            var policy = Policy.FromJson(queueAttributesResponse.Policy);
+
+            var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
+            var findTopicResponse = await sns.FindTopicAsync(topicName).ConfigureAwait(false);
+
+            Assert.IsTrue(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(findTopicResponse.TopicArn))));
+        }
+
+        private async Task VerifyPolicyDoesNotContainTopicFor(string queueName, string prefix, string eventType)
+        {
+            prefix ??= DefaultConfigurationValues.QueueNamePrefix;
+
+            var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
+            var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
+            {
+                QueueAttributeName.Policy
+            }).ConfigureAwait(false);
+            var policy = Policy.FromJson(queueAttributesResponse.Policy);
+
+            var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
+            var findTopicResponse = await sns.FindTopicAsync(topicName).ConfigureAwait(false);
+
+            Assert.IsFalse(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(findTopicResponse.TopicArn))));
+        }
+
+        private async Task VerifyPolicyContainsAccountWildCard(string queueName, string prefix)
+        {
+            prefix ??= DefaultConfigurationValues.QueueNamePrefix;
+
+            var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
+            var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
+            {
+                QueueAttributeName.QueueArn,
+                QueueAttributeName.Policy
+            }).ConfigureAwait(false);
+            var policy = Policy.FromJson(queueAttributesResponse.Policy);
+
+            var parts = queueAttributesResponse.QueueARN.Split(":", StringSplitOptions.RemoveEmptyEntries);
+            var accountArn = $"{parts[0]}:{parts[1]}:sns:{parts[3]}:{parts[4]}:*";
+
+            Assert.IsTrue(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(accountArn))));
+        }
+
+        private async Task VerifyPolicyContainsPrefixWildCard(string queueName, string prefix)
+        {
+            prefix ??= DefaultConfigurationValues.QueueNamePrefix;
+
+            var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
+            var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
+            {
+                QueueAttributeName.QueueArn,
+                QueueAttributeName.Policy
+            }).ConfigureAwait(false);
+            var policy = Policy.FromJson(queueAttributesResponse.Policy);
+
+            var parts = queueAttributesResponse.QueueARN.Split(":", StringSplitOptions.RemoveEmptyEntries);
+            var prefixArn = $"{parts[0]}:{parts[1]}:sns:{parts[3]}:{parts[4]}:{prefix}*";
+
+            Assert.IsTrue(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(prefixArn))));
+        }
+
+        private async Task VerifyPolicyContainsNamespaceWildCard(string queueName, string prefix, string ns)
+        {
+            prefix ??= DefaultConfigurationValues.QueueNamePrefix;
+
+            var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
+            var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
+            {
+                QueueAttributeName.QueueArn,
+                QueueAttributeName.Policy
+            }).ConfigureAwait(false);
+            var policy = Policy.FromJson(queueAttributesResponse.Policy);
+
+            var parts = queueAttributesResponse.QueueARN.Split(":", StringSplitOptions.RemoveEmptyEntries);
+            var namespaceArn = $"{parts[0]}:{parts[1]}:sns:{parts[3]}:{parts[4]}:{GetNamespaceName(prefix, ns)}*";
+
+            Assert.IsTrue(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(namespaceArn))));
+        }
+
+        private static string GetNamespaceName(string topicNamePrefix, string namespaceName)
+        {
+            // SNS topic names can only have alphanumeric characters, hyphens and underscores.
+            // Any other characters will be replaced with a hyphen.
+            var namespaceNameBuilder = new StringBuilder(namespaceName);
+            for (var i = 0; i < namespaceNameBuilder.Length; ++i)
+            {
+                var c = namespaceNameBuilder[i];
+                if (!char.IsLetterOrDigit(c)
+                    && c != '-'
+                    && c != '_')
+                {
+                    namespaceNameBuilder[i] = '-';
+                }
+            }
+
+            // topicNamePrefix should not be sanitized
+            return topicNamePrefix + namespaceNameBuilder;
+        }
+
+        private async Task<string> VerifyBucket(string bucketName)
         {
             var listBucketsResponse = await s3.ListBucketsAsync(new ListBucketsRequest()).ConfigureAwait(false);
             var bucket = listBucketsResponse.Buckets.FirstOrDefault(x => string.Equals(x.BucketName, bucketName, StringComparison.InvariantCultureIgnoreCase));
@@ -433,38 +709,31 @@
             return bucket.BucketName;
         }
 
-        async Task VerifyLifecycleConfiguration(string bucketName, string keyPrefix = null, int? expiration = null)
+        private async Task VerifyLifecycleConfiguration(string bucketName, string keyPrefix = null, int? expiration = null)
         {
-            if (keyPrefix == null)
-            {
-                keyPrefix = DefaultConfigurationValues.S3KeyPrefix;
-            }
-
-            if (expiration == null)
-            {
-                expiration = (int)Math.Ceiling(DefaultConfigurationValues.RetentionPeriod.TotalDays);
-            }
+            keyPrefix ??= DefaultConfigurationValues.S3KeyPrefix;
+            expiration ??= (int) Math.Ceiling(DefaultConfigurationValues.RetentionPeriod.TotalDays);
 
             LifecycleRule setLifeCycleConfig;
             int backOff;
             var executions = 0;
             do
             {
-                backOff = executions * executions * verificationBackoffInterval;
+                backOff = executions * executions * VerificationBackoffInterval;
                 await Task.Delay(backOff);
                 executions++;
 
                 var lifecycleConfig = await s3.GetLifecycleConfigurationAsync(bucketName).ConfigureAwait(false);
                 setLifeCycleConfig = lifecycleConfig.Configuration.Rules.FirstOrDefault(x => x.Id == "NServiceBus.SQS.DeleteMessageBodies");
             }
-            while (setLifeCycleConfig == null && backOff < maximumBackoffInterval);
+            while (setLifeCycleConfig == null && backOff < MaximumBackoffInterval);
 
             Assert.IsNotNull(setLifeCycleConfig);
             Assert.AreEqual(expiration, setLifeCycleConfig.Expiration.Days);
             Assert.AreEqual(keyPrefix, (setLifeCycleConfig.Filter.LifecycleFilterPredicate as LifecyclePrefixPredicate).Prefix);
         }
 
-        public async Task VerifySubscription(string topicArn, string queueArn)
+        private async Task VerifySubscription(string topicArn, string queueArn)
         {
             ListSubscriptionsByTopicResponse upToAHundredSubscriptions = null;
             Subscription subscription = null;
@@ -487,7 +756,7 @@
             Assert.IsNotNull(subscription);
         }
 
-        public async Task VerifySubscriptionDeleted(string topicArn, string queueArn)
+        private async Task VerifySubscriptionDeleted(string topicArn, string queueArn)
         {
             ListSubscriptionsByTopicResponse upToAHundredSubscriptions = null;
             Subscription subscription = null;
@@ -510,12 +779,9 @@
             Assert.IsNull(subscription);
         }
 
-        async Task VerifyTopicDeleted(string eventType, string prefix = null)
+        private async Task VerifyTopicDeleted(string eventType, string prefix = null)
         {
-            if (prefix == null)
-            {
-                prefix = DefaultConfigurationValues.TopicNamePrefix;
-            }
+            prefix ??= DefaultConfigurationValues.TopicNamePrefix;
 
             var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
 
@@ -524,17 +790,10 @@
             Assert.IsNull(findTopicResponse);
         }
 
-        async Task VerifyDelayDeliveryQueueDeleted(string queueName, string prefix = null, string suffix = null)
+        private async Task VerifyDelayDeliveryQueueDeleted(string queueName, string prefix = null, string suffix = null)
         {
-            if (prefix == null)
-            {
-                prefix = DefaultConfigurationValues.QueueNamePrefix;
-            }
-
-            if (suffix == null)
-            {
-                suffix = DefaultConfigurationValues.DelayedDeliveryQueueSuffix;
-            }
+            prefix ??= DefaultConfigurationValues.QueueNamePrefix;
+            suffix ??= DefaultConfigurationValues.DelayedDeliveryQueueSuffix;
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}{suffix}");
             GetQueueUrlResponse queueUrlResponse;
@@ -544,7 +803,7 @@
             {
                 try
                 {
-                    backOff = executions * executions * verificationBackoffInterval;
+                    backOff = executions * executions * VerificationBackoffInterval;
                     await Task.Delay(backOff);
                     executions++;
 
@@ -556,17 +815,14 @@
                     queueUrlResponse = null;
                 }
             }
-            while (queueUrlResponse != null && backOff < maximumBackoffInterval);
+            while (queueUrlResponse != null && backOff < MaximumBackoffInterval);
 
             Assert.IsNull(queueUrlResponse);
         }
 
-        async Task VerifyQueueDeleted(string queueName, string prefix = null)
+        private async Task VerifyQueueDeleted(string queueName, string prefix = null)
         {
-            if (prefix == null)
-            {
-                prefix = DefaultConfigurationValues.QueueNamePrefix;
-            }
+            prefix ??= DefaultConfigurationValues.QueueNamePrefix;
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
             GetQueueUrlResponse queueUrlResponse;
@@ -576,7 +832,7 @@
             {
                 try
                 {
-                    backOff = executions * executions * verificationBackoffInterval;
+                    backOff = executions * executions * VerificationBackoffInterval;
                     await Task.Delay(backOff);
                     executions++;
 
@@ -588,25 +844,25 @@
                     queueUrlResponse = null;
                 }
             }
-            while (queueUrlResponse != null && backOff < maximumBackoffInterval);
+            while (queueUrlResponse != null && backOff < MaximumBackoffInterval);
 
             Assert.IsNull(queueUrlResponse);
         }
 
-        async Task VerifyBucketDeleted(string bucketName)
+        private async Task VerifyBucketDeleted(string bucketName)
         {
             int backOff;
             var executions = 0;
             bool bucketExists;
             do
             {
-                backOff = executions * executions * verificationBackoffInterval;
+                backOff = executions * executions * VerificationBackoffInterval;
                 await Task.Delay(backOff);
                 executions++;
 
                 bucketExists = await s3.DoesS3BucketExistAsync(bucketName);
             }
-            while (bucketExists && backOff < maximumBackoffInterval);
+            while (bucketExists && backOff < MaximumBackoffInterval);
 
             Assert.IsFalse(bucketExists);
         }
@@ -618,9 +874,9 @@
 
             var regionEndpoint = RegionEndpoint.GetBySystemName(region);
 
-            sqs = new AmazonSQSClient(accessKey, secret, regionEndpoint);
-            sns = new AmazonSimpleNotificationServiceClient(accessKey, secret, regionEndpoint);
-            s3 = new AmazonS3Client(accessKey, secret, regionEndpoint);
+            sqs = new AmazonSQSClient(accessKeyId, secretAccessKey, regionEndpoint);
+            sns = new AmazonSimpleNotificationServiceClient(accessKeyId, secretAccessKey, regionEndpoint);
+            s3 = new AmazonS3Client(accessKeyId, secretAccessKey, regionEndpoint);
         }
 
         [TearDown]
@@ -636,9 +892,9 @@
 
         string prefix;
 
-        string accessKey = Environment.GetEnvironmentVariable("CLEANUP_AWS_ACCESS_KEY_ID");
-        string secret = Environment.GetEnvironmentVariable("CLEANUP_AWS_SECRET_ACCESS_KEY");
-        string region = Environment.GetEnvironmentVariable("AWS_REGION");
+        readonly string accessKeyId = Environment.GetEnvironmentVariable("CLEANUP_AWS_ACCESS_KEY_ID");
+        readonly string secretAccessKey = Environment.GetEnvironmentVariable("CLEANUP_AWS_SECRET_ACCESS_KEY");
+        readonly string region = Environment.GetEnvironmentVariable("AWS_REGION");
 
         private IAmazonSQS sqs;
         private IAmazonSimpleNotificationService sns;
@@ -646,7 +902,8 @@
         const string EndpointName = "nsb-cli-test";
         const string BucketName = "nsb-cli-test-bucket";
         const string EventType = "MyNamespace.MyMessage1";
-        const int verificationBackoffInterval = 200;
-        const int maximumBackoffInterval = 20000; // totals up to 77000
+        const string EventType2 = "MyNamespace.MyMessage2";
+        const int VerificationBackoffInterval = 200;
+        const int MaximumBackoffInterval = 20000; // totals up to 77000
     }
 }
