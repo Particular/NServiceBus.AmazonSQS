@@ -11,6 +11,7 @@ namespace NServiceBus.Transport.SQS
     using Amazon.SQS.Model;
     using Extensions;
     using Logging;
+    using static TransportHeaders;
 
     class DelayedMessagesPump
     {
@@ -136,7 +137,7 @@ namespace NServiceBus.Transport.SQS
                 preparedMessages = preparedMessages ?? new List<SqsReceivedDelayedMessage>(receivedMessages.Messages.Count);
                 long delaySeconds = 0;
 
-                if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.DelaySeconds, out var delayAttribute))
+                if (receivedMessage.MessageAttributes.TryGetValue(DelaySeconds, out var delayAttribute))
                 {
                     long.TryParse(delayAttribute.StringValue, out delaySeconds);
                 }
@@ -168,13 +169,16 @@ namespace NServiceBus.Transport.SQS
                         QueueUrl = delayedDeliveryQueueUrl,
                         MessageAttributes =
                         {
-                            [TransportHeaders.DelaySeconds] = new MessageAttributeValue
+                            [DelaySeconds] = new MessageAttributeValue
                             {
                                 StringValue = remainingDelay.ToString(),
                                 DataType = "String"
                             }
                         }
                     };
+
+                    // Copy over all the message attributes so we don't lose part of the message when moving to the delayed delivery queue
+                    preparedMessage.CopyMessageAttributes(receivedMessage.MessageAttributes);
 
                     var deduplicationId = receivedMessage.Attributes["MessageDeduplicationId"];
 
@@ -194,6 +198,10 @@ namespace NServiceBus.Transport.SQS
                         QueueUrl = inputQueueUrl
                     };
 
+                    // Copy over all the message attributes so we don't lose part of the message when moving to the delayed delivery queue
+                    preparedMessage.CopyMessageAttributes(receivedMessage.MessageAttributes);
+
+                    preparedMessage.MessageAttributes.Remove(DelaySeconds);
                     if (remainingDelay > 0)
                     {
                         preparedMessage.DelaySeconds = Convert.ToInt32(remainingDelay);

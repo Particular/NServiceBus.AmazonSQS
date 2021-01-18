@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.AcceptanceTests
+﻿namespace NServiceBus.AcceptanceTests.NativeIntegration
 {
     using System;
     using System.Threading.Tasks;
@@ -7,10 +7,10 @@
     using NServiceBus.Pipeline;
     using NUnit.Framework;
 
-    public class When_requiring_the_native_message : NServiceBusAcceptanceTest
+    public class When_access_to_received_native_message_required : NServiceBusAcceptanceTest
     {
         [Test]
-        public async Task Should_have_access_to_the_native_message_from_the_pipeline()
+        public async Task Should_be_available_from_the_pipeline()
         {
             var scenario = await Scenario.Define<Context>()
                 .WithEndpoint<Receiver>(b => b.When((bus, c) => bus.SendLocal(new Message())))
