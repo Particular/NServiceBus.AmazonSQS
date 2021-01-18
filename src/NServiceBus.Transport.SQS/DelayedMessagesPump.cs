@@ -177,7 +177,7 @@ namespace NServiceBus.Transport.SQS
                         }
                     };
 
-                    // for native integration scenario's we copy over all the message attributes so we don't lose part of the message when moving to the delayed delivery queue
+                    // Copy over all the message attributes so we don't lose part of the message when moving to the delayed delivery queue
                     preparedMessage.CopyMessageAttributes(receivedMessage.MessageAttributes);
 
                     var deduplicationId = receivedMessage.Attributes["MessageDeduplicationId"];
@@ -198,7 +198,7 @@ namespace NServiceBus.Transport.SQS
                         QueueUrl = inputQueueUrl
                     };
 
-                    // for native integration scenario's we copy over all the message attributes so we don't lose part of the message when moving to the delayed delivery queue
+                    // Copy over all the message attributes so we don't lose part of the message when moving to the delayed delivery queue
                     preparedMessage.CopyMessageAttributes(receivedMessage.MessageAttributes);
 
                     preparedMessage.MessageAttributes.Remove(DelaySeconds);
