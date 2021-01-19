@@ -98,6 +98,16 @@
         }
 
         /// <summary>
+        /// Configures the policy creation during subscription.
+        /// </summary>
+        /// <param name="transportExtensions">The transport extensions.</param>
+        public static PolicySettings Policies(this TransportExtensions<SqsTransport> transportExtensions)
+        {
+            Guard.AgainstNull(nameof(transportExtensions), transportExtensions);
+            return new PolicySettings(transportExtensions.GetSettings());
+        }
+
+        /// <summary>
         /// Specifies a string value that will be prepended to the name of every SQS queue
         /// referenced by the endpoint. This is useful when deploying many environments of the
         /// same application in the same AWS region (say, a development environment, a QA environment

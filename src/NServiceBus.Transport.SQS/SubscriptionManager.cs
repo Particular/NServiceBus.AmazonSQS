@@ -5,7 +5,6 @@ namespace NServiceBus.Transport.SQS
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
-    using Amazon.Auth.AccessControlPolicy;
     using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS;
@@ -16,15 +15,16 @@ namespace NServiceBus.Transport.SQS
 
     class SubscriptionManager : IManageSubscriptions
     {
-        public SubscriptionManager(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, MessageMetadataRegistry messageMetadataRegistry, TopicCache topicCache, bool disableSubscribeBatchingOnStart)
+        public SubscriptionManager(TransportConfiguration configuration, IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, MessageMetadataRegistry messageMetadataRegistry, TopicCache topicCache)
         {
+            this.configuration = configuration;
             this.topicCache = topicCache;
             this.messageMetadataRegistry = messageMetadataRegistry;
             this.queueCache = queueCache;
             this.sqsClient = sqsClient;
             this.snsClient = snsClient;
             this.queueName = queueName;
-            endpointStartingMode = !disableSubscribeBatchingOnStart;
+            endpointStartingMode = !configuration.DisableSubscriptionBatchingOnStart;
         }
 
         public async Task Subscribe(Type eventType, ContextBag context)
@@ -33,7 +33,7 @@ namespace NServiceBus.Transport.SQS
                 .ConfigureAwait(false);
 
             // currently we are not doing fanout but better safe than sorry later
-            var policyStatementsToBeSettled = new ConcurrentBag<PolicyStatement>();
+            var policyStatementsToBeSettled = new ConcurrentBag<PolicyStatement>(settledPolicyStatements);
 
             var metadata = messageMetadataRegistry.GetMessageMetadata(eventType);
             await SetupTypeSubscriptions(metadata, queueUrl, policyStatementsToBeSettled).ConfigureAwait(false);
@@ -72,8 +72,9 @@ namespace NServiceBus.Transport.SQS
             // unfortunately there is no clear
             while (!preparedPolicyStatements.IsEmpty)
             {
-                if (preparedPolicyStatements.TryTake(out _))
+                if (preparedPolicyStatements.TryTake(out var policyStatement))
                 {
+                    settledPolicyStatements.Add(policyStatement);
                 }
             }
 
@@ -190,8 +191,7 @@ namespace NServiceBus.Transport.SQS
         {
             var sqsQueueArn = await queueCache.GetQueueArn(queueUrl).ConfigureAwait(false);
 
-            var permissionStatement = PolicyExtensions.CreateSQSPermissionStatement(topicArn, sqsQueueArn);
-            var addPolicyStatement = new PolicyStatement(topicName, topicArn, permissionStatement, sqsQueueArn);
+            var addPolicyStatement = new PolicyStatement(topicName, topicArn, sqsQueueArn);
 
             policyStatementsToBeSettled.Add(addPolicyStatement);
         }
@@ -238,6 +238,11 @@ namespace NServiceBus.Transport.SQS
 
         async Task SetNecessaryDeliveryPolicyWithRetries(string queueUrl, ConcurrentBag<PolicyStatement> addPolicyStatements)
         {
+            if (configuration.AssumePolicyHasAppropriatePermissions || addPolicyStatements.Count == 0)
+            {
+                return;
+            }
+
             try
             {
                 // need to safe guard the subscribe section so that policy are not overwritten
@@ -252,29 +257,22 @@ namespace NServiceBus.Transport.SQS
                     if (i > 1)
                     {
                         var millisecondsDelay = i * 1000;
-                        Logger.Debug($"Policy not yet propagated to write to '{sqsQueueArn}'! Retrying in {millisecondsDelay} ms.");
+                        Logger.Debug(
+                            $"Policy not yet propagated to write to '{sqsQueueArn}'! Retrying in {millisecondsDelay} ms.");
                         await Delay(millisecondsDelay).ConfigureAwait(false);
                     }
 
                     var queueAttributes = await sqsClient.GetAttributesAsync(queueUrl).ConfigureAwait(false);
                     sqsQueueArn = queueAttributes["QueueArn"];
 
-                    var policy = ExtractPolicy(queueAttributes);
+                    var policy = queueAttributes.ExtractPolicy();
 
-                    var policyAdded = false;
-
-                    foreach (var addPolicyStatement in addPolicyStatements)
-                    {
-                        if (policy.HasSQSPermission(addPolicyStatement.Statement))
-                        {
-                            continue;
-                        }
-
-                        policy.AddSQSPermission(addPolicyStatement.Statement);
-                        policyAdded = true;
-                    }
-
-                    if (!policyAdded)
+                    if (!policy.Update(addPolicyStatements,
+                        configuration.AddAccountConditionForPolicies,
+                        configuration.AddTopicNamePrefixConditionForPolicies,
+                        configuration.NamespaceConditionsForPolicies,
+                        configuration.TopicNamePrefix,
+                        sqsQueueArn))
                     {
                         break;
                     }
@@ -302,29 +300,6 @@ namespace NServiceBus.Transport.SQS
             return Task.Delay(millisecondsDelay, token);
         }
 
-#pragma warning disable 618
-        static Policy ExtractPolicy(Dictionary<string, string> queueAttributes)
-        {
-            Policy policy;
-            string policyStr = null;
-            if (queueAttributes.ContainsKey("Policy"))
-            {
-                policyStr = queueAttributes["Policy"];
-            }
-
-            if (string.IsNullOrEmpty(policyStr))
-            {
-                policy = new Policy();
-            }
-            else
-            {
-                policy = Policy.FromJson(policyStr);
-            }
-
-            return policy;
-        }
-#pragma warning restore 618
-
         void MarkTypeConfigured(Type eventType)
         {
             typeTopologyConfiguredSet[eventType] = null;
@@ -339,34 +314,17 @@ namespace NServiceBus.Transport.SQS
 
         readonly ConcurrentDictionary<Type, string> typeTopologyConfiguredSet = new ConcurrentDictionary<Type, string>();
         readonly ConcurrentBag<PolicyStatement> preparedPolicyStatements = new ConcurrentBag<PolicyStatement>();
+        readonly List<PolicyStatement> settledPolicyStatements = new List<PolicyStatement>();
         readonly QueueCache queueCache;
         readonly IAmazonSQS sqsClient;
         readonly IAmazonSimpleNotificationService snsClient;
         readonly string queueName;
         readonly MessageMetadataRegistry messageMetadataRegistry;
         readonly TopicCache topicCache;
+        readonly TransportConfiguration configuration;
         readonly SemaphoreSlim subscribeQueueLimiter = new SemaphoreSlim(1);
         volatile bool endpointStartingMode;
 
         static ILog Logger = LogManager.GetLogger(typeof(SubscriptionManager));
-
-#pragma warning disable 618
-        class PolicyStatement
-        {
-            public PolicyStatement(string topicName, string topicArn, Statement statement, string queueArn)
-            {
-                TopicName = topicName;
-                TopicArn = topicArn;
-                Statement = statement;
-                QueueArn = queueArn;
-            }
-
-            public string QueueArn { get; }
-
-            public string TopicName { get; }
-            public string TopicArn { get; }
-            public Statement Statement { get; }
-        }
     }
-#pragma warning restore 618
 }

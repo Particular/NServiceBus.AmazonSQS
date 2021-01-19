@@ -1,0 +1,22 @@
+{
+    "Version" : "2012-10-17",
+    "Statement" : [
+        {
+            "Effect" : "Allow",
+            "Principal" : {
+                "AWS" : "*"
+            },
+            "Action"    : "sqs:SendMessage",
+            "Resource"  : "arn:fakeQueue",
+            "Condition" : {
+                "ArnLike" : {
+                    "aws:SourceArn" : [
+                        "arn:aws:sns:us-west-2:123456789012:*",
+                        "arn:aws:sns:us-west-2:123456789012:DEV-*",
+                        "arn:aws:sns:us-west-2:123456789012:DEV-NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-*"
+                    ]
+                }
+            }
+        }
+    ]
+}

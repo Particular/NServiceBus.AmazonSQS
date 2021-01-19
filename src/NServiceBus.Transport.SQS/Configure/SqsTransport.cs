@@ -33,6 +33,8 @@
             settings.SetDefault(SettingsKeys.MaxTimeToLive, TimeSpan.FromDays(4));
             settings.SetDefault(SettingsKeys.QueueNamePrefix, string.Empty);
             settings.SetDefault(SettingsKeys.TopicNamePrefix, string.Empty);
+            settings.SetDefault(SettingsKeys.FullTopicNameForPolicies, true);
+            settings.SetDefault(SettingsKeys.AssumePolicyHasAppropriatePermissions, false);
 
             // needed to only enable the feature when the transport is used
             settings.Set(typeof(SettlePolicy).FullName, FeatureState.Enabled);

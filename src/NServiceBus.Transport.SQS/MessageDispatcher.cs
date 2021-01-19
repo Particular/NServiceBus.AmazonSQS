@@ -36,7 +36,7 @@
 
             // in order to not enumerate multi cast operations multiple times this code assumes the hashset is filled on the synchronous path of the async method!
             var messageIdsOfMulticastEvents = new HashSet<string>();
-            concurrentDispatchTasks.Add(DispatchMulticast(outgoingMessages.MulticastTransportOperations, messageIdsOfMulticastEvents));
+            concurrentDispatchTasks.Add(DispatchMulticast(outgoingMessages.MulticastTransportOperations, messageIdsOfMulticastEvents, transaction));
 
             foreach (var dispatchConsistencyGroup in outgoingMessages.UnicastTransportOperations
                 .GroupBy(o => o.RequiredDispatchConsistency))
@@ -44,10 +44,10 @@
                 switch (dispatchConsistencyGroup.Key)
                 {
                     case DispatchConsistency.Isolated:
-                        concurrentDispatchTasks.Add(DispatchIsolated(dispatchConsistencyGroup, messageIdsOfMulticastEvents));
+                        concurrentDispatchTasks.Add(DispatchIsolated(dispatchConsistencyGroup, messageIdsOfMulticastEvents, transaction));
                         break;
                     case DispatchConsistency.Default:
-                        concurrentDispatchTasks.Add(DispatchBatched(dispatchConsistencyGroup, messageIdsOfMulticastEvents));
+                        concurrentDispatchTasks.Add(DispatchBatched(dispatchConsistencyGroup, messageIdsOfMulticastEvents, transaction));
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -65,8 +65,7 @@
             }
         }
 
-        // ReSharper disable once SuggestBaseTypeForParameter
-        Task DispatchMulticast(List<MulticastTransportOperation> multicastTransportOperations, HashSet<string> messageIdsOfMulticastEvents)
+        Task DispatchMulticast(List<MulticastTransportOperation> multicastTransportOperations, HashSet<string> messageIdsOfMulticastEvents, TransportTransaction transportTransaction)
         {
             List<Task> tasks = null;
             // ReSharper disable once LoopCanBeConvertedToQuery
@@ -74,32 +73,32 @@
             {
                 messageIdsOfMulticastEvents.Add(operation.Message.MessageId);
                 tasks = tasks ?? new List<Task>(multicastTransportOperations.Count);
-                tasks.Add(Dispatch(operation, emptyHashset));
+                tasks.Add(Dispatch(operation, emptyHashset, transportTransaction));
             }
 
             return tasks != null ? Task.WhenAll(tasks) : TaskExtensions.Completed;
         }
 
-        Task DispatchIsolated(IEnumerable<UnicastTransportOperation> isolatedTransportOperations, HashSet<string> messageIdsOfMulticastEvents)
+        Task DispatchIsolated(IEnumerable<UnicastTransportOperation> isolatedTransportOperations, HashSet<string> messageIdsOfMulticastEvents, TransportTransaction transportTransaction)
         {
             List<Task> tasks = null;
             // ReSharper disable once LoopCanBeConvertedToQuery
             foreach (var operation in isolatedTransportOperations)
             {
                 tasks = tasks ?? new List<Task>();
-                tasks.Add(Dispatch(operation, messageIdsOfMulticastEvents));
+                tasks.Add(Dispatch(operation, messageIdsOfMulticastEvents, transportTransaction));
             }
 
             return tasks != null ? Task.WhenAll(tasks) : TaskExtensions.Completed;
         }
 
-        async Task DispatchBatched(IEnumerable<UnicastTransportOperation> toBeBatchedTransportOperations, HashSet<string> messageIdsOfMulticastEvents)
+        async Task DispatchBatched(IEnumerable<UnicastTransportOperation> toBeBatchedTransportOperations, HashSet<string> messageIdsOfMulticastEvents, TransportTransaction transportTransaction)
         {
             var tasks = new List<Task<SqsPreparedMessage>>();
             // ReSharper disable once LoopCanBeConvertedToQuery
             foreach (var operation in toBeBatchedTransportOperations)
             {
-                tasks.Add(PrepareMessage<SqsPreparedMessage>(operation, messageIdsOfMulticastEvents));
+                tasks.Add(PrepareMessage<SqsPreparedMessage>(operation, messageIdsOfMulticastEvents, transportTransaction));
             }
 
             await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -171,10 +170,9 @@
             }
         }
 
-        // ReSharper disable once SuggestBaseTypeForParameter
-        async Task Dispatch(MulticastTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents)
+        async Task Dispatch(MulticastTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction)
         {
-            var message = await PrepareMessage<SnsPreparedMessage>(transportOperation, messageIdsOfMulticastedEvents)
+            var message = await PrepareMessage<SnsPreparedMessage>(transportOperation, messageIdsOfMulticastedEvents, transportTransaction)
                 .ConfigureAwait(false);
 
             if (message == null)
@@ -203,10 +201,9 @@
             }
         }
 
-        // ReSharper disable once SuggestBaseTypeForParameter
-        async Task Dispatch(UnicastTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents)
+        async Task Dispatch(UnicastTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction)
         {
-            var message = await PrepareMessage<SqsPreparedMessage>(transportOperation, messageIdsOfMulticastedEvents)
+            var message = await PrepareMessage<SqsPreparedMessage>(transportOperation, messageIdsOfMulticastedEvents, transportTransaction)
                 .ConfigureAwait(false);
 
             if (message == null)
@@ -242,7 +239,7 @@
             }
         }
 
-        async Task<TMessage> PrepareMessage<TMessage>(IOutgoingTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents)
+        async Task<TMessage> PrepareMessage<TMessage>(IOutgoingTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction)
             where TMessage : PreparedMessage, new()
         {
             var unicastTransportOperation = transportOperation as UnicastTransportOperation;
@@ -287,17 +284,24 @@
 
             var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.DeliveryConstraints);
 
-            var serializedMessage = SimpleJson.SerializeObject(sqsTransportMessage, serializerStrategy);
-
             var messageId = transportOperation.Message.MessageId;
 
             var preparedMessage = new TMessage();
 
-            await ApplyUnicastOperationMappingIfNecessary(unicastTransportOperation, preparedMessage as SqsPreparedMessage, delaySeconds, messageId).ConfigureAwait(false);
+            // In case we're handling a message of which the incoming message id equals the outgoing message id, we're essentially handling an error or audit scenario, in which case we want copy over the message attributes
+            // from the native message, so we don't lose part of the message
+            var forwardingANativeMessage = transportTransaction.TryGet<Message>(out var nativeMessage) &&
+                                           transportTransaction.TryGet<string>("IncomingMessageId", out var incomingMessageId) &&
+                                           incomingMessageId == transportOperation.Message.MessageId;
+
+            var nativeMessageAttributes = forwardingANativeMessage ? nativeMessage.MessageAttributes : null;
+
+            await ApplyUnicastOperationMappingIfNecessary(unicastTransportOperation, preparedMessage as SqsPreparedMessage, delaySeconds, messageId, nativeMessageAttributes).ConfigureAwait(false);
             await ApplyMulticastOperationMappingIfNecessary(transportOperation as MulticastTransportOperation, preparedMessage as SnsPreparedMessage).ConfigureAwait(false);
 
-            preparedMessage.Body = serializedMessage;
+            preparedMessage.Body = SimpleJson.SerializeObject(sqsTransportMessage, serializerStrategy);
             preparedMessage.MessageId = messageId;
+
             preparedMessage.CalculateSize();
             if (preparedMessage.Size <= TransportConfiguration.MaximumMessageSize)
             {
@@ -342,12 +346,16 @@
             snsPreparedMessage.Destination = existingTopicArn;
         }
 
-        async Task ApplyUnicastOperationMappingIfNecessary(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, string messageId)
+        async Task ApplyUnicastOperationMappingIfNecessary(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, string messageId, Dictionary<string, MessageAttributeValue> nativeMessageAttributes)
         {
             if (transportOperation == null || sqsPreparedMessage == null)
             {
                 return;
             }
+
+            // copy over the message attributes that were set on the incoming message for error/audit scenario's if available
+            sqsPreparedMessage.CopyMessageAttributes(nativeMessageAttributes);
+            sqsPreparedMessage.RemoveNativeHeaders();
 
             var delayLongerThanConfiguredDelayedDeliveryQueueDelayTime = configuration.IsDelayedDeliveryEnabled && delaySeconds > configuration.DelayedDeliveryQueueDelayTime;
             if (delayLongerThanConfiguredDelayedDeliveryQueueDelayTime)

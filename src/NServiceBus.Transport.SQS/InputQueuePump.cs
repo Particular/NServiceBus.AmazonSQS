@@ -2,6 +2,7 @@ namespace NServiceBus.Transport.SQS
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.Runtime;
@@ -12,6 +13,7 @@ namespace NServiceBus.Transport.SQS
     using Extensions;
     using Logging;
     using SimpleJson;
+    using static TransportHeaders;
 
     class InputQueuePump
     {
@@ -82,7 +84,7 @@ namespace NServiceBus.Transport.SQS
                 QueueUrl = inputQueueUrl,
                 WaitTimeSeconds = 20,
                 AttributeNames = new List<string> {"SentTimestamp"},
-                MessageAttributeNames = new List<string> {Headers.MessageId}
+                MessageAttributeNames = new List<string> {"*"}
             };
 
             maxConcurrencySemaphore = new SemaphoreSlim(maxConcurrency);
@@ -106,7 +108,6 @@ namespace NServiceBus.Transport.SQS
 
             maxConcurrencySemaphore?.Dispose();
         }
-
 
         async Task ConsumeMessages(CancellationToken token)
         {
@@ -165,7 +166,33 @@ namespace NServiceBus.Transport.SQS
                         messageId = nativeMessageId;
                     }
 
-                    transportMessage = SimpleJson.DeserializeObject<TransportMessage>(receivedMessage.Body);
+                    // When the MessageTypeFullName attribute is available, we're assuming native integration
+                    if (receivedMessage.MessageAttributes.TryGetValue(MessageTypeFullName, out var enclosedMessageType))
+                    {
+                        var headers = new Dictionary<string, string>
+                        {
+                            {Headers.MessageId, messageId},
+                            {Headers.EnclosedMessageTypes, enclosedMessageType.StringValue},
+                            {MessageTypeFullName, enclosedMessageType.StringValue} // we're copying over the value of the native message attribute into the headers, converting this into a nsb message
+                        };
+
+                        if (receivedMessage.MessageAttributes.TryGetValue(S3BodyKey, out var s3bodyKey))
+                        {
+                            headers.Add(S3BodyKey, s3bodyKey.StringValue);
+                        }
+
+                        transportMessage = new TransportMessage
+                        {
+                            Headers = headers,
+                            S3BodyKey = s3bodyKey?.StringValue,
+                            Body = receivedMessage.Body
+                        };
+                    }
+                    else
+                    {
+                        transportMessage = SimpleJson.DeserializeObject<TransportMessage>(receivedMessage.Body);
+                    }
+
                     messageBody = await transportMessage.RetrieveBody(s3Client, configuration, token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
@@ -193,14 +220,14 @@ namespace NServiceBus.Transport.SQS
                         Logger.Warn(logMessage);
                     }
 
-                    await MovePoisonMessageToErrorQueue(receivedMessage, messageId).ConfigureAwait(false);
+                    await MovePoisonMessageToErrorQueue(receivedMessage).ConfigureAwait(false);
                     return;
                 }
 
                 if (!IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, CorrectClockSkew.GetClockCorrectionForEndpoint(awsEndpointUrl)))
                 {
                     // here we also want to use the native message id because the core demands it like that
-                    await ProcessMessageWithInMemoryRetries(transportMessage.Headers, nativeMessageId, messageBody, token).ConfigureAwait(false);
+                    await ProcessMessageWithInMemoryRetries(transportMessage.Headers, nativeMessageId, messageBody, receivedMessage, token).ConfigureAwait(false);
                 }
 
                 // Always delete the message from the queue.
@@ -214,7 +241,7 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        async Task ProcessMessageWithInMemoryRetries(Dictionary<string, string> headers, string nativeMessageId, byte[] body, CancellationToken token)
+        async Task ProcessMessageWithInMemoryRetries(Dictionary<string, string> headers, string nativeMessageId, byte[] body, Message nativeMessage, CancellationToken token)
         {
             var immediateProcessingAttempts = 0;
             var messageProcessedOk = false;
@@ -224,6 +251,13 @@ namespace NServiceBus.Transport.SQS
             {
                 try
                 {
+                    // set the native message on the context for advanced usage scenario's
+                    var context = new ContextBag();
+                    context.Set(nativeMessage);
+                    // We add it to the transport transaction to make it available in dispatching scenario's so we copy over message attributes when moving messages to the error/audit queue
+                    transportTransaction.Set(nativeMessage);
+                    transportTransaction.Set("IncomingMessageId", headers[Headers.MessageId]);
+
                     using (var messageContextCancellationTokenSource = new CancellationTokenSource())
                     {
                         var messageContext = new MessageContext(
@@ -232,7 +266,7 @@ namespace NServiceBus.Transport.SQS
                             body,
                             transportTransaction,
                             messageContextCancellationTokenSource,
-                            new ContextBag());
+                            context);
 
                         await onMessage(messageContext).ConfigureAwait(false);
 
@@ -266,12 +300,12 @@ namespace NServiceBus.Transport.SQS
 
         static bool IsMessageExpired(Message receivedMessage, Dictionary<string, string> headers, string messageId, TimeSpan clockOffset)
         {
-            if (!headers.TryGetValue(TransportHeaders.TimeToBeReceived, out var rawTtbr))
+            if (!headers.TryGetValue(TimeToBeReceived, out var rawTtbr))
             {
                 return false;
             }
 
-            headers.Remove(TransportHeaders.TimeToBeReceived);
+            headers.Remove(TimeToBeReceived);
             var timeToBeReceived = TimeSpan.Parse(rawTtbr);
             if (timeToBeReceived == TimeSpan.MaxValue)
             {
@@ -310,24 +344,21 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        async Task MovePoisonMessageToErrorQueue(Message message, string messageId)
+        async Task MovePoisonMessageToErrorQueue(Message message)
         {
             try
             {
+                // Ok to use LINQ here since this is not really a hot path
+                var messageAttributeValues = message.MessageAttributes
+                    .ToDictionary(pair => pair.Key, messageAttribute => messageAttribute.Value);
+
                 await sqsClient.SendMessageAsync(new SendMessageRequest
                 {
                     QueueUrl = errorQueueUrl,
                     MessageBody = message.Body,
-                    MessageAttributes =
-                    {
-                        [Headers.MessageId] = new MessageAttributeValue
-                        {
-                            StringValue = messageId,
-                            DataType = "String"
-                        }
-                    }
+                    MessageAttributes = messageAttributeValues
                 }, CancellationToken.None).ConfigureAwait(false);
-                // The MessageAttributes on message are read-only attributes provided by SQS
+                // The Attributes on message are read-only attributes provided by SQS
                 // and can't be re-sent. Unfortunately all the SQS metadata
                 // such as SentTimestamp is reset with this send.
             }
