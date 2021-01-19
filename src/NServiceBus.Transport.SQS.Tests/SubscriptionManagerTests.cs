@@ -286,6 +286,44 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
+        public async Task Subscribe_after_settle_sets_full_policy()
+        {
+            var manager = CreateBatchingSubscriptionManager();
+
+            var eventType = typeof(Event);
+            await manager.Subscribe(eventType, null);
+            var anotherEvent = typeof(AnotherEvent);
+            await manager.Subscribe(anotherEvent, null);
+
+            await manager.Settle();
+
+            var setAttributeRequestsSentAfterSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
+
+            var invocationCount = 0;
+            var original = sqsClient.GetAttributeRequestsResponse;
+            sqsClient.GetAttributeRequestsResponse = s =>
+            {
+                invocationCount++;
+
+                if (invocationCount < 2)
+                {
+                    return new Dictionary<string, string>
+                    {
+                        {"QueueArn", "arn:fakeQueue"},
+                        {"Policy", setAttributeRequestsSentAfterSettle[0].attributes["Policy"]}
+                    };
+                }
+
+                return original(s);
+            };
+
+            var yetAnotherEvent = typeof(YetAnotherEvent);
+            await manager.Subscribe(yetAnotherEvent, null);
+
+            Approver.Verify(sqsClient.SetAttributesRequestsSent[1].attributes["Policy"], PolicyScrubber.ScrubPolicy);
+        }
+
+        [Test]
         public async Task SettlePolicy_with_all_conditions_sets_full_policy()
         {
             transportSettings.TopicNamePrefix("DEV-");
@@ -309,6 +347,53 @@ namespace NServiceBus.Transport.SQS.Tests
 
             Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
             Approver.Verify(sqsClient.SetAttributesRequestsSent[0].attributes["Policy"], PolicyScrubber.ScrubPolicy);
+        }
+
+        [Test]
+        public async Task Subscribe_after_settle_with_all_conditions_should_not_modify_policy()
+        {
+            transportSettings.TopicNamePrefix("DEV-");
+
+            var policies = transportSettings.Policies();
+            policies.AddAccountCondition();
+            policies.AddTopicNamePrefixCondition();
+            policies.AddNamespaceCondition("Shipping.");
+            policies.AddNamespaceCondition("Sales.HighValueOrders.");
+
+            var manager = CreateBatchingSubscriptionManager();
+
+            var eventType = typeof(Event);
+            await manager.Subscribe(eventType, null);
+            var anotherEvent = typeof(AnotherEvent);
+            await manager.Subscribe(anotherEvent, null);
+
+            await manager.Settle();
+
+            var setAttributeRequestsSentAfterSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
+            var invocationCount = 0;
+            var original = sqsClient.GetAttributeRequestsResponse;
+            sqsClient.GetAttributeRequestsResponse = s =>
+            {
+                invocationCount++;
+
+                if (invocationCount < 2)
+                {
+                    return new Dictionary<string, string>
+                    {
+                        {"QueueArn", "arn:fakeQueue"},
+                        {"Policy", setAttributeRequestsSentAfterSettle[0].attributes["Policy"]}
+                    };
+                }
+
+                return original(s);
+            };
+
+            sqsClient.SetAttributesRequestsSent.Clear();
+
+            var yetAnotherEvent = typeof(YetAnotherEvent);
+            await manager.Subscribe(yetAnotherEvent, null);
+
+            Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
         }
 
         [Test]
@@ -436,6 +521,26 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
+        public async Task Unsubscribe_should_not_modify_policy()
+        {
+            var manager = CreateNonBatchingSubscriptionManager();
+
+            snsClient.ListSubscriptionsByTopicResponse = topic => new ListSubscriptionsByTopicResponse
+            {
+                Subscriptions = new List<Subscription>
+                {
+                    new Subscription {Endpoint = $"arn:{queueName}", SubscriptionArn = "arn:subscription"}
+                }
+            };
+
+            var eventType = typeof(Event);
+
+            await manager.Unsubscribe(eventType, null);
+
+            Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
+        }
+
+        [Test]
         public async Task Unsubscribe_with_events_to_events_mapping_should_unsubscribe_matching_subscription()
         {
             var manager = CreateNonBatchingSubscriptionManager();
@@ -478,6 +583,40 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
+        public async Task Unsubscribe_with_events_to_events_mapping_should_not_modify_policy()
+        {
+            var manager = CreateNonBatchingSubscriptionManager();
+
+            var unsubscribedEvent = typeof(IEvent);
+            var concreteEventType = typeof(Event);
+            customEventToEventsMappings.Add(unsubscribedEvent, concreteEventType);
+
+            snsClient.ListSubscriptionsByTopicResponse = topic =>
+            {
+                if (topic.EndsWith("NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event"))
+                {
+                    return new ListSubscriptionsByTopicResponse
+                    {
+                        Subscriptions = new List<Subscription>
+                        {
+                            new Subscription {Endpoint = "arn:someOtherQueue", SubscriptionArn = "arn:someOtherSubscription"},
+                            new Subscription {Endpoint = $"arn:{queueName}", SubscriptionArn = "arn:subscription"}
+                        }
+                    };
+                }
+
+                return new ListSubscriptionsByTopicResponse
+                {
+                    Subscriptions = new List<Subscription>()
+                };
+            };
+
+            await manager.Unsubscribe(unsubscribedEvent, null);
+
+            Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
+        }
+
+        [Test]
         public async Task Unsubscribe_with_event_to_topics_mapping_should_unsubscribe_matching_subscription()
         {
             var manager = CreateNonBatchingSubscriptionManager();
@@ -516,6 +655,39 @@ namespace NServiceBus.Transport.SQS.Tests
             {
                 "arn:subscription"
             }, snsClient.UnsubscribeRequests);
+        }
+
+        [Test]
+        public async Task Unsubscribe_with_event_to_topics_mapping_should_not_modify_policy()
+        {
+            var manager = CreateNonBatchingSubscriptionManager();
+
+            var unsubscribedEvent = typeof(IEvent);
+            customEventToTopicsMappings.Add(unsubscribedEvent, new[] {"custom-topic-name"});
+
+            snsClient.ListSubscriptionsByTopicResponse = topic =>
+            {
+                if (topic.EndsWith("custom-topic-name"))
+                {
+                    return new ListSubscriptionsByTopicResponse
+                    {
+                        Subscriptions = new List<Subscription>
+                        {
+                            new Subscription {Endpoint = "arn:someOtherQueue", SubscriptionArn = "arn:someOtherSubscription"},
+                            new Subscription {Endpoint = $"arn:{queueName}", SubscriptionArn = "arn:subscription"}
+                        }
+                    };
+                }
+
+                return new ListSubscriptionsByTopicResponse
+                {
+                    Subscriptions = new List<Subscription>()
+                };
+            };
+
+            await manager.Unsubscribe(unsubscribedEvent, null);
+
+            Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
         }
 
 #pragma warning disable 618
