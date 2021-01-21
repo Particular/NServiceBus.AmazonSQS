@@ -1,4 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>net472;netcoreapp3.1</TargetFrameworks>
     <SignAssembly>true</SignAssembly>
@@ -6,29 +7,25 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <RootNamespace>TransportTests</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NServiceBus.Transport.SQS\NServiceBus.Transport.SQS.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="3.5.3.4" />
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.5.0.29" />
     <PackageReference Include="AWSSDK.SQS" Version="3.5.0.28" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
     <PackageReference Include="NServiceBus.TransportTests.Sources" Version="8.0.0-alpha.644" />
     <PackageReference Include="NUnit" Version="3.13.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
-    <PackageReference Include="Particular.CodeRules" Version="0.8.0" PrivateAssets="All" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="..\NServiceBus.Transport.SQS.AcceptanceTests\SqsTransportExtensions.cs">
-      <Link>SqsTransportExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\NServiceBus.Transport.SQS.Tests\Cleanup.cs">
-      <Link>Cleanup.cs</Link>
-    </Compile>
-    <Compile Include="..\NServiceBus.Transport.SQS.Tests\SettingsHolderExtensions.cs">
-      <Link>SettingsHolderExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\TestSuppressions.cs" Link="TestSuppressions.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\NServiceBus.Transport.SQS\NServiceBus.Transport.SQS.csproj" />
+    <Compile Include="..\NServiceBus.Transport.SQS.AcceptanceTests\SqsTransportExtensions.cs" />
+    <Compile Include="..\NServiceBus.Transport.SQS.Tests\Cleanup.cs" />
+    <Compile Include="..\NServiceBus.Transport.SQS.Tests\SettingsHolderExtensions.cs" />
   </ItemGroup>
 
 </Project>
