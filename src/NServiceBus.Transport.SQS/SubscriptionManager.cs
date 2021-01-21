@@ -5,7 +5,6 @@ namespace NServiceBus.Transport.SQS
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
-    using Amazon.Auth.AccessControlPolicy;
     using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS;
@@ -14,7 +13,6 @@ namespace NServiceBus.Transport.SQS
     using Logging;
     using Unicast.Messages;
     using static Extensions.PolicyExtensions;
-    using static PolicyNamespaceSanitizationLogic;
 
     class SubscriptionManager : IManageSubscriptions
     {

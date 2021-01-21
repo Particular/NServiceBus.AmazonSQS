@@ -55,7 +55,7 @@
             Assert.That(randomAttribute, Is.Not.Null);
             Assert.That(randomAttribute.StringValue, Is.EqualTo("bla"));
         }
-        
+
         static readonly TimeSpan QueueDelayTime = TimeSpan.FromSeconds(1);
 
         public class Receiver : EndpointConfigurationBuilder
@@ -84,7 +84,7 @@
                     return Task.CompletedTask;
                 }
 
-                private Context testContext;
+                Context testContext;
             }
         }
 

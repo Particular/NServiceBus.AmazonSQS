@@ -663,7 +663,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var manager = CreateNonBatchingSubscriptionManager();
 
             var unsubscribedEvent = typeof(IEvent);
-            customEventToTopicsMappings.Add(unsubscribedEvent, new[] {"custom-topic-name"});
+            customEventToTopicsMappings.Add(unsubscribedEvent, new[] { "custom-topic-name" });
 
             snsClient.ListSubscriptionsByTopicResponse = topic =>
             {
@@ -691,7 +691,7 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
 #pragma warning disable 618
-        private void EmulateImmediateSettlementOfPolicy(Policy initialPolicy)
+        void EmulateImmediateSettlementOfPolicy(Policy initialPolicy)
 #pragma warning restore 618
         {
             var invocationCount = 0;

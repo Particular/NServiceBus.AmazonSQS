@@ -75,7 +75,7 @@
                     return Task.CompletedTask;
                 }
 
-                private Context testContext;
+                Context testContext;
             }
         }
 

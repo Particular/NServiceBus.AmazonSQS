@@ -12,7 +12,7 @@
             return RemoveUnnecessaryWhiteSpace(scrubbed);
         }
 
-        private static string RemoveUnnecessaryWhiteSpace(string policyAsString)
+        static string RemoveUnnecessaryWhiteSpace(string policyAsString)
         {
             return string.Join(Environment.NewLine, policyAsString.Split(new[]
                 {

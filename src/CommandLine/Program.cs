@@ -338,7 +338,7 @@
                         var endpointName = nameArgument.Value;
                         var prefix = prefixOption.HasValue() ? prefixOption.Value() : DefaultConfigurationValues.QueueNamePrefix;
 
-                        await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.ListPolicy(sqs, sns, prefix, endpointName));
+                        await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.ListPolicy(sqs, prefix, endpointName));
                     });
                 });
 

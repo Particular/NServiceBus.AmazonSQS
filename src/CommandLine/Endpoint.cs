@@ -73,7 +73,7 @@
 
             var queueArn = await Queue.GetArn(sqs, prefix, endpointName);
             var topicArn = await Topic.Create(sns, prefix, eventType);
-            await Topic.Subscribe(sqs, sns, topicArn, queueArn);
+            await Topic.Subscribe(sns, topicArn, queueArn);
 
             await Console.Out.WriteLineAsync($"Endpoint '{endpointName}' subscribed to '{eventType}'.");
         }
@@ -89,7 +89,7 @@
                 await Console.Out.WriteLineAsync($"No topic detected for event type '{eventType}', please subscribe to the event type first..");
                 return;
             }
-            
+
             await Topic.Unsubscribe(sns, topicArn, queueArn);
 
             await Console.Out.WriteLineAsync($"Endpoint '{endpointName}' unsubscribed from '{eventType}'.");
@@ -124,7 +124,7 @@
             var policy = queueAttributes.ExtractPolicy();
 
             if (!policy.Update(policyStatements,
-                addAccountCondition, 
+                addAccountCondition,
                 addPrefixcondition,
                 namespaceConditions,
                 prefix,
@@ -134,13 +134,13 @@
                 return;
             }
 
-            var setAttributes = new Dictionary<string, string> {{"Policy", policy.ToJson()}};
+            var setAttributes = new Dictionary<string, string> { { "Policy", policy.ToJson() } };
             await sqs.SetAttributesAsync(queueUrl, setAttributes).ConfigureAwait(false);
 
             await Console.Out.WriteLineAsync($"Policy on endpoint '{endpointName}' set.");
         }
 
-        public static async Task ListPolicy(IAmazonSQS sqs, IAmazonSimpleNotificationService sns, string prefix, string endpointName)
+        public static async Task ListPolicy(IAmazonSQS sqs, string prefix, string endpointName)
         {
             try
             {
