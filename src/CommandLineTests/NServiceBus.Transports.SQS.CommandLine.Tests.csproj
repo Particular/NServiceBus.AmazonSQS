@@ -23,7 +23,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="NServiceBus.Transport.SQS.CommandLine.runtimeconfig.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="NServiceBus.Transports.SQS.CommandLine.runtimeconfig.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
