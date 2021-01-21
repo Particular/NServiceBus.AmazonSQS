@@ -16,7 +16,7 @@
             if (!await s3.DoesS3BucketExistAsync(bucketName))
             {
                 await s3.RetryConflictsAsync(async () =>
-                        await s3.PutBucketAsync(new PutBucketRequest {BucketName = bucketName}).ConfigureAwait(false),
+                        await s3.PutBucketAsync(new PutBucketRequest { BucketName = bucketName }).ConfigureAwait(false),
                     onRetry: async x => { await Console.Out.WriteLineAsync($"Conflict when creating S3 bucket, retrying after {x}ms."); }).ConfigureAwait(false);
 
                 await Console.Out.WriteLineAsync($"Created bucket with name '{bucketName}' for endpoint '{endpointName}'.");
@@ -84,15 +84,15 @@
                 switch (response.Location)
                 {
                     case "":
-                    {
-                        region = new S3Region("us-east-1");
-                        break;
-                    }
+                        {
+                            region = new S3Region("us-east-1");
+                            break;
+                        }
                     case "EU":
-                    {
-                        region = S3Region.EUW1;
-                        break;
-                    }
+                        {
+                            region = S3Region.EUW1;
+                            break;
+                        }
                     default:
                         region = response.Location;
                         break;

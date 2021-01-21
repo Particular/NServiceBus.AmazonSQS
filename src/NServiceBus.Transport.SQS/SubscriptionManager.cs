@@ -280,7 +280,7 @@ namespace NServiceBus.Transport.SQS
                         break;
                     }
 
-                    var setAttributes = new Dictionary<string, string> {{"Policy", policy.ToJson()}};
+                    var setAttributes = new Dictionary<string, string> { { "Policy", policy.ToJson() } };
                     await sqsClient.SetAttributesAsync(queueUrl, setAttributes).ConfigureAwait(false);
                 }
 

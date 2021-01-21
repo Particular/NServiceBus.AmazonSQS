@@ -85,8 +85,8 @@ namespace NServiceBus.Transport.SQS
                 MaxNumberOfMessages = 10,
                 QueueUrl = delayedDeliveryQueueUrl,
                 WaitTimeSeconds = 20,
-                AttributeNames = new List<string> {"MessageDeduplicationId", "SentTimestamp", "ApproximateFirstReceiveTimestamp", "ApproximateReceiveCount"},
-                MessageAttributeNames = new List<string> {"All"}
+                AttributeNames = new List<string> { "MessageDeduplicationId", "SentTimestamp", "ApproximateFirstReceiveTimestamp", "ApproximateReceiveCount" },
+                MessageAttributeNames = new List<string> { "All" }
             };
 
             pumpTask = Task.Run(() => ConsumeDelayedMessagesLoop(receiveDelayedMessagesRequest, token), CancellationToken.None);

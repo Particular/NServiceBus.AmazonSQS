@@ -33,7 +33,7 @@ namespace NServiceBus.Transport.SQS.Tests
             await pump.Initialize(
                 onMessage ?? (ctx => Task.FromResult(0)),
                 ctx => Task.FromResult(ErrorHandleResult.Handled),
-                new CriticalError((error => Task.FromResult(0))),
+                new CriticalError(error => Task.FromResult(0)),
                 new PushSettings(FakeInputQueueQueueUrl, "error", false, TransportTransactionMode.ReceiveOnly));
         }
 
@@ -45,7 +45,7 @@ namespace NServiceBus.Transport.SQS.Tests
             mockSqsClient.ReceiveMessagesRequestResponse = (req, token) =>
             {
                 token.ThrowIfCancellationRequested();
-                return new ReceiveMessageResponse {Messages = new List<Message>()};
+                return new ReceiveMessageResponse { Messages = new List<Message>() };
             };
 
             pump.Start(1, cancellationTokenSource.Token);
@@ -87,7 +87,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 Body = null //poison message
             };
 
-            var semaphore = new SemaphoreSlim(0,1);
+            var semaphore = new SemaphoreSlim(0, 1);
 
             await pump.ProcessMessage(message, semaphore, CancellationToken.None).ConfigureAwait(false);
 
@@ -137,7 +137,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 Body = json
             };
 
-            var semaphore = new SemaphoreSlim(0,1);
+            var semaphore = new SemaphoreSlim(0, 1);
 
             await pump.ProcessMessage(message, semaphore, CancellationToken.None).ConfigureAwait(false);
 
@@ -180,7 +180,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 Body = json
             };
 
-            var semaphore = new SemaphoreSlim(0,1);
+            var semaphore = new SemaphoreSlim(0, 1);
 
             await pump.ProcessMessage(message, semaphore, CancellationToken.None).ConfigureAwait(false);
 

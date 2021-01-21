@@ -129,7 +129,7 @@ namespace NServiceBus.Transport.SQS
                             return;
                         }
 
-                        ProcessMessage(receivedMessage, maxConcurrencySemaphore, token).Ignore();
+                        _ = ProcessMessage(receivedMessage, maxConcurrencySemaphore, token);
                     }
                 }
                 catch (OperationCanceledException)

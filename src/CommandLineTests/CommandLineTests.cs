@@ -542,7 +542,7 @@
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
             var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
 
-            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string> {QueueAttributeName.MessageRetentionPeriod, QueueAttributeName.QueueArn}).ConfigureAwait(false);
+            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string> { QueueAttributeName.MessageRetentionPeriod, QueueAttributeName.QueueArn }).ConfigureAwait(false);
 
             Assert.AreEqual(retentionPeriodInSeconds, queueAttributesResponse.MessageRetentionPeriod);
 
@@ -896,9 +896,9 @@
         readonly string secretAccessKey = Environment.GetEnvironmentVariable("CLEANUP_AWS_SECRET_ACCESS_KEY");
         readonly string region = Environment.GetEnvironmentVariable("AWS_REGION");
 
-        private IAmazonSQS sqs;
-        private IAmazonSimpleNotificationService sns;
-        private IAmazonS3 s3;
+        IAmazonSQS sqs;
+        IAmazonSimpleNotificationService sns;
+        IAmazonS3 s3;
         const string EndpointName = "nsb-cli-test";
         const string BucketName = "nsb-cli-test-bucket";
         const string EventType = "MyNamespace.MyMessage1";
