@@ -32,7 +32,7 @@
         }
     }
 
-    public class TestingInMemorySubscriptionPersistence : Feature
+    public class TestingInMemorySubscriptionPersistence : Features.Feature
     {
         internal TestingInMemorySubscriptionPersistence()
         {

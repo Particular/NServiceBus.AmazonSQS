@@ -22,9 +22,9 @@
                 {
                     b.CustomConfig(c =>
                     {
-                        var policies = c.ConfigureSqsTransport().Policies();
-                        policies.AddNamespaceCondition("NServiceBus.AcceptanceTests.Policies.C");
-                        policies.AddNamespaceCondition("NServiceBus.AcceptanceTests.Policies.D");
+                        var policies = c.ConfigureSqsTransport().Policies;
+                        policies.TopicNamespaceConditions.Add("NServiceBus.AcceptanceTests.Policies.C");
+                        policies.TopicNamespaceConditions.Add("NServiceBus.AcceptanceTests.Policies.D");
                     });
                 })
                 .Done(c => c.GotMyOtherEvent)

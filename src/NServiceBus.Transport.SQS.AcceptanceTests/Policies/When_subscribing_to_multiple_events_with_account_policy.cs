@@ -20,8 +20,7 @@
                 {
                     b.CustomConfig(c =>
                     {
-                        var policies = c.ConfigureSqsTransport().Policies();
-                        policies.AddAccountCondition();
+                        c.ConfigureSqsTransport().Policies.AccountCondition = true;
                     });
                 })
                 .Done(c => c.GotEvents)

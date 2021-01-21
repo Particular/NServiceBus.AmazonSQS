@@ -1,20 +1,171 @@
+
 namespace NServiceBus
 {
+    using Amazon.S3.Model;
     using System;
     using System.Linq;
     using Amazon.S3;
-    using Configuration.AdvancedExtensibility;
-    using Settings;
     using Transport.SQS;
-    using Transport.SQS.Configure;
+
+    /// <summary>
+    /// S3 encryption settings.
+    /// </summary>
+    public abstract class S3EncryptionMethod
+    {
+        /// <summary>
+        /// Modifies the get request to retrieve the message body from S3.
+        /// </summary>
+        protected internal abstract void ModifyGetRequest(GetObjectRequest get);
+
+        /// <summary>
+        /// Modifies the put request to upload the message body to S3.
+        /// </summary>
+        protected internal abstract void ModifyPutRequest(PutObjectRequest put);
+    }
+
+
+    /// <summary>
+    /// S3 customer-provided key encryption.
+    /// </summary>
+    public class S3EncryptionWithCustomerProvidedKey : S3EncryptionMethod
+    {
+        /// <summary>
+        /// Creates new S3 encryption settings.
+        /// </summary>
+        /// <param name="method">Encryption method.</param>
+        /// <param name="key">Encryption key.</param>
+        /// <param name="keyMd5">Encryption key MD5 checksum.</param>
+        public S3EncryptionWithCustomerProvidedKey(ServerSideEncryptionCustomerMethod method, string key, string keyMd5 = null)
+        {
+            Method = method;
+            Key = key;
+            KeyMD5 = keyMd5;
+        }
+
+        /// <summary>
+        /// Encryption method.
+        /// </summary>
+        public ServerSideEncryptionCustomerMethod Method { get; }
+
+        /// <summary>
+        /// Encryption key.
+        /// </summary>
+        public string Key { get; }
+
+        /// <summary>
+        /// Encryption key MD5 checksum.
+        /// </summary>
+        public string KeyMD5 { get; }
+
+        /// <summary>
+        /// Modifies the get request to retrieve the message body from S3.
+        /// </summary>
+        protected internal override void ModifyGetRequest(GetObjectRequest get)
+        {
+            get.ServerSideEncryptionCustomerMethod = Method;
+            get.ServerSideEncryptionCustomerProvidedKey = Key;
+
+            if (!string.IsNullOrEmpty(KeyMD5))
+            {
+                get.ServerSideEncryptionCustomerProvidedKeyMD5 = KeyMD5;
+            }
+        }
+
+        /// <summary>
+        /// Modifies the put request to upload the message body to S3.
+        /// </summary>
+        protected internal override void ModifyPutRequest(PutObjectRequest put)
+        {
+            put.ServerSideEncryptionCustomerMethod = Method;
+            put.ServerSideEncryptionCustomerProvidedKey = Key;
+
+            if (!string.IsNullOrEmpty(KeyMD5))
+            {
+                put.ServerSideEncryptionCustomerProvidedKeyMD5 = KeyMD5;
+            }
+        }
+    }
+
+    class NullEncryption : S3EncryptionMethod
+    {
+        public static readonly NullEncryption Instance = new NullEncryption();
+
+        protected internal override void ModifyGetRequest(GetObjectRequest get)
+        {
+        }
+
+        protected internal override void ModifyPutRequest(PutObjectRequest put)
+        {
+        }
+    }
+
+    /// <summary>
+    /// S3 managed key encryption.
+    /// </summary>
+    public class S3EncryptionWithManagedKey : S3EncryptionMethod
+    {
+        /// <summary>
+        /// Creates new S3 encryption settings.
+        /// </summary>
+        /// <param name="method">Encryption method.</param>
+        /// <param name="keyId">Encryption key id.</param>
+        public S3EncryptionWithManagedKey(ServerSideEncryptionMethod method, string keyId = null)
+        {
+            Method = method;
+            KeyId = keyId;
+        }
+
+        /// <summary>
+        /// Encryption method.
+        /// </summary>
+        public ServerSideEncryptionMethod Method { get; }
+
+        /// <summary>
+        /// Encryption key ID.
+        /// </summary>
+        public string KeyId { get; }
+
+        /// <summary>
+        /// Modifies the get request to retrieve the message body from S3.
+        /// </summary>
+        protected internal override void ModifyGetRequest(GetObjectRequest get)
+        {
+        }
+
+        /// <summary>
+        /// Modifies the put request to upload the message body to S3.
+        /// </summary>
+        protected internal override void ModifyPutRequest(PutObjectRequest put)
+        {
+            put.ServerSideEncryptionMethod = Method;
+
+            if (!string.IsNullOrEmpty(KeyId))
+            {
+                put.ServerSideEncryptionKeyManagementServiceKeyId = KeyId;
+            }
+        }
+    }
 
     /// <summary>
     /// Exposes settings to configure S3 bucket and client factory.
     /// </summary>
-    public class S3Settings : ExposeSettings
+    public partial class S3Settings
     {
-        internal S3Settings(SettingsHolder settings, string bucketForLargeMessages, string keyPrefix) : base(settings)
+
+        /// <summary>
+        /// Configures the S3 Bucket that will be used to store message bodies
+        /// for messages that are larger than 256k in size. If this option is not specified,
+        /// S3 will not be used at all. Any attempt to send a message larger than 256k will
+        /// throw if this option hasn't been specified. If the specified bucket doesn't
+        /// exist, NServiceBus.AmazonSQS will create it when the endpoint starts up.
+        /// Allows to optionally configure the client factory.
+        /// </summary>
+        /// <param name="bucketForLargeMessages">The name of the S3 Bucket.</param>
+        /// <param name="keyPrefix">The path within the specified S3 Bucket to store large message bodies.</param>
+        /// <param name="s3Client">S3 client to use. If not provided the default client based on environment settings will be used.</param>
+        public S3Settings(string bucketForLargeMessages, string keyPrefix, IAmazonS3 s3Client = null)
         {
+            S3Client = s3Client;
             Guard.AgainstNull(nameof(bucketForLargeMessages), bucketForLargeMessages);
             Guard.AgainstNullAndEmpty(nameof(keyPrefix), keyPrefix);
 
@@ -55,52 +206,31 @@ namespace NServiceBus
                 throw new ArgumentException("S3 Bucket names must not contain hyphens adjacent to periods.");
             }
 
-            this.GetSettings().Set(SettingsKeys.S3BucketForLargeMessages, bucketForLargeMessages);
-            this.GetSettings().Set(SettingsKeys.S3KeyPrefix, keyPrefix);
+            BucketName = bucketForLargeMessages;
+            KeyPrefix = keyPrefix;
+            S3Client = s3Client ?? new AmazonS3Client();
         }
 
         /// <summary>
-        /// Configures the S3 client factory. The default client factory creates a new S3 client with the standard constructor.
+        /// Configures the encryption method.
         /// </summary>
-        public void ClientFactory(Func<IAmazonS3> factory)
-        {
-            Guard.AgainstNull(nameof(factory), factory);
-            this.GetSettings().Set(SettingsKeys.S3ClientFactory, factory);
-        }
+        public S3EncryptionMethod Encryption { get; set; }
+
+        internal S3EncryptionMethod NullSafeEncryption => Encryption ?? NullEncryption.Instance;
 
         /// <summary>
-        /// Configures the client to use the server side encryption method when putting objects to S3 with an optional provided key id.
+        /// The name of the S3 Bucket.
         /// </summary>
-        public void ServerSideEncryption(ServerSideEncryptionMethod encryptionMethod, string keyManagementServiceKeyId = null)
-        {
-            if (this.GetSettings().HasExplicitValue(SettingsKeys.ServerSideEncryptionCustomerMethod))
-            {
-                throw new InvalidOperationException("ServerSideEncryption cannot be combined with ServerSideCustomerEncryption.");
-            }
-
-            this.GetSettings().Set(SettingsKeys.ServerSideEncryptionMethod, encryptionMethod);
-            this.GetSettings().Set(SettingsKeys.ServerSideEncryptionKeyManagementServiceKeyId, keyManagementServiceKeyId);
-        }
+        public string BucketName { get; }
 
         /// <summary>
-        /// Configures the client to use the customer provided server side encryption method when putting and getting objects to and from S3 with an optional MD5 of the provided key.
+        /// The path within the specified S3 Bucket to store large message bodies.
         /// </summary>
-        public void ServerSideCustomerEncryption(ServerSideEncryptionCustomerMethod encryptionMethod, string providedKey, string providedKeyMD5 = null)
-        {
-            if (this.GetSettings().HasExplicitValue(SettingsKeys.ServerSideEncryptionMethod))
-            {
-                throw new InvalidOperationException("ServerSideCustomerEncryption cannot be combined with ServerSideEncryption.");
-            }
+        public string KeyPrefix { get; }
 
-            if (string.IsNullOrEmpty(providedKey))
-            {
-                throw new ArgumentException("Specify a valid ServerSideCustomerProvidedKey", nameof(providedKey));
-            }
-
-            this.GetSettings().Set(SettingsKeys.ServerSideEncryptionCustomerMethod, encryptionMethod);
-            this.GetSettings().Set(SettingsKeys.ServerSideEncryptionCustomerProvidedKey, providedKey);
-            this.GetSettings().Set(SettingsKeys.ServerSideEncryptionCustomerProvidedKeyMD5, providedKeyMD5);
-
-        }
+        /// <summary>
+        /// The S3 client to use.
+        /// </summary>
+        public IAmazonS3 S3Client { get; }
     }
 }

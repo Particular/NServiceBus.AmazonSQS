@@ -15,8 +15,8 @@
     <PackageReference Include="AWSSDK.S3" Version="[3.5, 3.6)" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="[3.5, 3.6)" />
     <PackageReference Include="AWSSDK.SQS" Version="[3.5, 3.6)" />
+    <PackageReference Include="NServiceBus" Version="8.0.0-alpha.842" />
     <PackageReference Include="Fody" Version="6.3.0" PrivateAssets="All" />
-    <PackageReference Include="NServiceBus" Version="[8.0.0-alpha.644, 9.0.0)" />
     <PackageReference Include="Obsolete.Fody" Version="5.2.1" PrivateAssets="All" />
     <PackageReference Include="Particular.Packaging" Version="1.0.1" PrivateAssets="All" />
   </ItemGroup>

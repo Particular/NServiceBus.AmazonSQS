@@ -14,6 +14,8 @@ namespace NServiceBus.AcceptanceTests
 
         public bool SupportsOutbox => false;
 
+        public bool SupportsPurgeOnStartup => false;
+
         public IConfigureEndpointTestExecution CreateTransportConfiguration()
         {
             return new ConfigureEndpointSqsTransport();

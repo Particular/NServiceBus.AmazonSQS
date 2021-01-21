@@ -29,8 +29,8 @@
             {
                 EndpointSetup<DefaultServer>(builder =>
                 {
-                    builder.ConfigureTransport().Routing().RouteToEndpoint(typeof(Message), typeof(Receiver));
-                    builder.ConfigureSqsTransport().EnableV1CompatibilityMode();
+                    builder.ConfigureRouting().RouteToEndpoint(typeof(Message), typeof(Receiver));
+                    builder.ConfigureSqsTransport();
                 });
             }
 

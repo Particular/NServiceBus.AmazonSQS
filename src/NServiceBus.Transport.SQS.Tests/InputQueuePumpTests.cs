@@ -7,7 +7,6 @@ namespace NServiceBus.Transport.SQS.Tests
     using System.Threading.Tasks;
     using Amazon.SQS.Model;
     using NUnit.Framework;
-    using Settings;
     using SimpleJson;
 
     [TestFixture]
@@ -18,23 +17,20 @@ namespace NServiceBus.Transport.SQS.Tests
         {
             cancellationTokenSource = new CancellationTokenSource();
 
-            var settings = new SettingsHolder();
-
             mockSqsClient = new MockSqsClient();
-            mockS3Client = new MockS3Client();
 
-            var transportConfiguration = new TransportConfiguration(settings);
-
-            pump = new InputQueuePump(transportConfiguration, mockS3Client, mockSqsClient, new QueueCache(mockSqsClient, transportConfiguration));
+            pump = new InputQueuePump(new ReceiveSettings("queue", FakeInputQueueQueueUrl, true, false, "error"), mockSqsClient,
+                new QueueCache(mockSqsClient, dest => QueueCache.GetSqsQueueName(dest, "")),
+                null, null,
+                (error, exception) => { });
         }
 
-        async Task SetupInitializedPump(Func<MessageContext, Task> onMessage = null)
+        async Task SetupInitializedPump(OnMessage onMessage = null)
         {
             await pump.Initialize(
+                new PushRuntimeSettings(1),
                 onMessage ?? (ctx => Task.FromResult(0)),
-                ctx => Task.FromResult(ErrorHandleResult.Handled),
-                new CriticalError(error => Task.FromResult(0)),
-                new PushSettings(FakeInputQueueQueueUrl, "error", false, TransportTransactionMode.ReceiveOnly));
+                ctx => Task.FromResult(ErrorHandleResult.Handled));
         }
 
         [Test]
@@ -48,13 +44,13 @@ namespace NServiceBus.Transport.SQS.Tests
                 return new ReceiveMessageResponse { Messages = new List<Message>() };
             };
 
-            pump.Start(1, cancellationTokenSource.Token);
+            await pump.StartReceive();
 
             SpinWait.SpinUntil(() => mockSqsClient.ReceiveMessagesRequestsSent.Count > 0);
 
             cancellationTokenSource.Cancel();
 
-            await pump.Stop();
+            await pump.StopReceive();
 
             Assert.IsTrue(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MaxNumberOfMessages == 1), "MaxNumberOfMessages did not match");
             Assert.IsTrue(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.QueueUrl == FakeInputQueueQueueUrl), "QueueUrl did not match");
@@ -192,7 +188,6 @@ namespace NServiceBus.Transport.SQS.Tests
         InputQueuePump pump;
         MockSqsClient mockSqsClient;
         CancellationTokenSource cancellationTokenSource;
-        MockS3Client mockS3Client;
         const string FakeInputQueueQueueUrl = "queueUrl";
     }
 }

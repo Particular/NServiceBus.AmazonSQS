@@ -22,8 +22,8 @@
                 {
                     b.CustomConfig(c =>
                     {
-                        var policies = c.ConfigureSqsTransport().Policies();
-                        policies.AddNamespaceCondition("NServiceBus.AcceptanceTests.Policies.");
+                        var policies = c.ConfigureSqsTransport().Policies;
+                        policies.TopicNamespaceConditions.Add("NServiceBus.AcceptanceTests.Policies.");
                     });
                 })
                 .Done(c => c.GotEvents)

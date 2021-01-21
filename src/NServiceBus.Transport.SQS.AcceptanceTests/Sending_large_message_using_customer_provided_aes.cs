@@ -26,11 +26,11 @@ namespace NServiceBus.AcceptanceTests
 
             Assert.AreEqual(payloadToSend, context.ReceivedPayload, "The large payload should be handled correctly using the kms encrypted S3 bucket");
 
-            var s3Client = SqsTransportExtensions.CreateS3Client();
+            var s3Client = ConfigureEndpointSqsTransport.CreateS3Client();
             var getObjectResponse = await s3Client.GetObjectAsync(new GetObjectRequest
             {
                 BucketName = BucketName,
-                Key = $"{SqsTransportExtensions.S3Prefix}/{context.MessageId}",
+                Key = $"{ConfigureEndpointSqsTransport.S3Prefix}/{context.MessageId}",
                 ServerSideEncryptionCustomerMethod = ServerSideEncryptionCustomerMethod.AES256,
                 ServerSideEncryptionCustomerProvidedKey = Base64Key,
             });
@@ -56,17 +56,19 @@ namespace NServiceBus.AcceptanceTests
             {
                 EndpointSetup<DefaultServer>(c =>
                 {
-                    var transportConfig = c.UseTransport<SqsTransport>();
+                    var transportConfig = c.ConfigureSqsTransport();
 
-                    BucketName = $"{SqsTransportExtensions.S3BucketName}";
+                    BucketName = $"{ConfigureEndpointSqsTransport.S3BucketName}";
 
                     var aesEncryption = Aes.Create();
                     aesEncryption.KeySize = 256;
                     aesEncryption.GenerateKey();
                     Base64Key = Convert.ToBase64String(aesEncryption.Key);
 
-                    var s3Config = transportConfig.S3(BucketName, SqsTransportExtensions.S3Prefix);
-                    s3Config.ServerSideCustomerEncryption(ServerSideEncryptionCustomerMethod.AES256, Base64Key);
+                    transportConfig.S3 = new S3Settings(BucketName, ConfigureEndpointSqsTransport.S3Prefix, ConfigureEndpointSqsTransport.CreateS3Client())
+                    {
+                        Encryption = new S3EncryptionWithCustomerProvidedKey(ServerSideEncryptionCustomerMethod.AES256, Base64Key)
+                    };
                 });
             }
 

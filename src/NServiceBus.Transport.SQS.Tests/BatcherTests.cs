@@ -248,7 +248,9 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.AreEqual(10, batches.ElementAt(6).BatchRequest.Entries.Count);
         }
 
+        // ReSharper disable InconsistentNaming
         static string GenerateBody(int sizeInKB)
+        // ReSharper restore InconsistentNaming
         {
             return new string('b', sizeInKB * 1024);
         }
@@ -380,10 +382,10 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public void PutsAsManyMessagesInBatchAsPossible()
         {
-            var singleMessageBody = new string('x', TransportConfiguration.MaximumMessageSize / TransportConfiguration.MaximumItemsInBatch);
+            var singleMessageBody = new string('x', TransportConstraints.MaximumMessageSize / TransportConstraints.MaximumItemsInBatch);
 
             var preparedMessages = Enumerable
-                .Range(0, 2 * TransportConfiguration.MaximumItemsInBatch)
+                .Range(0, 2 * TransportConstraints.MaximumItemsInBatch)
                 .Select(n => new SqsPreparedMessage { Body = singleMessageBody, Destination = "destination", QueueUrl = "https://destination" })
                 .ToArray();
 
@@ -392,17 +394,17 @@ namespace NServiceBus.Transport.SQS.Tests
             var batches = Batcher.Batch(preparedMessages);
 
             Assert.AreEqual(2, batches.Count);
-            Assert.AreEqual(TransportConfiguration.MaximumItemsInBatch, batches[0].BatchRequest.Entries.Count);
-            Assert.AreEqual(TransportConfiguration.MaximumItemsInBatch, batches[1].BatchRequest.Entries.Count);
+            Assert.AreEqual(TransportConstraints.MaximumItemsInBatch, batches[0].BatchRequest.Entries.Count);
+            Assert.AreEqual(TransportConstraints.MaximumItemsInBatch, batches[1].BatchRequest.Entries.Count);
         }
 
         [Test]
         public void PutsAsManyMessagesWithMessageIdsInBatchAsPossible()
         {
-            var singleMessageBody = new string('x', TransportConfiguration.MaximumMessageSize / TransportConfiguration.MaximumItemsInBatch);
+            var singleMessageBody = new string('x', TransportConstraints.MaximumMessageSize / TransportConstraints.MaximumItemsInBatch);
 
             var preparedMessages = Enumerable
-                .Range(0, 2 * TransportConfiguration.MaximumItemsInBatch)
+                .Range(0, 2 * TransportConstraints.MaximumItemsInBatch)
                 .Select(n => new SqsPreparedMessage { MessageId = Guid.NewGuid().ToString(), Body = singleMessageBody, Destination = "destination", QueueUrl = "https://destination" })
                 .ToArray();
 
@@ -411,8 +413,8 @@ namespace NServiceBus.Transport.SQS.Tests
             var batches = Batcher.Batch(preparedMessages);
 
             Assert.AreEqual(3, batches.Count);
-            Assert.AreEqual(TransportConfiguration.MaximumItemsInBatch - 1, batches[0].BatchRequest.Entries.Count);
-            Assert.AreEqual(TransportConfiguration.MaximumItemsInBatch - 1, batches[1].BatchRequest.Entries.Count);
+            Assert.AreEqual(TransportConstraints.MaximumItemsInBatch - 1, batches[0].BatchRequest.Entries.Count);
+            Assert.AreEqual(TransportConstraints.MaximumItemsInBatch - 1, batches[1].BatchRequest.Entries.Count);
             Assert.AreEqual(2, batches[2].BatchRequest.Entries.Count);
         }
 

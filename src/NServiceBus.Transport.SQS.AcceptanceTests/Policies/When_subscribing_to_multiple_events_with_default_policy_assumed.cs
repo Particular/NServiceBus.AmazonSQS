@@ -26,8 +26,7 @@
                 }))
                 .WithEndpoint<Subscriber>(b => b.CustomConfig(c =>
                 {
-                    var policies = c.ConfigureSqsTransport().Policies();
-                    policies.AssumePolicyHasAppropriatePermissions();
+                    c.ConfigureSqsTransport().Policies.SetupTopicPoliciesWhenSubscribing = false;
                 }))
                 .Done(c => c.GotEvents)
                 .Run();

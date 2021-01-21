@@ -1,3 +1,4 @@
+
 namespace NServiceBus.Transport.SQS
 {
     using System;
@@ -6,7 +7,6 @@ namespace NServiceBus.Transport.SQS
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.Runtime;
-    using Amazon.S3;
     using Amazon.SQS;
     using Amazon.SQS.Model;
     using Extensibility;
@@ -15,25 +15,32 @@ namespace NServiceBus.Transport.SQS
     using SimpleJson;
     using static TransportHeaders;
 
-    class InputQueuePump
+
+    class InputQueuePump : IMessageReceiver
     {
-        public InputQueuePump(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, QueueCache queueCache)
+        public InputQueuePump(ReceiveSettings settings, IAmazonSQS sqsClient, QueueCache queueCache,
+            S3Settings s3Settings, SubscriptionManager subscriptionManager,
+            Action<string, Exception> criticalErrorAction)
         {
-            this.configuration = configuration;
-            this.s3Client = s3Client;
+            this.settings = settings;
             this.sqsClient = sqsClient;
             this.queueCache = queueCache;
+            this.s3Settings = s3Settings;
+            this.criticalErrorAction = criticalErrorAction;
             awsEndpointUrl = sqsClient.Config.DetermineServiceURL();
+            Id = settings.Id;
+            Subscriptions = subscriptionManager;
         }
 
-        public async Task<string> Initialize(Func<MessageContext, Task> onMessage, Func<ErrorContext, Task<ErrorHandleResult>> onError, CriticalError criticalError, PushSettings settings)
+        public async Task Initialize(PushRuntimeSettings limitations, OnMessage onMessage, OnError onError)
         {
-            this.criticalError = criticalError;
-
-            inputQueueUrl = await queueCache.GetQueueUrl(settings.InputQueue)
+            inputQueueUrl = await queueCache.GetQueueUrl(settings.ReceiveAddress)
                 .ConfigureAwait(false);
             errorQueueUrl = await queueCache.GetQueueUrl(settings.ErrorQueue)
                 .ConfigureAwait(false);
+
+            maxConcurrency = limitations.MaxConcurrency;
+
 
             if (settings.PurgeOnStartup)
             {
@@ -48,24 +55,27 @@ namespace NServiceBus.Transport.SQS
                 }
                 catch (PurgeQueueInProgressException ex)
                 {
-                    Logger.Warn("Multiple queue purges within 60 seconds are not permitted by SQS.", ex);
+                    _logger.Warn("Multiple queue purges within 60 seconds are not permitted by SQS.", ex);
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error("Exception thrown from PurgeQueue.", ex);
+                    _logger.Error("Exception thrown from PurgeQueue.", ex);
                     throw;
                 }
             }
 
             this.onMessage = onMessage;
             this.onError = onError;
-            return inputQueueUrl;
         }
 
-        public void Start(int maximumProcessingConcurrency, CancellationToken token)
+        public Task StartReceive()
         {
-            maxConcurrency = maximumProcessingConcurrency;
+            if (tokenSource != null)
+            {
+                return Task.CompletedTask; //Receiver already started.
+            }
 
+            tokenSource = new CancellationTokenSource();
             int numberOfPumps;
             if (maxConcurrency <= 10)
             {
@@ -92,22 +102,39 @@ namespace NServiceBus.Transport.SQS
 
             for (var i = 0; i < numberOfPumps; i++)
             {
-                pumpTasks.Add(Task.Run(() => ConsumeMessages(token), CancellationToken.None));
+                pumpTasks.Add(Task.Run(() => ConsumeMessages(tokenSource.Token), CancellationToken.None));
             }
+
+            return Task.CompletedTask;
         }
 
-        public async Task Stop()
+        public async Task StopReceive()
         {
-            await Task.WhenAll(pumpTasks).ConfigureAwait(false);
-            pumpTasks?.Clear();
+            if (tokenSource == null)
+            {
+                return;
+            }
+
+            tokenSource.Cancel();
+
+            if (pumpTasks != null)
+            {
+                await Task.WhenAll(pumpTasks).ConfigureAwait(false);
+                pumpTasks = null;
+            }
 
             while (maxConcurrencySemaphore.CurrentCount != maxConcurrency)
             {
                 await Task.Delay(50).ConfigureAwait(false);
             }
 
+            tokenSource.Dispose();
             maxConcurrencySemaphore?.Dispose();
+            tokenSource = null;
         }
+
+        public ISubscriptionManager Subscriptions { get; }
+        public string Id { get; }
 
         async Task ConsumeMessages(CancellationToken token)
         {
@@ -138,7 +165,7 @@ namespace NServiceBus.Transport.SQS
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error("Exception thrown when consuming messages", ex);
+                    _logger.Error("Exception thrown when consuming messages", ex);
                 }
             } // while
         }
@@ -175,15 +202,15 @@ namespace NServiceBus.Transport.SQS
                             {MessageTypeFullName, enclosedMessageType.StringValue} // we're copying over the value of the native message attribute into the headers, converting this into a nsb message
                         };
 
-                        if (receivedMessage.MessageAttributes.TryGetValue(S3BodyKey, out var s3bodyKey))
+                        if (receivedMessage.MessageAttributes.TryGetValue(S3BodyKey, out var s3BodyKey))
                         {
-                            headers.Add(S3BodyKey, s3bodyKey.StringValue);
+                            headers.Add(S3BodyKey, s3BodyKey.StringValue);
                         }
 
                         transportMessage = new TransportMessage
                         {
                             Headers = headers,
-                            S3BodyKey = s3bodyKey?.StringValue,
+                            S3BodyKey = s3BodyKey?.StringValue,
                             Body = receivedMessage.Body
                         };
                     }
@@ -192,7 +219,7 @@ namespace NServiceBus.Transport.SQS
                         transportMessage = SimpleJson.DeserializeObject<TransportMessage>(receivedMessage.Body);
                     }
 
-                    messageBody = await transportMessage.RetrieveBody(s3Client, configuration, token).ConfigureAwait(false);
+                    messageBody = await transportMessage.RetrieveBody(messageId, s3Settings, token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
@@ -212,11 +239,11 @@ namespace NServiceBus.Transport.SQS
 
                     if (exception != null)
                     {
-                        Logger.Warn(logMessage, exception);
+                        _logger.Warn(logMessage, exception);
                     }
                     else
                     {
-                        Logger.Warn(logMessage);
+                        _logger.Warn(logMessage);
                     }
 
                     await MovePoisonMessageToErrorQueue(receivedMessage).ConfigureAwait(false);
@@ -254,8 +281,8 @@ namespace NServiceBus.Transport.SQS
                     var context = new ContextBag();
                     context.Set(nativeMessage);
                     // We add it to the transport transaction to make it available in dispatching scenario's so we copy over message attributes when moving messages to the error/audit queue
-                    transportTransaction.Set(nativeMessage);
-                    transportTransaction.Set("IncomingMessageId", headers[Headers.MessageId]);
+                    TransportTransaction.Set(nativeMessage);
+                    TransportTransaction.Set("IncomingMessageId", headers[Headers.MessageId]);
 
                     using (var messageContextCancellationTokenSource = new CancellationTokenSource())
                     {
@@ -263,8 +290,7 @@ namespace NServiceBus.Transport.SQS
                             nativeMessageId,
                             new Dictionary<string, string>(headers),
                             body,
-                            transportTransaction,
-                            messageContextCancellationTokenSource,
+                            TransportTransaction,
                             context);
 
                         await onMessage(messageContext).ConfigureAwait(false);
@@ -284,12 +310,12 @@ namespace NServiceBus.Transport.SQS
                             new Dictionary<string, string>(headers),
                             nativeMessageId,
                             body,
-                            transportTransaction,
+                            TransportTransaction,
                             immediateProcessingAttempts)).ConfigureAwait(false);
                     }
                     catch (Exception onErrorEx)
                     {
-                        criticalError.Raise($"Failed to execute recoverability policy for message with native ID: `{nativeMessageId}`", onErrorEx);
+                        criticalErrorAction($"Failed to execute recoverability policy for message with native ID: `{nativeMessageId}`", onErrorEx);
                     }
 
                     errorHandled = errorHandlerResult == ErrorHandleResult.Handled;
@@ -320,7 +346,7 @@ namespace NServiceBus.Transport.SQS
             }
 
             // Message has expired.
-            Logger.Info($"Discarding expired message with Id {messageId}, expired {now - expiresAt} ago at {expiresAt} utc.");
+            _logger.Info($"Discarding expired message with Id {messageId}, expired {now - expiresAt} ago at {expiresAt} utc.");
             return true;
         }
 
@@ -333,13 +359,13 @@ namespace NServiceBus.Transport.SQS
             }
             catch (ReceiptHandleIsInvalidException ex)
             {
-                Logger.Info($"Message receipt handle {message.ReceiptHandle} no longer valid.", ex);
+                _logger.Info($"Message receipt handle {message.ReceiptHandle} no longer valid.", ex);
                 return; // if another receiver fetches the data from S3
             }
 
             if (!string.IsNullOrEmpty(s3BodyKey))
             {
-                Logger.Info($"Message body data with key '{s3BodyKey}' will be aged out by the S3 lifecycle policy when the TTL expires.");
+                _logger.Info($"Message body data with key '{s3BodyKey}' will be aged out by the S3 lifecycle policy when the TTL expires.");
             }
         }
 
@@ -363,7 +389,7 @@ namespace NServiceBus.Transport.SQS
             }
             catch (Exception ex)
             {
-                Logger.Error($"Error moving poison message to error queue at url {errorQueueUrl}. Moving back to input queue.", ex);
+                _logger.Error($"Error moving poison message to error queue at url {errorQueueUrl}. Moving back to input queue.", ex);
                 try
                 {
                     await sqsClient.ChangeMessageVisibilityAsync(new ChangeMessageVisibilityRequest
@@ -375,7 +401,7 @@ namespace NServiceBus.Transport.SQS
                 }
                 catch (Exception changeMessageVisibilityEx)
                 {
-                    Logger.Warn($"Error returning poison message back to input queue at url {inputQueueUrl}. Poison message will become available at the input queue again after the visibility timeout expires.", changeMessageVisibilityEx);
+                    _logger.Warn($"Error returning poison message back to input queue at url {inputQueueUrl}. Poison message will become available at the input queue again after the visibility timeout expires.", changeMessageVisibilityEx);
                 }
 
                 return;
@@ -391,29 +417,32 @@ namespace NServiceBus.Transport.SQS
             }
             catch (Exception ex)
             {
-                Logger.Warn($"Error removing poison message from input queue {inputQueueUrl}. This may cause duplicate poison messages in the error queue for this endpoint.", ex);
+                _logger.Warn($"Error removing poison message from input queue {inputQueueUrl}. This may cause duplicate poison messages in the error queue for this endpoint.", ex);
             }
 
             // If there is a message body in S3, simply leave it there
         }
 
         List<Task> pumpTasks;
-        Func<ErrorContext, Task<ErrorHandleResult>> onError;
-        Func<MessageContext, Task> onMessage;
+        OnError onError;
+        OnMessage onMessage;
         SemaphoreSlim maxConcurrencySemaphore;
         string inputQueueUrl;
         string errorQueueUrl;
         int maxConcurrency;
-        TransportConfiguration configuration;
-        IAmazonS3 s3Client;
-        IAmazonSQS sqsClient;
-        QueueCache queueCache;
+
+        readonly ReceiveSettings settings;
+        readonly IAmazonSQS sqsClient;
+        readonly QueueCache queueCache;
+        readonly S3Settings s3Settings;
+        readonly Action<string, Exception> criticalErrorAction;
+        readonly string awsEndpointUrl;
+
         int numberOfMessagesToFetch;
         ReceiveMessageRequest receiveMessagesRequest;
-        CriticalError criticalError;
-        string awsEndpointUrl;
+        CancellationTokenSource tokenSource;
 
-        static readonly TransportTransaction transportTransaction = new TransportTransaction();
-        static ILog Logger = LogManager.GetLogger(typeof(MessagePump));
+        static readonly TransportTransaction TransportTransaction = new TransportTransaction();
+        static ILog _logger = LogManager.GetLogger(typeof(MessagePump));
     }
 }

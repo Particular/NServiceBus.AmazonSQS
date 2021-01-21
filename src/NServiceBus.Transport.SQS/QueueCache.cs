@@ -2,20 +2,19 @@
 {
     using System;
     using System.Collections.Concurrent;
-    using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
     using Amazon.SQS;
 
     class QueueCache
     {
-        public QueueCache(IAmazonSQS sqsClient, TransportConfiguration configuration)
+        public QueueCache(IAmazonSQS sqsClient, Func<string, string> queueNameGenerator)
         {
-            this.configuration = configuration;
             queueNameToUrlCache = new ConcurrentDictionary<string, string>();
             queueNameToPhysicalAddressCache = new ConcurrentDictionary<string, string>();
             queueUrlToQueueArnCache = new ConcurrentDictionary<string, string>();
             this.sqsClient = sqsClient;
+            this.queueNameGenerator = queueNameGenerator;
         }
 
         public void SetQueueUrl(string queueName, string queueUrl)
@@ -25,7 +24,7 @@
 
         public string GetPhysicalQueueName(string queueName)
         {
-            return queueNameToPhysicalAddressCache.GetOrAdd(queueName, name => GetSqsQueueName(name, configuration));
+            return queueNameToPhysicalAddressCache.GetOrAdd(queueName, name => queueNameGenerator(name));
         }
 
         public async Task<string> GetQueueArn(string queueUrl)
@@ -53,7 +52,7 @@
             return queueNameToUrlCache.AddOrUpdate(queueName, queueUrl, (key, value) => value);
         }
 
-        public static string GetSqsQueueName(string destination, TransportConfiguration transportConfiguration)
+        public static string GetSqsQueueName(string destination, string queueNamePrefix)
         {
             if (string.IsNullOrWhiteSpace(destination))
             {
@@ -61,21 +60,14 @@
             }
 
             // we need to process again because of the way we handle fifo queues
-            var queueName = !string.IsNullOrEmpty(transportConfiguration.QueueNamePrefix) &&
-                    destination.StartsWith(transportConfiguration.QueueNamePrefix, StringComparison.Ordinal) ?
+            var queueName = !string.IsNullOrEmpty(queueNamePrefix) &&
+                    destination.StartsWith(queueNamePrefix, StringComparison.Ordinal) ?
                 destination :
-                $"{transportConfiguration.QueueNamePrefix}{destination}";
-
-            if (transportConfiguration.PreTruncateQueueNames && queueName.Length > 80)
-            {
-                var charsToTake = 80 - transportConfiguration.QueueNamePrefix.Length;
-                queueName = transportConfiguration.QueueNamePrefix +
-                    new string(queueName.Reverse().Take(charsToTake).Reverse().ToArray());
-            }
+                $"{queueNamePrefix}{destination}";
 
             if (queueName.Length > 80)
             {
-                throw new Exception($"Address {destination} with configured prefix {transportConfiguration.QueueNamePrefix} is longer than 80 characters and therefore cannot be used to create an SQS queue. Use a shorter queue name.");
+                throw new Exception($"Address {destination} with configured prefix {queueNamePrefix} is longer than 80 characters and therefore cannot be used to create an SQS queue. Use a shorter queue name.");
             }
 
             return GetSanitizedQueueName(queueName);
@@ -101,10 +93,10 @@
             return queueNameBuilder.ToString();
         }
 
-        ConcurrentDictionary<string, string> queueNameToUrlCache;
-        ConcurrentDictionary<string, string> queueNameToPhysicalAddressCache;
-        ConcurrentDictionary<string, string> queueUrlToQueueArnCache;
-        IAmazonSQS sqsClient;
-        TransportConfiguration configuration;
+        readonly ConcurrentDictionary<string, string> queueNameToUrlCache;
+        readonly ConcurrentDictionary<string, string> queueNameToPhysicalAddressCache;
+        readonly ConcurrentDictionary<string, string> queueUrlToQueueArnCache;
+        readonly IAmazonSQS sqsClient;
+        readonly Func<string, string> queueNameGenerator;
     }
 }

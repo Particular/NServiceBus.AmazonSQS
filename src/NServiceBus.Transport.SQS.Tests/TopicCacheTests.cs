@@ -5,7 +5,6 @@ namespace NServiceBus.Transport.SQS.Tests
     using System.Threading.Tasks;
     using Configure;
     using NUnit.Framework;
-    using Settings;
     using SQS;
 
     [TestFixture]
@@ -14,16 +13,9 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public async Task GetTopicArn_caches()
         {
-            var settings = new SettingsHolder();
-            settings.Set(SettingsKeys.TopicNamePrefix, "PREFIX");
-            settings.Set(SettingsKeys.TopicNameGenerator, (Func<Type, string, string>)TopicNameGenerator);
-
-            var configuration = new TransportConfiguration(settings);
             var snsClient = new MockSnsClient();
 
-            var metadataRegistry = settings.SetupMessageMetadataRegistry();
-
-            var cache = new TopicCache(snsClient, metadataRegistry, configuration);
+            var cache = new TopicCache(snsClient, null, new EventToEventsMappings(), TopicNameGenerator, "PREFIX");
 
             await cache.GetTopicArn(typeof(Event));
 
@@ -47,19 +39,10 @@ namespace NServiceBus.Transport.SQS.Tests
                 return $"{prefix}{eventType.Name}";
             }
 
-            var settings = new SettingsHolder();
-            settings.Set(SettingsKeys.TopicNamePrefix, "PREFIX");
-            settings.Set(SettingsKeys.TopicNameGenerator, (Func<Type, string, string>)Generator);
+            var cache = new TopicCache(null, null, new EventToEventsMappings(), Generator, "PREFIX");
 
-            var configuration = new TransportConfiguration(settings);
-
-            var metadataRegistry = settings.SetupMessageMetadataRegistry();
-            var metadata = metadataRegistry.GetMessageMetadata(typeof(Event));
-
-            var cache = new TopicCache(null, metadataRegistry, configuration);
-
-            cache.GetTopicName(metadata);
-            cache.GetTopicName(metadata);
+            cache.GetTopicName(typeof(Event));
+            cache.GetTopicName(typeof(Event));
 
             Assert.AreEqual(1, called);
         }

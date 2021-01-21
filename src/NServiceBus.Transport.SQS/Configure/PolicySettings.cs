@@ -1,39 +1,32 @@
 ﻿namespace NServiceBus
 {
     using System;
-    using System.Collections.Generic;
     using System.Linq;
-    using Configuration.AdvancedExtensibility;
-    using Settings;
-    using Transport.SQS.Configure;
+    using System.Collections.Generic;
 
     /// <summary>
     /// Exposes the settings to configure policy creation
     /// </summary>
-    public class PolicySettings : ExposeSettings
+    public partial class PolicySettings
     {
-        internal PolicySettings(SettingsHolder settings) : base(settings)
-        {
-        }
+        bool setupTopicPoliciesWhenSubscribing = true;
+        bool accountCondition;
+        bool topicNamePrefixCondition;
 
         /// <summary>
-        /// Disables policy updates by assuming the endpoint input queue has the necessary IAM policy that allows all topics subscribed to send messages
+        /// Controls if the transport sets up the IAM policies for topics to allow them to send messages to the input queue.
         /// </summary>
-        public void AssumePolicyHasAppropriatePermissions()
+        public bool SetupTopicPoliciesWhenSubscribing
         {
-            var settings = this.GetSettings();
-            if ((settings.HasExplicitValue(SettingsKeys.AddAccountConditionForPolicies) &&
-                settings.Get<bool>(SettingsKeys.AddAccountConditionForPolicies)) ||
-                (settings.HasExplicitValue(SettingsKeys.AddTopicNamePrefixConditionForPolicies) &&
-                settings.Get<bool>(SettingsKeys.AddTopicNamePrefixConditionForPolicies)) ||
-                (settings.HasExplicitValue(SettingsKeys.NamespaceConditionForPolicies) &&
-                settings.Get<List<string>>(SettingsKeys.NamespaceConditionForPolicies).Any()))
+            get => setupTopicPoliciesWhenSubscribing;
+            set
             {
-                throw new InvalidOperationException(
-                    $"When the policy modification is disabled no other condition like `{nameof(AddAccountCondition)}`, `{nameof(AddTopicNamePrefixCondition)}` or `{nameof(AddNamespaceCondition)}` can be used.");
+                if (AccountCondition || TopicNamePrefixCondition || TopicNamespaceConditions.Any())
+                {
+                    throw new Exception("Cannot disable policy setup if policy creation has been configured.");
+                }
+                setupTopicPoliciesWhenSubscribing = value;
             }
-
-            this.GetSettings().Set(SettingsKeys.AssumePolicyHasAppropriatePermissions, true);
         }
 
         /// <summary>
@@ -49,25 +42,26 @@
         /// ]]>
         /// </example>
         /// <remarks>Calling this method will opt-in for wildcard policy and no longer populate the policy with the explicit topic ARNs the endpoint subscribes to.</remarks>
-        public void AddAccountCondition()
+        public bool AccountCondition
         {
-            var settings = this.GetSettings();
-            if (settings.HasExplicitValue(SettingsKeys.AssumePolicyHasAppropriatePermissions) &&
-                settings.Get<bool>(SettingsKeys.AssumePolicyHasAppropriatePermissions))
+            get => accountCondition;
+            set
             {
-                throw new InvalidOperationException(
-                    $"The policy modification was disabled by calling `{nameof(AssumePolicyHasAppropriatePermissions)}`. `{nameof(AddAccountCondition)}` requires `{nameof(AssumePolicyHasAppropriatePermissions)}` to be removed.");
+                if (!setupTopicPoliciesWhenSubscribing)
+                {
+                    throw new Exception("Cannot configure policy creation if policy setup has been disabled.");
+                }
+                accountCondition = value;
             }
-
-            this.GetSettings().Set(SettingsKeys.AddAccountConditionForPolicies, true);
         }
+
 
         /// <summary>
         /// Adds a topic name prefix wildcard condition.
         /// </summary>
         /// <example>
         /// <code>
-        ///    transport.TopicNamePrefix("DEV-")
+        ///    transport.TopicNamePrefix = "DEV-"
         /// </code> and subscribing to
         /// - arn:aws:sns:some-region:some-account:DEV-Some-Namespace-Event
         /// - arn:aws:sns:some-region:some-account:DEV-Some-Namespace-AnotherEvent
@@ -77,17 +71,17 @@
         /// ]]>
         /// </example>
         /// <remarks>Calling this method will opt-in for wildcard policy and no longer populate the policy with the explicit topic ARNs the endpoint subscribes to.</remarks>
-        public void AddTopicNamePrefixCondition()
+        public bool TopicNamePrefixCondition
         {
-            var settings = this.GetSettings();
-            if (settings.HasExplicitValue(SettingsKeys.AssumePolicyHasAppropriatePermissions) &&
-                settings.Get<bool>(SettingsKeys.AssumePolicyHasAppropriatePermissions))
+            get => topicNamePrefixCondition;
+            set
             {
-                throw new InvalidOperationException(
-                    $"The policy modification was disabled by calling `{nameof(AssumePolicyHasAppropriatePermissions)}`. `{nameof(AddTopicNamePrefixCondition)}` requires `{nameof(AssumePolicyHasAppropriatePermissions)}` to be removed.");
+                if (!setupTopicPoliciesWhenSubscribing)
+                {
+                    throw new Exception("Cannot configure policy creation if policy setup has been disabled.");
+                }
+                topicNamePrefixCondition = value;
             }
-
-            this.GetSettings().Set(SettingsKeys.AddTopicNamePrefixConditionForPolicies, true);
         }
 
         /// <summary>
@@ -95,9 +89,9 @@
         /// </summary>
         /// <example>
         /// <code>
-        ///    var policies = transport.Policies();
-        ///    policies.AddNamespaceCondition("Some.Namespace.");
-        ///    policies.AddNamespaceCondition("SomeOther.Namespace");
+        ///    var policies = transport.Policies;
+        ///    policies.TopicNamespaceConditions.Add("Some.Namespace.");
+        ///    policies.TopicNamespaceConditions.Add("SomeOther.Namespace");
         /// </code> and subscribing to
         /// - arn:aws:sns:some-region:some-account:Some-Namespace-Event
         /// - arn:aws:sns:some-region:some-account:Some-Namespace-AnotherEvent
@@ -109,26 +103,8 @@
         /// } }
         /// ]]>
         /// </example>
-        /// <param name="topicNamespace">The namespace of the topic.</param>
         /// <remarks>It is possible to use dots in the provided namespace (for example Sales.VipCustomers.). The namespaces will be translated into a compliant format.</remarks>
         /// <remarks>Calling this method will opt-in for wildcard policy and no longer populate the policy with the explicit topic ARNs the endpoint subscribes to.</remarks>
-        public void AddNamespaceCondition(string topicNamespace)
-        {
-            var settings = this.GetSettings();
-            if (settings.HasExplicitValue(SettingsKeys.AssumePolicyHasAppropriatePermissions) &&
-                settings.Get<bool>(SettingsKeys.AssumePolicyHasAppropriatePermissions))
-            {
-                throw new InvalidOperationException(
-                    $"The policy modification was disabled by calling `{nameof(AssumePolicyHasAppropriatePermissions)}`. `{nameof(AddNamespaceCondition)}` requires `{nameof(AssumePolicyHasAppropriatePermissions)}` to be removed.");
-            }
-
-            if (!this.GetSettings()
-                .TryGet<List<string>>(SettingsKeys.NamespaceConditionForPolicies, out var topicNamespaces))
-            {
-                topicNamespaces = new List<string>();
-                this.GetSettings().Set(SettingsKeys.NamespaceConditionForPolicies, topicNamespaces);
-            }
-            topicNamespaces.Add(topicNamespace);
-        }
+        public List<string> TopicNamespaceConditions { get; } = new List<string>();
     }
 }

@@ -15,33 +15,35 @@ namespace NServiceBus.Transport.SQS
 
     class DelayedMessagesPump
     {
-        public DelayedMessagesPump(TransportConfiguration configuration, IAmazonSQS sqsClient, QueueCache queueCache)
+        public DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCache queueCache, int queueDelayTimeSeconds)
         {
+            this.receiveAddress = receiveAddress;
             this.queueCache = queueCache;
+            this.queueDelayTimeSeconds = queueDelayTimeSeconds;
             this.sqsClient = sqsClient;
-            this.configuration = configuration;
             awsEndpointUrl = sqsClient.Config.DetermineServiceURL();
         }
 
-        public async Task Initialize(string inputQueue, string inputQueueUrl)
+        public async Task Initialize()
         {
-            this.inputQueueUrl = inputQueueUrl;
+            inputQueueUrl = await queueCache.GetQueueUrl(receiveAddress)
+                .ConfigureAwait(false);
 
-            var delayedDeliveryQueueName = $"{inputQueue}{TransportConfiguration.DelayedDeliveryQueueSuffix}";
+            var delayedDeliveryQueueName = $"{receiveAddress}{TransportConstraints.DelayedDeliveryQueueSuffix}";
             delayedDeliveryQueueUrl = await queueCache.GetQueueUrl(delayedDeliveryQueueName)
                 .ConfigureAwait(false);
 
             var queueAttributes = await GetQueueAttributesFromDelayedDeliveryQueueWithRetriesToWorkaroundSDKIssue()
                 .ConfigureAwait(false);
 
-            if (queueAttributes.DelaySeconds < configuration.DelayedDeliveryQueueDelayTime)
+            if (queueAttributes.DelaySeconds < queueDelayTimeSeconds)
             {
-                throw new Exception($"Delayed delivery queue '{delayedDeliveryQueueName}' should not have Delivery Delay less than '{TimeSpan.FromSeconds(configuration.DelayedDeliveryQueueDelayTime)}'.");
+                throw new Exception($"Delayed delivery queue '{delayedDeliveryQueueName}' should not have Delivery Delay less than '{TimeSpan.FromSeconds(queueDelayTimeSeconds)}'.");
             }
 
-            if (queueAttributes.MessageRetentionPeriod < (int)TransportConfiguration.DelayedDeliveryQueueMessageRetentionPeriod.TotalSeconds)
+            if (queueAttributes.MessageRetentionPeriod < (int)TransportConstraints.DelayedDeliveryQueueMessageRetentionPeriod.TotalSeconds)
             {
-                throw new Exception($"Delayed delivery queue '{delayedDeliveryQueueName}' should not have Message Retention Period less than '{TransportConfiguration.DelayedDeliveryQueueMessageRetentionPeriod}'.");
+                throw new Exception($"Delayed delivery queue '{delayedDeliveryQueueName}' should not have Message Retention Period less than '{TransportConstraints.DelayedDeliveryQueueMessageRetentionPeriod}'.");
             }
 
             if (queueAttributes.Attributes.ContainsKey("RedrivePolicy"))
@@ -78,8 +80,14 @@ namespace NServiceBus.Transport.SQS
             return queueAttributes;
         }
 
-        public void Start(CancellationToken token)
+        public void Start()
         {
+            if (tokenSource != null)
+            {
+                return; //already started
+            }
+            tokenSource = new CancellationTokenSource();
+
             var receiveDelayedMessagesRequest = new ReceiveMessageRequest
             {
                 MaxNumberOfMessages = 10,
@@ -89,7 +97,24 @@ namespace NServiceBus.Transport.SQS
                 MessageAttributeNames = new List<string> { "All" }
             };
 
-            pumpTask = Task.Run(() => ConsumeDelayedMessagesLoop(receiveDelayedMessagesRequest, token), CancellationToken.None);
+            pumpTask = Task.Run(() => ConsumeDelayedMessagesLoop(receiveDelayedMessagesRequest, tokenSource.Token), CancellationToken.None);
+        }
+
+        public async Task Stop()
+        {
+            if (tokenSource == null)
+            {
+                return; //already stopped
+            }
+            tokenSource.Cancel();
+            if (pumpTask != null)
+            {
+                await pumpTask.ConfigureAwait(false);
+            }
+
+            pumpTask = null;
+            tokenSource.Dispose();
+            tokenSource = null;
         }
 
         async Task ConsumeDelayedMessagesLoop(ReceiveMessageRequest request, CancellationToken token)
@@ -106,7 +131,7 @@ namespace NServiceBus.Transport.SQS
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error("Exception thrown when consuming delayed messages", ex);
+                    _logger.Error("Exception thrown when consuming delayed messages", ex);
                 }
             }
         }
@@ -162,7 +187,7 @@ namespace NServiceBus.Transport.SQS
 
                 SqsReceivedDelayedMessage preparedMessage;
 
-                if (remainingDelay > configuration.DelayedDeliveryQueueDelayTime)
+                if (remainingDelay > queueDelayTimeSeconds)
                 {
                     preparedMessage = new SqsReceivedDelayedMessage(originalMessageId, receivedMessage.ReceiptHandle)
                     {
@@ -184,7 +209,7 @@ namespace NServiceBus.Transport.SQS
 
                     // this is only here for acceptance testing purpose. In real prod code this is always false.
                     // it allows us to fake multiple cycles over the FIFO queue without being subjected to deduplication
-                    if (configuration.DelayedDeliveryQueueDelayTime < TransportConfiguration.AwsMaximumQueueDelayTime)
+                    if (queueDelayTimeSeconds < TransportConstraints.AwsMaximumQueueDelayTime)
                     {
                         deduplicationId = Guid.NewGuid().ToString();
                     }
@@ -250,20 +275,20 @@ namespace NServiceBus.Transport.SQS
 
         async Task SendDelayedMessagesInBatches(BatchEntry<SqsReceivedDelayedMessage> batch, int batchNumber, int totalBatches)
         {
-            if (Logger.IsDebugEnabled)
+            if (_logger.IsDebugEnabled)
             {
                 var message = batch.PreparedMessagesBydId.Values.First();
 
-                Logger.Debug($"Sending delayed message batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
+                _logger.Debug($"Sending delayed message batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
             }
 
             var result = await sqsClient.SendMessageBatchAsync(batch.BatchRequest).ConfigureAwait(false);
 
-            if (Logger.IsDebugEnabled)
+            if (_logger.IsDebugEnabled)
             {
                 var message = batch.PreparedMessagesBydId.Values.First();
 
-                Logger.Debug($"Sent delayed message '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
+                _logger.Debug($"Sent delayed message '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
             }
 
             var deletionTask = DeleteDelayedMessagesThatWereDeliveredSuccessfullyAsBatchesInBatches(batch, result, batchNumber, totalBatches);
@@ -290,24 +315,24 @@ namespace NServiceBus.Transport.SQS
 
                 if (changeVisibilityBatchRequestEntries != null)
                 {
-                    if (Logger.IsDebugEnabled)
+                    if (_logger.IsDebugEnabled)
                     {
                         var message = batch.PreparedMessagesBydId.Values.First();
 
-                        Logger.Debug($"Changing delayed message visibility for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
+                        _logger.Debug($"Changing delayed message visibility for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
                     }
 
                     var changeVisibilityResult = await sqsClient.ChangeMessageVisibilityBatchAsync(new ChangeMessageVisibilityBatchRequest(delayedDeliveryQueueUrl, changeVisibilityBatchRequestEntries), CancellationToken.None)
                         .ConfigureAwait(false);
 
-                    if (Logger.IsDebugEnabled)
+                    if (_logger.IsDebugEnabled)
                     {
                         var message = batch.PreparedMessagesBydId.Values.First();
 
-                        Logger.Debug($"Changed delayed message visibility for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
+                        _logger.Debug($"Changed delayed message visibility for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
                     }
 
-                    if (Logger.IsDebugEnabled && changeVisibilityResult.Failed.Count > 0)
+                    if (_logger.IsDebugEnabled && changeVisibilityResult.Failed.Count > 0)
                     {
                         var builder = new StringBuilder();
                         foreach (var failed in changeVisibilityResult.Failed)
@@ -315,7 +340,7 @@ namespace NServiceBus.Transport.SQS
                             builder.AppendLine($"{failed.Id}: {failed.Message} | {failed.Code} | {failed.SenderFault}");
                         }
 
-                        Logger.Debug($"Changing visibility failed for {builder}");
+                        _logger.Debug($"Changing visibility failed for {builder}");
                     }
                 }
             }
@@ -327,7 +352,7 @@ namespace NServiceBus.Transport.SQS
                     builder.AppendLine($"{failed.Id}: {failed.Message} | {failed.Code} | {failed.SenderFault}");
                 }
 
-                Logger.Error($"Changing visibility failed for {builder}", e);
+                _logger.Error($"Changing visibility failed for {builder}", e);
             }
         }
 
@@ -344,21 +369,21 @@ namespace NServiceBus.Transport.SQS
 
             if (deleteBatchRequestEntries != null)
             {
-                if (Logger.IsDebugEnabled)
+                if (_logger.IsDebugEnabled)
                 {
                     var message = batch.PreparedMessagesBydId.Values.First();
 
-                    Logger.Debug($"Deleting delayed message for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
+                    _logger.Debug($"Deleting delayed message for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
                 }
 
                 var deleteResult = await sqsClient.DeleteMessageBatchAsync(new DeleteMessageBatchRequest(delayedDeliveryQueueUrl, deleteBatchRequestEntries), CancellationToken.None)
                     .ConfigureAwait(false);
 
-                if (Logger.IsDebugEnabled)
+                if (_logger.IsDebugEnabled)
                 {
                     var message = batch.PreparedMessagesBydId.Values.First();
 
-                    Logger.Debug($"Deleted delayed message for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
+                    _logger.Debug($"Deleted delayed message for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
                 }
 
                 List<Task> deleteTasks = null;
@@ -366,7 +391,7 @@ namespace NServiceBus.Transport.SQS
                 {
                     deleteTasks = deleteTasks ?? new List<Task>(deleteResult.Failed.Count);
                     var messageToDeleteWithAnotherAttempt = batch.PreparedMessagesBydId[errorEntry.Id];
-                    Logger.Info($"Retrying message deletion with MessageId {messageToDeleteWithAnotherAttempt.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
+                    _logger.Info($"Retrying message deletion with MessageId {messageToDeleteWithAnotherAttempt.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
                     deleteTasks.Add(DeleteMessage(messageToDeleteWithAnotherAttempt));
                 }
 
@@ -386,25 +411,22 @@ namespace NServiceBus.Transport.SQS
             }
             catch (ReceiptHandleIsInvalidException ex)
             {
-                Logger.Info($"Message receipt handle '{messageToDeleteWithAnotherAttempt.ReceiptHandle}' no longer valid.", ex);
+                _logger.Info($"Message receipt handle '{messageToDeleteWithAnotherAttempt.ReceiptHandle}' no longer valid.", ex);
             }
-        }
-
-        public Task Stop()
-        {
-            return pumpTask;
         }
 
         readonly IAmazonSQS sqsClient;
 
-        readonly TransportConfiguration configuration;
+        readonly string receiveAddress;
         readonly QueueCache queueCache;
+        readonly int queueDelayTimeSeconds;
         string delayedDeliveryQueueUrl;
         Task pumpTask;
         string awsEndpointUrl;
         string inputQueueUrl;
 
         // using the same logger for now
-        static ILog Logger = LogManager.GetLogger(typeof(MessagePump));
+        static ILog _logger = LogManager.GetLogger(typeof(MessagePump));
+        CancellationTokenSource tokenSource;
     }
 }

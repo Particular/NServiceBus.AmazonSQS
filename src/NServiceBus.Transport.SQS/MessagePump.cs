@@ -1,58 +1,41 @@
-﻿namespace NServiceBus.Transport.SQS
+namespace NServiceBus.Transport.SQS
 {
     using System;
-    using System.Threading;
     using System.Threading.Tasks;
-    using Transport;
+    using Amazon.SQS;
 
-    class MessagePump : IPushMessages
+    class MessagePump : IMessageReceiver
     {
-        public MessagePump(TransportConfiguration configuration, InputQueuePump inputQueuePump, DelayedMessagesPump delayedMessagesPump)
-        {
-            this.configuration = configuration;
-            this.inputQueuePump = inputQueuePump;
-            this.delayedMessagesPump = delayedMessagesPump;
-        }
-
-        public async Task Init(Func<MessageContext, Task> onMessage, Func<ErrorContext, Task<ErrorHandleResult>> onError, CriticalError criticalError, PushSettings settings)
-        {
-            var inputQueueUrl = await inputQueuePump
-                .Initialize(onMessage, onError, criticalError, settings).ConfigureAwait(false);
-
-            if (configuration.IsDelayedDeliveryEnabled)
-            {
-                await delayedMessagesPump.Initialize(settings.InputQueue, inputQueueUrl).ConfigureAwait(false);
-            }
-        }
-
-        public void Start(PushRuntimeSettings limitations)
-        {
-            cancellationTokenSource = new CancellationTokenSource();
-
-            inputQueuePump.Start(limitations.MaxConcurrency, cancellationTokenSource.Token);
-
-            if (configuration.IsDelayedDeliveryEnabled)
-            {
-                delayedMessagesPump.Start(cancellationTokenSource.Token);
-            }
-        }
-
-        public async Task Stop()
-        {
-            cancellationTokenSource?.Cancel();
-
-            await inputQueuePump.Stop().ConfigureAwait(false);
-
-            if (configuration.IsDelayedDeliveryEnabled)
-            {
-                await delayedMessagesPump.Stop().ConfigureAwait(false);
-            }
-        }
-
-        CancellationTokenSource cancellationTokenSource;
-        TransportConfiguration configuration;
-
-        readonly DelayedMessagesPump delayedMessagesPump;
         readonly InputQueuePump inputQueuePump;
+        readonly DelayedMessagesPump delayedMessagesPump;
+
+        public MessagePump(ReceiveSettings settings, IAmazonSQS sqsClient, QueueCache queueCache, S3Settings s3Settings,
+            SubscriptionManager subscriptionManager, int queueDelayTimeSeconds,
+            Action<string, Exception> criticalErrorAction)
+        {
+            inputQueuePump = new InputQueuePump(settings, sqsClient, queueCache, s3Settings, subscriptionManager, criticalErrorAction);
+            delayedMessagesPump = new DelayedMessagesPump(settings.ReceiveAddress, sqsClient, queueCache, queueDelayTimeSeconds);
+        }
+
+        public async Task Initialize(PushRuntimeSettings limitations, OnMessage onMessage, OnError onError)
+        {
+            await inputQueuePump.Initialize(limitations, onMessage, onError).ConfigureAwait(false);
+            await delayedMessagesPump.Initialize().ConfigureAwait(false);
+        }
+
+        public async Task StartReceive()
+        {
+            await inputQueuePump.StartReceive().ConfigureAwait(false);
+            delayedMessagesPump.Start();
+        }
+
+        public async Task StopReceive()
+        {
+            await delayedMessagesPump.Stop().ConfigureAwait(false);
+            await inputQueuePump.StopReceive().ConfigureAwait(false);
+        }
+
+        public ISubscriptionManager Subscriptions => inputQueuePump.Subscriptions;
+        public string Id => inputQueuePump.Id;
     }
 }

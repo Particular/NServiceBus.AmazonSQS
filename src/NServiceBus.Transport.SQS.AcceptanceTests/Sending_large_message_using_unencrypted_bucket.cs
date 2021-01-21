@@ -22,9 +22,9 @@
 
             Assert.AreEqual(payloadToSend, context.ReceivedPayload, "The large payload should be handled correctly using the unencrypted S3 bucket");
 
-            var s3Client = SqsTransportExtensions.CreateS3Client();
+            var s3Client = ConfigureEndpointSqsTransport.CreateS3Client();
 
-            Assert.DoesNotThrowAsync(async () => await s3Client.GetObjectAsync(SqsTransportExtensions.S3BucketName, $"{SqsTransportExtensions.S3Prefix}/{context.MessageId}"));
+            Assert.DoesNotThrowAsync(async () => await s3Client.GetObjectAsync(ConfigureEndpointSqsTransport.S3BucketName, $"{ConfigureEndpointSqsTransport.S3Prefix}/{context.MessageId}"));
         }
 
         const int PayloadSize = 150 * 1024;
@@ -39,8 +39,11 @@
         {
             public Endpoint()
             {
-                EndpointSetup<DefaultServer>(c => c.UseTransport<SqsTransport>()
-                    .S3(SqsTransportExtensions.S3BucketName, SqsTransportExtensions.S3Prefix));
+                EndpointSetup<DefaultServer>(c =>
+                {
+                    c.ConfigureSqsTransport().S3
+                        = new S3Settings(ConfigureEndpointSqsTransport.S3BucketName, ConfigureEndpointSqsTransport.S3Prefix, ConfigureEndpointSqsTransport.CreateS3Client());
+                });
             }
 
             public class MyMessageHandler : IHandleMessages<MyMessageWithLargePayload>

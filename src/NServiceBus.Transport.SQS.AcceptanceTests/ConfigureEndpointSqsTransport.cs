@@ -1,5 +1,10 @@
 ﻿namespace NServiceBus.AcceptanceTests
 {
+    using Amazon.Runtime;
+    using Amazon.S3;
+    using Amazon.SimpleNotificationService;
+    using Amazon.SQS;
+    using ScenarioDescriptors;
     using System;
     using System.Threading.Tasks;
     using AcceptanceTesting.Customization;
@@ -13,22 +18,46 @@
 
     public class ConfigureEndpointSqsTransport : IConfigureEndpointTestExecution
     {
+        const string S3BucketEnvironmentVariableName = "NServiceBus_AmazonSQS_S3Bucket";
+        public const string S3Prefix = "test";
+        public static string S3BucketName;
+
+
         public Task Configure(string endpointName, EndpointConfiguration configuration, RunSettings settings, PublisherMetadata publisherMetadata)
         {
             PreventInconclusiveTestsFromRunning(endpointName);
 
-            var transportConfig = configuration.UseTransport<SqsTransport>();
-
-            transportConfig.ConfigureSqsTransport(SetupFixture.NamePrefix);
-
-            ApplyMappingsToSupportMultipleInheritance(endpointName, transportConfig);
+            var transport = PrepareSqsTransport();
+            configuration.UseTransport(transport);
 
             settings.TestExecutionTimeout = TimeSpan.FromSeconds(120);
+            ApplyMappingsToSupportMultipleInheritance(endpointName, transport);
+
 
             return Task.FromResult(0);
         }
 
-        static void ApplyMappingsToSupportMultipleInheritance(string endpointName, TransportExtensions<SqsTransport> transportConfig)
+        public static SqsTransport PrepareSqsTransport()
+        {
+            var transport = new SqsTransport(CreateSqsClient(), CreateSnsClient())
+            {
+                QueueNamePrefix = SetupFixture.NamePrefix,
+                TopicNamePrefix = SetupFixture.NamePrefix,
+                QueueNameGenerator = TestNameHelper.GetSqsQueueName,
+                TopicNameGenerator = TestNameHelper.GetSnsTopicName
+            };
+
+            S3BucketName = EnvironmentHelper.GetEnvironmentVariable(S3BucketEnvironmentVariableName);
+
+            if (!string.IsNullOrEmpty(S3BucketName))
+            {
+                transport.S3 = new S3Settings(S3BucketName, S3Prefix, CreateS3Client());
+            }
+
+            return transport;
+        }
+
+        static void ApplyMappingsToSupportMultipleInheritance(string endpointName, SqsTransport transportConfig)
         {
             if (endpointName == Conventions.EndpointNamingConvention(typeof(When_multi_subscribing_to_a_polymorphic_event.Subscriber)))
             {
@@ -49,13 +78,31 @@
 
             if (endpointName == Conventions.EndpointNamingConvention(typeof(When_started_by_base_event_from_other_saga.SagaThatIsStartedByABaseEvent)))
             {
-                transportConfig.MapEvent<When_started_by_base_event_from_other_saga.BaseEvent, When_started_by_base_event_from_other_saga.SomethingHappenedEvent>();
+                transportConfig.MapEvent<When_started_by_base_event_from_other_saga.IBaseEvent, When_started_by_base_event_from_other_saga.ISomethingHappenedEvent>();
             }
 
             if (endpointName == Conventions.EndpointNamingConvention(typeof(When_multiple_versions_of_a_message_is_published.V1Subscriber)))
             {
                 transportConfig.MapEvent<When_multiple_versions_of_a_message_is_published.V1Event, When_multiple_versions_of_a_message_is_published.V2Event>();
             }
+        }
+
+        public static IAmazonSQS CreateSqsClient()
+        {
+            var credentials = new EnvironmentVariablesAWSCredentials();
+            return new AmazonSQSClient(credentials);
+        }
+
+        public static IAmazonSimpleNotificationService CreateSnsClient()
+        {
+            var credentials = new EnvironmentVariablesAWSCredentials();
+            return new AmazonSimpleNotificationServiceClient(credentials);
+        }
+
+        public static IAmazonS3 CreateS3Client()
+        {
+            var credentials = new EnvironmentVariablesAWSCredentials();
+            return new AmazonS3Client(credentials);
         }
 
         public Task Cleanup()
