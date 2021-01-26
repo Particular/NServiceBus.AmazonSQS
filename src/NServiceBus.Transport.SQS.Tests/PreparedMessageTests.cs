@@ -34,7 +34,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             message.CalculateSize();
 
-            Assert.AreEqual(2*expectedSize, message.Size);
+            Assert.AreEqual(2 * expectedSize, message.Size);
         }
 
         class TestPreparedMessage : PreparedMessage

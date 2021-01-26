@@ -19,7 +19,7 @@
         public Task<GetQueueUrlResponse> GetQueueUrlAsync(string queueName, CancellationToken cancellationToken = new CancellationToken())
         {
             QueueUrlRequestsSent.Add(queueName);
-            return Task.FromResult(new GetQueueUrlResponse {QueueUrl = queueName});
+            return Task.FromResult(new GetQueueUrlResponse { QueueUrl = queueName });
         }
 
         public List<SendMessageBatchRequest> BatchRequestsSent { get; } = new List<SendMessageBatchRequest>();

@@ -14,9 +14,9 @@ namespace NServiceBus.AcceptanceTests
             var payloadToSend = new byte[PayloadSize];
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<Endpoint>(b => b.When(session => session.SendLocal(new MyMessageWithLargePayload
-                    {
-                        Payload = payloadToSend
-                    }))
+                {
+                    Payload = payloadToSend
+                }))
                 )
                 .Done(c => c.ReceivedPayload != null)
                 .Run();

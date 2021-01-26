@@ -35,7 +35,7 @@
             return statement;
         }
 
-        private static readonly string[] ArnSeperator = { ":" };
+        static readonly string[] ArnSeperator = { ":" };
     }
 #pragma warning restore 618
 }

@@ -131,7 +131,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.Subscribe(eventType, null);
 
-            CollectionAssert.AreEquivalent(new List<string> {"NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event"}, snsClient.CreateTopicRequests);
+            CollectionAssert.AreEquivalent(new List<string> { "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event" }, snsClient.CreateTopicRequests);
             Assert.IsEmpty(snsClient.FindTopicRequests);
         }
 
@@ -141,7 +141,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var manager = CreateNonBatchingSubscriptionManager();
 
             var eventType = typeof(Event);
-            customEventToTopicsMappings.Add(eventType, new[] {"custom-topic-name"});
+            customEventToTopicsMappings.Add(eventType, new[] { "custom-topic-name" });
 
             await manager.Subscribe(eventType, null);
 
@@ -622,7 +622,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var manager = CreateNonBatchingSubscriptionManager();
 
             var unsubscribedEvent = typeof(IEvent);
-            customEventToTopicsMappings.Add(unsubscribedEvent, new[] {"custom-topic-name"});
+            customEventToTopicsMappings.Add(unsubscribedEvent, new[] { "custom-topic-name" });
 
             snsClient.ListSubscriptionsByTopicResponse = topic =>
             {
@@ -663,7 +663,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var manager = CreateNonBatchingSubscriptionManager();
 
             var unsubscribedEvent = typeof(IEvent);
-            customEventToTopicsMappings.Add(unsubscribedEvent, new[] {"custom-topic-name"});
+            customEventToTopicsMappings.Add(unsubscribedEvent, new[] { "custom-topic-name" });
 
             snsClient.ListSubscriptionsByTopicResponse = topic =>
             {
@@ -691,7 +691,7 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
 #pragma warning disable 618
-        private void EmulateImmediateSettlementOfPolicy(Policy initialPolicy)
+        void EmulateImmediateSettlementOfPolicy(Policy initialPolicy)
 #pragma warning restore 618
         {
             var invocationCount = 0;

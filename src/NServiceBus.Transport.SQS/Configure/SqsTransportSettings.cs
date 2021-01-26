@@ -181,7 +181,7 @@
         /// </summary>
         public static void MapEvent<TSubscribedEvent>(this TransportExtensions<SqsTransport> transportExtensions, string customTopicName)
         {
-            MapEvent(transportExtensions, typeof(TSubscribedEvent), new []{ customTopicName});
+            MapEvent(transportExtensions, typeof(TSubscribedEvent), new[] { customTopicName });
         }
 
         /// <summary>
@@ -190,7 +190,7 @@
         /// </summary>
         public static void MapEvent(this TransportExtensions<SqsTransport> transportExtensions, Type eventType, string customTopicName)
         {
-            MapEvent(transportExtensions, eventType, new []{ customTopicName});
+            MapEvent(transportExtensions, eventType, new[] { customTopicName });
         }
 
         /// <summary>

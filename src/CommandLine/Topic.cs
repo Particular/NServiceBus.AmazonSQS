@@ -5,7 +5,6 @@
     using System.Threading.Tasks;
     using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
-    using Amazon.SQS;
 
     static class Topic
     {
@@ -27,7 +26,7 @@
             return createTopicResponse.TopicArn;
         }
 
-        public static async Task<string> Subscribe(IAmazonSQS sqs, IAmazonSimpleNotificationService sns, string topicArn, string queueArn)
+        public static async Task<string> Subscribe(IAmazonSimpleNotificationService sns, string topicArn, string queueArn)
         {
             await Console.Out.WriteLineAsync($"Subscribing queue with ARN '{queueArn}' to topic with ARN '{topicArn}'.");
 
@@ -42,7 +41,7 @@
                     { "RawMessageDelivery", "true" }
                 }
             }).ConfigureAwait(false);
-            
+
             await Console.Out.WriteLineAsync($"Queue with ARN '{queueArn}' subscribed to topic with ARN '{topicArn}'.");
 
             return createdSubscription.SubscriptionArn;

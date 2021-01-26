@@ -8,13 +8,13 @@
     using System.Text.RegularExpressions;
     using System.Threading.Tasks;
     using Amazon;
+    using Amazon.Auth.AccessControlPolicy;
     using Amazon.S3;
     using Amazon.S3.Model;
     using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS;
     using Amazon.SQS.Model;
-    using Amazon.Auth.AccessControlPolicy;
     using NUnit.Framework;
     using SQS.Tests;
 
@@ -211,6 +211,7 @@
         {
             var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
+            Assert.IsNotNull(output);
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
@@ -227,6 +228,7 @@
         {
             var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
+            Assert.IsNotNull(output);
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
@@ -265,6 +267,7 @@
         {
             var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
+            Assert.IsNotNull(output);
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
@@ -306,12 +309,12 @@
         [Test]
         public async Task Set_policy_account_wildcard()
         {
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (output, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --account-condition --prefix {prefix}");
+            (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --account-condition --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -322,12 +325,12 @@
         [Test]
         public async Task Set_policy_prefix_wildcard()
         {
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (output, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --prefix-condition --prefix {prefix}");
+            (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --prefix-condition --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -340,12 +343,12 @@
         {
             var ns = "MyNamespace";
 
-            var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+            var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
 
-            (output, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --namespace-condition {ns} --prefix {prefix}");
+            (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --namespace-condition {ns} --prefix {prefix}");
 
             Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
@@ -542,14 +545,14 @@
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
             var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
 
-            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string> {QueueAttributeName.MessageRetentionPeriod, QueueAttributeName.QueueArn}).ConfigureAwait(false);
+            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string> { QueueAttributeName.MessageRetentionPeriod, QueueAttributeName.QueueArn }).ConfigureAwait(false);
 
             Assert.AreEqual(retentionPeriodInSeconds, queueAttributesResponse.MessageRetentionPeriod);
 
             return queueAttributesResponse.QueueARN;
         }
 
-        private async Task<string> VerifyDelayDeliveryQueue(string queueName, string prefix = null, double? retentionPeriodInSeconds = null, double? delayInSeconds = null, string suffix = null)
+        async Task<string> VerifyDelayDeliveryQueue(string queueName, string prefix = null, double? retentionPeriodInSeconds = null, double? delayInSeconds = null, string suffix = null)
         {
             prefix ??= DefaultConfigurationValues.QueueNamePrefix;
             retentionPeriodInSeconds ??= DefaultConfigurationValues.RetentionPeriod.TotalSeconds;
@@ -572,7 +575,7 @@
             return queueAttributesResponse.QueueARN;
         }
 
-        private async Task<string> VerifyTopic(string eventType, string prefix = null)
+        async Task<string> VerifyTopic(string eventType, string prefix = null)
         {
             prefix ??= DefaultConfigurationValues.TopicNamePrefix;
 
@@ -585,8 +588,7 @@
             return findTopicResponse.TopicArn;
         }
 
-#pragma warning disable 618
-        private async Task VerifyPolicyContainsTopicFor(string queueName, string prefix, string eventType)
+        async Task VerifyPolicyContainsTopicFor(string queueName, string prefix, string eventType)
         {
             prefix ??= DefaultConfigurationValues.QueueNamePrefix;
 
@@ -604,7 +606,7 @@
             Assert.IsTrue(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(findTopicResponse.TopicArn))));
         }
 
-        private async Task VerifyPolicyDoesNotContainTopicFor(string queueName, string prefix, string eventType)
+        async Task VerifyPolicyDoesNotContainTopicFor(string queueName, string prefix, string eventType)
         {
             prefix ??= DefaultConfigurationValues.QueueNamePrefix;
 
@@ -622,7 +624,7 @@
             Assert.IsFalse(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(findTopicResponse.TopicArn))));
         }
 
-        private async Task VerifyPolicyContainsAccountWildCard(string queueName, string prefix)
+        async Task VerifyPolicyContainsAccountWildCard(string queueName, string prefix)
         {
             prefix ??= DefaultConfigurationValues.QueueNamePrefix;
 
@@ -641,7 +643,7 @@
             Assert.IsTrue(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(accountArn))));
         }
 
-        private async Task VerifyPolicyContainsPrefixWildCard(string queueName, string prefix)
+        async Task VerifyPolicyContainsPrefixWildCard(string queueName, string prefix)
         {
             prefix ??= DefaultConfigurationValues.QueueNamePrefix;
 
@@ -660,7 +662,7 @@
             Assert.IsTrue(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(prefixArn))));
         }
 
-        private async Task VerifyPolicyContainsNamespaceWildCard(string queueName, string prefix, string ns)
+        async Task VerifyPolicyContainsNamespaceWildCard(string queueName, string prefix, string ns)
         {
             prefix ??= DefaultConfigurationValues.QueueNamePrefix;
 
@@ -679,7 +681,7 @@
             Assert.IsTrue(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(namespaceArn))));
         }
 
-        private static string GetNamespaceName(string topicNamePrefix, string namespaceName)
+        static string GetNamespaceName(string topicNamePrefix, string namespaceName)
         {
             // SNS topic names can only have alphanumeric characters, hyphens and underscores.
             // Any other characters will be replaced with a hyphen.
@@ -699,7 +701,7 @@
             return topicNamePrefix + namespaceNameBuilder;
         }
 
-        private async Task<string> VerifyBucket(string bucketName)
+        async Task<string> VerifyBucket(string bucketName)
         {
             var listBucketsResponse = await s3.ListBucketsAsync(new ListBucketsRequest()).ConfigureAwait(false);
             var bucket = listBucketsResponse.Buckets.FirstOrDefault(x => string.Equals(x.BucketName, bucketName, StringComparison.InvariantCultureIgnoreCase));
@@ -709,10 +711,10 @@
             return bucket.BucketName;
         }
 
-        private async Task VerifyLifecycleConfiguration(string bucketName, string keyPrefix = null, int? expiration = null)
+        async Task VerifyLifecycleConfiguration(string bucketName, string keyPrefix = null, int? expiration = null)
         {
             keyPrefix ??= DefaultConfigurationValues.S3KeyPrefix;
-            expiration ??= (int) Math.Ceiling(DefaultConfigurationValues.RetentionPeriod.TotalDays);
+            expiration ??= (int)Math.Ceiling(DefaultConfigurationValues.RetentionPeriod.TotalDays);
 
             LifecycleRule setLifeCycleConfig;
             int backOff;
@@ -733,7 +735,7 @@
             Assert.AreEqual(keyPrefix, (setLifeCycleConfig.Filter.LifecycleFilterPredicate as LifecyclePrefixPredicate).Prefix);
         }
 
-        private async Task VerifySubscription(string topicArn, string queueArn)
+        async Task VerifySubscription(string topicArn, string queueArn)
         {
             ListSubscriptionsByTopicResponse upToAHundredSubscriptions = null;
             Subscription subscription = null;
@@ -755,7 +757,7 @@
             Assert.IsNotNull(subscription);
         }
 
-        private async Task VerifySubscriptionDeleted(string topicArn, string queueArn)
+        async Task VerifySubscriptionDeleted(string topicArn, string queueArn)
         {
             ListSubscriptionsByTopicResponse upToAHundredSubscriptions = null;
             Subscription subscription = null;
@@ -777,7 +779,7 @@
             Assert.IsNull(subscription);
         }
 
-        private async Task VerifyTopicDeleted(string eventType, string prefix = null)
+        async Task VerifyTopicDeleted(string eventType, string prefix = null)
         {
             prefix ??= DefaultConfigurationValues.TopicNamePrefix;
 
@@ -788,7 +790,7 @@
             Assert.IsNull(findTopicResponse);
         }
 
-        private async Task VerifyDelayDeliveryQueueDeleted(string queueName, string prefix = null, string suffix = null)
+        async Task VerifyDelayDeliveryQueueDeleted(string queueName, string prefix = null, string suffix = null)
         {
             prefix ??= DefaultConfigurationValues.QueueNamePrefix;
             suffix ??= DefaultConfigurationValues.DelayedDeliveryQueueSuffix;
@@ -818,7 +820,7 @@
             Assert.IsNull(queueUrlResponse);
         }
 
-        private async Task VerifyQueueDeleted(string queueName, string prefix = null)
+        async Task VerifyQueueDeleted(string queueName, string prefix = null)
         {
             prefix ??= DefaultConfigurationValues.QueueNamePrefix;
 
@@ -847,7 +849,7 @@
             Assert.IsNull(queueUrlResponse);
         }
 
-        private async Task VerifyBucketDeleted(string bucketName)
+        async Task VerifyBucketDeleted(string bucketName)
         {
             int backOff;
             var executions = 0;
@@ -894,9 +896,9 @@
         readonly string secretAccessKey = Environment.GetEnvironmentVariable("CLEANUP_AWS_SECRET_ACCESS_KEY");
         readonly string region = Environment.GetEnvironmentVariable("AWS_REGION");
 
-        private IAmazonSQS sqs;
-        private IAmazonSimpleNotificationService sns;
-        private IAmazonS3 s3;
+        IAmazonSQS sqs;
+        IAmazonSimpleNotificationService sns;
+        IAmazonS3 s3;
         const string EndpointName = "nsb-cli-test";
         const string BucketName = "nsb-cli-test-bucket";
         const string EventType = "MyNamespace.MyMessage1";

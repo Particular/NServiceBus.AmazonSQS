@@ -12,10 +12,10 @@ namespace NServiceBus.Transport.SQS.Tests
         {
             bool IsMessageType(Type t) => true;
             var messageMetadataRegistry = (MessageMetadataRegistry)Activator.CreateInstance(
-                type:typeof(MessageMetadataRegistry),
+                type: typeof(MessageMetadataRegistry),
                 bindingAttr: BindingFlags.NonPublic | BindingFlags.Instance,
-                binder: null, 
-                args: new object[] {(Func<Type, bool>)IsMessageType},
+                binder: null,
+                args: new object[] { (Func<Type, bool>)IsMessageType },
                 culture: CultureInfo.InvariantCulture);
             settings.Set(messageMetadataRegistry);
             return messageMetadataRegistry;
