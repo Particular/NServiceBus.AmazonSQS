@@ -110,7 +110,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.Subscribe(eventType, null);
 
-            CollectionAssert.AreEquivalent(new List<string> {"NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event"}, snsClient.CreateTopicRequests);
+            CollectionAssert.AreEquivalent(new List<string> { "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event" }, snsClient.CreateTopicRequests);
             Assert.IsEmpty(snsClient.FindTopicRequests);
         }
 
@@ -118,7 +118,7 @@ namespace NServiceBus.Transport.SQS.Tests
         public async Task Subscribe_with_event_to_topics_mapping_creates_custom_defined_topic()
         {
             var eventType = typeof(Event);
-            customEventToTopicsMappings.Add(eventType, new[] {"custom-topic-name"});
+            customEventToTopicsMappings.Add(eventType, new[] { "custom-topic-name" });
 
             await manager.Subscribe(eventType, null);
 
@@ -382,7 +382,7 @@ namespace NServiceBus.Transport.SQS.Tests
         public async Task Unsubscribe_with_event_to_topics_mapping_should_unsubscribe_matching_subscription()
         {
             var unsubscribedEvent = typeof(IEvent);
-            customEventToTopicsMappings.Add(unsubscribedEvent, new[] {"custom-topic-name"});
+            customEventToTopicsMappings.Add(unsubscribedEvent, new[] { "custom-topic-name" });
 
             snsClient.ListSubscriptionsByTopicResponse = topic =>
             {

@@ -96,7 +96,7 @@
             Assert.IsNotEmpty(mockSqsClient.RequestsSent, "No requests sent");
             var request = mockSqsClient.RequestsSent.First();
 
-            IDictionary<string,JToken> bodyJson = JObject.Parse(request.MessageBody);
+            IDictionary<string, JToken> bodyJson = JObject.Parse(request.MessageBody);
 
             Assert.IsFalse(bodyJson.ContainsKey("TimeToBeReceived"), "TimeToBeReceived serialized");
             Assert.IsFalse(bodyJson.ContainsKey("ReplyToAddress"), "ReplyToAddress serialized");
@@ -290,8 +290,10 @@
         {
             var settings = new SettingsHolder();
 
-            var mockSnsClient = new MockSnsClient();
-            mockSnsClient.FindTopicAsyncResponse = topic => null;
+            var mockSnsClient = new MockSnsClient
+            {
+                FindTopicAsyncResponse = topic => null
+            };
 
             var transportConfiguration = new TransportConfiguration(settings);
             var dispatcher = new MessageDispatcher(transportConfiguration, null, null, mockSnsClient, new QueueCache(null, transportConfiguration), new TopicCache(mockSnsClient, settings.SetupMessageMetadataRegistry(), transportConfiguration));
@@ -316,9 +318,11 @@
         {
             var settings = new SettingsHolder();
 
-            var mockSnsClient = new MockSnsClient();
-            //given that a subscriber never sets up a topic for object this has to return null
-            mockSnsClient.FindTopicAsyncResponse = topic => null;
+            var mockSnsClient = new MockSnsClient
+            {
+                //given that a subscriber never sets up a topic for object this has to return null
+                FindTopicAsyncResponse = topic => null
+            };
 
             var transportConfiguration = new TransportConfiguration(settings);
             var dispatcher = new MessageDispatcher(transportConfiguration, null, null, mockSnsClient, new QueueCache(null, transportConfiguration), new TopicCache(mockSnsClient, settings.SetupMessageMetadataRegistry(), transportConfiguration));
@@ -358,7 +362,7 @@
                 new TransportOperation( /* Crazy long message id will cause the message to go over limits because attributes count as well */
                     new OutgoingMessage(new string('x', 256 * 1024), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
                     new MulticastAddressTag(typeof(AnotherEvent)),
-                    DispatchConsistency.Isolated)                );
+                    DispatchConsistency.Isolated));
 
             var transportTransaction = new TransportTransaction();
             var context = new ContextBag();
@@ -384,8 +388,10 @@
             var transportExtensions = new TransportExtensions<SqsTransport>(settings);
             transportExtensions.UnrestrictedDurationDelayedDelivery();
 
-            var mockSqsClient = new MockSqsClient();
-            mockSqsClient.RequestResponse = req => throw new QueueDoesNotExistException("Queue does not exist");
+            var mockSqsClient = new MockSqsClient
+            {
+                RequestResponse = req => throw new QueueDoesNotExistException("Queue does not exist")
+            };
 
             var transportConfiguration = new TransportConfiguration(settings);
             var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, null, new QueueCache(mockSqsClient, transportConfiguration), null);
@@ -445,8 +451,10 @@
             var transportExtensions = new TransportExtensions<SqsTransport>(settings);
             transportExtensions.UnrestrictedDurationDelayedDelivery();
 
-            var mockSqsClient = new MockSqsClient();
-            mockSqsClient.BatchRequestResponse = req => throw new QueueDoesNotExistException("Queue does not exist");
+            var mockSqsClient = new MockSqsClient
+            {
+                BatchRequestResponse = req => throw new QueueDoesNotExistException("Queue does not exist")
+            };
 
             var transportConfiguration = new TransportConfiguration(settings);
             var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, null, new QueueCache(mockSqsClient, transportConfiguration), null);
@@ -586,7 +594,7 @@
                 new TransportOperation( /* Crazy long message id will cause the message to go over limits because attributes count as well */
                     new OutgoingMessage(new string('x', 256 * 1024), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
-                    DispatchConsistency.Default)                );
+                    DispatchConsistency.Default));
 
             var transportTransaction = new TransportTransaction();
             var context = new ContextBag();
@@ -633,7 +641,7 @@
                 new TransportOperation( /* Crazy long message id will cause the message to go over limits because attributes count as well */
                     new OutgoingMessage(new string('x', 256 * 1024), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
-                    DispatchConsistency.Isolated)                );
+                    DispatchConsistency.Isolated));
 
             var transportTransaction = new TransportTransaction();
             var context = new ContextBag();

@@ -73,7 +73,7 @@
             topicCache = new TopicCache(snsClient, messageMetadataRegistry, configuration);
         }
 
-        public SubscriptionManager SubscriptionManager { get; private set;  }
+        public SubscriptionManager SubscriptionManager { get; private set; }
 
         public override IEnumerable<Type> DeliveryConstraints => new List<Type>
         {

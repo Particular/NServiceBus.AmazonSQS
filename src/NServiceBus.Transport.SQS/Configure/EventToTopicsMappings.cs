@@ -19,7 +19,7 @@
                 mapping.Add(topicName);
             }
         }
-        
+
         public IEnumerable<string> GetMappedTopicsNames(Type subscribedEventType)
         {
             return eventsToTopicsMappings.ContainsKey(subscribedEventType) ? eventsToTopicsMappings[subscribedEventType] : Enumerable.Empty<string>();

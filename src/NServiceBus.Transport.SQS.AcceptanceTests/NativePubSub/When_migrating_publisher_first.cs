@@ -1,4 +1,4 @@
-﻿﻿namespace NServiceBus.AcceptanceTests.NativePubSub
+﻿namespace NServiceBus.AcceptanceTests.NativePubSub
 {
     using System;
     using System.Collections.Generic;

@@ -21,6 +21,6 @@ namespace NServiceBus.Transport.SQS
             return message.Headers[Headers.EnclosedMessageTypes].Split(EnclosedMessageTypesSeparator, StringSplitOptions.RemoveEmptyEntries);
         }
 
-        static readonly string[] EnclosedMessageTypesSeparator = {";"};
+        static readonly string[] EnclosedMessageTypesSeparator = { ";" };
     }
 }
