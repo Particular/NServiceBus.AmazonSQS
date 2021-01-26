@@ -106,6 +106,8 @@ namespace NServiceBus.Transport.SQS.Tests
 
         public IClientConfig Config { get; }
 
+        public ISimpleNotificationServicePaginatorFactory Paginators => throw new NotImplementedException();
+
         public string SubscribeQueue(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)
         {
             throw new NotImplementedException();
