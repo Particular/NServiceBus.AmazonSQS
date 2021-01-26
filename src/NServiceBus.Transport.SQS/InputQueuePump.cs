@@ -83,8 +83,8 @@ namespace NServiceBus.Transport.SQS
                 MaxNumberOfMessages = numberOfMessagesToFetch,
                 QueueUrl = inputQueueUrl,
                 WaitTimeSeconds = 20,
-                AttributeNames = new List<string> {"SentTimestamp"},
-                MessageAttributeNames = new List<string> {"*"}
+                AttributeNames = new List<string> { "SentTimestamp" },
+                MessageAttributeNames = new List<string> { "*" }
             };
 
             maxConcurrencySemaphore = new SemaphoreSlim(maxConcurrency);
@@ -129,7 +129,7 @@ namespace NServiceBus.Transport.SQS
                             return;
                         }
 
-                        ProcessMessage(receivedMessage, maxConcurrencySemaphore, token).Ignore();
+                        _ = ProcessMessage(receivedMessage, maxConcurrencySemaphore, token);
                     }
                 }
                 catch (OperationCanceledException)

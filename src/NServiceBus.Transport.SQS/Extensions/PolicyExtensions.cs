@@ -98,7 +98,7 @@ namespace NServiceBus.Transport.SQS.Extensions
             return string.IsNullOrEmpty(policyStr) ? new Policy() : Policy.FromJson(policyStr);
         }
 
-        private static string GetNamespaceName(string topicNamePrefix, string namespaceName)
+        static string GetNamespaceName(string topicNamePrefix, string namespaceName)
         {
             // SNS topic names can only have alphanumeric characters, hyphens and underscores.
             // Any other characters will be replaced with a hyphen.
@@ -118,7 +118,7 @@ namespace NServiceBus.Transport.SQS.Extensions
             return topicNamePrefix + namespaceNameBuilder;
         }
 
-        private static bool ContainsPermission(this Policy policy, Statement statement)
+        static bool ContainsPermission(this Policy policy, Statement statement)
         {
             if (policy.Statements == null)
             {
@@ -132,7 +132,7 @@ namespace NServiceBus.Transport.SQS.Extensions
                                                        stmt.StatementContainsPrincipals(statement.Principals));
         }
 
-        private static bool CoveredByPermission(this Statement statement, Statement permission) =>
+        static bool CoveredByPermission(this Statement statement, Statement permission) =>
             statement.Effect == permission.Effect &&
             statement.StatementContainsResources(permission.Resources) &&
             statement.StatementContainsActions(permission.Actions) &&
@@ -141,7 +141,7 @@ namespace NServiceBus.Transport.SQS.Extensions
 
             statement.StatementContainsPrincipals(permission.Principals);
 
-        private static bool CoveredByWildcard(this Statement statement, Statement permission) =>
+        static bool CoveredByWildcard(this Statement statement, Statement permission) =>
             statement.Effect == permission.Effect &&
             statement.StatementContainsResources(permission.Resources) &&
             statement.StatementContainsActions(permission.Actions) &&
@@ -150,32 +150,32 @@ namespace NServiceBus.Transport.SQS.Extensions
 
             statement.StatementContainsPrincipals(permission.Principals);
 
-        private static bool StatementContainsResources(this Statement statement, IEnumerable<Resource> resources) =>
+        static bool StatementContainsResources(this Statement statement, IEnumerable<Resource> resources) =>
             resources.All(resource => statement.Resources.FirstOrDefault(x => string.Equals(x.Id, resource.Id)) != null);
 
-        private static bool StatementContainsActions(
+        static bool StatementContainsActions(
             this Statement statement,
             IEnumerable<ActionIdentifier> actions) =>
             actions.All(action => statement.Actions.FirstOrDefault(x => string.Equals(x.ActionName, action.ActionName)) != null);
 
-        private static bool StatementContainsPrincipals(
+        static bool StatementContainsPrincipals(
             this Statement statement,
             IEnumerable<Principal> principals) =>
             principals.All(principal => statement.Principals.FirstOrDefault(x => string.Equals(x.Id, principal.Id) && string.Equals(x.Provider, principal.Provider)) != null);
 
-        private static bool StatementContainsConditions(
+        static bool StatementContainsConditions(
             this Statement statement,
             IEnumerable<Condition> conditions) =>
             conditions.All(condition => statement.Conditions.FirstOrDefault(x => string.Equals(x.Type, condition.Type) &&
                 string.Equals(x.ConditionKey, condition.ConditionKey) &&
                 x.Values.OrderBy(v => v, OrdinalComparer).SequenceEqual(condition.Values.OrderBy(v => v, OrdinalComparer), OrdinalComparer)) != null);
 
-        private static bool StatementCoveredByConditions(
+        static bool StatementCoveredByConditions(
             this Statement statement,
             IList<Condition> conditions) =>
             statement.Conditions.Any(condition => conditions.Any(x => string.Equals(x.Type, condition.Type) && string.Equals(x.ConditionKey, condition.ConditionKey) && condition.Values.All(v => x.Values.Contains(v, OrdinalComparer))));
 
-        private static bool StatementCoveredByWildcardConditions(
+        static bool StatementCoveredByWildcardConditions(
             this Statement statement) =>
             statement.Conditions.Any(condition => condition.Values.All(v => v.Contains("*")));
 
@@ -192,7 +192,7 @@ namespace NServiceBus.Transport.SQS.Extensions
 
         // conditions are case sensitive
         // https://stackoverflow.com/a/47769284/290290
-        private static readonly StringComparer OrdinalComparer = StringComparer.Ordinal;
+        static readonly StringComparer OrdinalComparer = StringComparer.Ordinal;
     }
 #pragma warning restore 618
 }

@@ -75,7 +75,7 @@
                 tasks.Add(Dispatch(operation, emptyHashset, transportTransaction));
             }
 
-            return tasks != null ? Task.WhenAll(tasks) : TaskExtensions.Completed;
+            return tasks != null ? Task.WhenAll(tasks) : Task.CompletedTask;
         }
 
         Task DispatchIsolated(IEnumerable<UnicastTransportOperation> isolatedTransportOperations, HashSet<string> messageIdsOfMulticastEvents, TransportTransaction transportTransaction)
@@ -87,7 +87,7 @@
                 tasks.Add(Dispatch(operation, messageIdsOfMulticastEvents, transportTransaction));
             }
 
-            return tasks != null ? Task.WhenAll(tasks) : TaskExtensions.Completed;
+            return tasks != null ? Task.WhenAll(tasks) : Task.CompletedTask;
         }
 
         async Task DispatchBatched(IEnumerable<UnicastTransportOperation> toBeBatchedTransportOperations, HashSet<string> messageIdsOfMulticastEvents, TransportTransaction transportTransaction)

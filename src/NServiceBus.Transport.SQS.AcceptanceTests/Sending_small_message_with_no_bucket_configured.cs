@@ -15,9 +15,9 @@
             var payloadToSend = new byte[10];
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<Endpoint>(b => b.When(session => session.SendLocal(new MyMessage
-                    {
-                        Payload = payloadToSend
-                    }))
+                {
+                    Payload = payloadToSend
+                }))
                 )
                 .Done(c => c.ReceivedPayload != null)
                 .Run();

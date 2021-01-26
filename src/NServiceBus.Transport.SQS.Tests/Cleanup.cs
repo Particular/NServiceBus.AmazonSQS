@@ -102,15 +102,15 @@ namespace NServiceBus.Transport.SQS.Tests
                         switch (response.Location)
                         {
                             case "":
-                            {
-                                region = new S3Region("us-east-1");
-                                break;
-                            }
+                                {
+                                    region = new S3Region("us-east-1");
+                                    break;
+                                }
                             case "EU":
-                            {
-                                region = S3Region.EUW1;
-                                break;
-                            }
+                                {
+                                    region = S3Region.EUW1;
+                                    break;
+                                }
                             default:
                                 region = response.Location;
                                 break;
@@ -169,7 +169,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
                     await Task.WhenAll(deletionTasks).ConfigureAwait(false);
                 }
-            while (subscriptions.NextToken != null && subscriptions.Subscriptions.Count > 0);
+                while (subscriptions.NextToken != null && subscriptions.Subscriptions.Count > 0);
             }
             catch (Exception)
             {
@@ -215,7 +215,7 @@ namespace NServiceBus.Transport.SQS.Tests
                         }));
                     await Task.WhenAll(deletionTasks).ConfigureAwait(false);
                 }
-            while (upToHundredTopics.NextToken != null && upToHundredTopics.Topics.Count > 0);
+                while (upToHundredTopics.NextToken != null && upToHundredTopics.Topics.Count > 0);
             }
             catch (Exception)
             {
@@ -255,7 +255,7 @@ namespace NServiceBus.Transport.SQS.Tests
                         }));
                     await Task.WhenAll(deletionTasks).ConfigureAwait(false);
                 }
-            while (upToAThousandQueues.QueueUrls.Count > 0);
+                while (upToAThousandQueues.QueueUrls.Count > 0);
             }
             catch (Exception)
             {

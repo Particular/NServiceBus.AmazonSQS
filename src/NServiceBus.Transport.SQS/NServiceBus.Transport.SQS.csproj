@@ -1,10 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>net472;netstandard2.0</TargetFrameworks>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>$(SolutionDir)NServiceBus.snk</AssemblyOriginatorKeyFile>
-    <AssemblyName>NServiceBus.Transport.SQS</AssemblyName>
-    <RootNamespace>NServiceBus.Transport.SQS</RootNamespace>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -14,12 +13,12 @@
 
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="[3.5, 3.6)" />
-    <PackageReference Include="AWSSDK.SQS" Version="[3.5, 3.6)" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="[3.5, 3.6)" />
-    <PackageReference Include="NServiceBus" Version="[8.0.0-alpha.644, 9.0.0)" />
+    <PackageReference Include="AWSSDK.SQS" Version="[3.5, 3.6)" />
     <PackageReference Include="Fody" Version="6.3.0" PrivateAssets="All" />
+    <PackageReference Include="NServiceBus" Version="[8.0.0-alpha.644, 9.0.0)" />
     <PackageReference Include="Obsolete.Fody" Version="5.2.1" PrivateAssets="All" />
-    <PackageReference Include="Particular.CodeRules" Version="0.8.0" PrivateAssets="All" />
     <PackageReference Include="Particular.Packaging" Version="0.9.0" PrivateAssets="All" />
   </ItemGroup>
+
 </Project>

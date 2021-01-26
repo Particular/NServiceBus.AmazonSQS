@@ -1,10 +1,10 @@
 ﻿#pragma warning disable 618
 namespace NServiceBus.Transport.SQS.Tests
 {
-    using NUnit.Framework;
     using System.Collections.Generic;
     using Amazon.Auth.AccessControlPolicy;
     using Extensions;
+    using NUnit.Framework;
     using Particular.Approvals;
 
     [TestFixture]
@@ -13,7 +13,7 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public void ExtractsPolicy_if_not_empty()
         {
-           var policy = new Policy {Id = "CustomPolicy"};
+            var policy = new Policy { Id = "CustomPolicy" };
             var attributes = new Dictionary<string, string>
             {
                 { "Policy", policy.ToJson() }

@@ -31,7 +31,7 @@
 
             class MyCustomBehavior : Behavior<IIncomingPhysicalMessageContext>
             {
-                private Context testContext;
+                Context testContext;
 
                 public MyCustomBehavior(Context testContext)
                 {
@@ -47,7 +47,7 @@
 
             class MyEventHandler : IHandleMessages<Message>
             {
-                private Context testContext;
+                Context testContext;
 
                 public MyEventHandler(Context testContext)
                 {
