@@ -24,7 +24,7 @@ namespace NServiceBus.AcceptanceTests.Batching
             {
                 listOfMessagesForBatching.Add(Guid.NewGuid().ToString());
             }
-            
+
             var listOfMessagesForBatchingWithCustomIds = new List<string>();
             for (var i = 0; i < 50; i++)
             {
@@ -69,7 +69,7 @@ namespace NServiceBus.AcceptanceTests.Batching
             {
                 StringAssert.Contains(messageIdForBatching, logoutput, $"{messageIdForBatching} not found in any of the batches. Output: {logoutput}");
             }
-            
+
             foreach (var messageWithCustomMessageId in listOfMessagesForBatchingWithCustomIds)
             {
                 StringAssert.Contains(messageWithCustomMessageId, logoutput, $"{messageWithCustomMessageId} not found in any of the batches. Output: {logoutput}");
@@ -129,7 +129,7 @@ namespace NServiceBus.AcceptanceTests.Batching
 
                         await context.Send(new MyMessage(), options);
                     }
-                    
+
                     foreach (var messageId in Context.CustomMessageIdsForBatching)
                     {
                         var options = new SendOptions();

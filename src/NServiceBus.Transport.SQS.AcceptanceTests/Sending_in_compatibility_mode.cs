@@ -37,7 +37,7 @@
             public class Handler : IHandleMessages<Reply>
             {
                 public Context Context { get; set; }
-                
+
                 public Task Handle(Reply message, IMessageHandlerContext context)
                 {
                     Context.Received = true;
@@ -67,7 +67,7 @@
         public class Message : ICommand
         {
         }
-        
+
         public class Reply : IMessage
         {
         }

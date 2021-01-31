@@ -31,10 +31,10 @@
 
             var topicNameBuilder = new StringBuilder(s);
 
-            return GetSanitizedTopicName(topicNameBuilder, s);
+            return GetSanitizedTopicName(topicNameBuilder);
         }
 
-        public static string GetSanitizedTopicName(StringBuilder topicNameBuilder, string topicName)
+        public static string GetSanitizedTopicName(StringBuilder topicNameBuilder)
         {
             // SNS topic names can only have alphanumeric characters, hyphens and underscores.
             // Any other characters will be replaced with a hyphen.

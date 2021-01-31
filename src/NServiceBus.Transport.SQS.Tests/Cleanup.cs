@@ -102,15 +102,15 @@ namespace NServiceBus.Transport.SQS.Tests
                         switch (response.Location)
                         {
                             case "":
-                            {
-                                region = new S3Region("us-east-1");
-                                break;
-                            }
+                                {
+                                    region = new S3Region("us-east-1");
+                                    break;
+                                }
                             case "EU":
-                            {
-                                region = S3Region.EUW1;
-                                break;
-                            }
+                                {
+                                    region = S3Region.EUW1;
+                                    break;
+                                }
                             default:
                                 region = response.Location;
                                 break;

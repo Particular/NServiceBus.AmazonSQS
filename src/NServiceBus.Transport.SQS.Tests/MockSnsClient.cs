@@ -19,7 +19,7 @@ namespace NServiceBus.Transport.SQS.Tests
             return Task.FromResult(new UnsubscribeResponse());
         }
 
-        public Func<string, Topic> FindTopicAsyncResponse { get; set; } = topic => new Topic { TopicArn = $"arn:aws:sns:us-west-2:123456789012:{topic}"};
+        public Func<string, Topic> FindTopicAsyncResponse { get; set; } = topic => new Topic { TopicArn = $"arn:aws:sns:us-west-2:123456789012:{topic}" };
         public List<string> FindTopicRequests { get; } = new List<string>();
 
         public Task<Topic> FindTopicAsync(string topicName)
@@ -46,7 +46,7 @@ namespace NServiceBus.Transport.SQS.Tests
         public Task<PublishResponse> PublishAsync(PublishRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             PublishedEvents.Add(request);
-            return Task.FromResult((new PublishResponse()));
+            return Task.FromResult(new PublishResponse());
         }
 
         public Func<string, ListSubscriptionsByTopicResponse> ListSubscriptionsByTopicResponse = topic => new ListSubscriptionsByTopicResponse
@@ -105,6 +105,8 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         public IClientConfig Config { get; }
+
+        public ISimpleNotificationServicePaginatorFactory Paginators => throw new NotImplementedException();
 
         public string SubscribeQueue(string topicArn, ICoreAmazonSQS sqsClient, string sqsQueueUrl)
         {

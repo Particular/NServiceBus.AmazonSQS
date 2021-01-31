@@ -9,6 +9,8 @@
     {
         public static async Task<T> RetryConflictsAsync<T>(this IAmazonService client, Func<Task<T>> a, Func<int, Task> onRetry)
         {
+            _ = client;
+
             var tryCount = 0;
             var sleepTimeMs = 2000;
             const int maxTryCount = 5;
@@ -29,7 +31,7 @@
                         throw;
                     }
 
-                    var sleepTime = (sleepTimeMs * tryCount);
+                    var sleepTime = sleepTimeMs * tryCount;
                     await onRetry(sleepTime);
                     await Task.Delay(sleepTime).ConfigureAwait(false);
                 }
