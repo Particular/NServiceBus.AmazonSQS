@@ -19,7 +19,7 @@ namespace NServiceBus.Transport.SQS.CommandLine
         public Statement Statement { get; }
 
 #pragma warning disable 618
-        private static Statement CreatePermissionStatement(string queueArn, string topicArn)
+        static Statement CreatePermissionStatement(string queueArn, string topicArn)
         {
             var statement = new Statement(Statement.StatementEffect.Allow);
             statement.Actions.Add(SQSActionIdentifiers.SendMessage);

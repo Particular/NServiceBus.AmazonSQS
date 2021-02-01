@@ -41,10 +41,12 @@
         [Test]
         public void Populates_TimeToBeReceived_when_TimeToBeReceived_Header_is_present()
         {
-            var transportMessage = new TransportMessage();
-            transportMessage.Headers = new Dictionary<string, string>
+            var transportMessage = new TransportMessage
             {
-                {TransportHeaders.TimeToBeReceived, expectedTtbr.ToString()}
+                Headers = new Dictionary<string, string>
+                {
+                    { TransportHeaders.TimeToBeReceived, expectedTtbr.ToString() }
+                }
             };
 
             Assert.AreEqual(expectedTtbr.ToString(), transportMessage.TimeToBeReceived, "TimeToBeReceived does not match expected value.");
@@ -103,7 +105,7 @@
             var transportMessage = new TransportMessage
             {
                 Headers = new Dictionary<string, string>(),
-                ReplyToAddress = new TransportMessage.Address {Queue = expectedReplyToAddress}
+                ReplyToAddress = new TransportMessage.Address { Queue = expectedReplyToAddress }
             };
 
             Assert.IsTrue(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), "ReplyToAddress header is missing");

@@ -14,7 +14,7 @@ namespace NServiceBus.Transport.SQS.Tests
         [Test]
         public void ExtractsPolicy_if_not_empty()
         {
-           var policy = new Policy {Id = "CustomPolicy"};
+            var policy = new Policy { Id = "CustomPolicy" };
             var attributes = new Dictionary<string, string>
             {
                 { "Policy", policy.ToJson() }

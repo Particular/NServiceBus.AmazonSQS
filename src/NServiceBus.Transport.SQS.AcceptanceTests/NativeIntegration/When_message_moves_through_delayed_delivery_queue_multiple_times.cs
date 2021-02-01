@@ -84,7 +84,7 @@
                     return Task.FromResult(0);
                 }
 
-                private Context testContext;
+                Context testContext;
             }
         }
 

@@ -384,7 +384,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var preparedMessages = Enumerable
                 .Range(0, 2 * TransportConfiguration.MaximumItemsInBatch)
-                .Select(n => new SqsPreparedMessage {Body = singleMessageBody, Destination = "destination", QueueUrl = "https://destination"})
+                .Select(n => new SqsPreparedMessage { Body = singleMessageBody, Destination = "destination", QueueUrl = "https://destination" })
                 .ToArray();
 
             PrecalculateSize(preparedMessages);
@@ -403,7 +403,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var preparedMessages = Enumerable
                 .Range(0, 2 * TransportConfiguration.MaximumItemsInBatch)
-                .Select(n => new SqsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Body = singleMessageBody, Destination = "destination", QueueUrl = "https://destination"})
+                .Select(n => new SqsPreparedMessage { MessageId = Guid.NewGuid().ToString(), Body = singleMessageBody, Destination = "destination", QueueUrl = "https://destination" })
                 .ToArray();
 
             PrecalculateSize(preparedMessages);

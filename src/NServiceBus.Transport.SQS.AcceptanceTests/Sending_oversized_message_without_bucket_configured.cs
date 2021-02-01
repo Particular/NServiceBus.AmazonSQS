@@ -16,9 +16,9 @@
             {
                 await Scenario.Define<Context>()
                     .WithEndpoint<Endpoint>(b => b.When(session => session.SendLocal(new MyMessageWithLargePayload
-                        {
-                            Payload = new byte[PayloadSize]
-                        }))
+                    {
+                        Payload = new byte[PayloadSize]
+                    }))
                     )
                     .Done(c => false)
                     .Run();

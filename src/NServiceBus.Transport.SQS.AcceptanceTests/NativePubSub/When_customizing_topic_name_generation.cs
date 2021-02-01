@@ -12,7 +12,8 @@
         {
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<CustomizedPublisher>(b => b.When(c => c.Subscribed, (session, ctx) => session.Publish(new MyEvent())))
-                .WithEndpoint<CustomizedSubscriber>(b => b.When(async (session, ctx) => {
+                .WithEndpoint<CustomizedSubscriber>(b => b.When(async (session, ctx) =>
+                {
                     await session.Subscribe<MyEvent>();
                     ctx.Subscribed = true;
                 }))

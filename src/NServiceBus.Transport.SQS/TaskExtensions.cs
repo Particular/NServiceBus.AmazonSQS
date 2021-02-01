@@ -5,10 +5,5 @@ namespace NServiceBus.Transport.SQS
     static class TaskExtensions
     {
         public static readonly Task Completed = Task.FromResult(0);
-
-        public static void Ignore(this Task task)
-        {
-            // ignored
-        }
     }
 }
