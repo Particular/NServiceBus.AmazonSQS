@@ -43,7 +43,7 @@
 
             using (var memoryStream = new MemoryStream())
             {
-                await s3GetResponse.ResponseStream.CopyToAsync(memoryStream).ConfigureAwait(false);
+                await s3GetResponse.ResponseStream.CopyToAsync(memoryStream, 81920, cancellationToken).ConfigureAwait(false);
                 return memoryStream.ToArray();
             }
         }
