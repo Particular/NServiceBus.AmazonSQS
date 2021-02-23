@@ -92,12 +92,12 @@
 
         static async Task UploadMessageBodyToS3(string key)
         {
-            using (var s3Client = SqsTransportExtensions.CreateS3Client())
+            using (var s3Client = ConfigureEndpointSqsTransport.CreateS3Client())
             {
                 await s3Client.PutObjectAsync(new PutObjectRequest
                 {
                     Key = key,
-                    BucketName = SqsTransportExtensions.S3BucketName,
+                    BucketName = ConfigureEndpointSqsTransport.S3BucketName,
                     ContentBody = MessageToSend
                 });
             }
@@ -107,7 +107,10 @@
         {
             public Receiver()
             {
-                EndpointSetup<DefaultServer>();
+                EndpointSetup<DefaultServer>(c =>
+                {
+                    c.ConfigureSqsTransport().S3 = new S3Settings(ConfigureEndpointSqsTransport.S3BucketName, ConfigureEndpointSqsTransport.S3Prefix, ConfigureEndpointSqsTransport.CreateS3Client());
+                });
             }
 
             class MyEventHandler : IHandleMessages<Message>

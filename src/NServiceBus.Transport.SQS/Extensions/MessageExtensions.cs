@@ -5,15 +5,12 @@
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Amazon.S3;
     using Amazon.S3.Model;
     using Amazon.SQS.Model;
 
     static class MessageExtensions
     {
-        public static async Task<byte[]> RetrieveBody(this TransportMessage transportMessage,
-            IAmazonS3 s3Client,
-            TransportConfiguration transportConfiguration,
+        public static async Task<byte[]> RetrieveBody(this TransportMessage transportMessage, string messageId, S3Settings s3Settings,
             CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(transportMessage.S3BodyKey))
@@ -21,24 +18,20 @@
                 return Convert.FromBase64String(transportMessage.Body);
             }
 
+            if (s3Settings == null)
+            {
+                throw new Exception($"The message {messageId} contains the ID of the body stored in S3 but this endpoint is not configured to use S3 for body storage.");
+            }
+
             var getObjectRequest = new GetObjectRequest
             {
-                BucketName = transportConfiguration.S3BucketForLargeMessages,
+                BucketName = s3Settings.BucketName,
                 Key = transportMessage.S3BodyKey
             };
 
-            if (transportConfiguration.ServerSideEncryptionCustomerMethod != null)
-            {
-                getObjectRequest.ServerSideEncryptionCustomerMethod = transportConfiguration.ServerSideEncryptionCustomerMethod;
-                getObjectRequest.ServerSideEncryptionCustomerProvidedKey = transportConfiguration.ServerSideEncryptionCustomerProvidedKey;
+            s3Settings.NullSafeEncryption.ModifyGetRequest(getObjectRequest);
 
-                if (!string.IsNullOrEmpty(transportConfiguration.ServerSideEncryptionCustomerProvidedKeyMD5))
-                {
-                    getObjectRequest.ServerSideEncryptionCustomerProvidedKeyMD5 = transportConfiguration.ServerSideEncryptionCustomerProvidedKeyMD5;
-                }
-            }
-
-            var s3GetResponse = await s3Client.GetObjectAsync(getObjectRequest, cancellationToken)
+            var s3GetResponse = await s3Settings.S3Client.GetObjectAsync(getObjectRequest, cancellationToken)
                 .ConfigureAwait(false);
 
             using (var memoryStream = new MemoryStream())

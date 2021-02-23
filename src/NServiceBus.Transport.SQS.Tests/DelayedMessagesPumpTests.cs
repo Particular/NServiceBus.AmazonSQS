@@ -19,21 +19,13 @@ namespace NServiceBus.Transport.SQS.Tests
         public void SetUp()
         {
             cancellationTokenSource = new CancellationTokenSource();
-
-            var settings = new SettingsHolder();
-            transport = new TransportExtensions<SqsTransport>(settings);
-
             mockSqsClient = new MockSqsClient();
-
-            var transportConfiguration = new TransportConfiguration(settings);
-
-            pump = new DelayedMessagesPump(transportConfiguration, mockSqsClient, new QueueCache(mockSqsClient, transportConfiguration));
         }
 
         [Test]
         public void Initialize_delay_seconds_smaller_than_required_throws()
         {
-            transport.UnrestrictedDurationDelayedDelivery(TimeSpan.FromMinutes(15));
+            pump = new DelayedMessagesPump("queue", mockSqsClient, new QueueCache(mockSqsClient, q => QueueCache.GetSqsQueueName(q, "Prefix")), 15 * 60);
 
             mockSqsClient.GetAttributeNamesRequestsResponse = (queue, attributes) => new GetQueueAttributesResponse
             {
@@ -43,14 +35,14 @@ namespace NServiceBus.Transport.SQS.Tests
                 }
             };
 
-            var exception = Assert.ThrowsAsync<Exception>(async () => { await pump.Initialize("queue", FakeInputQueueQueueUrl); });
+            var exception = Assert.ThrowsAsync<Exception>(async () => { await pump.Initialize(); });
             Assert.AreEqual("Delayed delivery queue 'queue-delay.fifo' should not have Delivery Delay less than '00:15:00'.", exception.Message);
         }
 
         [Test]
         public void Initialize_retention_smaller_than_required_throws()
         {
-            transport.UnrestrictedDurationDelayedDelivery(TimeSpan.FromMinutes(15));
+            pump = new DelayedMessagesPump("queue", mockSqsClient, new QueueCache(mockSqsClient, q => QueueCache.GetSqsQueueName(q, "Prefix")), 15 * 60);
 
             mockSqsClient.GetAttributeNamesRequestsResponse = (queue, attributes) => new GetQueueAttributesResponse
             {
@@ -61,14 +53,14 @@ namespace NServiceBus.Transport.SQS.Tests
                 }
             };
 
-            var exception = Assert.ThrowsAsync<Exception>(async () => { await pump.Initialize("queue", FakeInputQueueQueueUrl); });
+            var exception = Assert.ThrowsAsync<Exception>(async () => { await pump.Initialize(); });
             Assert.AreEqual("Delayed delivery queue 'queue-delay.fifo' should not have Message Retention Period less than '4.00:00:00'.", exception.Message);
         }
 
         [Test]
         public void Initialize_redrive_policy_used_throws()
         {
-            transport.UnrestrictedDurationDelayedDelivery(TimeSpan.FromMinutes(15));
+            pump = new DelayedMessagesPump("queue", mockSqsClient, new QueueCache(mockSqsClient, q => QueueCache.GetSqsQueueName(q, "Prefix")), 15 * 60);
 
             mockSqsClient.GetAttributeNamesRequestsResponse = (queue, attributes) => new GetQueueAttributesResponse
             {
@@ -80,13 +72,13 @@ namespace NServiceBus.Transport.SQS.Tests
                 }
             };
 
-            var exception = Assert.ThrowsAsync<Exception>(async () => { await pump.Initialize("queue", FakeInputQueueQueueUrl); });
+            var exception = Assert.ThrowsAsync<Exception>(async () => { await pump.Initialize(); });
             Assert.AreEqual("Delayed delivery queue 'queue-delay.fifo' should not have Redrive Policy enabled.", exception.Message);
         }
 
         async Task SetupInitializedPump()
         {
-            transport.UnrestrictedDurationDelayedDelivery(TimeSpan.FromMinutes(15));
+            pump = new DelayedMessagesPump(FakeInputQueueQueueUrl, mockSqsClient, new QueueCache(mockSqsClient, q => QueueCache.GetSqsQueueName(q, "")), 15 * 60);
 
             mockSqsClient.GetAttributeNamesRequestsResponse = (queue, attributes) => new GetQueueAttributesResponse
             {
@@ -111,7 +103,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 };
             };
 
-            await pump.Initialize("queue", FakeInputQueueQueueUrl);
+            await pump.Initialize();
         }
 
         [Test]
@@ -125,7 +117,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 return new ReceiveMessageResponse { Messages = new List<Message>() };
             };
 
-            pump.Start(cancellationTokenSource.Token);
+            pump.Start();
 
             SpinWait.SpinUntil(() => mockSqsClient.ReceiveMessagesRequestsSent.Count > 0);
 
@@ -740,9 +732,8 @@ namespace NServiceBus.Transport.SQS.Tests
 
         DelayedMessagesPump pump;
         MockSqsClient mockSqsClient;
-        TransportExtensions<SqsTransport> transport;
         CancellationTokenSource cancellationTokenSource;
-        const string FakeDelayedMessagesFifoQueueUrl = "queue-delay.fifo";
+        const string FakeDelayedMessagesFifoQueueUrl = "queueUrl-delay.fifo";
         const string FakeInputQueueQueueUrl = "queueUrl";
     }
 }

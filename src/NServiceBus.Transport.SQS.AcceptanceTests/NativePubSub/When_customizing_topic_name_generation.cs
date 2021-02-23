@@ -35,7 +35,7 @@
             {
                 EndpointSetup<DefaultPublisher>(c =>
                 {
-                    c.ConfigureSqsTransport().TopicNameGenerator((eventType, prefix) => prefix + "-shared-topic");
+                    c.ConfigureSqsTransport().TopicNameGenerator = (eventType, prefix) => prefix + "-shared-topic";
                 });
             }
         }
@@ -46,7 +46,7 @@
             {
                 EndpointSetup<DefaultServer>(c =>
                 {
-                    c.ConfigureSqsTransport().TopicNameGenerator((eventType, prefix) => prefix + "-shared-topic");
+                    c.ConfigureSqsTransport().TopicNameGenerator = (eventType, prefix) => prefix + "-shared-topic";
                 });
             }
 

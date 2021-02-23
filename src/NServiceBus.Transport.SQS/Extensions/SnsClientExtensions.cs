@@ -4,13 +4,12 @@ namespace NServiceBus.Transport.SQS.Extensions
     using System.Threading.Tasks;
     using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
-    using Unicast.Messages;
 
     static class SnsClientExtensions
     {
-        public static Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, MessageMetadata metadata, string queueName)
+        public static Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, Type eventType, string queueName)
         {
-            var topicName = topicCache.GetTopicName(metadata);
+            var topicName = topicCache.GetTopicName(eventType);
             return snsClient.FindMatchingSubscription(queueCache, topicName, queueName);
         }
 

@@ -5,65 +5,52 @@ namespace NServiceBus.Transport.SQS
     using System.Threading.Tasks;
     using Amazon.SimpleNotificationService;
     using Configure;
-    using Unicast.Messages;
 
     class TopicCache
     {
-        public TopicCache(IAmazonSimpleNotificationService snsClient, MessageMetadataRegistry messageMetadataRegistry, TransportConfiguration configuration)
+        public TopicCache(IAmazonSimpleNotificationService snsClient, EventToTopicsMappings eventToTopicsMappings, EventToEventsMappings eventToEventsMappings, Func<Type, string, string> topicNameGenerator, string topicNamePrefix)
         {
-            this.configuration = configuration;
-            this.messageMetadataRegistry = messageMetadataRegistry;
+            this.topicNameGenerator = topicNameGenerator;
+            this.topicNamePrefix = topicNamePrefix;
             this.snsClient = snsClient;
-            CustomEventToTopicsMappings = configuration.CustomEventToTopicsMappings ?? new EventToTopicsMappings();
-            CustomEventToEventsMappings = configuration.CustomEventToEventsMappings ?? new EventToEventsMappings();
+            CustomEventToTopicsMappings = eventToTopicsMappings;
+            CustomEventToEventsMappings = eventToEventsMappings;
         }
 
         public EventToEventsMappings CustomEventToEventsMappings { get; }
 
         public EventToTopicsMappings CustomEventToTopicsMappings { get; }
 
-        public Task<string> GetTopicArn(MessageMetadata metadata)
-        {
-            return GetAndCacheTopicIfFound(metadata);
-        }
-
         public Task<string> GetTopicArn(Type eventType)
         {
-            var metadata = messageMetadataRegistry.GetMessageMetadata(eventType);
-            return GetAndCacheTopicIfFound(metadata);
+            return GetAndCacheTopicIfFound(eventType);
         }
 
-        public Task<string> GetTopicArn(string messageTypeIdentifier)
+        public string GetTopicName(Type evenType)
         {
-            var metadata = messageMetadataRegistry.GetMessageMetadata(messageTypeIdentifier);
-            return GetAndCacheTopicIfFound(metadata);
-        }
-
-        public string GetTopicName(MessageMetadata metadata)
-        {
-            if (topicNameCache.TryGetValue(metadata.MessageType, out var topicName))
+            if (topicNameCache.TryGetValue(evenType, out var topicName))
             {
                 return topicName;
             }
 
-            return topicNameCache.GetOrAdd(metadata.MessageType, configuration.TopicNameGenerator(metadata));
+            return topicNameCache.GetOrAdd(evenType, topicNameGenerator(evenType, topicNamePrefix));
         }
 
-        async Task<string> GetAndCacheTopicIfFound(MessageMetadata metadata)
+        async Task<string> GetAndCacheTopicIfFound(Type evenType)
         {
-            if (topicCache.TryGetValue(metadata.MessageType, out var topic))
+            if (topicCache.TryGetValue(evenType, out var topic))
             {
                 return topic;
             }
 
-            var topicName = GetTopicName(metadata);
+            var topicName = GetTopicName(evenType);
             var foundTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
-            return foundTopic != null ? topicCache.GetOrAdd(metadata.MessageType, foundTopic.TopicArn) : null;
+            return foundTopic != null ? topicCache.GetOrAdd(evenType, foundTopic.TopicArn) : null;
         }
 
         IAmazonSimpleNotificationService snsClient;
-        MessageMetadataRegistry messageMetadataRegistry;
-        TransportConfiguration configuration;
+        readonly Func<Type, string, string> topicNameGenerator;
+        readonly string topicNamePrefix;
         ConcurrentDictionary<Type, string> topicCache = new ConcurrentDictionary<Type, string>();
         ConcurrentDictionary<Type, string> topicNameCache = new ConcurrentDictionary<Type, string>();
     }

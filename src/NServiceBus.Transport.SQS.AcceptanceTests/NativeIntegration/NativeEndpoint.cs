@@ -8,22 +8,16 @@
     using System.Threading.Tasks;
     using AcceptanceTesting.Customization;
     using Amazon.SQS.Model;
-    using Configuration.AdvancedExtensibility;
-    using Settings;
-    using Transport.SQS;
 
     static class NativeEndpoint
     {
         public static async Task ConsumePoisonQueue(Guid testRunId, string errorQueueAddress, CancellationToken cancellationToken, Action<Message> nativeMessageAccessor = null)
         {
-            var transport = new TransportExtensions<SqsTransport>(new SettingsHolder());
-            transport = transport.ConfigureSqsTransport(SetupFixture.NamePrefix);
-            var transportConfiguration = new TransportConfiguration(transport.GetSettings());
-            using (var sqsClient = SqsTransportExtensions.CreateSQSClient())
+            using (var sqsClient = ConfigureEndpointSqsTransport.CreateSqsClient())
             {
                 var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
                 {
-                    QueueName = QueueCache.GetSqsQueueName(errorQueueAddress, transportConfiguration)
+                    QueueName = TestNameHelper.GetSqsQueueName(errorQueueAddress, SetupFixture.NamePrefix)
                 }, cancellationToken).ConfigureAwait(false);
 
                 while (!cancellationToken.IsCancellationRequested)
@@ -64,15 +58,11 @@
 
         public static async Task SendTo<TEndpoint>(Dictionary<string, MessageAttributeValue> messageAttributeValues, string message)
         {
-            var transport = new TransportExtensions<SqsTransport>(new SettingsHolder());
-            transport = transport.ConfigureSqsTransport(SetupFixture.NamePrefix);
-            var transportConfiguration = new TransportConfiguration(transport.GetSettings());
-            using (var sqsClient = SqsTransportExtensions.CreateSQSClient())
+            using (var sqsClient = ConfigureEndpointSqsTransport.CreateSqsClient())
             {
                 var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
                 {
-                    QueueName = QueueCache.GetSqsQueueName(Conventions.EndpointNamingConvention(typeof(TEndpoint)),
-                        transportConfiguration)
+                    QueueName = TestNameHelper.GetSqsQueueName(Conventions.EndpointNamingConvention(typeof(TEndpoint)), SetupFixture.NamePrefix)
                 }).ConfigureAwait(false);
 
                 var body = Convert.ToBase64String(Encoding.Unicode.GetBytes(message));

@@ -14,7 +14,7 @@
         [Test]
         public async Task Should_copy_message_attributes()
         {
-            var delay = QueueDelayTime.Add(TimeSpan.FromSeconds(1));
+            var delay = TimeSpan.FromSeconds(QueueDelayTime + 1);
             var testContext = await Scenario.Define<Context>()
                 .WithEndpoint<Receiver>(c =>
                 {
@@ -27,7 +27,7 @@
                             settings.TimeIncrease(delay);
                         });
                         cfg.Recoverability().Immediate(settings => settings.NumberOfRetries(0));
-                        cfg.ConfigureSqsTransport().UnrestrictedDurationDelayedDelivery(QueueDelayTime);
+                        cfg.ConfigureSqsTransport().QueueDelayTime = QueueDelayTime;
                     });
                     c.When(async (session, ctx) =>
                     {
@@ -56,7 +56,7 @@
             Assert.That(randomAttribute.StringValue, Is.EqualTo("bla"));
         }
 
-        static readonly TimeSpan QueueDelayTime = TimeSpan.FromSeconds(1);
+        static readonly int QueueDelayTime = 1;
 
         public class Receiver : EndpointConfigurationBuilder
         {

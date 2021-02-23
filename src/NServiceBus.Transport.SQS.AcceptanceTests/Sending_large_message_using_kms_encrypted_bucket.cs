@@ -22,9 +22,9 @@
 
             Assert.AreEqual(payloadToSend, context.ReceivedPayload, "The large payload should be handled correctly using the kms encrypted S3 bucket");
 
-            var s3Client = SqsTransportExtensions.CreateS3Client();
+            var s3Client = ConfigureEndpointSqsTransport.CreateS3Client();
 
-            Assert.DoesNotThrowAsync(async () => await s3Client.GetObjectAsync(BucketName, $"{SqsTransportExtensions.S3Prefix}/{context.MessageId}"));
+            Assert.DoesNotThrowAsync(async () => await s3Client.GetObjectAsync(BucketName, $"{ConfigureEndpointSqsTransport.S3Prefix}/{context.MessageId}"));
         }
 
         const int PayloadSize = 150 * 1024;
@@ -43,11 +43,11 @@
             {
                 EndpointSetup<DefaultServer>(c =>
                 {
-                    var transportConfig = c.UseTransport<SqsTransport>();
+                    var transportConfig = c.ConfigureSqsTransport();
 
-                    BucketName = $"{SqsTransportExtensions.S3BucketName}.kms";
+                    BucketName = $"{ConfigureEndpointSqsTransport.S3BucketName}.kms";
 
-                    transportConfig.S3(BucketName, SqsTransportExtensions.S3Prefix);
+                    transportConfig.S3 = new S3Settings(BucketName, ConfigureEndpointSqsTransport.S3Prefix, ConfigureEndpointSqsTransport.CreateS3Client());
                 });
             }
 

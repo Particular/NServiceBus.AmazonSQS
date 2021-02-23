@@ -15,9 +15,9 @@
                 .WithEndpoint<Publisher>()
                 .WithEndpoint<Subscriber>(b => b.CustomConfig(c =>
                 {
-                    var policies = c.ConfigureSqsTransport().Policies();
+                    var policies = c.ConfigureSqsTransport().Policies;
                     // the actual policy doesn't matter as long as it is a wildcard matching
-                    policies.AddAccountCondition();
+                    policies.AccountCondition = true;
                 }))
                 .Done(c => c.EndpointsStarted)
                 .Run();
@@ -31,8 +31,7 @@
                 }))
                 .WithEndpoint<Subscriber>(b => b.CustomConfig(c =>
                 {
-                    var policies = c.ConfigureSqsTransport().Policies();
-                    policies.AssumePolicyHasAppropriatePermissions();
+                    c.ConfigureSqsTransport().Policies.SetupTopicPoliciesWhenSubscribing = false;
                 }))
                 .Done(c => c.GotEvents)
                 .Run();

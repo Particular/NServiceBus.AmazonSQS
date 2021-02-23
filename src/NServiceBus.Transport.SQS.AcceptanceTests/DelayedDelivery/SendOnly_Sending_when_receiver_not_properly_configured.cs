@@ -1,5 +1,6 @@
 ﻿namespace NServiceBus.AcceptanceTests.DelayedDelivery
 {
+    using Transport;
     using System;
     using System.Threading.Tasks;
     using AcceptanceTesting;
@@ -14,7 +15,7 @@
         public async Task Should_deliver_messages_only_if_below_queue_delay_time()
         {
             var payload = "some payload";
-            var delay = QueueDelayTime.Subtract(TimeSpan.FromSeconds(1));
+            var delay = TimeSpan.FromSeconds(QueueDelayTime - 1);
 
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<SendOnlySender>(b => b.When(async (session, c) =>
@@ -40,15 +41,22 @@
         [Test]
         public void Should_fail_to_send_message_if_above_queue_delay_time()
         {
-            var delay = QueueDelayTime.Add(TimeSpan.FromSeconds(1));
+            var delay = TimeSpan.FromSeconds(QueueDelayTime + 1);
 
             Assert.ThrowsAsync<QueueDoesNotExistException>(async () =>
             {
                 await Scenario.Define<Context>()
                     .WithEndpoint<SendOnlySender>(b => b.When(async (session, c) =>
                     {
+                        //Create a queue that does not have an associated .fifo queue, simulating a legacy endpoint
+                        var destinationQueueName = TestNameHelper.GetSqsQueueName("LegacyEndpoint", SetupFixture.NamePrefix);
+                        var transport = ConfigureEndpointSqsTransport.PrepareSqsTransport();
+                        await transport.Initialize(new HostSettings("Host", "Host", new StartupDiagnosticEntries(),
+                            (error, exception) => { }, true), new ReceiveSettings[0], new[] { destinationQueueName });
+
                         var sendOptions = new SendOptions();
                         sendOptions.DelayDeliveryWith(delay);
+                        sendOptions.SetDestination(destinationQueueName);
 
                         await session.Send(new DelayedMessage
                         {
@@ -59,7 +67,7 @@
             });
         }
 
-        static readonly TimeSpan QueueDelayTime = TimeSpan.FromSeconds(3);
+        static readonly int QueueDelayTime = 3;
 
         public class Context : ScenarioContext
         {
@@ -75,10 +83,10 @@
             {
                 EndpointSetup<DefaultServer>(builder =>
                 {
-                    builder.ConfigureTransport().Routing().RouteToEndpoint(typeof(DelayedMessage), typeof(NotConfiguredReceiver));
+                    builder.ConfigureRouting().RouteToEndpoint(typeof(DelayedMessage), typeof(NotConfiguredReceiver));
                     builder.SendOnly();
 
-                    builder.ConfigureSqsTransport().UnrestrictedDurationDelayedDelivery(QueueDelayTime);
+                    builder.ConfigureSqsTransport().QueueDelayTime = QueueDelayTime;
                 });
             }
         }

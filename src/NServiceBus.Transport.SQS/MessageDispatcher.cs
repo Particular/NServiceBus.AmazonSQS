@@ -5,32 +5,35 @@
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
-    using Amazon.S3;
     using Amazon.S3.Model;
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
     using Amazon.SQS.Model;
-    using DelayedDelivery;
-    using Extensibility;
     using Extensions;
     using Logging;
     using SimpleJson;
     using Transport;
 
-    class MessageDispatcher : IDispatchMessages
+    class MessageDispatcher : IMessageDispatcher
     {
-        public MessageDispatcher(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache)
+        public MessageDispatcher(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient,
+            QueueCache queueCache,
+            TopicCache topicCache,
+            S3Settings s3,
+            int queueDelaySeconds,
+            bool v1Compatibility
+            )
         {
             this.topicCache = topicCache;
+            this.s3 = s3;
+            this.queueDelaySeconds = queueDelaySeconds;
             this.snsClient = snsClient;
-            this.configuration = configuration;
-            this.s3Client = s3Client;
             this.sqsClient = sqsClient;
             this.queueCache = queueCache;
-            serializerStrategy = configuration.UseV1CompatiblePayload ? SimpleJson.PocoJsonSerializerStrategy : ReducedPayloadSerializerStrategy.Instance;
+            serializerStrategy = v1Compatibility ? SimpleJson.PocoJsonSerializerStrategy : ReducedPayloadSerializerStrategy.Instance;
         }
 
-        public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
+        public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction)
         {
             var concurrentDispatchTasks = new List<Task>(3);
 
@@ -60,7 +63,7 @@
             }
             catch (Exception e)
             {
-                Logger.Error("Exception from Send.", e);
+                _logger.Error("Exception from Send.", e);
                 throw;
             }
         }
@@ -72,7 +75,7 @@
             {
                 messageIdsOfMulticastEvents.Add(operation.Message.MessageId);
                 tasks = tasks ?? new List<Task>(multicastTransportOperations.Count);
-                tasks.Add(Dispatch(operation, emptyHashset, transportTransaction));
+                tasks.Add(Dispatch(operation, EmptyHashset, transportTransaction));
             }
 
             return tasks != null ? Task.WhenAll(tasks) : Task.CompletedTask;
@@ -116,20 +119,20 @@
         {
             try
             {
-                if (Logger.IsDebugEnabled)
+                if (_logger.IsDebugEnabled)
                 {
                     var message = batch.PreparedMessagesBydId.Values.First();
 
-                    Logger.Debug($"Sending batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
+                    _logger.Debug($"Sending batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
                 }
 
                 var result = await sqsClient.SendMessageBatchAsync(batch.BatchRequest).ConfigureAwait(false);
 
-                if (Logger.IsDebugEnabled)
+                if (_logger.IsDebugEnabled)
                 {
                     var message = batch.PreparedMessagesBydId.Values.First();
 
-                    Logger.Debug($"Sent batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
+                    _logger.Debug($"Sent batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
                 }
 
                 List<Task> redispatchTasks = null;
@@ -137,7 +140,7 @@
                 {
                     redispatchTasks = redispatchTasks ?? new List<Task>(result.Failed.Count);
                     var messageToRetry = batch.PreparedMessagesBydId[errorEntry.Id];
-                    Logger.Info($"Retrying message with MessageId {messageToRetry.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
+                    _logger.Info($"Retrying message with MessageId {messageToRetry.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
                     redispatchTasks.Add(SendMessageForBatch(messageToRetry, batchNumber, totalBatches));
                 }
 
@@ -152,17 +155,17 @@
 
                 if (message.OriginalDestination != null)
                 {
-                    throw new QueueDoesNotExistException($"Unable to send batch '{batchNumber}/{totalBatches}'. Destination '{message.OriginalDestination}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(configuration.DelayedDeliveryQueueDelayTime)}. To enable support for longer delays, call '.UseTransport<SqsTransport>().UnrestrictedDurationDelayedDelivery()' on the '{message.OriginalDestination}' endpoint.", e);
+                    throw new QueueDoesNotExistException($"Unable to send batch '{batchNumber}/{totalBatches}'. Destination '{message.OriginalDestination}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(queueDelaySeconds)}. To enable support for longer delays upgrade '{message.OriginalDestination}' endpoint to Version 6 of the transport or enable unrestricted delayed delivery.", e);
                 }
 
-                Logger.Error($"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'. The destination does not exist.", e);
+                _logger.Error($"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'. The destination does not exist.", e);
                 throw;
             }
             catch (Exception ex)
             {
                 var message = batch.PreparedMessagesBydId.Values.First();
 
-                Logger.Error($"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'", ex);
+                _logger.Error($"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'", ex);
                 throw;
             }
         }
@@ -184,17 +187,17 @@
 
             var publishRequest = message.ToPublishRequest();
 
-            if (Logger.IsDebugEnabled)
+            if (_logger.IsDebugEnabled)
             {
-                Logger.Debug($"Publishing message with '{message.MessageId}' to topic '{publishRequest.TopicArn}'");
+                _logger.Debug($"Publishing message with '{message.MessageId}' to topic '{publishRequest.TopicArn}'");
             }
 
             await snsClient.PublishAsync(publishRequest)
                 .ConfigureAwait(false);
 
-            if (Logger.IsDebugEnabled)
+            if (_logger.IsDebugEnabled)
             {
-                Logger.Debug($"Published message with '{message.MessageId}' to topic '{publishRequest.TopicArn}'");
+                _logger.Debug($"Published message with '{message.MessageId}' to topic '{publishRequest.TopicArn}'");
             }
         }
 
@@ -215,7 +218,7 @@
         async Task SendMessageForBatch(SqsPreparedMessage message, int batchNumber, int totalBatches)
         {
             await SendMessage(message).ConfigureAwait(false);
-            Logger.Info($"Retried message with MessageId {message.MessageId} that failed in batch '{batchNumber}/{totalBatches}'.");
+            _logger.Info($"Retried message with MessageId {message.MessageId} that failed in batch '{batchNumber}/{totalBatches}'.");
         }
 
         async Task SendMessage(SqsPreparedMessage message)
@@ -227,11 +230,11 @@
             }
             catch (QueueDoesNotExistException e) when (message.OriginalDestination != null)
             {
-                throw new QueueDoesNotExistException($"Destination '{message.OriginalDestination}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(configuration.DelayedDeliveryQueueDelayTime)}. To enable support for longer delays, call '.UseTransport<SqsTransport>().UnrestrictedDurationDelayedDelivery()' on the '{message.OriginalDestination}' endpoint.", e);
+                throw new QueueDoesNotExistException($"Destination '{message.OriginalDestination}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(queueDelaySeconds)}. To enable support for longer delays upgrade '{message.OriginalDestination}' endpoint to Version 6 of the transport or enable unrestricted delayed delivery.", e);
             }
             catch (Exception ex)
             {
-                Logger.Error($"Error while sending message, with MessageId '{message.MessageId}', to '{message.Destination}'", ex);
+                _logger.Error($"Error while sending message, with MessageId '{message.MessageId}', to '{message.Destination}'", ex);
                 throw;
             }
         }
@@ -247,7 +250,10 @@
                 && unicastTransportOperation.Message.GetMessageIntent() == MessageIntentEnum.Publish
                 && unicastTransportOperation.Message.Headers.ContainsKey(Headers.EnclosedMessageTypes))
             {
-                var mostConcreteEnclosedMessageType = unicastTransportOperation.Message.GetEnclosedMessageTypes()[0];
+                //The first type in the enclosed message types is the most concrete type associated with the message. The name is assembly-qualified and the type is guaranteed to be loaded.
+                var mostConcreteEnclosedMessageTypeName = unicastTransportOperation.Message.GetEnclosedMessageTypes()[0];
+                var mostConcreteEnclosedMessageType = Type.GetType(mostConcreteEnclosedMessageTypeName, true);
+
                 var existingTopic = await topicCache.GetTopicArn(mostConcreteEnclosedMessageType).ConfigureAwait(false);
                 if (existingTopic != null)
                 {
@@ -260,8 +266,8 @@
                 }
             }
 
-            var delayDeliveryWith = transportOperation.DeliveryConstraints.OfType<DelayDeliveryWith>().SingleOrDefault();
-            var doNotDeliverBefore = transportOperation.DeliveryConstraints.OfType<DoNotDeliverBefore>().SingleOrDefault();
+            var delayDeliveryWith = transportOperation.Properties.DelayDeliveryWith;
+            var doNotDeliverBefore = transportOperation.Properties.DoNotDeliverBefore;
 
             long delaySeconds = 0;
 
@@ -274,12 +280,7 @@
                 delaySeconds = Convert.ToInt64(Math.Ceiling((doNotDeliverBefore.At - DateTime.UtcNow).TotalSeconds));
             }
 
-            if (!configuration.IsDelayedDeliveryEnabled && delaySeconds > TransportConfiguration.AwsMaximumQueueDelayTime)
-            {
-                throw new NotSupportedException($"To send messages with a delay time greater than '{TimeSpan.FromSeconds(TransportConfiguration.AwsMaximumQueueDelayTime)}', call '.UseTransport<SqsTransport>().UnrestrictedDurationDelayedDelivery()'.");
-            }
-
-            var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.DeliveryConstraints);
+            var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.Properties);
 
             var messageId = transportOperation.Message.MessageId;
 
@@ -300,28 +301,29 @@
             preparedMessage.MessageId = messageId;
 
             preparedMessage.CalculateSize();
-            if (preparedMessage.Size <= TransportConfiguration.MaximumMessageSize)
+            if (preparedMessage.Size <= TransportConstraints.MaximumMessageSize)
             {
                 return preparedMessage;
             }
 
-            if (string.IsNullOrEmpty(configuration.S3BucketForLargeMessages))
+            if (s3 == null)
             {
                 throw new Exception("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
             }
 
-            var key = $"{configuration.S3KeyPrefix}/{messageId}";
+            var key = $"{s3.KeyPrefix}/{messageId}";
             using (var bodyStream = new MemoryStream(transportOperation.Message.Body))
             {
                 var putObjectRequest = new PutObjectRequest
                 {
-                    BucketName = configuration.S3BucketForLargeMessages,
+                    BucketName = s3.BucketName,
                     InputStream = bodyStream,
                     Key = key
                 };
-                ApplyServerSideEncryptionConfiguration(putObjectRequest);
 
-                await s3Client.PutObjectAsync(putObjectRequest).ConfigureAwait(false);
+                s3.NullSafeEncryption.ModifyPutRequest(putObjectRequest);
+
+                await s3.S3Client.PutObjectAsync(putObjectRequest).ConfigureAwait(false);
             }
 
             sqsTransportMessage.S3BodyKey = key;
@@ -354,11 +356,11 @@
             sqsPreparedMessage.CopyMessageAttributes(nativeMessageAttributes);
             sqsPreparedMessage.RemoveNativeHeaders();
 
-            var delayLongerThanConfiguredDelayedDeliveryQueueDelayTime = configuration.IsDelayedDeliveryEnabled && delaySeconds > configuration.DelayedDeliveryQueueDelayTime;
+            var delayLongerThanConfiguredDelayedDeliveryQueueDelayTime = delaySeconds > queueDelaySeconds;
             if (delayLongerThanConfiguredDelayedDeliveryQueueDelayTime)
             {
                 sqsPreparedMessage.OriginalDestination = transportOperation.Destination;
-                sqsPreparedMessage.Destination = $"{transportOperation.Destination}{TransportConfiguration.DelayedDeliveryQueueSuffix}";
+                sqsPreparedMessage.Destination = $"{transportOperation.Destination}{TransportConstraints.DelayedDeliveryQueueSuffix}";
                 sqsPreparedMessage.QueueUrl = await queueCache.GetQueueUrl(sqsPreparedMessage.Destination)
                     .ConfigureAwait(false);
 
@@ -384,41 +386,15 @@
             }
         }
 
-        void ApplyServerSideEncryptionConfiguration(PutObjectRequest putObjectRequest)
-        {
-            if (configuration.ServerSideEncryptionMethod != null)
-            {
-                putObjectRequest.ServerSideEncryptionMethod = configuration.ServerSideEncryptionMethod;
-
-                if (!string.IsNullOrEmpty(configuration.ServerSideEncryptionKeyManagementServiceKeyId))
-                {
-                    putObjectRequest.ServerSideEncryptionKeyManagementServiceKeyId = configuration.ServerSideEncryptionKeyManagementServiceKeyId;
-                }
-
-                return;
-            }
-
-            if (configuration.ServerSideEncryptionCustomerMethod != null)
-            {
-                putObjectRequest.ServerSideEncryptionCustomerMethod = configuration.ServerSideEncryptionCustomerMethod;
-                putObjectRequest.ServerSideEncryptionCustomerProvidedKey = configuration.ServerSideEncryptionCustomerProvidedKey;
-
-                if (!string.IsNullOrEmpty(configuration.ServerSideEncryptionCustomerProvidedKeyMD5))
-                {
-                    putObjectRequest.ServerSideEncryptionCustomerProvidedKeyMD5 = configuration.ServerSideEncryptionCustomerProvidedKeyMD5;
-                }
-            }
-        }
-
         readonly IAmazonSimpleNotificationService snsClient;
         readonly TopicCache topicCache;
-        TransportConfiguration configuration;
+        readonly S3Settings s3;
+        readonly int queueDelaySeconds;
         IAmazonSQS sqsClient;
-        IAmazonS3 s3Client;
         QueueCache queueCache;
         IJsonSerializerStrategy serializerStrategy;
-        static readonly HashSet<string> emptyHashset = new HashSet<string>();
+        static readonly HashSet<string> EmptyHashset = new HashSet<string>();
 
-        static ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
+        static ILog _logger = LogManager.GetLogger(typeof(MessageDispatcher));
     }
 }

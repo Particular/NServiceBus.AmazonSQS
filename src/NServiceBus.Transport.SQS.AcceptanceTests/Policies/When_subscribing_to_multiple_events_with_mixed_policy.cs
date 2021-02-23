@@ -22,11 +22,11 @@
                 {
                     b.CustomConfig(c =>
                     {
-                        var policies = c.ConfigureSqsTransport().Policies();
-                        policies.AddNamespaceCondition("NServiceBus.AcceptanceTests.Policies.E");
-                        policies.AddNamespaceCondition("NServiceBus.AcceptanceTests.Policies.F");
-                        policies.AddAccountCondition();
-                        policies.AddTopicNamePrefixCondition();
+                        var policies = c.ConfigureSqsTransport().Policies;
+                        policies.TopicNamespaceConditions.Add("NServiceBus.AcceptanceTests.Policies.E");
+                        policies.TopicNamespaceConditions.Add("NServiceBus.AcceptanceTests.Policies.F");
+                        policies.AccountCondition = true;
+                        policies.TopicNamePrefixCondition = true;
                     });
                 })
                 .Done(c => c.GotMyOtherEvent)

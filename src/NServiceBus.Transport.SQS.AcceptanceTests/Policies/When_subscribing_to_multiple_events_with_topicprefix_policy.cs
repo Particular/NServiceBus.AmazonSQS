@@ -20,9 +20,9 @@
                 {
                     b.CustomConfig(c =>
                     {
-                        var policies = c.ConfigureSqsTransport().Policies();
+                        var policies = c.ConfigureSqsTransport().Policies;
                         // ATT framework sets a prefix so we just use that
-                        policies.AddTopicNamePrefixCondition();
+                        policies.TopicNamePrefixCondition = true;
                     });
                 })
                 .Done(c => c.GotEvents)

@@ -25,7 +25,7 @@ namespace NServiceBus.Transport.SQS
                     var size = message.Size;
                     payloadSize += size;
 
-                    if (payloadSize > TransportConfiguration.MaximumMessageSize)
+                    if (payloadSize > TransportConstraints.MaximumMessageSize)
                     {
                         allBatches.Add(message.ToBatchRequest(currentDestinationBatches));
                         currentDestinationBatches.Clear();
@@ -37,7 +37,7 @@ namespace NServiceBus.Transport.SQS
                     currentDestinationBatches.Add(Guid.NewGuid().ToString(), message);
 
                     var currentCount = currentDestinationBatches.Count;
-                    if (currentCount != 0 && currentCount % TransportConfiguration.MaximumItemsInBatch == 0)
+                    if (currentCount != 0 && currentCount % TransportConstraints.MaximumItemsInBatch == 0)
                     {
                         allBatches.Add(message.ToBatchRequest(currentDestinationBatches));
                         currentDestinationBatches.Clear();

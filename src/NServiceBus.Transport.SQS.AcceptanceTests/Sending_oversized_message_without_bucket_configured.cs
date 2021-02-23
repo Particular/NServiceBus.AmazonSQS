@@ -2,10 +2,8 @@
 {
     using System;
     using AcceptanceTesting;
-    using Configuration.AdvancedExtensibility;
     using EndpointTemplates;
     using NUnit.Framework;
-    using Transport.SQS.Configure;
 
     public class Sending_oversized_message_without_bucket_configured : NServiceBusAcceptanceTest
     {
@@ -39,8 +37,7 @@
             {
                 EndpointSetup<DefaultServer>(c =>
                 {
-                    c.GetSettings().Set(SettingsKeys.S3BucketForLargeMessages, string.Empty);
-                    c.GetSettings().Set(SettingsKeys.S3KeyPrefix, string.Empty);
+                    c.ConfigureSqsTransport().S3 = null; //Disable S3
                 });
             }
         }

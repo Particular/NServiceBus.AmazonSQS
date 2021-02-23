@@ -4,14 +4,11 @@ namespace NServiceBus.Transport.SQS.Tests
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Amazon.Auth.AccessControlPolicy;
     using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS;
     using Configure;
     using NUnit.Framework;
-    using Particular.Approvals;
-    using Settings;
     using Unicast.Messages;
 
     [TestFixture]
@@ -23,58 +20,25 @@ namespace NServiceBus.Transport.SQS.Tests
             sqsClient = new MockSqsClient();
             snsClient = new MockSnsClient();
             sqsClient.EnableGetAttributeReturnsWhatWasSet();
-            settings = new SettingsHolder();
 
             customEventToTopicsMappings = new EventToTopicsMappings();
-            settings.Set(customEventToTopicsMappings);
-
             customEventToEventsMappings = new EventToEventsMappings();
-            settings.Set(customEventToEventsMappings);
+            policySettings = new PolicySettings();
 
-            messageMetadataRegistry = settings.SetupMessageMetadataRegistry();
             queueName = "fakeQueue";
-
-            transportSettings = new TransportExtensions<SqsTransport>(settings);
         }
 
         TestableSubscriptionManager CreateNonBatchingSubscriptionManager()
         {
-            settings.Set(SettingsKeys.DisableSubscribeBatchingOnStart, true);
-
-            var transportConfiguration = new TransportConfiguration(settings);
-
             return new TestableSubscriptionManager(
-                transportConfiguration,
                 sqsClient,
                 snsClient,
                 queueName,
-                new QueueCache(sqsClient,
-                    new TransportConfiguration(settings)),
-                messageMetadataRegistry,
-                new TopicCache(snsClient,
-                    messageMetadataRegistry,
-                    new TransportConfiguration(settings))
-                );
-        }
-
-        TestableSubscriptionManager CreateBatchingSubscriptionManager()
-        {
-            settings.Set(SettingsKeys.DisableSubscribeBatchingOnStart, false);
-
-            var transportConfiguration = new TransportConfiguration(settings);
-
-            return new TestableSubscriptionManager(
-                transportConfiguration,
-                sqsClient,
-                snsClient,
-                queueName,
-                new QueueCache(sqsClient,
-                    new TransportConfiguration(settings)),
-                messageMetadataRegistry,
-                new TopicCache(snsClient,
-                    messageMetadataRegistry,
-                    new TransportConfiguration(settings))
-                );
+                new QueueCache(sqsClient, dest => QueueCache.GetSqsQueueName(dest, "")),
+                new TopicCache(snsClient, customEventToTopicsMappings, customEventToEventsMappings,
+                    TopicNameHelper.GetSnsTopicName, ""),
+                policySettings,
+                "");
         }
 
         [Test]
@@ -84,7 +48,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var eventType = typeof(object);
 
-            await manager.Subscribe(eventType, null);
+            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
             Assert.IsNotEmpty(snsClient.SubscribeRequestsSent);
         }
@@ -96,12 +60,12 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var eventType = typeof(Event);
 
-            await manager.Subscribe(eventType, null);
+            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
             var initialSubscribeRequests = new List<SubscribeRequest>(snsClient.SubscribeRequestsSent);
             snsClient.SubscribeRequestsSent.Clear();
 
-            await manager.Subscribe(eventType, null);
+            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
             Assert.IsNotEmpty(initialSubscribeRequests);
             Assert.IsEmpty(snsClient.SubscribeRequestsSent);
@@ -114,10 +78,10 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var eventType = typeof(Event);
 
-            await manager.Subscribe(eventType, null);
-            await manager.Unsubscribe(eventType, null);
+            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
+            await manager.Unsubscribe(new MessageMetadata(eventType), null);
 
-            await manager.Subscribe(eventType, null);
+            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
             Assert.AreEqual(2, snsClient.SubscribeRequestsSent.Count);
         }
@@ -129,7 +93,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var eventType = typeof(Event);
 
-            await manager.Subscribe(eventType, null);
+            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
             CollectionAssert.AreEquivalent(new List<string> { "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event" }, snsClient.CreateTopicRequests);
             Assert.IsEmpty(snsClient.FindTopicRequests);
@@ -143,7 +107,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var eventType = typeof(Event);
             customEventToTopicsMappings.Add(eventType, new[] { "custom-topic-name" });
 
-            await manager.Subscribe(eventType, null);
+            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
             CollectionAssert.AreEquivalent(new List<string>
             {
@@ -164,7 +128,7 @@ namespace NServiceBus.Transport.SQS.Tests
             customEventToEventsMappings.Add(subscribedEventType, concreteEventType);
             customEventToEventsMappings.Add(subscribedEventType, concreteAnotherEventType);
 
-            await manager.Subscribe(subscribedEventType, null);
+            await manager.SubscribeAll(new[] { new MessageMetadata(subscribedEventType) }, null);
 
             CollectionAssert.AreEquivalent(new List<string>
             {
@@ -189,7 +153,7 @@ namespace NServiceBus.Transport.SQS.Tests
             customEventToEventsMappings.Add(subscribedEventType, concreteEventType);
             customEventToEventsMappings.Add(subscribedEventType, concreteAnotherEventType);
 
-            await manager.Subscribe(subscribedEventType, null);
+            await manager.SubscribeAll(new[] { new MessageMetadata(subscribedEventType) }, null);
 
             Assert.AreEqual(1, sqsClient.SetAttributesRequestsSent.Count);
         }
@@ -201,7 +165,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var eventType = typeof(Event);
 
-            await manager.Subscribe(eventType, null);
+            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
             Assert.AreEqual(1, snsClient.SubscribeRequestsSent.Count);
             var subscribeRequest = snsClient.SubscribeRequestsSent[0];
@@ -223,7 +187,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 {"QueueArn", "arn:fakeQueue"}
             };
 
-            Assert.DoesNotThrowAsync(async () => await manager.Subscribe(typeof(Event), null));
+            Assert.DoesNotThrowAsync(async () => await manager.SubscribeAll(new[] { new MessageMetadata(typeof(Event)) }, null));
             Assert.AreEqual(8, manager.Delays.Count);
             Assert.AreEqual(44000, manager.Delays.Sum());
         }
@@ -249,218 +213,9 @@ namespace NServiceBus.Transport.SQS.Tests
                 return original(s);
             };
 
-            Assert.DoesNotThrowAsync(async () => await manager.Subscribe(typeof(Event), null));
+            Assert.DoesNotThrowAsync(async () => await manager.SubscribeAll(new[] { new MessageMetadata(typeof(Event)) }, null));
             Assert.AreEqual(7, manager.Delays.Count);
             Assert.AreEqual(35000, manager.Delays.Sum());
-        }
-
-        [Test]
-        public async Task Subscribe_endpointstarting_creates_topic_but_not_policies_and_subscriptions()
-        {
-            var manager = CreateBatchingSubscriptionManager();
-
-            var eventType = typeof(Event);
-            await manager.Subscribe(eventType, null);
-
-            Assert.AreEqual(1, snsClient.CreateTopicRequests.Count);
-            Assert.IsEmpty(snsClient.SubscribeRequestsSent);
-            Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
-        }
-
-        [Test]
-        public async Task SettlePolicy_sets_full_policy()
-        {
-            var manager = CreateBatchingSubscriptionManager();
-
-            var eventType = typeof(Event);
-            await manager.Subscribe(eventType, null);
-            var anotherEvent = typeof(AnotherEvent);
-            await manager.Subscribe(anotherEvent, null);
-
-            var setAttributeRequestsSentBeforeSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
-
-            await manager.Settle();
-
-            Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
-            Approver.Verify(sqsClient.SetAttributesRequestsSent[0].attributes["Policy"], PolicyScrubber.ScrubPolicy);
-        }
-
-        [Test]
-        public async Task Subscribe_after_settle_sets_full_policy()
-        {
-            var manager = CreateBatchingSubscriptionManager();
-
-            var eventType = typeof(Event);
-            await manager.Subscribe(eventType, null);
-            var anotherEvent = typeof(AnotherEvent);
-            await manager.Subscribe(anotherEvent, null);
-
-            await manager.Settle();
-
-            var setAttributeRequestsSentAfterSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
-
-            var invocationCount = 0;
-            var original = sqsClient.GetAttributeRequestsResponse;
-            sqsClient.GetAttributeRequestsResponse = s =>
-            {
-                invocationCount++;
-
-                if (invocationCount < 2)
-                {
-                    return new Dictionary<string, string>
-                    {
-                        {"QueueArn", "arn:fakeQueue"},
-                        {"Policy", setAttributeRequestsSentAfterSettle[0].attributes["Policy"]}
-                    };
-                }
-
-                return original(s);
-            };
-
-            var yetAnotherEvent = typeof(YetAnotherEvent);
-            await manager.Subscribe(yetAnotherEvent, null);
-
-            Approver.Verify(sqsClient.SetAttributesRequestsSent[1].attributes["Policy"], PolicyScrubber.ScrubPolicy);
-        }
-
-        [Test]
-        public async Task SettlePolicy_with_all_conditions_sets_full_policy()
-        {
-            transportSettings.TopicNamePrefix("DEV-");
-
-            var policies = transportSettings.Policies();
-            policies.AddAccountCondition();
-            policies.AddTopicNamePrefixCondition();
-            policies.AddNamespaceCondition("Shipping.");
-            policies.AddNamespaceCondition("Sales.HighValueOrders.");
-
-            var manager = CreateBatchingSubscriptionManager();
-
-            var eventType = typeof(Event);
-            await manager.Subscribe(eventType, null);
-            var anotherEvent = typeof(AnotherEvent);
-            await manager.Subscribe(anotherEvent, null);
-
-            var setAttributeRequestsSentBeforeSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
-
-            await manager.Settle();
-
-            Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
-            Approver.Verify(sqsClient.SetAttributesRequestsSent[0].attributes["Policy"], PolicyScrubber.ScrubPolicy);
-        }
-
-        [Test]
-        public async Task Subscribe_after_settle_with_all_conditions_should_not_modify_policy()
-        {
-            transportSettings.TopicNamePrefix("DEV-");
-
-            var policies = transportSettings.Policies();
-            policies.AddAccountCondition();
-            policies.AddTopicNamePrefixCondition();
-            policies.AddNamespaceCondition("Shipping.");
-            policies.AddNamespaceCondition("Sales.HighValueOrders.");
-
-            var manager = CreateBatchingSubscriptionManager();
-
-            var eventType = typeof(Event);
-            await manager.Subscribe(eventType, null);
-            var anotherEvent = typeof(AnotherEvent);
-            await manager.Subscribe(anotherEvent, null);
-
-            await manager.Settle();
-
-            var setAttributeRequestsSentAfterSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
-            var invocationCount = 0;
-            var original = sqsClient.GetAttributeRequestsResponse;
-            sqsClient.GetAttributeRequestsResponse = s =>
-            {
-                invocationCount++;
-
-                if (invocationCount < 2)
-                {
-                    return new Dictionary<string, string>
-                    {
-                        {"QueueArn", "arn:fakeQueue"},
-                        {"Policy", setAttributeRequestsSentAfterSettle[0].attributes["Policy"]}
-                    };
-                }
-
-                return original(s);
-            };
-
-            sqsClient.SetAttributesRequestsSent.Clear();
-
-            var yetAnotherEvent = typeof(YetAnotherEvent);
-            await manager.Subscribe(yetAnotherEvent, null);
-
-            Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
-        }
-
-        [Test]
-        public async Task SettlePolicy_with_nothing_to_subscribe_and_no_policy_doesnt_create_policy()
-        {
-            var manager = CreateBatchingSubscriptionManager();
-
-#pragma warning disable 618
-            var existingPolicy = new Policy();
-#pragma warning restore 618
-
-            EmulateImmediateSettlementOfPolicy(existingPolicy);
-
-            var setAttributeRequestsSentBeforeSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
-
-            await manager.Settle();
-
-            Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
-            Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
-        }
-
-        [Test]
-        public async Task SettlePolicy_with_policy_assumed_to_have_permissions_doesnt_acquire_policy_but_creates_topics_and_subscriptions()
-        {
-            var policies = transportSettings.Policies();
-            policies.AssumePolicyHasAppropriatePermissions();
-
-            var manager = CreateBatchingSubscriptionManager();
-
-            var eventType = typeof(Event);
-            await manager.Subscribe(eventType, null);
-            var anotherEvent = typeof(AnotherEvent);
-            await manager.Subscribe(anotherEvent, null);
-
-            var setAttributeRequestsSentBeforeSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
-
-            await manager.Settle();
-
-            Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
-            Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
-            Assert.AreEqual(1, sqsClient.GetAttributeRequestsSent.Count, "One queue attribute get request should have been sent only.");
-            Assert.AreEqual(2, snsClient.SubscribeRequestsSent.Count, "A subscribe request per topic should have been sent");
-            Assert.AreEqual(2, snsClient.CreateTopicRequests.Count, "A create topic request per topic should have been sent");
-        }
-
-        [Test]
-        public async Task After_settle_policy_does_not_batch_subscriptions()
-        {
-            var manager = CreateBatchingSubscriptionManager();
-
-            await manager.Subscribe(typeof(Event), null);
-            await manager.Subscribe(typeof(AnotherEvent), null);
-
-            var setAttributeRequestsSentBeforeSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
-
-            await manager.Settle();
-
-            var setAttributeRequestsSentAfterSettle = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
-
-            await manager.Subscribe(typeof(YetAnotherEvent), null);
-            await manager.Subscribe(typeof(object), null);
-
-            var setAttributeRequestsSentAfterSubscribe = new List<(string queueUrl, Dictionary<string, string> attributes)>(sqsClient.SetAttributesRequestsSent);
-
-            Assert.IsEmpty(setAttributeRequestsSentBeforeSettle);
-            Assert.AreEqual(1, setAttributeRequestsSentAfterSettle.Count);
-            Assert.AreEqual(3, setAttributeRequestsSentAfterSubscribe.Count);
         }
 
         [Test]
@@ -470,7 +225,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var eventType = typeof(object);
 
-            await manager.Unsubscribe(eventType, null);
+            await manager.Unsubscribe(new MessageMetadata(eventType), null);
 
             Assert.IsEmpty(snsClient.UnsubscribeRequests);
         }
@@ -491,7 +246,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var eventType = typeof(Event);
 
-            await manager.Unsubscribe(eventType, null);
+            await manager.Unsubscribe(new MessageMetadata(eventType), null);
 
             Assert.IsEmpty(snsClient.UnsubscribeRequests);
         }
@@ -512,7 +267,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var eventType = typeof(Event);
 
-            await manager.Unsubscribe(eventType, null);
+            await manager.Unsubscribe(new MessageMetadata(eventType), null);
 
             CollectionAssert.AreEquivalent(new List<string>
             {
@@ -535,7 +290,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var eventType = typeof(Event);
 
-            await manager.Unsubscribe(eventType, null);
+            await manager.Unsubscribe(new MessageMetadata(eventType), null);
 
             Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
         }
@@ -569,7 +324,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 };
             };
 
-            await manager.Unsubscribe(unsubscribedEvent, null);
+            await manager.Unsubscribe(new MessageMetadata(unsubscribedEvent), null);
 
             CollectionAssert.AreEquivalent(new List<string>
             {
@@ -611,7 +366,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 };
             };
 
-            await manager.Unsubscribe(unsubscribedEvent, null);
+            await manager.Unsubscribe(new MessageMetadata(unsubscribedEvent), null);
 
             Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
         }
@@ -644,7 +399,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 };
             };
 
-            await manager.Unsubscribe(unsubscribedEvent, null);
+            await manager.Unsubscribe(new MessageMetadata(unsubscribedEvent), null);
 
             CollectionAssert.AreEquivalent(new List<string>
             {
@@ -685,47 +440,22 @@ namespace NServiceBus.Transport.SQS.Tests
                 };
             };
 
-            await manager.Unsubscribe(unsubscribedEvent, null);
+            await manager.Unsubscribe(new MessageMetadata(unsubscribedEvent), null);
 
             Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
         }
 
-#pragma warning disable 618
-        void EmulateImmediateSettlementOfPolicy(Policy initialPolicy)
-#pragma warning restore 618
-        {
-            var invocationCount = 0;
-            var original = sqsClient.GetAttributeRequestsResponse;
-            sqsClient.GetAttributeRequestsResponse = s =>
-            {
-                invocationCount++;
-
-                // three calls because one from the QueueCache and two from the settlement
-                if (invocationCount < 3)
-                {
-                    return new Dictionary<string, string>
-                    {
-                        {"QueueArn", "arn:fakeQueue"},
-                        {"Policy", initialPolicy.ToJson()}
-                    };
-                }
-
-                return original(s);
-            };
-        }
-
         MockSqsClient sqsClient;
         MockSnsClient snsClient;
-        MessageMetadataRegistry messageMetadataRegistry;
-        SettingsHolder settings;
+        PolicySettings policySettings;
         string queueName;
         EventToTopicsMappings customEventToTopicsMappings;
         EventToEventsMappings customEventToEventsMappings;
-        TransportExtensions<SqsTransport> transportSettings;
 
         class TestableSubscriptionManager : SubscriptionManager
         {
-            public TestableSubscriptionManager(TransportConfiguration configuration, IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, MessageMetadataRegistry messageMetadataRegistry, TopicCache topicCache) : base(configuration, sqsClient, snsClient, queueName, queueCache, messageMetadataRegistry, topicCache)
+            public TestableSubscriptionManager(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, TopicCache topicCache, PolicySettings policySettings, string topicNamePrefix)
+                : base(sqsClient, snsClient, queueName, queueCache, topicCache, policySettings, topicNamePrefix)
             {
             }
 

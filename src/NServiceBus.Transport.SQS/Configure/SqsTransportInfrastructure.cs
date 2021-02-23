@@ -1,175 +1,50 @@
 ﻿namespace NServiceBus.Transport.SQS.Configure
 {
     using System;
-    using System.Collections.Generic;
-    using System.Text;
+    using System.Linq;
     using System.Threading.Tasks;
-    using Amazon.Runtime;
     using Amazon.S3;
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
-    using DelayedDelivery;
-    using Logging;
-    using Performance.TimeToBeReceived;
-    using Routing;
-    using Settings;
     using Transport;
-    using Unicast.Messages;
 
     class SqsTransportInfrastructure : TransportInfrastructure
     {
-        public SqsTransportInfrastructure(ReadOnlySettings settings)
+        public SqsTransportInfrastructure(HostSettings hostSettings, ReceiveSettings[] receiverSettings, IAmazonSQS sqsClient,
+            IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, S3Settings s3Settings, PolicySettings policySettings, int queueDelayTimeSeconds, string topicNamePrefix, bool v1Compatibility)
         {
-            this.settings = settings;
-            messageMetadataRegistry = this.settings.Get<MessageMetadataRegistry>();
-            configuration = new TransportConfiguration(settings);
+            this.sqsClient = sqsClient;
+            this.snsClient = snsClient;
+            s3Client = s3Settings?.S3Client;
+            Receivers = receiverSettings
+                .Select(x => CreateMessagePump(x, sqsClient, snsClient, queueCache, topicCache, s3Settings, policySettings, queueDelayTimeSeconds, topicNamePrefix, hostSettings.CriticalErrorAction))
+                .ToDictionary(x => x.Id, x => x);
 
-            if (settings.HasSetting(SettingsKeys.DisableNativePubSub))
-            {
-                OutboundRoutingPolicy = new OutboundRoutingPolicy(OutboundRoutingType.Unicast, OutboundRoutingType.Unicast, OutboundRoutingType.Unicast);
-            }
-            else
-            {
-                OutboundRoutingPolicy = new OutboundRoutingPolicy(OutboundRoutingType.Unicast, OutboundRoutingType.Multicast, OutboundRoutingType.Unicast);
-            }
-
-            try
-            {
-                sqsClient = configuration.SqsClientFactory();
-            }
-            catch (AmazonClientException e)
-            {
-                var message = "Unable to configure the SQS client. Make sure the environment variables for AWS_REGION, AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set or the client factory configures the created client accordingly";
-                Logger.Error(message, e);
-                throw new Exception(message, e);
-            }
-
-            try
-            {
-                snsClient = configuration.SnsClientFactory();
-            }
-            catch (AmazonClientException e)
-            {
-                var message = "Unable to configure the SNS client. Make sure the environment variables for AWS_REGION, AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set or the client factory configures the created client accordingly";
-                Logger.Error(message, e);
-                throw new Exception(message, e);
-            }
-
-            try
-            {
-                if (!string.IsNullOrEmpty(settings.GetOrDefault<string>(SettingsKeys.S3BucketForLargeMessages)))
-                {
-                    s3Client = configuration.S3ClientFactory();
-                }
-            }
-            catch (AmazonClientException e)
-            {
-                var message = "Unable to configure the S3 client. Make sure the environment variables for AWS_REGION, AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are set or the client factory configures the created client accordingly";
-                Logger.Error(message, e);
-                throw new Exception(message, e);
-            }
-
-            queueCache = new QueueCache(sqsClient, configuration);
-            topicCache = new TopicCache(snsClient, messageMetadataRegistry, configuration);
+            Dispatcher = new MessageDispatcher(sqsClient, snsClient, queueCache, topicCache, s3Settings,
+                queueDelayTimeSeconds, v1Compatibility);
         }
 
-        public SubscriptionManager SubscriptionManager { get; private set; }
-
-        public override IEnumerable<Type> DeliveryConstraints => new List<Type>
+        static IMessageReceiver CreateMessagePump(ReceiveSettings receiveSettings, IAmazonSQS sqsClient,
+            IAmazonSimpleNotificationService snsClient, QueueCache queueCache,
+            TopicCache topicCache, S3Settings s3Settings, PolicySettings policySettings, int queueDelayTimeSeconds,
+            string topicNamePrefix, Action<string, Exception> criticalErrorAction)
         {
-            typeof(DiscardIfNotReceivedBefore),
-            typeof(DoNotDeliverBefore),
-            typeof(DelayDeliveryWith)
-        };
+            var subManager = new SubscriptionManager(sqsClient, snsClient, receiveSettings.ReceiveAddress, queueCache, topicCache, policySettings, topicNamePrefix);
 
-        public override TransportTransactionMode TransactionMode => TransportTransactionMode.ReceiveOnly;
-
-        public override OutboundRoutingPolicy OutboundRoutingPolicy { get; }
-
-        MessagePump CreateMessagePump()
-        {
-            return new MessagePump(configuration, new InputQueuePump(configuration, s3Client, sqsClient, queueCache), new DelayedMessagesPump(configuration, sqsClient, queueCache));
+            return new MessagePump(receiveSettings, sqsClient, queueCache, s3Settings, subManager, queueDelayTimeSeconds, criticalErrorAction);
         }
 
-        QueueCreator CreateQueueCreator()
-        {
-            return new QueueCreator(configuration, s3Client, sqsClient, queueCache);
-        }
-
-        MessageDispatcher CreateMessageDispatcher()
-        {
-            return new MessageDispatcher(configuration, s3Client, sqsClient, snsClient, queueCache, topicCache);
-        }
-
-        public override TransportReceiveInfrastructure ConfigureReceiveInfrastructure()
-        {
-            return new TransportReceiveInfrastructure(
-                CreateMessagePump,
-                CreateQueueCreator,
-                () => Task.FromResult(StartupCheckResult.Success));
-        }
-
-        public override TransportSendInfrastructure ConfigureSendInfrastructure()
-        {
-            return new TransportSendInfrastructure(
-                CreateMessageDispatcher,
-                () => Task.FromResult(StartupCheckResult.Success));
-        }
-
-        public override Task Stop()
+        public override Task Shutdown()
         {
             sqsClient.Dispose();
             snsClient.Dispose();
             s3Client?.Dispose();
-            return base.Stop();
-        }
 
-        public override TransportSubscriptionInfrastructure ConfigureSubscriptionInfrastructure()
-        {
-            if (SubscriptionManager == null)
-            {
-                SubscriptionManager = new SubscriptionManager(
-                    configuration,
-                    sqsClient,
-                    snsClient,
-                    settings.LocalAddress(),
-                    queueCache,
-                    messageMetadataRegistry,
-                    topicCache);
-            }
-            return new TransportSubscriptionInfrastructure(() => SubscriptionManager);
-        }
-
-        public override EndpointInstance BindToLocalEndpoint(EndpointInstance instance)
-        {
-            return instance;
-        }
-
-        public override string ToTransportAddress(LogicalAddress logicalAddress)
-        {
-            var queueName = logicalAddress.EndpointInstance.Endpoint;
-            var queue = new StringBuilder(queueName);
-            if (logicalAddress.EndpointInstance.Discriminator != null)
-            {
-                queue.Append("-" + logicalAddress.EndpointInstance.Discriminator);
-            }
-
-            if (logicalAddress.Qualifier != null)
-            {
-                queue.Append("-" + logicalAddress.Qualifier);
-            }
-
-            return queueCache.GetPhysicalQueueName(queue.ToString());
+            return Task.CompletedTask;
         }
 
         readonly IAmazonSQS sqsClient;
         readonly IAmazonSimpleNotificationService snsClient;
         readonly IAmazonS3 s3Client;
-        readonly QueueCache queueCache;
-        readonly TransportConfiguration configuration;
-        readonly ReadOnlySettings settings;
-        readonly MessageMetadataRegistry messageMetadataRegistry;
-        readonly TopicCache topicCache;
-        static ILog Logger = LogManager.GetLogger(typeof(SqsTransportInfrastructure));
     }
 }

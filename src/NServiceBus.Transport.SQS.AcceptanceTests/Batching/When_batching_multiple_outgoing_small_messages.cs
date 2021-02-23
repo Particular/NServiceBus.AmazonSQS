@@ -112,7 +112,7 @@ namespace NServiceBus.AcceptanceTests.Batching
             {
                 EndpointSetup<DefaultServer>(builder =>
                 {
-                    builder.ConfigureTransport().Routing().RouteToEndpoint(typeof(MyMessage), typeof(Receiver));
+                    builder.ConfigureRouting().RouteToEndpoint(typeof(MyMessage), typeof(Receiver));
                 });
             }
 

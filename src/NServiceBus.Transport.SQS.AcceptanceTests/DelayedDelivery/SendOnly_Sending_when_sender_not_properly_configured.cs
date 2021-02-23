@@ -13,7 +13,7 @@
         public async Task Should_deliver_message_if_below_queue_delay_time()
         {
             var payload = "some payload";
-            var delay = QueueDelayTime.Subtract(TimeSpan.FromSeconds(1));
+            var delay = TimeSpan.FromSeconds(QueueDelayTime - 1);
 
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<NotConfiguredSendOnlySender>(b => b.When(async (session, c) =>
@@ -36,29 +36,7 @@
             Assert.AreEqual(payload, context.Payload, "The received payload doesn't match the sent one.");
         }
 
-        [Test]
-        public void Should_fail_to_send_message_if_above_queue_delay_time()
-        {
-            var delay = TimeSpan.FromMinutes(16);
-
-            Assert.ThrowsAsync<NotSupportedException>(async () =>
-            {
-                await Scenario.Define<Context>()
-                    .WithEndpoint<NotConfiguredSendOnlySender>(b => b.When(async (session, c) =>
-                    {
-                        var sendOptions = new SendOptions();
-                        sendOptions.DelayDeliveryWith(delay);
-
-                        await session.Send(new DelayedMessage
-                        {
-                            Payload = ""
-                        }, sendOptions);
-                    }))
-                    .Run();
-            });
-        }
-
-        static readonly TimeSpan QueueDelayTime = TimeSpan.FromSeconds(3);
+        static readonly int QueueDelayTime = 3;
 
         public class Context : ScenarioContext
         {
@@ -74,7 +52,7 @@
             {
                 EndpointSetup<DefaultServer>(builder =>
                 {
-                    builder.ConfigureTransport().Routing().RouteToEndpoint(typeof(DelayedMessage), typeof(Receiver));
+                    builder.ConfigureRouting().RouteToEndpoint(typeof(DelayedMessage), typeof(Receiver));
                     builder.SendOnly();
                 });
             }
@@ -84,7 +62,10 @@
         {
             public Receiver()
             {
-                EndpointSetup<DefaultServer>(builder => { builder.ConfigureSqsTransport().UnrestrictedDurationDelayedDelivery(QueueDelayTime); });
+                EndpointSetup<DefaultServer>(builder =>
+                {
+                    builder.ConfigureSqsTransport().QueueDelayTime = QueueDelayTime;
+                });
             }
 
             public class MyMessageHandler : IHandleMessages<DelayedMessage>

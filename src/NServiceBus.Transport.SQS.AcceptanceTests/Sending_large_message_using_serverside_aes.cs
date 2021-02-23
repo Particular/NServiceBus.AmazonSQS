@@ -23,8 +23,8 @@ namespace NServiceBus.AcceptanceTests
 
             Assert.AreEqual(payloadToSend, context.ReceivedPayload, "The large payload should be handled correctly using the kms encrypted S3 bucket");
 
-            var s3Client = SqsTransportExtensions.CreateS3Client();
-            var getObjectResponse = await s3Client.GetObjectAsync(BucketName, $"{SqsTransportExtensions.S3Prefix}/{context.MessageId}");
+            var s3Client = ConfigureEndpointSqsTransport.CreateS3Client();
+            var getObjectResponse = await s3Client.GetObjectAsync(BucketName, $"{ConfigureEndpointSqsTransport.S3Prefix}/{context.MessageId}");
 
             Assert.AreEqual(ServerSideEncryptionMethod.AES256, getObjectResponse.ServerSideEncryptionMethod);
             Assert.AreEqual(ServerSideEncryptionCustomerMethod.None, getObjectResponse.ServerSideEncryptionCustomerMethod);
@@ -46,12 +46,14 @@ namespace NServiceBus.AcceptanceTests
             {
                 EndpointSetup<DefaultServer>(c =>
                 {
-                    var transportConfig = c.UseTransport<SqsTransport>();
+                    var transportConfig = c.ConfigureSqsTransport();
 
-                    BucketName = $"{SqsTransportExtensions.S3BucketName}";
+                    BucketName = $"{ConfigureEndpointSqsTransport.S3BucketName}";
 
-                    var s3Config = transportConfig.S3(BucketName, SqsTransportExtensions.S3Prefix);
-                    s3Config.ServerSideEncryption(ServerSideEncryptionMethod.AES256);
+                    transportConfig.S3 = new S3Settings(BucketName, ConfigureEndpointSqsTransport.S3Prefix, ConfigureEndpointSqsTransport.CreateS3Client())
+                    {
+                        Encryption = new S3EncryptionWithManagedKey(ServerSideEncryptionMethod.AES256)
+                    };
                 });
             }
 

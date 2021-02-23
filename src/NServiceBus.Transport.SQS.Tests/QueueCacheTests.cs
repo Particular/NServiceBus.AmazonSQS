@@ -16,12 +16,7 @@
         [TestCase("PREFIXreally-really-really-really-really-really-really-really-really-really-really-really-really-really-really-really", "PREFIX")]
         public void ThrowsWhenLongerThanEightyChars(string destination, string queueNamePrefix)
         {
-            var settings = new SettingsHolder();
-            settings.Set(SettingsKeys.QueueNamePrefix, queueNamePrefix);
-
-            var configuration = new TransportConfiguration(settings);
-
-            var cache = new QueueCache(null, configuration);
+            var cache = new QueueCache(null, dest => QueueCache.GetSqsQueueName(dest, queueNamePrefix));
 
             var exception = Assert.Throws<Exception>(() => cache.GetPhysicalQueueName(destination));
             Assert.That(exception.Message, Contains.Substring("is longer than 80 characters"));
@@ -32,13 +27,7 @@
         [TestCase("PREFIXreally-really-really-really-really-really-really-really-really-really-really-really-really-really-really-really", "PREFIX", "PREFIXally-really-really-really-really-really-really-really-really-really-really")]
         public void DoesNotThrowWithPretruncation(string destination, string queueNamePrefix, string expected)
         {
-            var settings = new SettingsHolder();
-            settings.Set(SettingsKeys.PreTruncateQueueNames, true);
-            settings.Set(SettingsKeys.QueueNamePrefix, queueNamePrefix);
-
-            var configuration = new TransportConfiguration(settings);
-
-            var cache = new QueueCache(null, configuration);
+            var cache = new QueueCache(null, dest => TestNameHelper.GetSqsQueueName(dest, queueNamePrefix));
 
             var result = cache.GetPhysicalQueueName(destination);
             var resultIdempotent = cache.GetPhysicalQueueName(result);
@@ -54,9 +43,7 @@
         [TestCase("destination-delay.fifo.fifo", "destination-delay-fifo.fifo")]
         public void Preserves_FifoQueue(string destination, string expected)
         {
-            var configuration = new TransportConfiguration(new SettingsHolder());
-
-            var cache = new QueueCache(null, configuration);
+            var cache = new QueueCache(null, dest => QueueCache.GetSqsQueueName(dest, ""));
 
             var result = cache.GetPhysicalQueueName(destination);
             var resultIdempotent = cache.GetPhysicalQueueName(result);
@@ -72,13 +59,7 @@
         [TestCase("really-really-really-really-really-really-really-really-really-really-really-really-really-really-really-really-delay.fifo.fifo", "y-really-really-really-really-really-really-really-really-really-delay-fifo.fifo")]
         public void Preserves_FifoQueue_WithPreTruncate(string destination, string expected)
         {
-            var settings = new SettingsHolder();
-            settings.Set(SettingsKeys.PreTruncateQueueNames, true);
-            settings.Set(SettingsKeys.QueueNamePrefix, string.Empty);
-
-            var configuration = new TransportConfiguration(settings);
-
-            var cache = new QueueCache(null, configuration);
+            var cache = new QueueCache(null, dest => TestNameHelper.GetSqsQueueName(dest, ""));
 
             var result = cache.GetPhysicalQueueName(destination);
             var resultIdempotent = cache.GetPhysicalQueueName(result);
@@ -101,11 +82,7 @@
         [TestCase("destination_1", "destination_1")]
         public void ReplacesNonDigitsWithDash(string destination, string expected)
         {
-            var settings = new SettingsHolder();
-
-            var configuration = new TransportConfiguration(settings);
-
-            var cache = new QueueCache(null, configuration);
+            var cache = new QueueCache(null, dest => QueueCache.GetSqsQueueName(destination, ""));
 
             var result = cache.GetPhysicalQueueName(destination);
             var resultIdempotent = cache.GetPhysicalQueueName(result);
@@ -117,13 +94,8 @@
         [Test]
         public async Task GetQueueUrl_caches()
         {
-            var settings = new SettingsHolder();
-            settings.Set(SettingsKeys.QueueNamePrefix, "PREFIX");
-
-            var configuration = new TransportConfiguration(settings);
             var sqsClient = new MockSqsClient();
-
-            var cache = new QueueCache(sqsClient, configuration);
+            var cache = new QueueCache(sqsClient, dest => QueueCache.GetSqsQueueName(dest, "PREFIX"));
 
             await cache.GetQueueUrl("fakeQueueName");
 
@@ -140,12 +112,10 @@
         [Test]
         public async Task GetQueueArn_caches()
         {
-            var settings = new SettingsHolder();
 
-            var configuration = new TransportConfiguration(settings);
             var sqsClient = new MockSqsClient();
 
-            var cache = new QueueCache(sqsClient, configuration);
+            var cache = new QueueCache(sqsClient, dest => QueueCache.GetSqsQueueName(dest, "PREFIX"));
 
             await cache.GetQueueArn("fakeQueueUrl");
 
@@ -162,12 +132,9 @@
         [Test]
         public async Task SetQueueUrl_caches()
         {
-            var settings = new SettingsHolder();
-
-            var configuration = new TransportConfiguration(settings);
             var sqsClient = new MockSqsClient();
 
-            var cache = new QueueCache(sqsClient, configuration);
+            var cache = new QueueCache(sqsClient, dest => QueueCache.GetSqsQueueName(dest, "PREFIX"));
 
             cache.SetQueueUrl("fakeQueueName", "http://fakeQueueName");
 
