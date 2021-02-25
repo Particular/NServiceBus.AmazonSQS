@@ -275,22 +275,23 @@ namespace NServiceBus.Transport.SQS
 
             while (!errorHandled && !messageProcessedOk)
             {
+                // set the native message on the context for advanced usage scenario's
+                var context = new ContextBag();
+                context.Set(nativeMessage);
+                // We add it to the transport transaction to make it available in dispatching scenario's so we copy over message attributes when moving messages to the error/audit queue
+                var transportTransaction = new TransportTransaction();
+                transportTransaction.Set(nativeMessage);
+                transportTransaction.Set("IncomingMessageId", headers[Headers.MessageId]);
+
                 try
                 {
-                    // set the native message on the context for advanced usage scenario's
-                    var context = new ContextBag();
-                    context.Set(nativeMessage);
-                    // We add it to the transport transaction to make it available in dispatching scenario's so we copy over message attributes when moving messages to the error/audit queue
-                    TransportTransaction.Set(nativeMessage);
-                    TransportTransaction.Set("IncomingMessageId", headers[Headers.MessageId]);
-
                     using (var messageContextCancellationTokenSource = new CancellationTokenSource())
                     {
                         var messageContext = new MessageContext(
                             nativeMessageId,
                             new Dictionary<string, string>(headers),
                             body,
-                            TransportTransaction,
+                            transportTransaction,
                             context);
 
                         await onMessage(messageContext).ConfigureAwait(false);
@@ -310,7 +311,7 @@ namespace NServiceBus.Transport.SQS
                             new Dictionary<string, string>(headers),
                             nativeMessageId,
                             body,
-                            TransportTransaction,
+                            transportTransaction,
                             immediateProcessingAttempts)).ConfigureAwait(false);
                     }
                     catch (Exception onErrorEx)
@@ -442,7 +443,6 @@ namespace NServiceBus.Transport.SQS
         ReceiveMessageRequest receiveMessagesRequest;
         CancellationTokenSource tokenSource;
 
-        static readonly TransportTransaction TransportTransaction = new TransportTransaction();
         static ILog _logger = LogManager.GetLogger(typeof(MessagePump));
     }
 }
