@@ -29,7 +29,7 @@ namespace NServiceBus
         protected abstract void ModifyGetRequest(Amazon.S3.Model.GetObjectRequest get);
         protected abstract void ModifyPutRequest(Amazon.S3.Model.PutObjectRequest put);
     }
-    public class S3EncryptionWithCustomerProvidedKey : NServiceBus.S3EncryptionMethod
+    public sealed class S3EncryptionWithCustomerProvidedKey : NServiceBus.S3EncryptionMethod
     {
         public S3EncryptionWithCustomerProvidedKey(Amazon.S3.ServerSideEncryptionCustomerMethod method, string key, string keyMd5 = null) { }
         public string Key { get; }
@@ -38,7 +38,7 @@ namespace NServiceBus
         protected override void ModifyGetRequest(Amazon.S3.Model.GetObjectRequest get) { }
         protected override void ModifyPutRequest(Amazon.S3.Model.PutObjectRequest put) { }
     }
-    public class S3EncryptionWithManagedKey : NServiceBus.S3EncryptionMethod
+    public sealed class S3EncryptionWithManagedKey : NServiceBus.S3EncryptionMethod
     {
         public S3EncryptionWithManagedKey(Amazon.S3.ServerSideEncryptionMethod method, string keyId = null) { }
         public string KeyId { get; }

@@ -64,7 +64,7 @@
             }
             catch (Exception e)
             {
-                _logger.Error("Exception from Send.", e);
+                Logger.Error("Exception from Send.", e);
                 throw;
             }
         }
@@ -120,20 +120,20 @@
         {
             try
             {
-                if (_logger.IsDebugEnabled)
+                if (Logger.IsDebugEnabled)
                 {
                     var message = batch.PreparedMessagesBydId.Values.First();
 
-                    _logger.Debug($"Sending batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
+                    Logger.Debug($"Sending batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
                 }
 
                 var result = await sqsClient.SendMessageBatchAsync(batch.BatchRequest).ConfigureAwait(false);
 
-                if (_logger.IsDebugEnabled)
+                if (Logger.IsDebugEnabled)
                 {
                     var message = batch.PreparedMessagesBydId.Values.First();
 
-                    _logger.Debug($"Sent batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
+                    Logger.Debug($"Sent batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
                 }
 
                 List<Task> redispatchTasks = null;
@@ -141,7 +141,7 @@
                 {
                     redispatchTasks = redispatchTasks ?? new List<Task>(result.Failed.Count);
                     var messageToRetry = batch.PreparedMessagesBydId[errorEntry.Id];
-                    _logger.Info($"Retrying message with MessageId {messageToRetry.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
+                    Logger.Info($"Retrying message with MessageId {messageToRetry.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
                     redispatchTasks.Add(SendMessageForBatch(messageToRetry, batchNumber, totalBatches));
                 }
 
@@ -159,14 +159,14 @@
                     throw new QueueDoesNotExistException($"Unable to send batch '{batchNumber}/{totalBatches}'. Destination '{message.OriginalDestination}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(queueDelaySeconds)}. To enable support for longer delays upgrade '{message.OriginalDestination}' endpoint to Version 6 of the transport or enable unrestricted delayed delivery.", e);
                 }
 
-                _logger.Error($"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'. The destination does not exist.", e);
+                Logger.Error($"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'. The destination does not exist.", e);
                 throw;
             }
             catch (Exception ex)
             {
                 var message = batch.PreparedMessagesBydId.Values.First();
 
-                _logger.Error($"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'", ex);
+                Logger.Error($"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'", ex);
                 throw;
             }
         }
@@ -188,17 +188,17 @@
 
             var publishRequest = message.ToPublishRequest();
 
-            if (_logger.IsDebugEnabled)
+            if (Logger.IsDebugEnabled)
             {
-                _logger.Debug($"Publishing message with '{message.MessageId}' to topic '{publishRequest.TopicArn}'");
+                Logger.Debug($"Publishing message with '{message.MessageId}' to topic '{publishRequest.TopicArn}'");
             }
 
             await snsClient.PublishAsync(publishRequest)
                 .ConfigureAwait(false);
 
-            if (_logger.IsDebugEnabled)
+            if (Logger.IsDebugEnabled)
             {
-                _logger.Debug($"Published message with '{message.MessageId}' to topic '{publishRequest.TopicArn}'");
+                Logger.Debug($"Published message with '{message.MessageId}' to topic '{publishRequest.TopicArn}'");
             }
         }
 
@@ -219,7 +219,7 @@
         async Task SendMessageForBatch(SqsPreparedMessage message, int batchNumber, int totalBatches)
         {
             await SendMessage(message).ConfigureAwait(false);
-            _logger.Info($"Retried message with MessageId {message.MessageId} that failed in batch '{batchNumber}/{totalBatches}'.");
+            Logger.Info($"Retried message with MessageId {message.MessageId} that failed in batch '{batchNumber}/{totalBatches}'.");
         }
 
         async Task SendMessage(SqsPreparedMessage message)
@@ -235,7 +235,7 @@
             }
             catch (Exception ex)
             {
-                _logger.Error($"Error while sending message, with MessageId '{message.MessageId}', to '{message.Destination}'", ex);
+                Logger.Error($"Error while sending message, with MessageId '{message.MessageId}', to '{message.Destination}'", ex);
                 throw;
             }
         }
@@ -396,6 +396,6 @@
         IJsonSerializerStrategy serializerStrategy;
         static readonly HashSet<string> EmptyHashset = new HashSet<string>();
 
-        static ILog _logger = LogManager.GetLogger(typeof(MessageDispatcher));
+        static readonly ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
     }
 }

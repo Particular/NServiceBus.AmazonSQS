@@ -28,12 +28,12 @@
             var outgoingMessage = new OutgoingMessage(string.Empty, new Dictionary<string, string>(), new byte[0]);
             var dispatchProperties = new DispatchProperties
             {
-                DiscardIfNotReceivedBefore = new DiscardIfNotReceivedBefore(_expectedTtbr)
+                DiscardIfNotReceivedBefore = new DiscardIfNotReceivedBefore(ExpectedTtbr)
             };
 
             var transportMessage = new TransportMessage(outgoingMessage, dispatchProperties);
 
-            Assert.AreEqual(_expectedTtbr.ToString(), transportMessage.TimeToBeReceived, "TimeToBeReceived is not the expected value");
+            Assert.AreEqual(ExpectedTtbr.ToString(), transportMessage.TimeToBeReceived, "TimeToBeReceived is not the expected value");
         }
 
         [Test]
@@ -43,11 +43,11 @@
             {
                 Headers = new Dictionary<string, string>
                 {
-                    {TransportHeaders.TimeToBeReceived, _expectedTtbr.ToString()}
+                    {TransportHeaders.TimeToBeReceived, ExpectedTtbr.ToString()}
                 }
             };
 
-            Assert.AreEqual(_expectedTtbr.ToString(), transportMessage.TimeToBeReceived, "TimeToBeReceived does not match expected value.");
+            Assert.AreEqual(ExpectedTtbr.ToString(), transportMessage.TimeToBeReceived, "TimeToBeReceived does not match expected value.");
         }
 
         [Test]
@@ -56,11 +56,11 @@
             var transportMessage = new TransportMessage
             {
                 Headers = new Dictionary<string, string>(),
-                TimeToBeReceived = _expectedTtbr.ToString()
+                TimeToBeReceived = ExpectedTtbr.ToString()
             };
 
             Assert.IsTrue(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), "TimeToBeReceived header is missing");
-            Assert.AreEqual(_expectedTtbr.ToString(), transportMessage.Headers[TransportHeaders.TimeToBeReceived], "TimeToBeReceived header does not match expected value.");
+            Assert.AreEqual(ExpectedTtbr.ToString(), transportMessage.Headers[TransportHeaders.TimeToBeReceived], "TimeToBeReceived header does not match expected value.");
         }
 
         [Test]
@@ -133,7 +133,7 @@
                 },
                 Body = "empty message",
                 S3BodyKey = null,
-                TimeToBeReceived = _expectedTtbr.ToString(),
+                TimeToBeReceived = ExpectedTtbr.ToString(),
                 ReplyToAddress = new TransportMessage.Address
                 {
                     Queue = ExpectedReplyToAddress,
@@ -144,7 +144,7 @@
             var transportMessage = SimpleJson.DeserializeObject<TransportMessage>(json);
 
             Assert.IsTrue(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), "TimeToBeReceived header is missing");
-            Assert.AreEqual(_expectedTtbr.ToString(), transportMessage.Headers[TransportHeaders.TimeToBeReceived], "TimeToBeReceived header does not match expected value.");
+            Assert.AreEqual(ExpectedTtbr.ToString(), transportMessage.Headers[TransportHeaders.TimeToBeReceived], "TimeToBeReceived header does not match expected value.");
             Assert.IsTrue(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), "ReplyToAddress header is missing");
             Assert.AreEqual(ExpectedReplyToAddress, transportMessage.Headers[Headers.ReplyToAddress], "ReplyToAddress header does not match expected value.");
         }
@@ -171,6 +171,6 @@
         }
 
         const string ExpectedReplyToAddress = "TestReplyToAddress";
-        static TimeSpan _expectedTtbr = TimeSpan.MaxValue.Subtract(TimeSpan.FromHours(1));
+        static readonly TimeSpan ExpectedTtbr = TimeSpan.MaxValue.Subtract(TimeSpan.FromHours(1));
     }
 }

@@ -21,7 +21,7 @@
     [TestFixture]
     public class MessageDispatcherTests
     {
-        static TimeSpan _expectedTtbr = TimeSpan.MaxValue.Subtract(TimeSpan.FromHours(1));
+        static readonly TimeSpan ExpectedTtbr = TimeSpan.MaxValue.Subtract(TimeSpan.FromHours(1));
 
         const string ExpectedReplyToAddress = "TestReplyToAddress";
 
@@ -37,7 +37,7 @@
                 new TransportOperation(
                     new OutgoingMessage("1234", new Dictionary<string, string>
                     {
-                        {TransportHeaders.TimeToBeReceived, _expectedTtbr.ToString()},
+                        {TransportHeaders.TimeToBeReceived, ExpectedTtbr.ToString()},
                         {Headers.ReplyToAddress, ExpectedReplyToAddress}
                     }, Encoding.Default.GetBytes("{}")),
                     new UnicastAddressTag("address"),
@@ -54,7 +54,7 @@
             var bodyJson = JObject.Parse(request.MessageBody);
 
             Assert.IsTrue(bodyJson.ContainsKey("TimeToBeReceived"), "TimeToBeReceived not serialized");
-            Assert.AreEqual(_expectedTtbr.ToString(), bodyJson["TimeToBeReceived"].Value<string>(), "Expected TTBR mismatch");
+            Assert.AreEqual(ExpectedTtbr.ToString(), bodyJson["TimeToBeReceived"].Value<string>(), "Expected TTBR mismatch");
 
             Assert.IsTrue(bodyJson.ContainsKey("ReplyToAddress"), "ReplyToAddress not serialized");
             Assert.IsTrue(bodyJson["ReplyToAddress"].HasValues, "ReplyToAddress is not an object");
@@ -74,7 +74,7 @@
                 new TransportOperation(
                     new OutgoingMessage("1234", new Dictionary<string, string>
                     {
-                        {TransportHeaders.TimeToBeReceived, _expectedTtbr.ToString()},
+                        {TransportHeaders.TimeToBeReceived, ExpectedTtbr.ToString()},
                         {Headers.ReplyToAddress, ExpectedReplyToAddress}
                     }, Encoding.Default.GetBytes("{}")),
                     new UnicastAddressTag("address"),

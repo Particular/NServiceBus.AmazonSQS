@@ -15,7 +15,6 @@ namespace NServiceBus.Transport.SQS
     using SimpleJson;
     using static TransportHeaders;
 
-
     class InputQueuePump : IMessageReceiver
     {
         public InputQueuePump(ReceiveSettings settings, IAmazonSQS sqsClient, QueueCache queueCache,
@@ -41,7 +40,6 @@ namespace NServiceBus.Transport.SQS
 
             maxConcurrency = limitations.MaxConcurrency;
 
-
             if (settings.PurgeOnStartup)
             {
                 // SQS only allows purging a queue once every 60 seconds or so.
@@ -55,11 +53,11 @@ namespace NServiceBus.Transport.SQS
                 }
                 catch (PurgeQueueInProgressException ex)
                 {
-                    _logger.Warn("Multiple queue purges within 60 seconds are not permitted by SQS.", ex);
+                    Logger.Warn("Multiple queue purges within 60 seconds are not permitted by SQS.", ex);
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error("Exception thrown from PurgeQueue.", ex);
+                    Logger.Error("Exception thrown from PurgeQueue.", ex);
                     throw;
                 }
             }
@@ -165,7 +163,7 @@ namespace NServiceBus.Transport.SQS
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error("Exception thrown when consuming messages", ex);
+                    Logger.Error("Exception thrown when consuming messages", ex);
                 }
             } // while
         }
@@ -239,11 +237,11 @@ namespace NServiceBus.Transport.SQS
 
                     if (exception != null)
                     {
-                        _logger.Warn(logMessage, exception);
+                        Logger.Warn(logMessage, exception);
                     }
                     else
                     {
-                        _logger.Warn(logMessage);
+                        Logger.Warn(logMessage);
                     }
 
                     await MovePoisonMessageToErrorQueue(receivedMessage).ConfigureAwait(false);
@@ -347,7 +345,7 @@ namespace NServiceBus.Transport.SQS
             }
 
             // Message has expired.
-            _logger.Info($"Discarding expired message with Id {messageId}, expired {now - expiresAt} ago at {expiresAt} utc.");
+            Logger.Info($"Discarding expired message with Id {messageId}, expired {now - expiresAt} ago at {expiresAt} utc.");
             return true;
         }
 
@@ -360,13 +358,13 @@ namespace NServiceBus.Transport.SQS
             }
             catch (ReceiptHandleIsInvalidException ex)
             {
-                _logger.Info($"Message receipt handle {message.ReceiptHandle} no longer valid.", ex);
+                Logger.Info($"Message receipt handle {message.ReceiptHandle} no longer valid.", ex);
                 return; // if another receiver fetches the data from S3
             }
 
             if (!string.IsNullOrEmpty(s3BodyKey))
             {
-                _logger.Info($"Message body data with key '{s3BodyKey}' will be aged out by the S3 lifecycle policy when the TTL expires.");
+                Logger.Info($"Message body data with key '{s3BodyKey}' will be aged out by the S3 lifecycle policy when the TTL expires.");
             }
         }
 
@@ -390,7 +388,7 @@ namespace NServiceBus.Transport.SQS
             }
             catch (Exception ex)
             {
-                _logger.Error($"Error moving poison message to error queue at url {errorQueueUrl}. Moving back to input queue.", ex);
+                Logger.Error($"Error moving poison message to error queue at url {errorQueueUrl}. Moving back to input queue.", ex);
                 try
                 {
                     await sqsClient.ChangeMessageVisibilityAsync(new ChangeMessageVisibilityRequest
@@ -402,7 +400,7 @@ namespace NServiceBus.Transport.SQS
                 }
                 catch (Exception changeMessageVisibilityEx)
                 {
-                    _logger.Warn($"Error returning poison message back to input queue at url {inputQueueUrl}. Poison message will become available at the input queue again after the visibility timeout expires.", changeMessageVisibilityEx);
+                    Logger.Warn($"Error returning poison message back to input queue at url {inputQueueUrl}. Poison message will become available at the input queue again after the visibility timeout expires.", changeMessageVisibilityEx);
                 }
 
                 return;
@@ -418,7 +416,7 @@ namespace NServiceBus.Transport.SQS
             }
             catch (Exception ex)
             {
-                _logger.Warn($"Error removing poison message from input queue {inputQueueUrl}. This may cause duplicate poison messages in the error queue for this endpoint.", ex);
+                Logger.Warn($"Error removing poison message from input queue {inputQueueUrl}. This may cause duplicate poison messages in the error queue for this endpoint.", ex);
             }
 
             // If there is a message body in S3, simply leave it there
@@ -443,6 +441,6 @@ namespace NServiceBus.Transport.SQS
         ReceiveMessageRequest receiveMessagesRequest;
         CancellationTokenSource tokenSource;
 
-        static ILog _logger = LogManager.GetLogger(typeof(MessagePump));
+        static readonly ILog Logger = LogManager.GetLogger(typeof(MessagePump));
     }
 }
