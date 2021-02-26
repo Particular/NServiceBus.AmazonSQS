@@ -76,7 +76,7 @@ namespace NServiceBus
         public System.Func<System.Type, string, string> TopicNameGenerator { get; set; }
         public string TopicNamePrefix { get; set; }
         public override System.Collections.Generic.IReadOnlyCollection<NServiceBus.TransportTransactionMode> GetSupportedTransactionModes() { }
-        public override System.Threading.Tasks.Task<NServiceBus.Transport.TransportInfrastructure> Initialize(NServiceBus.Transport.HostSettings hostSettings, NServiceBus.Transport.ReceiveSettings[] receivers, string[] sendingAddresses) { }
+        public override System.Threading.Tasks.Task<NServiceBus.Transport.TransportInfrastructure> Initialize(NServiceBus.Transport.HostSettings hostSettings, NServiceBus.Transport.ReceiveSettings[] receivers, string[] sendingAddresses, System.Threading.CancellationToken cancellationToken) { }
         public void MapEvent(System.Type eventType, string customTopicName) { }
         public void MapEvent(System.Type subscribedEventType, System.Collections.Generic.IEnumerable<string> customTopicsNames) { }
         public void MapEvent(System.Type subscribedEventType, System.Type publishedEventType) { }

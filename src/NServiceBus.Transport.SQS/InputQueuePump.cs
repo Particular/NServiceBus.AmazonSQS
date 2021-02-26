@@ -20,7 +20,7 @@ namespace NServiceBus.Transport.SQS
     {
         public InputQueuePump(ReceiveSettings settings, IAmazonSQS sqsClient, QueueCache queueCache,
             S3Settings s3Settings, SubscriptionManager subscriptionManager,
-            Action<string, Exception> criticalErrorAction)
+            Action<string, Exception, CancellationToken> criticalErrorAction)
         {
             this.settings = settings;
             this.sqsClient = sqsClient;
@@ -32,7 +32,7 @@ namespace NServiceBus.Transport.SQS
             Subscriptions = subscriptionManager;
         }
 
-        public async Task Initialize(PushRuntimeSettings limitations, OnMessage onMessage, OnError onError)
+        public async Task Initialize(PushRuntimeSettings limitations, OnMessage onMessage, OnError onError, CancellationToken cancellationToken)
         {
             inputQueueUrl = await queueCache.GetQueueUrl(settings.ReceiveAddress)
                 .ConfigureAwait(false);
@@ -68,7 +68,7 @@ namespace NServiceBus.Transport.SQS
             this.onError = onError;
         }
 
-        public Task StartReceive()
+        public Task StartReceive(CancellationToken cancellationToken)
         {
             if (tokenSource != null)
             {
@@ -108,7 +108,7 @@ namespace NServiceBus.Transport.SQS
             return Task.CompletedTask;
         }
 
-        public async Task StopReceive()
+        public async Task StopReceive(CancellationToken cancellationToken)
         {
             if (tokenSource == null)
             {
@@ -125,7 +125,7 @@ namespace NServiceBus.Transport.SQS
 
             while (maxConcurrencySemaphore.CurrentCount != maxConcurrency)
             {
-                await Task.Delay(50).ConfigureAwait(false);
+                await Task.Delay(50, cancellationToken).ConfigureAwait(false);
             }
 
             tokenSource.Dispose();
@@ -294,7 +294,7 @@ namespace NServiceBus.Transport.SQS
                             transportTransaction,
                             context);
 
-                        await onMessage(messageContext).ConfigureAwait(false);
+                        await onMessage(messageContext, CancellationToken.None).ConfigureAwait(false);
 
                         messageProcessedOk = !messageContextCancellationTokenSource.IsCancellationRequested;
                     }
@@ -312,11 +312,11 @@ namespace NServiceBus.Transport.SQS
                             nativeMessageId,
                             body,
                             transportTransaction,
-                            immediateProcessingAttempts)).ConfigureAwait(false);
+                            immediateProcessingAttempts), CancellationToken.None).ConfigureAwait(false);
                     }
                     catch (Exception onErrorEx)
                     {
-                        criticalErrorAction($"Failed to execute recoverability policy for message with native ID: `{nativeMessageId}`", onErrorEx);
+                        criticalErrorAction($"Failed to execute recoverability policy for message with native ID: `{nativeMessageId}`", onErrorEx, CancellationToken.None);
                     }
 
                     errorHandled = errorHandlerResult == ErrorHandleResult.Handled;
@@ -436,7 +436,7 @@ namespace NServiceBus.Transport.SQS
         readonly IAmazonSQS sqsClient;
         readonly QueueCache queueCache;
         readonly S3Settings s3Settings;
-        readonly Action<string, Exception> criticalErrorAction;
+        readonly Action<string, Exception, CancellationToken> criticalErrorAction;
         readonly string awsEndpointUrl;
 
         int numberOfMessagesToFetch;

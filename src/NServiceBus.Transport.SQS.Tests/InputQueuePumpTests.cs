@@ -22,15 +22,15 @@ namespace NServiceBus.Transport.SQS.Tests
             pump = new InputQueuePump(new ReceiveSettings("queue", FakeInputQueueQueueUrl, true, false, "error"), mockSqsClient,
                 new QueueCache(mockSqsClient, dest => QueueCache.GetSqsQueueName(dest, "")),
                 null, null,
-                (error, exception) => { });
+                (error, exception, ct) => { });
         }
 
         async Task SetupInitializedPump(OnMessage onMessage = null)
         {
             await pump.Initialize(
                 new PushRuntimeSettings(1),
-                onMessage ?? (ctx => Task.FromResult(0)),
-                ctx => Task.FromResult(ErrorHandleResult.Handled));
+                onMessage ?? ((ctx, ct) => Task.FromResult(0)),
+                (ctx, ct) => Task.FromResult(ErrorHandleResult.Handled), CancellationToken.None);
         }
 
         [Test]
@@ -44,13 +44,13 @@ namespace NServiceBus.Transport.SQS.Tests
                 return new ReceiveMessageResponse { Messages = new List<Message>() };
             };
 
-            await pump.StartReceive();
+            await pump.StartReceive(CancellationToken.None);
 
             SpinWait.SpinUntil(() => mockSqsClient.ReceiveMessagesRequestsSent.Count > 0);
 
             cancellationTokenSource.Cancel();
 
-            await pump.StopReceive();
+            await pump.StopReceive(CancellationToken.None);
 
             Assert.IsTrue(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MaxNumberOfMessages == 1), "MaxNumberOfMessages did not match");
             Assert.IsTrue(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.QueueUrl == FakeInputQueueQueueUrl), "QueueUrl did not match");
@@ -66,7 +66,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var expectedReceiptHandle = "receipt-handle";
 
             var processed = false;
-            await SetupInitializedPump(onMessage: ctx =>
+            await SetupInitializedPump(onMessage: (ctx, ct) =>
             {
                 processed = true;
                 return Task.FromResult(0);
@@ -102,7 +102,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var expectedReceiptHandle = "receipt-handle";
 
             var processed = false;
-            await SetupInitializedPump(onMessage: ctx =>
+            await SetupInitializedPump(onMessage: (ctx, ct) =>
             {
                 processed = true;
                 return Task.FromResult(0);
@@ -150,7 +150,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var expectedReceiptHandle = "receipt-handle";
 
             var processed = false;
-            await SetupInitializedPump(onMessage: ctx =>
+            await SetupInitializedPump(onMessage: (ctx, ct) =>
             {
                 processed = true;
                 return Task.FromResult(0);

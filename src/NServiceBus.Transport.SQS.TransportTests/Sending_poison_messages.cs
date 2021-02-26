@@ -21,12 +21,12 @@
             OnTestTimeout(() => cancellationTokenSource.Cancel());
 
             await StartPump(
-                context =>
+                (context, ct) =>
                 {
                     onMessageCalled = true;
                     return Task.FromResult(0);
                 },
-                context =>
+                (context, ct) =>
                 {
                     onErrorCalled = true;
                     return Task.FromResult(ErrorHandleResult.Handled);

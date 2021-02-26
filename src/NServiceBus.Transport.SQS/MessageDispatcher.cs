@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Amazon.S3.Model;
     using Amazon.SimpleNotificationService;
@@ -33,7 +34,7 @@
             serializerStrategy = v1Compatibility ? SimpleJson.PocoJsonSerializerStrategy : ReducedPayloadSerializerStrategy.Instance;
         }
 
-        public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction)
+        public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, CancellationToken cancellationToken)
         {
             var concurrentDispatchTasks = new List<Task>(3);
 
