@@ -151,7 +151,9 @@ namespace NServiceBus
             "mePrefix` instead. The member currently throws a NotImplementedException. Will b" +
             "e removed in version 7.0.0.", true)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> TopicNamePrefix(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string topicNamePrefix) { }
-        [System.Obsolete(@"The native delayed delivery is always enabled in version 6. The QueueDelay time can be configured via SqsTransport.QueueDelay property. Use `SqsTransport.QueueDelay` instead. The member currently throws a NotImplementedException. Will be removed in version 7.0.0.", true)]
+        [System.Obsolete("The native delayed delivery is always enabled in version 6. Use `SqsTransport.Que" +
+            "ueDelay` instead. The member currently throws a NotImplementedException. Will be" +
+            " removed in version 7.0.0.", true)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> UnrestrictedDurationDelayedDelivery(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
     }
 }
