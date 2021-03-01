@@ -7,6 +7,7 @@
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
     using System;
+    using System.Threading;
     using Transport;
     using Transport.SQS;
     using Transport.SQS.Configure;
@@ -206,7 +207,7 @@
         /// default capabilities as well as for initializing the transport's configuration based on those settings (the user cannot
         /// provide information anymore at this stage).
         /// </summary>
-        public override async Task<TransportInfrastructure> Initialize(HostSettings hostSettings, ReceiveSettings[] receivers, string[] sendingAddresses)
+        public override async Task<TransportInfrastructure> Initialize(HostSettings hostSettings, ReceiveSettings[] receivers, string[] sendingAddresses, CancellationToken cancellationToken)
         {
             var topicCache = new TopicCache(snsClient, eventToTopicsMappings, eventToEventsMappings, topicNameGenerator, topicNamePrefix);
             var infra = new SqsTransportInfrastructure(hostSettings, receivers, sqsClient, snsClient, QueueCache, topicCache, S3, Policies, QueueDelayTime, topicNamePrefix, EnableV1CompatibilityMode);

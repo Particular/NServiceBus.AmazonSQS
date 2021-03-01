@@ -2,6 +2,7 @@
 {
     using Transport;
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
@@ -52,7 +53,7 @@
                         var destinationQueueName = TestNameHelper.GetSqsQueueName("LegacyEndpoint", SetupFixture.NamePrefix);
                         var transport = ConfigureEndpointSqsTransport.PrepareSqsTransport();
                         await transport.Initialize(new HostSettings("Host", "Host", new StartupDiagnosticEntries(),
-                            (error, exception) => { }, true), new ReceiveSettings[0], new[] { destinationQueueName });
+                            (error, exception, ct) => { }, true), new ReceiveSettings[0], new[] { destinationQueueName }, CancellationToken.None);
 
                         var sendOptions = new SendOptions();
                         sendOptions.DelayDeliveryWith(delay);

@@ -5,6 +5,7 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS.Model;
@@ -20,7 +21,7 @@
     [TestFixture]
     public class MessageDispatcherTests
     {
-        static TimeSpan _expectedTtbr = TimeSpan.MaxValue.Subtract(TimeSpan.FromHours(1));
+        static readonly TimeSpan ExpectedTtbr = TimeSpan.MaxValue.Subtract(TimeSpan.FromHours(1));
 
         const string ExpectedReplyToAddress = "TestReplyToAddress";
 
@@ -36,7 +37,7 @@
                 new TransportOperation(
                     new OutgoingMessage("1234", new Dictionary<string, string>
                     {
-                        {TransportHeaders.TimeToBeReceived, _expectedTtbr.ToString()},
+                        {TransportHeaders.TimeToBeReceived, ExpectedTtbr.ToString()},
                         {Headers.ReplyToAddress, ExpectedReplyToAddress}
                     }, Encoding.Default.GetBytes("{}")),
                     new UnicastAddressTag("address"),
@@ -45,7 +46,7 @@
 
             var transportTransaction = new TransportTransaction();
 
-            await dispatcher.Dispatch(transportOperations, transportTransaction);
+            await dispatcher.Dispatch(transportOperations, transportTransaction, CancellationToken.None);
 
             Assert.IsNotEmpty(mockSqsClient.RequestsSent, "No requests sent");
             var request = mockSqsClient.RequestsSent.First();
@@ -53,7 +54,7 @@
             var bodyJson = JObject.Parse(request.MessageBody);
 
             Assert.IsTrue(bodyJson.ContainsKey("TimeToBeReceived"), "TimeToBeReceived not serialized");
-            Assert.AreEqual(_expectedTtbr.ToString(), bodyJson["TimeToBeReceived"].Value<string>(), "Expected TTBR mismatch");
+            Assert.AreEqual(ExpectedTtbr.ToString(), bodyJson["TimeToBeReceived"].Value<string>(), "Expected TTBR mismatch");
 
             Assert.IsTrue(bodyJson.ContainsKey("ReplyToAddress"), "ReplyToAddress not serialized");
             Assert.IsTrue(bodyJson["ReplyToAddress"].HasValues, "ReplyToAddress is not an object");
@@ -73,7 +74,7 @@
                 new TransportOperation(
                     new OutgoingMessage("1234", new Dictionary<string, string>
                     {
-                        {TransportHeaders.TimeToBeReceived, _expectedTtbr.ToString()},
+                        {TransportHeaders.TimeToBeReceived, ExpectedTtbr.ToString()},
                         {Headers.ReplyToAddress, ExpectedReplyToAddress}
                     }, Encoding.Default.GetBytes("{}")),
                     new UnicastAddressTag("address"),
@@ -82,7 +83,7 @@
 
             var transportTransaction = new TransportTransaction();
 
-            await dispatcher.Dispatch(transportOperations, transportTransaction);
+            await dispatcher.Dispatch(transportOperations, transportTransaction, CancellationToken.None);
 
             Assert.IsNotEmpty(mockSqsClient.RequestsSent, "No requests sent");
             var request = mockSqsClient.RequestsSent.First();
@@ -128,7 +129,7 @@
 
             var transportTransaction = new TransportTransaction();
 
-            await dispatcher.Dispatch(transportOperations, transportTransaction);
+            await dispatcher.Dispatch(transportOperations, transportTransaction, CancellationToken.None);
 
             var sentMessage = mockSqsClient.RequestsSent.First();
             Assert.AreEqual(expectedId, sentMessage.MessageAttributes[Headers.MessageId].StringValue);
@@ -156,7 +157,7 @@
 
             var transportTransaction = new TransportTransaction();
 
-            await dispatcher.Dispatch(transportOperations, transportTransaction);
+            await dispatcher.Dispatch(transportOperations, transportTransaction, CancellationToken.None);
 
             Assert.IsEmpty(mockSqsClient.BatchRequestsSent);
             Assert.AreEqual(2, mockSqsClient.RequestsSent.Count);
@@ -185,7 +186,7 @@
 
             var transportTransaction = new TransportTransaction();
 
-            await dispatcher.Dispatch(transportOperations, transportTransaction);
+            await dispatcher.Dispatch(transportOperations, transportTransaction, CancellationToken.None);
 
             Assert.AreEqual(2, mockSnsClient.PublishedEvents.Count);
             Assert.AreEqual("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-MessageDispatcherTests-Event", mockSnsClient.PublishedEvents.ElementAt(0).TopicArn);
@@ -228,7 +229,7 @@
 
             var transportTransaction = new TransportTransaction();
 
-            await dispatcher.Dispatch(transportOperations, transportTransaction);
+            await dispatcher.Dispatch(transportOperations, transportTransaction, CancellationToken.None);
 
             Assert.AreEqual(1, mockSnsClient.PublishedEvents.Count);
             Assert.IsEmpty(mockSqsClient.RequestsSent);
@@ -262,7 +263,7 @@
 
             var transportTransaction = new TransportTransaction();
 
-            await dispatcher.Dispatch(transportOperations, transportTransaction);
+            await dispatcher.Dispatch(transportOperations, transportTransaction, CancellationToken.None);
 
             Assert.AreEqual(1, mockSnsClient.PublishedEvents.Count);
             Assert.AreEqual(1, mockSqsClient.BatchRequestsSent.Count);
@@ -289,7 +290,7 @@
 
             var transportTransaction = new TransportTransaction();
 
-            await dispatcher.Dispatch(transportOperations, transportTransaction);
+            await dispatcher.Dispatch(transportOperations, transportTransaction, CancellationToken.None);
 
             Assert.IsEmpty(mockSnsClient.PublishedEvents);
             Assert.IsEmpty(mockSnsClient.CreateTopicRequests);
@@ -317,7 +318,7 @@
 
             var transportTransaction = new TransportTransaction();
 
-            await dispatcher.Dispatch(transportOperations, transportTransaction);
+            await dispatcher.Dispatch(transportOperations, transportTransaction, CancellationToken.None);
 
             Assert.IsEmpty(mockSnsClient.PublishedEvents);
         }
@@ -347,7 +348,7 @@
 
             var transportTransaction = new TransportTransaction();
 
-            await dispatcher.Dispatch(transportOperations, transportTransaction);
+            await dispatcher.Dispatch(transportOperations, transportTransaction, CancellationToken.None);
 
             Assert.AreEqual(2, mockSnsClient.PublishedEvents.Count);
             Assert.AreEqual(2, mockS3Client.PutObjectRequestsSent.Count);
@@ -386,7 +387,7 @@
 
             var transportTransaction = new TransportTransaction();
 
-            var exception = Assert.ThrowsAsync<QueueDoesNotExistException>(async () => await dispatcher.Dispatch(transportOperations, transportTransaction));
+            var exception = Assert.ThrowsAsync<QueueDoesNotExistException>(async () => await dispatcher.Dispatch(transportOperations, transportTransaction, CancellationToken.None));
             StringAssert.StartsWith("Destination 'address1' doesn't support delayed messages longer than", exception.Message);
         }
 
@@ -412,7 +413,7 @@
 
             var transportTransaction = new TransportTransaction();
 
-            await dispatcher.Dispatch(transportOperations, transportTransaction);
+            await dispatcher.Dispatch(transportOperations, transportTransaction, CancellationToken.None);
 
             Assert.IsEmpty(mockSqsClient.RequestsSent);
             Assert.AreEqual(2, mockSqsClient.BatchRequestsSent.Count);
@@ -450,7 +451,7 @@
 
             var transportTransaction = new TransportTransaction();
 
-            var exception = Assert.ThrowsAsync<QueueDoesNotExistException>(async () => await dispatcher.Dispatch(transportOperations, transportTransaction));
+            var exception = Assert.ThrowsAsync<QueueDoesNotExistException>(async () => await dispatcher.Dispatch(transportOperations, transportTransaction, CancellationToken.None));
             StringAssert.StartsWith("Unable to send batch '1/1'. Destination 'address1' doesn't support delayed messages longer than", exception.Message);
         }
 
@@ -529,7 +530,7 @@
 
             var transportTransaction = new TransportTransaction();
 
-            await dispatcher.Dispatch(transportOperations, transportTransaction);
+            await dispatcher.Dispatch(transportOperations, transportTransaction, CancellationToken.None);
 
             Assert.AreEqual(2, mockSqsClient.RequestsSent.Count);
             Assert.AreEqual(firstMessageIdThatWillFail, mockSqsClient.RequestsSent.ElementAt(0).MessageAttributes[Headers.MessageId].StringValue);
@@ -569,7 +570,7 @@
 
             var transportTransaction = new TransportTransaction();
 
-            await dispatcher.Dispatch(transportOperations, transportTransaction);
+            await dispatcher.Dispatch(transportOperations, transportTransaction, CancellationToken.None);
 
             Assert.AreEqual(3, mockSqsClient.BatchRequestsSent.Count);
             Assert.AreEqual(3, mockS3Client.PutObjectRequestsSent.Count);
@@ -615,7 +616,7 @@
 
             var transportTransaction = new TransportTransaction();
 
-            await dispatcher.Dispatch(transportOperations, transportTransaction);
+            await dispatcher.Dispatch(transportOperations, transportTransaction, CancellationToken.None);
 
             Assert.AreEqual(3, mockSqsClient.RequestsSent.Count);
             Assert.AreEqual(3, mockS3Client.PutObjectRequestsSent.Count);

@@ -29,7 +29,7 @@ namespace NServiceBus
         protected abstract void ModifyGetRequest(Amazon.S3.Model.GetObjectRequest get);
         protected abstract void ModifyPutRequest(Amazon.S3.Model.PutObjectRequest put);
     }
-    public class S3EncryptionWithCustomerProvidedKey : NServiceBus.S3EncryptionMethod
+    public sealed class S3EncryptionWithCustomerProvidedKey : NServiceBus.S3EncryptionMethod
     {
         public S3EncryptionWithCustomerProvidedKey(Amazon.S3.ServerSideEncryptionCustomerMethod method, string key, string keyMd5 = null) { }
         public string Key { get; }
@@ -38,7 +38,7 @@ namespace NServiceBus
         protected override void ModifyGetRequest(Amazon.S3.Model.GetObjectRequest get) { }
         protected override void ModifyPutRequest(Amazon.S3.Model.PutObjectRequest put) { }
     }
-    public class S3EncryptionWithManagedKey : NServiceBus.S3EncryptionMethod
+    public sealed class S3EncryptionWithManagedKey : NServiceBus.S3EncryptionMethod
     {
         public S3EncryptionWithManagedKey(Amazon.S3.ServerSideEncryptionMethod method, string keyId = null) { }
         public string KeyId { get; }
@@ -76,7 +76,7 @@ namespace NServiceBus
         public System.Func<System.Type, string, string> TopicNameGenerator { get; set; }
         public string TopicNamePrefix { get; set; }
         public override System.Collections.Generic.IReadOnlyCollection<NServiceBus.TransportTransactionMode> GetSupportedTransactionModes() { }
-        public override System.Threading.Tasks.Task<NServiceBus.Transport.TransportInfrastructure> Initialize(NServiceBus.Transport.HostSettings hostSettings, NServiceBus.Transport.ReceiveSettings[] receivers, string[] sendingAddresses) { }
+        public override System.Threading.Tasks.Task<NServiceBus.Transport.TransportInfrastructure> Initialize(NServiceBus.Transport.HostSettings hostSettings, NServiceBus.Transport.ReceiveSettings[] receivers, string[] sendingAddresses, System.Threading.CancellationToken cancellationToken) { }
         public void MapEvent(System.Type eventType, string customTopicName) { }
         public void MapEvent(System.Type subscribedEventType, System.Collections.Generic.IEnumerable<string> customTopicsNames) { }
         public void MapEvent(System.Type subscribedEventType, System.Type publishedEventType) { }
@@ -151,7 +151,9 @@ namespace NServiceBus
             "mePrefix` instead. The member currently throws a NotImplementedException. Will b" +
             "e removed in version 7.0.0.", true)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> TopicNamePrefix(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string topicNamePrefix) { }
-        [System.Obsolete(@"The native delayed delivery is always enabled in version 6. The QueueDelay time can be configured via SqsTransport.QueueDelay property. Use `SqsTransport.QueueDelay` instead. The member currently throws a NotImplementedException. Will be removed in version 7.0.0.", true)]
+        [System.Obsolete("The native delayed delivery is always enabled in version 6. Use `SqsTransport.Que" +
+            "ueDelay` instead. The member currently throws a NotImplementedException. Will be" +
+            " removed in version 7.0.0.", true)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> UnrestrictedDurationDelayedDelivery(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
     }
 }

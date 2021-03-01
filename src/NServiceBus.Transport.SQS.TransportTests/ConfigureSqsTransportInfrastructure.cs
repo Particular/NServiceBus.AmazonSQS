@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.SimpleNotificationService;
@@ -36,7 +37,7 @@ public class ConfigureSqsTransportInfrastructure : IConfigureTransportInfrastruc
     }
 
     public Task<TransportInfrastructure> Configure(TransportDefinition transportDefinition, HostSettings hostSettings, string inputQueueName,
-        string errorQueueName)
+        string errorQueueName, CancellationToken cancellationToken)
     {
         return transportDefinition.Initialize(hostSettings, new[]
         {
@@ -44,7 +45,7 @@ public class ConfigureSqsTransportInfrastructure : IConfigureTransportInfrastruc
         }, new[]
         {
             errorQueueName
-        });
+        }, cancellationToken);
     }
 
     public static IAmazonSQS CreateSqsClient()
@@ -65,7 +66,7 @@ public class ConfigureSqsTransportInfrastructure : IConfigureTransportInfrastruc
         return new AmazonS3Client(credentials);
     }
 
-    public Task Cleanup()
+    public Task Cleanup(CancellationToken cancellationToken)
     {
         return Task.FromResult(0);
     }

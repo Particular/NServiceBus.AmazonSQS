@@ -2,6 +2,7 @@
 {
     using System;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Amazon.S3;
     using Amazon.SimpleNotificationService;
@@ -27,14 +28,14 @@
         static IMessageReceiver CreateMessagePump(ReceiveSettings receiveSettings, IAmazonSQS sqsClient,
             IAmazonSimpleNotificationService snsClient, QueueCache queueCache,
             TopicCache topicCache, S3Settings s3Settings, PolicySettings policySettings, int queueDelayTimeSeconds,
-            string topicNamePrefix, Action<string, Exception> criticalErrorAction)
+            string topicNamePrefix, Action<string, Exception, CancellationToken> criticalErrorAction)
         {
             var subManager = new SubscriptionManager(sqsClient, snsClient, receiveSettings.ReceiveAddress, queueCache, topicCache, policySettings, topicNamePrefix);
 
             return new MessagePump(receiveSettings, sqsClient, queueCache, s3Settings, subManager, queueDelayTimeSeconds, criticalErrorAction);
         }
 
-        public override Task Shutdown()
+        public override Task Shutdown(CancellationToken cancellationToken)
         {
             sqsClient.Dispose();
             snsClient.Dispose();

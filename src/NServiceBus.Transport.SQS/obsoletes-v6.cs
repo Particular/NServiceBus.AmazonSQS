@@ -104,7 +104,7 @@ namespace NServiceBus
 
         [ObsoleteEx(
             ReplacementTypeOrMember = "SqsTransport.QueueDelay",
-            Message = "The native delayed delivery is always enabled in version 6. The QueueDelay time can be configured via SqsTransport.QueueDelay property.",
+            Message = "The native delayed delivery is always enabled in version 6.",
             TreatAsErrorFromVersion = "6",
             RemoveInVersion = "7")]
         public static TransportExtensions<SqsTransport> UnrestrictedDurationDelayedDelivery(this TransportExtensions<SqsTransport> transportExtensions)
