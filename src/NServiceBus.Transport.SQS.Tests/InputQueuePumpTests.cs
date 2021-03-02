@@ -30,7 +30,8 @@ namespace NServiceBus.Transport.SQS.Tests
             await pump.Initialize(
                 new PushRuntimeSettings(1),
                 onMessage ?? ((ctx, ct) => Task.FromResult(0)),
-                (ctx, ct) => Task.FromResult(ErrorHandleResult.Handled), CancellationToken.None);
+                (ctx, ct) => Task.FromResult(ErrorHandleResult.Handled),
+                (_, __) => Task.CompletedTask);
         }
 
         [Test]

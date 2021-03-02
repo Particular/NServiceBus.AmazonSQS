@@ -10,7 +10,6 @@ namespace NServiceBus.Transport.SQS.Tests
     using Amazon.SQS.Model;
     using Amazon.SQS.Util;
     using NUnit.Framework;
-    using Settings;
 
     [TestFixture]
     public class DelayedMessagesPumpTests

@@ -31,7 +31,7 @@ namespace NServiceBus.Transport.SQS
             Subscriptions = subscriptionManager;
         }
 
-        public async Task Initialize(PushRuntimeSettings limitations, OnMessage onMessage, OnError onError, CancellationToken cancellationToken)
+        public async Task Initialize(PushRuntimeSettings limitations, OnMessage onMessage, OnError onError, OnCompleted onCompleted, CancellationToken cancellationToken = default)
         {
             inputQueueUrl = await queueCache.GetQueueUrl(settings.ReceiveAddress)
                 .ConfigureAwait(false);
@@ -49,7 +49,7 @@ namespace NServiceBus.Transport.SQS
                 // in that time.
                 try
                 {
-                    await sqsClient.PurgeQueueAsync(inputQueueUrl, CancellationToken.None).ConfigureAwait(false);
+                    await sqsClient.PurgeQueueAsync(inputQueueUrl, cancellationToken).ConfigureAwait(false);
                 }
                 catch (PurgeQueueInProgressException ex)
                 {
@@ -64,16 +64,19 @@ namespace NServiceBus.Transport.SQS
 
             this.onMessage = onMessage;
             this.onError = onError;
+            this.onCompleted = onCompleted;
         }
 
-        public Task StartReceive(CancellationToken cancellationToken)
+        public Task StartReceive(CancellationToken cancellationToken = default)
         {
-            if (tokenSource != null)
+            if (messagePumpCancellationTokenSource != null)
             {
                 return Task.CompletedTask; //Receiver already started.
             }
 
-            tokenSource = new CancellationTokenSource();
+            messagePumpCancellationTokenSource = new CancellationTokenSource();
+            messageProcessingCancellationTokenSource = new CancellationTokenSource();
+
             int numberOfPumps;
             if (maxConcurrency <= 10)
             {
@@ -100,20 +103,21 @@ namespace NServiceBus.Transport.SQS
 
             for (var i = 0; i < numberOfPumps; i++)
             {
-                pumpTasks.Add(Task.Run(() => ConsumeMessages(tokenSource.Token), CancellationToken.None));
+                pumpTasks.Add(Task.Run(() => ConsumeMessages(messagePumpCancellationTokenSource.Token), cancellationToken));
             }
 
             return Task.CompletedTask;
         }
 
-        public async Task StopReceive(CancellationToken cancellationToken)
+        public async Task StopReceive(CancellationToken cancellationToken = default)
         {
-            if (tokenSource == null)
+            if (messagePumpCancellationTokenSource == null)
             {
                 return;
             }
 
-            tokenSource.Cancel();
+            messagePumpCancellationTokenSource.Cancel();
+            cancellationToken.Register(() => messageProcessingCancellationTokenSource.Cancel());
 
             if (pumpTasks != null)
             {
@@ -126,15 +130,15 @@ namespace NServiceBus.Transport.SQS
                 await Task.Delay(50, cancellationToken).ConfigureAwait(false);
             }
 
-            tokenSource.Dispose();
+            messagePumpCancellationTokenSource.Dispose();
             maxConcurrencySemaphore?.Dispose();
-            tokenSource = null;
+            messagePumpCancellationTokenSource = null;
         }
 
         public ISubscriptionManager Subscriptions { get; }
         public string Id { get; }
 
-        async Task ConsumeMessages(CancellationToken token)
+        async Task ConsumeMessages(CancellationToken token = default)
         {
             while (!token.IsCancellationRequested)
             {
@@ -154,7 +158,7 @@ namespace NServiceBus.Transport.SQS
                             return;
                         }
 
-                        _ = ProcessMessage(receivedMessage, maxConcurrencySemaphore, token);
+                        _ = ProcessMessage(receivedMessage, maxConcurrencySemaphore, messageProcessingCancellationTokenSource.Token);
                     }
                 }
                 catch (OperationCanceledException)
@@ -168,7 +172,7 @@ namespace NServiceBus.Transport.SQS
             } // while
         }
 
-        internal async Task ProcessMessage(Message receivedMessage, SemaphoreSlim processingSemaphoreSlim, CancellationToken token)
+        internal async Task ProcessMessage(Message receivedMessage, SemaphoreSlim processingSemaphoreSlim, CancellationToken token = default)
         {
             try
             {
@@ -244,7 +248,7 @@ namespace NServiceBus.Transport.SQS
                         Logger.Warn(logMessage);
                     }
 
-                    await MovePoisonMessageToErrorQueue(receivedMessage).ConfigureAwait(false);
+                    await MovePoisonMessageToErrorQueue(receivedMessage, token).ConfigureAwait(false);
                     return;
                 }
 
@@ -257,7 +261,7 @@ namespace NServiceBus.Transport.SQS
                 // Always delete the message from the queue.
                 // If processing failed, the onError handler will have moved the message
                 // to a retry queue.
-                await DeleteMessage(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
+                await DeleteMessage(receivedMessage, transportMessage.S3BodyKey, token).ConfigureAwait(false);
             }
             finally
             {
@@ -265,11 +269,14 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        async Task ProcessMessageWithInMemoryRetries(Dictionary<string, string> headers, string nativeMessageId, byte[] body, Message nativeMessage, CancellationToken token)
+        async Task ProcessMessageWithInMemoryRetries(Dictionary<string, string> headers, string nativeMessageId, byte[] body, Message nativeMessage, CancellationToken token = default)
         {
             var immediateProcessingAttempts = 0;
             var messageProcessedOk = false;
             var errorHandled = false;
+            var startedAt = DateTimeOffset.UtcNow;
+            var onMessageFailed = false;
+            var wasAcknowledged = false;
 
             while (!errorHandled && !messageProcessedOk)
             {
@@ -283,41 +290,60 @@ namespace NServiceBus.Transport.SQS
 
                 try
                 {
-                    using (var messageContextCancellationTokenSource = new CancellationTokenSource())
-                    {
-                        var messageContext = new MessageContext(
-                            nativeMessageId,
-                            new Dictionary<string, string>(headers),
-                            body,
-                            transportTransaction,
-                            context);
+                    var messageContext = new MessageContext(
+                        nativeMessageId,
+                        new Dictionary<string, string>(headers),
+                        body,
+                        transportTransaction,
+                        context);
 
-                        await onMessage(messageContext, CancellationToken.None).ConfigureAwait(false);
+                    await onMessage.Invoke(messageContext, token).ConfigureAwait(false);
 
-                        messageProcessedOk = !messageContextCancellationTokenSource.IsCancellationRequested;
-                    }
+                    messageProcessedOk = true;
+                    onMessageFailed = false;
+                }
+                catch (OperationCanceledException) when (token.IsCancellationRequested)
+                {
+
                 }
                 catch (Exception ex)
-                    when (!(ex is OperationCanceledException && token.IsCancellationRequested))
                 {
                     immediateProcessingAttempts++;
                     var errorHandlerResult = ErrorHandleResult.RetryRequired;
+                    onMessageFailed = true;
 
                     try
                     {
-                        errorHandlerResult = await onError(new ErrorContext(ex,
+                        errorHandlerResult = await onError.Invoke(new ErrorContext(ex,
                             new Dictionary<string, string>(headers),
                             nativeMessageId,
                             body,
                             transportTransaction,
-                            immediateProcessingAttempts), CancellationToken.None).ConfigureAwait(false);
+                            immediateProcessingAttempts,
+                            context), token).ConfigureAwait(false);
                     }
                     catch (Exception onErrorEx)
                     {
-                        criticalErrorAction($"Failed to execute recoverability policy for message with native ID: `{nativeMessageId}`", onErrorEx, CancellationToken.None);
+                        criticalErrorAction($"Failed to execute recoverability policy for message with native ID: `{nativeMessageId}`", onErrorEx, token);
                     }
 
                     errorHandled = errorHandlerResult == ErrorHandleResult.Handled;
+                    if (errorHandlerResult == ErrorHandleResult.Handled)
+                    {
+                        wasAcknowledged = true;
+                    }
+                }
+                finally
+                {
+                    try
+                    {
+                        var completeContext = new CompleteContext(nativeMessageId, wasAcknowledged, headers, startedAt, DateTimeOffset.UtcNow, onMessageFailed, context);
+                        await onCompleted(completeContext, token).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+
                 }
             }
         }
@@ -349,12 +375,12 @@ namespace NServiceBus.Transport.SQS
             return true;
         }
 
-        async Task DeleteMessage(Message message, string s3BodyKey)
+        async Task DeleteMessage(Message message, string s3BodyKey, CancellationToken cancellationToken = default)
         {
             try
             {
                 // should not be cancelled
-                await sqsClient.DeleteMessageAsync(inputQueueUrl, message.ReceiptHandle, CancellationToken.None).ConfigureAwait(false);
+                await sqsClient.DeleteMessageAsync(inputQueueUrl, message.ReceiptHandle, cancellationToken).ConfigureAwait(false);
             }
             catch (ReceiptHandleIsInvalidException ex)
             {
@@ -368,7 +394,7 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        async Task MovePoisonMessageToErrorQueue(Message message)
+        async Task MovePoisonMessageToErrorQueue(Message message, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -381,7 +407,7 @@ namespace NServiceBus.Transport.SQS
                     QueueUrl = errorQueueUrl,
                     MessageBody = message.Body,
                     MessageAttributes = messageAttributeValues
-                }, CancellationToken.None).ConfigureAwait(false);
+                }, cancellationToken).ConfigureAwait(false);
                 // The Attributes on message are read-only attributes provided by SQS
                 // and can't be re-sent. Unfortunately all the SQS metadata
                 // such as SentTimestamp is reset with this send.
@@ -396,7 +422,7 @@ namespace NServiceBus.Transport.SQS
                         QueueUrl = inputQueueUrl,
                         ReceiptHandle = message.ReceiptHandle,
                         VisibilityTimeout = 0
-                    }, CancellationToken.None).ConfigureAwait(false);
+                    }, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception changeMessageVisibilityEx)
                 {
@@ -412,7 +438,7 @@ namespace NServiceBus.Transport.SQS
                 {
                     QueueUrl = inputQueueUrl,
                     ReceiptHandle = message.ReceiptHandle
-                }, CancellationToken.None).ConfigureAwait(false);
+                }, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -425,6 +451,7 @@ namespace NServiceBus.Transport.SQS
         List<Task> pumpTasks;
         OnError onError;
         OnMessage onMessage;
+        OnCompleted onCompleted;
         SemaphoreSlim maxConcurrencySemaphore;
         string inputQueueUrl;
         string errorQueueUrl;
@@ -439,7 +466,8 @@ namespace NServiceBus.Transport.SQS
 
         int numberOfMessagesToFetch;
         ReceiveMessageRequest receiveMessagesRequest;
-        CancellationTokenSource tokenSource;
+        CancellationTokenSource messagePumpCancellationTokenSource;
+        CancellationTokenSource messageProcessingCancellationTokenSource;
 
         static readonly ILog Logger = LogManager.GetLogger(typeof(MessagePump));
     }

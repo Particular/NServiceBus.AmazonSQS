@@ -4,9 +4,9 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.SQS.Model;
+    using NUnit.Framework;
     using Transport;
     using Transport.SQS;
-    using NUnit.Framework;
 
     public class Sending_poison_messages : NServiceBusTransportTest
     {
@@ -30,7 +30,9 @@
                 {
                     onErrorCalled = true;
                     return Task.FromResult(ErrorHandleResult.Handled);
-                }, transactionMode);
+                },
+                (context, ct) => Task.CompletedTask,
+                transactionMode);
 
             await SendPoisonMessage(InputQueueName);
 

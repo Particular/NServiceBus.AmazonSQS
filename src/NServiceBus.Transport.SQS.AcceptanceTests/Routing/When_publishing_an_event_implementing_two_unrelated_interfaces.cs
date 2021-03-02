@@ -7,7 +7,7 @@
     using NUnit.Framework;
 
     // NOTE: This test was copied from core to allow it to run with AutoSubscribe
-    public class When_publishing_an_event_implementing_two_unrelated_interfaces : NServiceBusAcceptanceTest
+    public class When_publishing_an_event_implementing_two_unrelated_interfaces_with_AutoSubscribe : NServiceBusAcceptanceTest
     {
         [Test]
         public async Task Event_should_be_published_using_instance_type()
