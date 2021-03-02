@@ -26,7 +26,7 @@ namespace NServiceBus.Transport.SQS
             this.queueName = queueName;
         }
 
-        public async Task SubscribeAll(MessageMetadata[] eventTypes, ContextBag context, CancellationToken cancellationToken)
+        public async Task SubscribeAll(MessageMetadata[] eventTypes, ContextBag context, CancellationToken cancellationToken = default)
         {
             var queueUrl = await queueCache.GetQueueUrl(queueName)
                 .ConfigureAwait(false);
@@ -42,7 +42,7 @@ namespace NServiceBus.Transport.SQS
             await SettlePolicy(queueUrl, policyStatementsToBeSettled).ConfigureAwait(false);
         }
 
-        public async Task Unsubscribe(MessageMetadata message, ContextBag context, CancellationToken cancellationToken)
+        public async Task Unsubscribe(MessageMetadata message, ContextBag context, CancellationToken cancellationToken = default)
         {
             await DeleteSubscription(message).ConfigureAwait(false);
         }

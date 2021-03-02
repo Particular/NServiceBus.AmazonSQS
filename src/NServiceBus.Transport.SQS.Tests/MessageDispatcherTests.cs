@@ -5,7 +5,6 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
-    using System.Threading;
     using System.Threading.Tasks;
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS.Model;

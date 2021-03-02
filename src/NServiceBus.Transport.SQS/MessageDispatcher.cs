@@ -34,7 +34,7 @@
             serializerStrategy = v1Compatibility ? SimpleJson.PocoJsonSerializerStrategy : ReducedPayloadSerializerStrategy.Instance;
         }
 
-        public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, CancellationToken cancellationToken)
+        public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, CancellationToken cancellationToken = default)
         {
             var concurrentDispatchTasks = new List<Task>(3);
 
