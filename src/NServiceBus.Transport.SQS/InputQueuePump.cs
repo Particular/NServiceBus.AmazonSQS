@@ -322,6 +322,10 @@ namespace NServiceBus.Transport.SQS
                             immediateProcessingAttempts,
                             context), token).ConfigureAwait(false);
                     }
+                    catch (OperationCanceledException) when (token.IsCancellationRequested)
+                    {
+
+                    }
                     catch (Exception onErrorEx)
                     {
                         criticalErrorAction($"Failed to execute recoverability policy for message with native ID: `{nativeMessageId}`", onErrorEx, token);
