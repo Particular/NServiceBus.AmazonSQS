@@ -1,18 +1,18 @@
 ﻿namespace NServiceBus.AcceptanceTests
 {
-    using Amazon.Runtime;
-    using Amazon.S3;
-    using Amazon.SimpleNotificationService;
-    using Amazon.SQS;
-    using ScenarioDescriptors;
     using System;
     using System.Threading.Tasks;
     using AcceptanceTesting.Customization;
     using AcceptanceTesting.Support;
+    using Amazon.Runtime;
+    using Amazon.S3;
+    using Amazon.SimpleNotificationService;
+    using Amazon.SQS;
     using NUnit.Framework;
     using Routing;
     using Routing.NativePublishSubscribe;
     using Sagas;
+    using ScenarioDescriptors;
     using Versioning;
     using MessageDriven = Routing.MessageDrivenSubscriptions;
 
@@ -74,6 +74,12 @@
             {
                 transportConfig.MapEvent<When_publishing_an_event_implementing_two_unrelated_interfaces.IEventA, When_publishing_an_event_implementing_two_unrelated_interfaces.CompositeEvent>();
                 transportConfig.MapEvent<When_publishing_an_event_implementing_two_unrelated_interfaces.IEventB, When_publishing_an_event_implementing_two_unrelated_interfaces.CompositeEvent>();
+            }
+
+            if (endpointName == Conventions.EndpointNamingConvention(typeof(When_publishing_an_event_implementing_two_unrelated_interfaces_with_AutoSubscribe.Subscriber)))
+            {
+                transportConfig.MapEvent<When_publishing_an_event_implementing_two_unrelated_interfaces_with_AutoSubscribe.IEventA, When_publishing_an_event_implementing_two_unrelated_interfaces_with_AutoSubscribe.CompositeEvent>();
+                transportConfig.MapEvent<When_publishing_an_event_implementing_two_unrelated_interfaces_with_AutoSubscribe.IEventB, When_publishing_an_event_implementing_two_unrelated_interfaces_with_AutoSubscribe.CompositeEvent>();
             }
 
             if (endpointName == Conventions.EndpointNamingConvention(typeof(When_started_by_base_event_from_other_saga.SagaThatIsStartedByABaseEvent)))
