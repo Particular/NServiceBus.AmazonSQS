@@ -127,7 +127,9 @@ namespace NServiceBus.Transport.SQS
 
             while (maxConcurrencySemaphore.CurrentCount != maxConcurrency)
             {
-                await Task.Delay(50, cancellationToken).ConfigureAwait(false);
+                // Want to let the message pump drain naturally, which will happen quickly after
+                // messageProcessingCancellationTokenSource begins killing processing pipelines
+                await Task.Delay(50, CancellationToken.None).ConfigureAwait(false);
             }
 
             messagePumpCancellationTokenSource.Dispose();

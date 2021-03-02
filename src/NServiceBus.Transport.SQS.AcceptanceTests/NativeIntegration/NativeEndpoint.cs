@@ -37,6 +37,7 @@
                             nativeMessageAccessor?.Invoke(msg);
                         }
 
+                        // DB-TODO: Don't know what this CancellationToken.None does
                         await sqsClient.DeleteMessageAsync(getQueueUrlResponse.QueueUrl, msg.ReceiptHandle, CancellationToken.None);
                     }
                 }
