@@ -301,6 +301,7 @@ namespace NServiceBus.Transport.SQS
 
                     messageProcessedOk = true;
                     onMessageFailed = false;
+                    wasAcknowledged = true;
                 }
                 catch (OperationCanceledException) when (token.IsCancellationRequested)
                 {
