@@ -76,12 +76,6 @@
                 transportConfig.MapEvent<When_publishing_an_event_implementing_two_unrelated_interfaces.IEventB, When_publishing_an_event_implementing_two_unrelated_interfaces.CompositeEvent>();
             }
 
-            if (endpointName == Conventions.EndpointNamingConvention(typeof(When_publishing_an_event_implementing_two_unrelated_interfaces_with_AutoSubscribe.Subscriber)))
-            {
-                transportConfig.MapEvent<When_publishing_an_event_implementing_two_unrelated_interfaces_with_AutoSubscribe.IEventA, When_publishing_an_event_implementing_two_unrelated_interfaces_with_AutoSubscribe.CompositeEvent>();
-                transportConfig.MapEvent<When_publishing_an_event_implementing_two_unrelated_interfaces_with_AutoSubscribe.IEventB, When_publishing_an_event_implementing_two_unrelated_interfaces_with_AutoSubscribe.CompositeEvent>();
-            }
-
             if (endpointName == Conventions.EndpointNamingConvention(typeof(When_started_by_base_event_from_other_saga.SagaThatIsStartedByABaseEvent)))
             {
                 transportConfig.MapEvent<When_started_by_base_event_from_other_saga.IBaseEvent, When_started_by_base_event_from_other_saga.ISomethingHappenedEvent>();
