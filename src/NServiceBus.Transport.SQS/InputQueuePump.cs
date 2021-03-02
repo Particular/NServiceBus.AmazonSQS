@@ -278,7 +278,7 @@ namespace NServiceBus.Transport.SQS
             var onMessageFailed = false;
             var wasAcknowledged = false;
 
-            while (!errorHandled && !messageProcessedOk)
+            while (!errorHandled && !messageProcessedOk && !token.IsCancellationRequested)
             {
                 // set the native message on the context for advanced usage scenario's
                 var context = new ContextBag();
