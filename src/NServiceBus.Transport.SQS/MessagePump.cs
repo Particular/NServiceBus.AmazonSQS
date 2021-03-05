@@ -21,7 +21,7 @@ namespace NServiceBus.Transport.SQS
         public async Task Initialize(PushRuntimeSettings limitations, OnMessage onMessage, OnError onError, CancellationToken cancellationToken = default)
         {
             await inputQueuePump.Initialize(limitations, onMessage, onError, cancellationToken).ConfigureAwait(false);
-            await delayedMessagesPump.Initialize().ConfigureAwait(false);
+            await delayedMessagesPump.Initialize(cancellationToken).ConfigureAwait(false);
         }
 
         public async Task StartReceive(CancellationToken cancellationToken = default)

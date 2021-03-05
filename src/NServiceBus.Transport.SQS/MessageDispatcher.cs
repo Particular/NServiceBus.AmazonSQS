@@ -346,7 +346,7 @@
             snsPreparedMessage.Destination = existingTopicArn;
         }
 
-        async Task ApplyUnicastOperationMappingIfNecessary(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, string messageId, Dictionary<string, MessageAttributeValue> nativeMessageAttributes)
+        async Task ApplyUnicastOperationMappingIfNecessary(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, string messageId, Dictionary<string, MessageAttributeValue> nativeMessageAttributes, CancellationToken cancellationToken = default)
         {
             if (transportOperation == null || sqsPreparedMessage == null)
             {
@@ -362,7 +362,7 @@
             {
                 sqsPreparedMessage.OriginalDestination = transportOperation.Destination;
                 sqsPreparedMessage.Destination = $"{transportOperation.Destination}{TransportConstraints.DelayedDeliveryQueueSuffix}";
-                sqsPreparedMessage.QueueUrl = await queueCache.GetQueueUrl(sqsPreparedMessage.Destination)
+                sqsPreparedMessage.QueueUrl = await queueCache.GetQueueUrl(sqsPreparedMessage.Destination, cancellationToken)
                     .ConfigureAwait(false);
 
                 sqsPreparedMessage.MessageDeduplicationId = messageId;
@@ -377,7 +377,7 @@
             else
             {
                 sqsPreparedMessage.Destination = transportOperation.Destination;
-                sqsPreparedMessage.QueueUrl = await queueCache.GetQueueUrl(sqsPreparedMessage.Destination)
+                sqsPreparedMessage.QueueUrl = await queueCache.GetQueueUrl(sqsPreparedMessage.Destination, cancellationToken)
                     .ConfigureAwait(false);
 
                 if (delaySeconds > 0)

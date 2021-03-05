@@ -24,16 +24,16 @@ namespace NServiceBus.Transport.SQS
             awsEndpointUrl = sqsClient.Config.DetermineServiceURL();
         }
 
-        public async Task Initialize()
+        public async Task Initialize(CancellationToken cancellationToken = default)
         {
-            inputQueueUrl = await queueCache.GetQueueUrl(receiveAddress)
+            inputQueueUrl = await queueCache.GetQueueUrl(receiveAddress, cancellationToken)
                 .ConfigureAwait(false);
 
             var delayedDeliveryQueueName = $"{receiveAddress}{TransportConstraints.DelayedDeliveryQueueSuffix}";
-            delayedDeliveryQueueUrl = await queueCache.GetQueueUrl(delayedDeliveryQueueName)
+            delayedDeliveryQueueUrl = await queueCache.GetQueueUrl(delayedDeliveryQueueName, cancellationToken)
                 .ConfigureAwait(false);
 
-            var queueAttributes = await GetQueueAttributesFromDelayedDeliveryQueueWithRetriesToWorkaroundSDKIssue()
+            var queueAttributes = await GetQueueAttributesFromDelayedDeliveryQueueWithRetriesToWorkaroundSDKIssue(cancellationToken)
                 .ConfigureAwait(false);
 
             if (queueAttributes.DelaySeconds < queueDelayTimeSeconds)
