@@ -18,22 +18,24 @@ namespace NServiceBus.Transport.SQS
             delayedMessagesPump = new DelayedMessagesPump(settings.ReceiveAddress, sqsClient, queueCache, queueDelayTimeSeconds);
         }
 
-        public async Task Initialize(PushRuntimeSettings limitations, OnMessage onMessage, OnError onError, CancellationToken cancellationToken)
+        public async Task Initialize(PushRuntimeSettings limitations, OnMessage onMessage, OnError onError, CancellationToken cancellationToken = default)
         {
             await inputQueuePump.Initialize(limitations, onMessage, onError, cancellationToken).ConfigureAwait(false);
             await delayedMessagesPump.Initialize().ConfigureAwait(false);
         }
 
-        public async Task StartReceive(CancellationToken cancellationToken)
+        public async Task StartReceive(CancellationToken cancellationToken = default)
         {
             await inputQueuePump.StartReceive(cancellationToken).ConfigureAwait(false);
-            delayedMessagesPump.Start();
+            delayedMessagesPump.Start(cancellationToken);
         }
 
-        public async Task StopReceive(CancellationToken cancellationToken)
+        public Task StopReceive(CancellationToken cancellationToken = default)
         {
-            await delayedMessagesPump.Stop().ConfigureAwait(false);
-            await inputQueuePump.StopReceive(cancellationToken).ConfigureAwait(false);
+            var stopDelayed = delayedMessagesPump.Stop();
+            var stopPump = inputQueuePump.StopReceive(cancellationToken);
+
+            return Task.WhenAll(stopDelayed, stopPump);
         }
 
         public ISubscriptionManager Subscriptions => inputQueuePump.Subscriptions;

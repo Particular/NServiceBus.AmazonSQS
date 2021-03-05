@@ -52,7 +52,7 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        async Task<GetQueueAttributesResponse> GetQueueAttributesFromDelayedDeliveryQueueWithRetriesToWorkaroundSDKIssue()
+        async Task<GetQueueAttributesResponse> GetQueueAttributesFromDelayedDeliveryQueueWithRetriesToWorkaroundSDKIssue(CancellationToken cancellationToken = default)
         {
             var attributeNames = new List<string>
             {
@@ -65,7 +65,7 @@ namespace NServiceBus.Transport.SQS
 
             for (var i = 0; i < 4; i++)
             {
-                queueAttributes = await sqsClient.GetQueueAttributesAsync(delayedDeliveryQueueUrl, attributeNames)
+                queueAttributes = await sqsClient.GetQueueAttributesAsync(delayedDeliveryQueueUrl, attributeNames, cancellationToken)
                     .ConfigureAwait(false);
 
                 if (queueAttributes.DelaySeconds != 0)
@@ -73,14 +73,14 @@ namespace NServiceBus.Transport.SQS
                     break;
                 }
 
-                await Task.Delay(TimeSpan.FromSeconds(i))
+                await Task.Delay(TimeSpan.FromSeconds(i), cancellationToken)
                     .ConfigureAwait(false);
             }
 
             return queueAttributes;
         }
 
-        public void Start()
+        public void Start(CancellationToken cancellationToken = default)
         {
             if (tokenSource != null)
             {
@@ -97,7 +97,7 @@ namespace NServiceBus.Transport.SQS
                 MessageAttributeNames = new List<string> { "All" }
             };
 
-            pumpTask = Task.Run(() => ConsumeDelayedMessagesLoop(receiveDelayedMessagesRequest, tokenSource.Token), CancellationToken.None);
+            pumpTask = Task.Run(() => ConsumeDelayedMessagesLoop(receiveDelayedMessagesRequest, tokenSource.Token), cancellationToken);
         }
 
         public async Task Stop()
@@ -117,13 +117,13 @@ namespace NServiceBus.Transport.SQS
             tokenSource = null;
         }
 
-        async Task ConsumeDelayedMessagesLoop(ReceiveMessageRequest request, CancellationToken token)
+        async Task ConsumeDelayedMessagesLoop(ReceiveMessageRequest request, CancellationToken cancellationToken = default)
         {
-            while (!token.IsCancellationRequested)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    await ConsumeDelayedMessages(request, token).ConfigureAwait(false);
+                    await ConsumeDelayedMessages(request, cancellationToken).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
@@ -136,28 +136,28 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        internal async Task ConsumeDelayedMessages(ReceiveMessageRequest request, CancellationToken token)
+        internal async Task ConsumeDelayedMessages(ReceiveMessageRequest request, CancellationToken cancellationToken = default)
         {
-            var receivedMessages = await sqsClient.ReceiveMessageAsync(request, token).ConfigureAwait(false);
+            var receivedMessages = await sqsClient.ReceiveMessageAsync(request, cancellationToken).ConfigureAwait(false);
             if (receivedMessages.Messages.Count == 0)
             {
                 return;
             }
 
             var clockCorrection = CorrectClockSkew.GetClockCorrectionForEndpoint(awsEndpointUrl);
-            var preparedMessages = PrepareMessages(token, receivedMessages, clockCorrection);
+            var preparedMessages = PrepareMessages(receivedMessages, clockCorrection, cancellationToken);
 
-            token.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
 
-            await BatchDispatchPreparedMessages(preparedMessages).ConfigureAwait(false);
+            await BatchDispatchPreparedMessages(preparedMessages, cancellationToken).ConfigureAwait(false);
         }
 
-        IReadOnlyCollection<SqsReceivedDelayedMessage> PrepareMessages(CancellationToken token, ReceiveMessageResponse receivedMessages, TimeSpan clockCorrection)
+        IReadOnlyCollection<SqsReceivedDelayedMessage> PrepareMessages(ReceiveMessageResponse receivedMessages, TimeSpan clockCorrection, CancellationToken cancellationToken = default)
         {
             List<SqsReceivedDelayedMessage> preparedMessages = null;
             foreach (var receivedMessage in receivedMessages.Messages)
             {
-                token.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancellationRequested();
 
                 preparedMessages = preparedMessages ?? new List<SqsReceivedDelayedMessage>(receivedMessages.Messages.Count);
                 long delaySeconds = 0;
@@ -256,7 +256,7 @@ namespace NServiceBus.Transport.SQS
             return preparedMessages;
         }
 
-        async Task BatchDispatchPreparedMessages(IReadOnlyCollection<SqsReceivedDelayedMessage> preparedMessages)
+        async Task BatchDispatchPreparedMessages(IReadOnlyCollection<SqsReceivedDelayedMessage> preparedMessages, CancellationToken cancellationToken = default)
         {
             var batchesToSend = Batcher.Batch(preparedMessages);
             var operationCount = batchesToSend.Count;
@@ -264,7 +264,7 @@ namespace NServiceBus.Transport.SQS
             for (var i = 0; i < operationCount; i++)
             {
                 batchTasks = batchTasks ?? new Task[operationCount];
-                batchTasks[i] = SendDelayedMessagesInBatches(batchesToSend[i], i + 1, operationCount);
+                batchTasks[i] = SendDelayedMessagesInBatches(batchesToSend[i], i + 1, operationCount, cancellationToken);
             }
 
             if (batchTasks != null)
@@ -273,7 +273,7 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        async Task SendDelayedMessagesInBatches(BatchEntry<SqsReceivedDelayedMessage> batch, int batchNumber, int totalBatches)
+        async Task SendDelayedMessagesInBatches(BatchEntry<SqsReceivedDelayedMessage> batch, int batchNumber, int totalBatches, CancellationToken cancellationToken = default)
         {
             if (Logger.IsDebugEnabled)
             {
@@ -282,7 +282,7 @@ namespace NServiceBus.Transport.SQS
                 Logger.Debug($"Sending delayed message batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
             }
 
-            var result = await sqsClient.SendMessageBatchAsync(batch.BatchRequest).ConfigureAwait(false);
+            var result = await sqsClient.SendMessageBatchAsync(batch.BatchRequest, cancellationToken).ConfigureAwait(false);
 
             if (Logger.IsDebugEnabled)
             {
@@ -291,13 +291,13 @@ namespace NServiceBus.Transport.SQS
                 Logger.Debug($"Sent delayed message '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
             }
 
-            var deletionTask = DeleteDelayedMessagesThatWereDeliveredSuccessfullyAsBatchesInBatches(batch, result, batchNumber, totalBatches);
+            var deletionTask = DeleteDelayedMessagesThatWereDeliveredSuccessfullyAsBatchesInBatches(batch, result, batchNumber, totalBatches, cancellationToken);
             // deliberately fire&forget because we treat this as a best effort
-            _ = ChangeVisibilityOfDelayedMessagesThatFailedBatchDeliveryInBatches(batch, result, batchNumber, totalBatches);
+            _ = ChangeVisibilityOfDelayedMessagesThatFailedBatchDeliveryInBatches(batch, result, batchNumber, totalBatches, cancellationToken);
             await deletionTask.ConfigureAwait(false);
         }
 
-        async Task ChangeVisibilityOfDelayedMessagesThatFailedBatchDeliveryInBatches(BatchEntry<SqsReceivedDelayedMessage> batch, SendMessageBatchResponse result, int batchNumber, int totalBatches)
+        async Task ChangeVisibilityOfDelayedMessagesThatFailedBatchDeliveryInBatches(BatchEntry<SqsReceivedDelayedMessage> batch, SendMessageBatchResponse result, int batchNumber, int totalBatches, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -322,7 +322,7 @@ namespace NServiceBus.Transport.SQS
                         Logger.Debug($"Changing delayed message visibility for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
                     }
 
-                    var changeVisibilityResult = await sqsClient.ChangeMessageVisibilityBatchAsync(new ChangeMessageVisibilityBatchRequest(delayedDeliveryQueueUrl, changeVisibilityBatchRequestEntries), CancellationToken.None)
+                    var changeVisibilityResult = await sqsClient.ChangeMessageVisibilityBatchAsync(new ChangeMessageVisibilityBatchRequest(delayedDeliveryQueueUrl, changeVisibilityBatchRequestEntries), cancellationToken)
                         .ConfigureAwait(false);
 
                     if (Logger.IsDebugEnabled)
@@ -356,7 +356,7 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        async Task DeleteDelayedMessagesThatWereDeliveredSuccessfullyAsBatchesInBatches(BatchEntry<SqsReceivedDelayedMessage> batch, SendMessageBatchResponse result, int batchNumber, int totalBatches)
+        async Task DeleteDelayedMessagesThatWereDeliveredSuccessfullyAsBatchesInBatches(BatchEntry<SqsReceivedDelayedMessage> batch, SendMessageBatchResponse result, int batchNumber, int totalBatches, CancellationToken cancellationToken = default)
         {
             List<DeleteMessageBatchRequestEntry> deleteBatchRequestEntries = null;
             foreach (var successful in result.Successful)
@@ -376,7 +376,7 @@ namespace NServiceBus.Transport.SQS
                     Logger.Debug($"Deleting delayed message for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
                 }
 
-                var deleteResult = await sqsClient.DeleteMessageBatchAsync(new DeleteMessageBatchRequest(delayedDeliveryQueueUrl, deleteBatchRequestEntries), CancellationToken.None)
+                var deleteResult = await sqsClient.DeleteMessageBatchAsync(new DeleteMessageBatchRequest(delayedDeliveryQueueUrl, deleteBatchRequestEntries), cancellationToken)
                     .ConfigureAwait(false);
 
                 if (Logger.IsDebugEnabled)
@@ -392,7 +392,7 @@ namespace NServiceBus.Transport.SQS
                     deleteTasks = deleteTasks ?? new List<Task>(deleteResult.Failed.Count);
                     var messageToDeleteWithAnotherAttempt = batch.PreparedMessagesBydId[errorEntry.Id];
                     Logger.Info($"Retrying message deletion with MessageId {messageToDeleteWithAnotherAttempt.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
-                    deleteTasks.Add(DeleteMessage(messageToDeleteWithAnotherAttempt));
+                    deleteTasks.Add(DeleteMessage(messageToDeleteWithAnotherAttempt, cancellationToken));
                 }
 
                 if (deleteTasks != null)
@@ -402,12 +402,12 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        async Task DeleteMessage(SqsReceivedDelayedMessage messageToDeleteWithAnotherAttempt)
+        async Task DeleteMessage(SqsReceivedDelayedMessage messageToDeleteWithAnotherAttempt, CancellationToken cancellationToken = default)
         {
             try
             {
                 // should not be cancelled
-                await sqsClient.DeleteMessageAsync(messageToDeleteWithAnotherAttempt.QueueUrl, messageToDeleteWithAnotherAttempt.ReceiptHandle).ConfigureAwait(false);
+                await sqsClient.DeleteMessageAsync(messageToDeleteWithAnotherAttempt.QueueUrl, messageToDeleteWithAnotherAttempt.ReceiptHandle, cancellationToken).ConfigureAwait(false);
             }
             catch (ReceiptHandleIsInvalidException ex)
             {

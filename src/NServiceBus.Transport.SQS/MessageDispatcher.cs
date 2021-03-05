@@ -34,7 +34,7 @@
             serializerStrategy = v1Compatibility ? SimpleJson.PocoJsonSerializerStrategy : ReducedPayloadSerializerStrategy.Instance;
         }
 
-        public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, CancellationToken cancellationToken)
+        public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, CancellationToken cancellationToken = default)
         {
             var concurrentDispatchTasks = new List<Task>(3);
 
@@ -116,7 +116,7 @@
             await Task.WhenAll(batchTasks).ConfigureAwait(false);
         }
 
-        async Task SendBatch(BatchEntry<SqsPreparedMessage> batch, int batchNumber, int totalBatches)
+        async Task SendBatch(BatchEntry<SqsPreparedMessage> batch, int batchNumber, int totalBatches, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -127,7 +127,7 @@
                     Logger.Debug($"Sending batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
                 }
 
-                var result = await sqsClient.SendMessageBatchAsync(batch.BatchRequest).ConfigureAwait(false);
+                var result = await sqsClient.SendMessageBatchAsync(batch.BatchRequest, cancellationToken).ConfigureAwait(false);
 
                 if (Logger.IsDebugEnabled)
                 {
@@ -142,7 +142,7 @@
                     redispatchTasks = redispatchTasks ?? new List<Task>(result.Failed.Count);
                     var messageToRetry = batch.PreparedMessagesBydId[errorEntry.Id];
                     Logger.Info($"Retrying message with MessageId {messageToRetry.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
-                    redispatchTasks.Add(SendMessageForBatch(messageToRetry, batchNumber, totalBatches));
+                    redispatchTasks.Add(SendMessageForBatch(messageToRetry, batchNumber, totalBatches, cancellationToken));
                 }
 
                 if (redispatchTasks != null)
@@ -216,17 +216,17 @@
                 .ConfigureAwait(false);
         }
 
-        async Task SendMessageForBatch(SqsPreparedMessage message, int batchNumber, int totalBatches)
+        async Task SendMessageForBatch(SqsPreparedMessage message, int batchNumber, int totalBatches, CancellationToken cancellationToken = default)
         {
-            await SendMessage(message).ConfigureAwait(false);
+            await SendMessage(message, cancellationToken).ConfigureAwait(false);
             Logger.Info($"Retried message with MessageId {message.MessageId} that failed in batch '{batchNumber}/{totalBatches}'.");
         }
 
-        async Task SendMessage(SqsPreparedMessage message)
+        async Task SendMessage(SqsPreparedMessage message, CancellationToken cancellationToken = default)
         {
             try
             {
-                await sqsClient.SendMessageAsync(message.ToRequest())
+                await sqsClient.SendMessageAsync(message.ToRequest(), cancellationToken)
                     .ConfigureAwait(false);
             }
             catch (QueueDoesNotExistException e) when (message.OriginalDestination != null)

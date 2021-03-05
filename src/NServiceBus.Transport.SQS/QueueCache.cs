@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Concurrent;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
     using Amazon.SQS;
 
@@ -38,7 +39,7 @@
             return queueUrlToQueueArnCache.AddOrUpdate(queueUrl, queueAttributes["QueueArn"], (key, value) => value);
         }
 
-        public async Task<string> GetQueueUrl(string queueName)
+        public async Task<string> GetQueueUrl(string queueName, CancellationToken cancellationToken = default)
         {
             if (queueNameToUrlCache.TryGetValue(queueName, out var queueUrl))
             {
@@ -46,7 +47,7 @@
             }
 
             var physicalQueueName = GetPhysicalQueueName(queueName);
-            var response = await sqsClient.GetQueueUrlAsync(physicalQueueName)
+            var response = await sqsClient.GetQueueUrlAsync(physicalQueueName, cancellationToken)
                 .ConfigureAwait(false);
             queueUrl = response.QueueUrl;
             return queueNameToUrlCache.AddOrUpdate(queueName, queueUrl, (key, value) => value);

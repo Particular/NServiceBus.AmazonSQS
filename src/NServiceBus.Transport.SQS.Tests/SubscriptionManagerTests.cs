@@ -48,7 +48,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var eventType = typeof(object);
 
-            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null, CancellationToken.None);
+            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
             Assert.IsNotEmpty(snsClient.SubscribeRequestsSent);
         }
@@ -60,12 +60,12 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var eventType = typeof(Event);
 
-            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null, CancellationToken.None);
+            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
             var initialSubscribeRequests = new List<SubscribeRequest>(snsClient.SubscribeRequestsSent);
             snsClient.SubscribeRequestsSent.Clear();
 
-            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null, CancellationToken.None);
+            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
             Assert.IsNotEmpty(initialSubscribeRequests);
             Assert.IsEmpty(snsClient.SubscribeRequestsSent);
@@ -78,10 +78,10 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var eventType = typeof(Event);
 
-            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null, CancellationToken.None);
-            await manager.Unsubscribe(new MessageMetadata(eventType), null, CancellationToken.None);
+            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
+            await manager.Unsubscribe(new MessageMetadata(eventType), null);
 
-            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null, CancellationToken.None);
+            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
             Assert.AreEqual(2, snsClient.SubscribeRequestsSent.Count);
         }
@@ -93,7 +93,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var eventType = typeof(Event);
 
-            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null, CancellationToken.None);
+            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
             CollectionAssert.AreEquivalent(new List<string> { "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event" }, snsClient.CreateTopicRequests);
             Assert.IsEmpty(snsClient.FindTopicRequests);
@@ -107,7 +107,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var eventType = typeof(Event);
             customEventToTopicsMappings.Add(eventType, new[] { "custom-topic-name" });
 
-            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null, CancellationToken.None);
+            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
             CollectionAssert.AreEquivalent(new List<string>
             {
@@ -128,7 +128,7 @@ namespace NServiceBus.Transport.SQS.Tests
             customEventToEventsMappings.Add(subscribedEventType, concreteEventType);
             customEventToEventsMappings.Add(subscribedEventType, concreteAnotherEventType);
 
-            await manager.SubscribeAll(new[] { new MessageMetadata(subscribedEventType) }, null, CancellationToken.None);
+            await manager.SubscribeAll(new[] { new MessageMetadata(subscribedEventType) }, null);
 
             CollectionAssert.AreEquivalent(new List<string>
             {
@@ -153,7 +153,7 @@ namespace NServiceBus.Transport.SQS.Tests
             customEventToEventsMappings.Add(subscribedEventType, concreteEventType);
             customEventToEventsMappings.Add(subscribedEventType, concreteAnotherEventType);
 
-            await manager.SubscribeAll(new[] { new MessageMetadata(subscribedEventType) }, null, CancellationToken.None);
+            await manager.SubscribeAll(new[] { new MessageMetadata(subscribedEventType) }, null);
 
             Assert.AreEqual(1, sqsClient.SetAttributesRequestsSent.Count);
         }
@@ -165,7 +165,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var eventType = typeof(Event);
 
-            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null, CancellationToken.None);
+            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
             Assert.AreEqual(1, snsClient.SubscribeRequestsSent.Count);
             var subscribeRequest = snsClient.SubscribeRequestsSent[0];
@@ -187,7 +187,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 {"QueueArn", "arn:fakeQueue"}
             };
 
-            Assert.DoesNotThrowAsync(async () => await manager.SubscribeAll(new[] { new MessageMetadata(typeof(Event)) }, null, CancellationToken.None));
+            Assert.DoesNotThrowAsync(async () => await manager.SubscribeAll(new[] { new MessageMetadata(typeof(Event)) }, null));
             Assert.AreEqual(8, manager.Delays.Count);
             Assert.AreEqual(44000, manager.Delays.Sum());
         }
@@ -213,7 +213,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 return original(s);
             };
 
-            Assert.DoesNotThrowAsync(async () => await manager.SubscribeAll(new[] { new MessageMetadata(typeof(Event)) }, null, CancellationToken.None));
+            Assert.DoesNotThrowAsync(async () => await manager.SubscribeAll(new[] { new MessageMetadata(typeof(Event)) }, null));
             Assert.AreEqual(7, manager.Delays.Count);
             Assert.AreEqual(35000, manager.Delays.Sum());
         }
@@ -225,7 +225,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var eventType = typeof(object);
 
-            await manager.Unsubscribe(new MessageMetadata(eventType), null, CancellationToken.None);
+            await manager.Unsubscribe(new MessageMetadata(eventType), null);
 
             Assert.IsEmpty(snsClient.UnsubscribeRequests);
         }
@@ -246,7 +246,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var eventType = typeof(Event);
 
-            await manager.Unsubscribe(new MessageMetadata(eventType), null, CancellationToken.None);
+            await manager.Unsubscribe(new MessageMetadata(eventType), null);
 
             Assert.IsEmpty(snsClient.UnsubscribeRequests);
         }
@@ -267,7 +267,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var eventType = typeof(Event);
 
-            await manager.Unsubscribe(new MessageMetadata(eventType), null, CancellationToken.None);
+            await manager.Unsubscribe(new MessageMetadata(eventType), null);
 
             CollectionAssert.AreEquivalent(new List<string>
             {
@@ -290,7 +290,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var eventType = typeof(Event);
 
-            await manager.Unsubscribe(new MessageMetadata(eventType), null, CancellationToken.None);
+            await manager.Unsubscribe(new MessageMetadata(eventType), null);
 
             Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
         }
@@ -324,7 +324,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 };
             };
 
-            await manager.Unsubscribe(new MessageMetadata(unsubscribedEvent), null, CancellationToken.None);
+            await manager.Unsubscribe(new MessageMetadata(unsubscribedEvent), null);
 
             CollectionAssert.AreEquivalent(new List<string>
             {
@@ -366,7 +366,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 };
             };
 
-            await manager.Unsubscribe(new MessageMetadata(unsubscribedEvent), null, CancellationToken.None);
+            await manager.Unsubscribe(new MessageMetadata(unsubscribedEvent), null);
 
             Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
         }
@@ -399,7 +399,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 };
             };
 
-            await manager.Unsubscribe(new MessageMetadata(unsubscribedEvent), null, CancellationToken.None);
+            await manager.Unsubscribe(new MessageMetadata(unsubscribedEvent), null);
 
             CollectionAssert.AreEquivalent(new List<string>
             {
@@ -440,7 +440,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 };
             };
 
-            await manager.Unsubscribe(new MessageMetadata(unsubscribedEvent), null, CancellationToken.None);
+            await manager.Unsubscribe(new MessageMetadata(unsubscribedEvent), null);
 
             Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
         }

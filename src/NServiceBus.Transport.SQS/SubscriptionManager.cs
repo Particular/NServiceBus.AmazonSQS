@@ -26,9 +26,9 @@ namespace NServiceBus.Transport.SQS
             this.queueName = queueName;
         }
 
-        public async Task SubscribeAll(MessageMetadata[] eventTypes, ContextBag context, CancellationToken cancellationToken)
+        public async Task SubscribeAll(MessageMetadata[] eventTypes, ContextBag context, CancellationToken cancellationToken = default)
         {
-            var queueUrl = await queueCache.GetQueueUrl(queueName)
+            var queueUrl = await queueCache.GetQueueUrl(queueName, cancellationToken)
                 .ConfigureAwait(false);
 
             // currently we are not doing fanout but better safe than sorry later
@@ -42,7 +42,7 @@ namespace NServiceBus.Transport.SQS
             await SettlePolicy(queueUrl, policyStatementsToBeSettled).ConfigureAwait(false);
         }
 
-        public async Task Unsubscribe(MessageMetadata message, ContextBag context, CancellationToken cancellationToken)
+        public async Task Unsubscribe(MessageMetadata message, ContextBag context, CancellationToken cancellationToken = default)
         {
             await DeleteSubscription(message).ConfigureAwait(false);
         }
@@ -248,9 +248,9 @@ namespace NServiceBus.Transport.SQS
         }
 
         // only for testing
-        protected virtual Task Delay(int millisecondsDelay, CancellationToken token = default)
+        protected virtual Task Delay(int millisecondsDelay, CancellationToken cancellationToken = default)
         {
-            return Task.Delay(millisecondsDelay, token);
+            return Task.Delay(millisecondsDelay, cancellationToken);
         }
 
         void MarkTypeConfigured(Type eventType)

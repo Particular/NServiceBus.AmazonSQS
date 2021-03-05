@@ -37,7 +37,7 @@
                             nativeMessageAccessor?.Invoke(msg);
                         }
 
-                        await sqsClient.DeleteMessageAsync(getQueueUrlResponse.QueueUrl, msg.ReceiptHandle, CancellationToken.None);
+                        await sqsClient.DeleteMessageAsync(getQueueUrlResponse.QueueUrl, msg.ReceiptHandle, cancellationToken);
                     }
                 }
             }
