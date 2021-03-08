@@ -15,7 +15,16 @@
         /// <summary>
         /// The name prefix for the current run of the test suite.
         /// </summary>
-        public static string NamePrefix { get; private set; }
+        static string NamePrefix { get; set; }
+
+        public static string GetNamePrefix()
+        {
+            var ctx = TestContext.CurrentContext;
+            var methodName = ctx.Test.MethodName;
+            var methodHashPositive = Math.Abs(methodName.GetHashCode());
+
+            return NamePrefix + methodHashPositive.ToString();
+        }
 
         [OneTimeSetUp]
         public void OneTimeSetUp()
