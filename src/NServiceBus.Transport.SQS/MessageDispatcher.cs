@@ -34,13 +34,13 @@
             serializerStrategy = v1Compatibility ? SimpleJson.PocoJsonSerializerStrategy : ReducedPayloadSerializerStrategy.Instance;
         }
 
-        public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, CancellationToken cancellationToken)
+        public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, CancellationToken cancellationToken = default)
         {
             var concurrentDispatchTasks = new List<Task>(3);
 
             // in order to not enumerate multi cast operations multiple times this code assumes the hashset is filled on the synchronous path of the async method!
             var messageIdsOfMulticastEvents = new HashSet<string>();
-            concurrentDispatchTasks.Add(DispatchMulticast(outgoingMessages.MulticastTransportOperations, messageIdsOfMulticastEvents, transaction));
+            concurrentDispatchTasks.Add(DispatchMulticast(outgoingMessages.MulticastTransportOperations, messageIdsOfMulticastEvents, transaction, cancellationToken));
 
             foreach (var dispatchConsistencyGroup in outgoingMessages.UnicastTransportOperations
                 .GroupBy(o => o.RequiredDispatchConsistency))
@@ -48,10 +48,10 @@
                 switch (dispatchConsistencyGroup.Key)
                 {
                     case DispatchConsistency.Isolated:
-                        concurrentDispatchTasks.Add(DispatchIsolated(dispatchConsistencyGroup, messageIdsOfMulticastEvents, transaction));
+                        concurrentDispatchTasks.Add(DispatchIsolated(dispatchConsistencyGroup, messageIdsOfMulticastEvents, transaction, cancellationToken));
                         break;
                     case DispatchConsistency.Default:
-                        concurrentDispatchTasks.Add(DispatchBatched(dispatchConsistencyGroup, messageIdsOfMulticastEvents, transaction));
+                        concurrentDispatchTasks.Add(DispatchBatched(dispatchConsistencyGroup, messageIdsOfMulticastEvents, transaction, cancellationToken));
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -69,37 +69,37 @@
             }
         }
 
-        Task DispatchMulticast(List<MulticastTransportOperation> multicastTransportOperations, HashSet<string> messageIdsOfMulticastEvents, TransportTransaction transportTransaction)
+        Task DispatchMulticast(List<MulticastTransportOperation> multicastTransportOperations, HashSet<string> messageIdsOfMulticastEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken = default)
         {
             List<Task> tasks = null;
             foreach (var operation in multicastTransportOperations)
             {
                 messageIdsOfMulticastEvents.Add(operation.Message.MessageId);
                 tasks = tasks ?? new List<Task>(multicastTransportOperations.Count);
-                tasks.Add(Dispatch(operation, EmptyHashset, transportTransaction));
+                tasks.Add(Dispatch(operation, EmptyHashset, transportTransaction, cancellationToken));
             }
 
             return tasks != null ? Task.WhenAll(tasks) : Task.CompletedTask;
         }
 
-        Task DispatchIsolated(IEnumerable<UnicastTransportOperation> isolatedTransportOperations, HashSet<string> messageIdsOfMulticastEvents, TransportTransaction transportTransaction)
+        Task DispatchIsolated(IEnumerable<UnicastTransportOperation> isolatedTransportOperations, HashSet<string> messageIdsOfMulticastEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken = default)
         {
             List<Task> tasks = null;
             foreach (var operation in isolatedTransportOperations)
             {
                 tasks = tasks ?? new List<Task>();
-                tasks.Add(Dispatch(operation, messageIdsOfMulticastEvents, transportTransaction));
+                tasks.Add(Dispatch(operation, messageIdsOfMulticastEvents, transportTransaction, cancellationToken));
             }
 
             return tasks != null ? Task.WhenAll(tasks) : Task.CompletedTask;
         }
 
-        async Task DispatchBatched(IEnumerable<UnicastTransportOperation> toBeBatchedTransportOperations, HashSet<string> messageIdsOfMulticastEvents, TransportTransaction transportTransaction)
+        async Task DispatchBatched(IEnumerable<UnicastTransportOperation> toBeBatchedTransportOperations, HashSet<string> messageIdsOfMulticastEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken = default)
         {
             var tasks = new List<Task<SqsPreparedMessage>>();
             foreach (var operation in toBeBatchedTransportOperations)
             {
-                tasks.Add(PrepareMessage<SqsPreparedMessage>(operation, messageIdsOfMulticastEvents, transportTransaction));
+                tasks.Add(PrepareMessage<SqsPreparedMessage>(operation, messageIdsOfMulticastEvents, transportTransaction, cancellationToken));
             }
 
             await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -110,13 +110,13 @@
             var batchTasks = new Task[operationCount];
             for (var i = 0; i < operationCount; i++)
             {
-                batchTasks[i] = SendBatch(batches[i], i + 1, operationCount);
+                batchTasks[i] = SendBatch(batches[i], i + 1, operationCount, cancellationToken);
             }
 
             await Task.WhenAll(batchTasks).ConfigureAwait(false);
         }
 
-        async Task SendBatch(BatchEntry<SqsPreparedMessage> batch, int batchNumber, int totalBatches)
+        async Task SendBatch(BatchEntry<SqsPreparedMessage> batch, int batchNumber, int totalBatches, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -127,7 +127,7 @@
                     Logger.Debug($"Sending batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
                 }
 
-                var result = await sqsClient.SendMessageBatchAsync(batch.BatchRequest).ConfigureAwait(false);
+                var result = await sqsClient.SendMessageBatchAsync(batch.BatchRequest, cancellationToken).ConfigureAwait(false);
 
                 if (Logger.IsDebugEnabled)
                 {
@@ -142,7 +142,7 @@
                     redispatchTasks = redispatchTasks ?? new List<Task>(result.Failed.Count);
                     var messageToRetry = batch.PreparedMessagesBydId[errorEntry.Id];
                     Logger.Info($"Retrying message with MessageId {messageToRetry.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
-                    redispatchTasks.Add(SendMessageForBatch(messageToRetry, batchNumber, totalBatches));
+                    redispatchTasks.Add(SendMessageForBatch(messageToRetry, batchNumber, totalBatches, cancellationToken));
                 }
 
                 if (redispatchTasks != null)
@@ -171,9 +171,9 @@
             }
         }
 
-        async Task Dispatch(MulticastTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction)
+        async Task Dispatch(MulticastTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken = default)
         {
-            var message = await PrepareMessage<SnsPreparedMessage>(transportOperation, messageIdsOfMulticastedEvents, transportTransaction)
+            var message = await PrepareMessage<SnsPreparedMessage>(transportOperation, messageIdsOfMulticastedEvents, transportTransaction, cancellationToken)
                 .ConfigureAwait(false);
 
             if (message == null)
@@ -193,7 +193,7 @@
                 Logger.Debug($"Publishing message with '{message.MessageId}' to topic '{publishRequest.TopicArn}'");
             }
 
-            await snsClient.PublishAsync(publishRequest)
+            await snsClient.PublishAsync(publishRequest, cancellationToken)
                 .ConfigureAwait(false);
 
             if (Logger.IsDebugEnabled)
@@ -202,9 +202,9 @@
             }
         }
 
-        async Task Dispatch(UnicastTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction)
+        async Task Dispatch(UnicastTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken = default)
         {
-            var message = await PrepareMessage<SqsPreparedMessage>(transportOperation, messageIdsOfMulticastedEvents, transportTransaction)
+            var message = await PrepareMessage<SqsPreparedMessage>(transportOperation, messageIdsOfMulticastedEvents, transportTransaction, cancellationToken)
                 .ConfigureAwait(false);
 
             if (message == null)
@@ -212,21 +212,21 @@
                 return;
             }
 
-            await SendMessage(message)
+            await SendMessage(message, cancellationToken)
                 .ConfigureAwait(false);
         }
 
-        async Task SendMessageForBatch(SqsPreparedMessage message, int batchNumber, int totalBatches)
+        async Task SendMessageForBatch(SqsPreparedMessage message, int batchNumber, int totalBatches, CancellationToken cancellationToken = default)
         {
-            await SendMessage(message).ConfigureAwait(false);
+            await SendMessage(message, cancellationToken).ConfigureAwait(false);
             Logger.Info($"Retried message with MessageId {message.MessageId} that failed in batch '{batchNumber}/{totalBatches}'.");
         }
 
-        async Task SendMessage(SqsPreparedMessage message)
+        async Task SendMessage(SqsPreparedMessage message, CancellationToken cancellationToken = default)
         {
             try
             {
-                await sqsClient.SendMessageAsync(message.ToRequest())
+                await sqsClient.SendMessageAsync(message.ToRequest(), cancellationToken)
                     .ConfigureAwait(false);
             }
             catch (QueueDoesNotExistException e) when (message.OriginalDestination != null)
@@ -240,7 +240,7 @@
             }
         }
 
-        async Task<TMessage> PrepareMessage<TMessage>(IOutgoingTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction)
+        async Task<TMessage> PrepareMessage<TMessage>(IOutgoingTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken = default)
             where TMessage : PreparedMessage, new()
         {
             var unicastTransportOperation = transportOperation as UnicastTransportOperation;
@@ -295,7 +295,7 @@
 
             var nativeMessageAttributes = forwardingANativeMessage ? nativeMessage.MessageAttributes : null;
 
-            await ApplyUnicastOperationMappingIfNecessary(unicastTransportOperation, preparedMessage as SqsPreparedMessage, delaySeconds, messageId, nativeMessageAttributes).ConfigureAwait(false);
+            await ApplyUnicastOperationMappingIfNecessary(unicastTransportOperation, preparedMessage as SqsPreparedMessage, delaySeconds, messageId, nativeMessageAttributes, cancellationToken).ConfigureAwait(false);
             await ApplyMulticastOperationMappingIfNecessary(transportOperation as MulticastTransportOperation, preparedMessage as SnsPreparedMessage).ConfigureAwait(false);
 
             preparedMessage.Body = SimpleJson.SerializeObject(sqsTransportMessage, serializerStrategy);
@@ -324,7 +324,7 @@
 
                 s3.NullSafeEncryption.ModifyPutRequest(putObjectRequest);
 
-                await s3.S3Client.PutObjectAsync(putObjectRequest).ConfigureAwait(false);
+                await s3.S3Client.PutObjectAsync(putObjectRequest, cancellationToken).ConfigureAwait(false);
             }
 
             sqsTransportMessage.S3BodyKey = key;
@@ -346,7 +346,7 @@
             snsPreparedMessage.Destination = existingTopicArn;
         }
 
-        async Task ApplyUnicastOperationMappingIfNecessary(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, string messageId, Dictionary<string, MessageAttributeValue> nativeMessageAttributes)
+        async Task ApplyUnicastOperationMappingIfNecessary(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, string messageId, Dictionary<string, MessageAttributeValue> nativeMessageAttributes, CancellationToken cancellationToken = default)
         {
             if (transportOperation == null || sqsPreparedMessage == null)
             {
@@ -362,7 +362,7 @@
             {
                 sqsPreparedMessage.OriginalDestination = transportOperation.Destination;
                 sqsPreparedMessage.Destination = $"{transportOperation.Destination}{TransportConstraints.DelayedDeliveryQueueSuffix}";
-                sqsPreparedMessage.QueueUrl = await queueCache.GetQueueUrl(sqsPreparedMessage.Destination)
+                sqsPreparedMessage.QueueUrl = await queueCache.GetQueueUrl(sqsPreparedMessage.Destination, cancellationToken)
                     .ConfigureAwait(false);
 
                 sqsPreparedMessage.MessageDeduplicationId = messageId;
@@ -377,7 +377,7 @@
             else
             {
                 sqsPreparedMessage.Destination = transportOperation.Destination;
-                sqsPreparedMessage.QueueUrl = await queueCache.GetQueueUrl(sqsPreparedMessage.Destination)
+                sqsPreparedMessage.QueueUrl = await queueCache.GetQueueUrl(sqsPreparedMessage.Destination, cancellationToken)
                     .ConfigureAwait(false);
 
                 if (delaySeconds > 0)

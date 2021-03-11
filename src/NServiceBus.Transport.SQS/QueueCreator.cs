@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Amazon.S3;
     using Amazon.S3.Model;
@@ -23,7 +24,7 @@
             this.queueDelaySeconds = queueDelaySeconds;
         }
 
-        public async Task CreateQueueIfNecessary(string address, bool createDelayedDeliveryQueue)
+        public async Task CreateQueueIfNecessary(string address, bool createDelayedDeliveryQueue, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -35,7 +36,7 @@
                 };
 
                 Logger.Info($"Creating SQS Queue with name '{sqsRequest.QueueName}' for address '{queueName}'.");
-                var createQueueResponse = await sqsClient.CreateQueueAsync(sqsRequest).ConfigureAwait(false);
+                var createQueueResponse = await sqsClient.CreateQueueAsync(sqsRequest, cancellationToken).ConfigureAwait(false);
 
                 queueCache.SetQueueUrl(queueName, createQueueResponse.QueueUrl);
 
@@ -50,7 +51,7 @@
                 sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod,
                     maxTimeToLive.TotalSeconds.ToString(CultureInfo.InvariantCulture));
 
-                await sqsClient.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
+                await sqsClient.SetQueueAttributesAsync(sqsAttributesRequest, cancellationToken).ConfigureAwait(false);
 
                 if (createDelayedDeliveryQueue)
                 {
@@ -63,7 +64,7 @@
                     };
 
                     Logger.Info($"Creating SQS delayed delivery queue with name '{sqsRequest.QueueName}' for address '{address}'.");
-                    createQueueResponse = await sqsClient.CreateQueueAsync(sqsRequest).ConfigureAwait(false);
+                    createQueueResponse = await sqsClient.CreateQueueAsync(sqsRequest, cancellationToken).ConfigureAwait(false);
 
                     queueCache.SetQueueUrl(delayedDeliveryQueueName, createQueueResponse.QueueUrl);
 
@@ -75,13 +76,13 @@
                     sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod, TransportConstraints.DelayedDeliveryQueueMessageRetentionPeriod.TotalSeconds.ToString(CultureInfo.InvariantCulture));
                     sqsAttributesRequest.Attributes.Add(QueueAttributeName.DelaySeconds, queueDelaySeconds.ToString(CultureInfo.InvariantCulture));
 
-                    await sqsClient.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
+                    await sqsClient.SetQueueAttributesAsync(sqsAttributesRequest, cancellationToken).ConfigureAwait(false);
                 }
 
                 if (s3Settings != null)
                 {
                     // determine if the configured bucket exists; create it if it doesn't
-                    var listBucketsResponse = await s3Settings.S3Client.ListBucketsAsync(new ListBucketsRequest()).ConfigureAwait(false);
+                    var listBucketsResponse = await s3Settings.S3Client.ListBucketsAsync(new ListBucketsRequest(), cancellationToken).ConfigureAwait(false);
                     var bucketExists = listBucketsResponse.Buckets.Any(x => string.Equals(x.BucketName, s3Settings.BucketName, StringComparison.InvariantCultureIgnoreCase));
                     if (!bucketExists)
                     {
@@ -93,7 +94,7 @@
                             onRetry: x => { Logger.Warn($"Conflict when creating S3 bucket, retrying after {x}ms."); }).ConfigureAwait(false);
                     }
 
-                    var lifecycleConfig = await s3Settings.S3Client.GetLifecycleConfigurationAsync(s3Settings.BucketName).ConfigureAwait(false);
+                    var lifecycleConfig = await s3Settings.S3Client.GetLifecycleConfigurationAsync(s3Settings.BucketName, cancellationToken).ConfigureAwait(false);
                     var setLifecycleConfig = lifecycleConfig.Configuration.Rules.All(x => x.Id != "NServiceBus.SQS.DeleteMessageBodies");
 
                     if (setLifecycleConfig)

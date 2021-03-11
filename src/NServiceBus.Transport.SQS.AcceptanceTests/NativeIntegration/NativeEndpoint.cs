@@ -11,7 +11,7 @@
 
     static class NativeEndpoint
     {
-        public static async Task ConsumePoisonQueue(Guid testRunId, string errorQueueAddress, CancellationToken cancellationToken, Action<Message> nativeMessageAccessor = null)
+        public static async Task ConsumePoisonQueue(Guid testRunId, string errorQueueAddress, Action<Message> nativeMessageAccessor = null, CancellationToken cancellationToken = default)
         {
             using (var sqsClient = ConfigureEndpointSqsTransport.CreateSqsClient())
             {
@@ -37,7 +37,7 @@
                             nativeMessageAccessor?.Invoke(msg);
                         }
 
-                        await sqsClient.DeleteMessageAsync(getQueueUrlResponse.QueueUrl, msg.ReceiptHandle, CancellationToken.None);
+                        await sqsClient.DeleteMessageAsync(getQueueUrlResponse.QueueUrl, msg.ReceiptHandle, cancellationToken);
                     }
                 }
             }

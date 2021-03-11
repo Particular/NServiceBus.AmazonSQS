@@ -30,7 +30,7 @@ namespace NServiceBus.Transport.SQS.Tests
             await pump.Initialize(
                 new PushRuntimeSettings(1),
                 onMessage ?? ((ctx, ct) => Task.FromResult(0)),
-                (ctx, ct) => Task.FromResult(ErrorHandleResult.Handled), CancellationToken.None);
+                (ctx, ct) => Task.FromResult(ErrorHandleResult.Handled));
         }
 
         [Test]
@@ -44,13 +44,13 @@ namespace NServiceBus.Transport.SQS.Tests
                 return new ReceiveMessageResponse { Messages = new List<Message>() };
             };
 
-            await pump.StartReceive(CancellationToken.None);
+            await pump.StartReceive();
 
             SpinWait.SpinUntil(() => mockSqsClient.ReceiveMessagesRequestsSent.Count > 0);
 
             cancellationTokenSource.Cancel();
 
-            await pump.StopReceive(CancellationToken.None);
+            await pump.StopReceive();
 
             Assert.IsTrue(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MaxNumberOfMessages == 1), "MaxNumberOfMessages did not match");
             Assert.IsTrue(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.QueueUrl == FakeInputQueueQueueUrl), "QueueUrl did not match");
@@ -85,7 +85,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var semaphore = new SemaphoreSlim(0, 1);
 
-            await pump.ProcessMessage(message, semaphore, CancellationToken.None).ConfigureAwait(false);
+            await pump.ProcessMessage(message, semaphore).ConfigureAwait(false);
 
             Assert.IsFalse(processed);
             Assert.AreEqual(1, mockSqsClient.RequestsSent.Count);
@@ -135,7 +135,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var semaphore = new SemaphoreSlim(0, 1);
 
-            await pump.ProcessMessage(message, semaphore, CancellationToken.None).ConfigureAwait(false);
+            await pump.ProcessMessage(message, semaphore).ConfigureAwait(false);
 
             Assert.IsFalse(processed);
             Assert.AreEqual(1, mockSqsClient.DeleteMessageRequestsSent.Count);
@@ -178,7 +178,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var semaphore = new SemaphoreSlim(0, 1);
 
-            await pump.ProcessMessage(message, semaphore, CancellationToken.None).ConfigureAwait(false);
+            await pump.ProcessMessage(message, semaphore).ConfigureAwait(false);
 
             Assert.IsTrue(processed);
             Assert.AreEqual(1, mockSqsClient.DeleteMessageRequestsSent.Count);
