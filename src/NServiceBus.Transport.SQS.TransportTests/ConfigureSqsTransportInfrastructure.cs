@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Amazon.Runtime;
 using Amazon.S3;
@@ -20,8 +21,8 @@ public class ConfigureSqsTransportInfrastructure : IConfigureTransportInfrastruc
     {
         var transport = new SqsTransport(CreateSqsClient(), CreateSnsClient())
         {
-            QueueNamePrefix = SetupFixture.NamePrefix,
-            TopicNamePrefix = SetupFixture.NamePrefix,
+            QueueNamePrefix = SetupFixture.GetNamePrefix(),
+            TopicNamePrefix = SetupFixture.GetNamePrefix(),
             QueueNameGenerator = TestNameHelper.GetSqsQueueName,
             TopicNameGenerator = TestNameHelper.GetSnsTopicName
         };

@@ -92,6 +92,6 @@ namespace NServiceBus
         /// <summary>
         /// The S3 client to use.
         /// </summary>
-        public IAmazonS3 S3Client { get; }
+        public IAmazonS3 S3Client { get; internal set; } //Internal setter for the legacy API shim.
     }
 }

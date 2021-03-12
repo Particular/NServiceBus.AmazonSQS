@@ -18,8 +18,15 @@
     /// </summary>
     public class SqsTransport : TransportDefinition
     {
-        IAmazonSQS sqsClient;
-        IAmazonSimpleNotificationService snsClient;
+        /// <summary>
+        /// SQS client for the transport.
+        /// </summary>
+        public IAmazonSQS SqsClient { get; internal set; } //For legacy API shim
+
+        /// <summary>
+        /// SNS client for the transport.
+        /// </summary>
+        public IAmazonSimpleNotificationService SnsClient { get; internal set; } //For legacy API shim
 
         /// <summary>
         /// Specifies a string value that will be prepended to the name of every SQS queue
@@ -185,8 +192,8 @@
         public SqsTransport(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient)
             : base(TransportTransactionMode.ReceiveOnly, true, true, true)
         {
-            this.sqsClient = sqsClient;
-            this.snsClient = snsClient;
+            SqsClient = sqsClient;
+            SnsClient = snsClient;
         }
 
         /// <summary>
@@ -197,8 +204,8 @@
         public SqsTransport()
             : base(TransportTransactionMode.ReceiveOnly, true, true, true)
         {
-            sqsClient = new AmazonSQSClient();
-            snsClient = new AmazonSimpleNotificationServiceClient();
+            SqsClient = new AmazonSQSClient();
+            SnsClient = new AmazonSimpleNotificationServiceClient();
         }
 
         /// <summary>
@@ -209,10 +216,10 @@
         /// </summary>
         public override async Task<TransportInfrastructure> Initialize(HostSettings hostSettings, ReceiveSettings[] receivers, string[] sendingAddresses, CancellationToken cancellationToken = default)
         {
-            var topicCache = new TopicCache(snsClient, eventToTopicsMappings, eventToEventsMappings, topicNameGenerator, topicNamePrefix);
-            var infra = new SqsTransportInfrastructure(hostSettings, receivers, sqsClient, snsClient, QueueCache, topicCache, S3, Policies, QueueDelayTime, topicNamePrefix, EnableV1CompatibilityMode);
+            var topicCache = new TopicCache(SnsClient, eventToTopicsMappings, eventToEventsMappings, topicNameGenerator, topicNamePrefix);
+            var infra = new SqsTransportInfrastructure(hostSettings, receivers, SqsClient, SnsClient, QueueCache, topicCache, S3, Policies, QueueDelayTime, topicNamePrefix, EnableV1CompatibilityMode);
 
-            var queueCreator = new QueueCreator(sqsClient, QueueCache, S3, maxTimeToLive, QueueDelayTime);
+            var queueCreator = new QueueCreator(SqsClient, QueueCache, S3, maxTimeToLive, QueueDelayTime);
 
             var createQueueTasks = sendingAddresses.Select(x => queueCreator.CreateQueueIfNecessary(x, false))
                 .Concat(receivers.Select(x => queueCreator.CreateQueueIfNecessary(x.ReceiveAddress, true))).ToArray();
@@ -243,7 +250,7 @@
         }
 
         QueueCache QueueCache =>
-            queueCache ?? (queueCache = new QueueCache(sqsClient,
+            queueCache ?? (queueCache = new QueueCache(SqsClient,
                 destination => queueNameGenerator(destination, QueueNamePrefix)));
 
         /// <summary>

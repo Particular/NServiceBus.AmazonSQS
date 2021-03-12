@@ -48,7 +48,7 @@
             {
                 var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
                 {
-                    QueueName = QueueCache.GetSqsQueueName(inputQueueName, SetupFixture.NamePrefix)
+                    QueueName = QueueCache.GetSqsQueueName(inputQueueName, SetupFixture.GetNamePrefix())
                 }).ConfigureAwait(false);
 
                 await sqsClient.SendMessageAsync(new SendMessageRequest
@@ -65,7 +65,7 @@
             {
                 var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
                 {
-                    QueueName = QueueCache.GetSqsQueueName(errorQueueName, SetupFixture.NamePrefix)
+                    QueueName = QueueCache.GetSqsQueueName(errorQueueName, SetupFixture.GetNamePrefix())
                 }, cancellationToken).ConfigureAwait(false);
 
                 var messageReceived = false;
