@@ -116,19 +116,21 @@ namespace NServiceBus.Transport.SQS
             }
 
             messagePumpCancellationTokenSource.Cancel();
-            cancellationToken.Register(() => messageProcessingCancellationTokenSource.Cancel());
 
-            if (pumpTasks != null)
+            using (cancellationToken.Register(() => messageProcessingCancellationTokenSource.Cancel()))
             {
-                await Task.WhenAll(pumpTasks).ConfigureAwait(false);
-                pumpTasks = null;
-            }
+                if (pumpTasks != null)
+                {
+                    await Task.WhenAll(pumpTasks).ConfigureAwait(false);
+                    pumpTasks = null;
+                }
 
-            while (maxConcurrencySemaphore.CurrentCount != maxConcurrency)
-            {
-                // Want to let the message pump drain naturally, which will happen quickly after
-                // messageProcessingCancellationTokenSource begins killing processing pipelines
-                await Task.Delay(50, CancellationToken.None).ConfigureAwait(false);
+                while (maxConcurrencySemaphore.CurrentCount != maxConcurrency)
+                {
+                    // Want to let the message pump drain naturally, which will happen quickly after
+                    // messageProcessingCancellationTokenSource begins killing processing pipelines
+                    await Task.Delay(50, CancellationToken.None).ConfigureAwait(false);
+                }
             }
 
             messagePumpCancellationTokenSource.Dispose();
