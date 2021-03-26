@@ -1478,6 +1478,13 @@
             throw new NotImplementedException();
         }
 
+        public Task<WriteGetObjectResponseResponse> WriteGetObjectResponseAsync(WriteGetObjectResponseRequest request,
+            CancellationToken cancellationToken = new CancellationToken()) =>
+            throw new NotImplementedException();
+
+        public WriteGetObjectResponseResponse WriteGetObjectResponse(WriteGetObjectResponseRequest request) =>
+            throw new NotImplementedException();
+
         public DeleteBucketIntelligentTieringConfigurationResponse DeleteBucketIntelligentTieringConfiguration(DeleteBucketIntelligentTieringConfigurationRequest request) => throw new NotImplementedException();
 
         public Task<DeleteBucketIntelligentTieringConfigurationResponse> DeleteBucketIntelligentTieringConfigurationAsync(DeleteBucketIntelligentTieringConfigurationRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
