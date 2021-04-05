@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.7.0.4" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.0.8" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.0.4" />
     <PackageReference Include="AWSSDK.SQS" Version="3.7.0.4" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
