@@ -86,12 +86,11 @@
                     var bucketExists = listBucketsResponse.Buckets.Any(x => string.Equals(x.BucketName, s3Settings.BucketName, StringComparison.InvariantCultureIgnoreCase));
                     if (!bucketExists)
                     {
-                        await s3Settings.S3Client.RetryConflictsAsync(async () =>
+                        await s3Settings.S3Client.RetryConflictsAsync(async token =>
                                 await s3Settings.S3Client.PutBucketAsync(new PutBucketRequest
                                 {
                                     BucketName = s3Settings.BucketName
-                                }).ConfigureAwait(false),
-                            onRetry: x => { Logger.Warn($"Conflict when creating S3 bucket, retrying after {x}ms."); }).ConfigureAwait(false);
+                                }, token).ConfigureAwait(false), onRetry: x => { Logger.Warn($"Conflict when creating S3 bucket, retrying after {x}ms."); }, cancellationToken: cancellationToken).ConfigureAwait(false);
                     }
 
                     var lifecycleConfig = await s3Settings.S3Client.GetLifecycleConfigurationAsync(s3Settings.BucketName, cancellationToken).ConfigureAwait(false);
@@ -99,7 +98,7 @@
 
                     if (setLifecycleConfig)
                     {
-                        await s3Settings.S3Client.RetryConflictsAsync(async () =>
+                        await s3Settings.S3Client.RetryConflictsAsync(async token =>
                                 await s3Settings.S3Client.PutLifecycleConfigurationAsync(new PutLifecycleConfigurationRequest
                                 {
                                     BucketName = s3Settings.BucketName,
@@ -125,8 +124,7 @@
                                             }
                                         }
                                     }
-                                }).ConfigureAwait(false),
-                            onRetry: x => { Logger.Warn($"Conflict when setting S3 lifecycle configuration, retrying after {x}ms."); }).ConfigureAwait(false);
+                                }, token).ConfigureAwait(false), onRetry: x => { Logger.Warn($"Conflict when setting S3 lifecycle configuration, retrying after {x}ms."); }, cancellationToken: cancellationToken).ConfigureAwait(false);
                     }
                 }
             }

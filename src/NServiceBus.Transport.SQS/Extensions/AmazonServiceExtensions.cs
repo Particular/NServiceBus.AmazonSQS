@@ -2,12 +2,13 @@
 {
     using System;
     using System.Net;
+    using System.Threading;
     using System.Threading.Tasks;
     using Amazon.Runtime;
 
     static class AmazonServiceExtensions
     {
-        public static async Task<T> RetryConflictsAsync<T>(this IAmazonService client, Func<Task<T>> a, Action<int> onRetry)
+        public static async Task<T> RetryConflictsAsync<T>(this IAmazonService client, Func<CancellationToken, Task<T>> a, Action<int> onRetry, CancellationToken cancellationToken = default)
         {
             _ = client;
 
@@ -20,7 +21,7 @@
                 try
                 {
                     tryCount++;
-                    return await a().ConfigureAwait(false);
+                    return await a(cancellationToken).ConfigureAwait(false);
                 }
                 catch (AmazonServiceException ex)
                     when (ex.StatusCode == HttpStatusCode.Conflict &&
@@ -33,7 +34,7 @@
 
                     var sleepTime = sleepTimeMs * tryCount;
                     onRetry(sleepTime);
-                    await Task.Delay(sleepTime).ConfigureAwait(false);
+                    await Task.Delay(sleepTime, cancellationToken).ConfigureAwait(false);
                 }
             }
         }

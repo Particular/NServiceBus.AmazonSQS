@@ -11,7 +11,7 @@
     static class MessageExtensions
     {
         public static async Task<byte[]> RetrieveBody(this TransportMessage transportMessage, string messageId, S3Settings s3Settings,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(transportMessage.S3BodyKey))
             {

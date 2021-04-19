@@ -32,7 +32,7 @@ namespace NServiceBus.Transport.SQS
 
         public Task StopReceive(CancellationToken cancellationToken = default)
         {
-            var stopDelayed = delayedMessagesPump.Stop();
+            var stopDelayed = delayedMessagesPump.Stop(cancellationToken);
             var stopPump = inputQueuePump.StopReceive(cancellationToken);
 
             return Task.WhenAll(stopDelayed, stopPump);

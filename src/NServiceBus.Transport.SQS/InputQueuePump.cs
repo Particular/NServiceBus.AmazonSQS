@@ -366,7 +366,7 @@ namespace NServiceBus.Transport.SQS
             return true;
         }
 
-        async Task DeleteMessage(Message message, string s3BodyKey, CancellationToken cancellationToken = default)
+        async Task DeleteMessage(Message message, string s3BodyKey, CancellationToken cancellationToken)
         {
             try
             {
@@ -385,7 +385,7 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        async Task MovePoisonMessageToErrorQueue(Message message, CancellationToken cancellationToken = default)
+        async Task MovePoisonMessageToErrorQueue(Message message, CancellationToken cancellationToken)
         {
             try
             {
