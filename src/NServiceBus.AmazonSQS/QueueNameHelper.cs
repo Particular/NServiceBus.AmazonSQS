@@ -13,23 +13,26 @@
                 throw new ArgumentNullException(nameof(destination));
             }
 
-            var s = transportConfiguration.QueueNamePrefix + destination;
+            var queueName = !string.IsNullOrEmpty(transportConfiguration.QueueNamePrefix) &&
+                            destination.StartsWith(transportConfiguration.QueueNamePrefix, StringComparison.Ordinal) ?
+                destination :
+                $"{transportConfiguration.QueueNamePrefix}{destination}";
 
-            if (transportConfiguration.PreTruncateQueueNames && s.Length > 80)
+            if (transportConfiguration.PreTruncateQueueNames && queueName.Length > 80)
             {
                 var charsToTake = 80 - transportConfiguration.QueueNamePrefix.Length;
-                s = transportConfiguration.QueueNamePrefix +
-                    new string(s.Reverse().Take(charsToTake).Reverse().ToArray());
+                queueName = transportConfiguration.QueueNamePrefix +
+                            new string(queueName.Reverse().Take(charsToTake).Reverse().ToArray());
             }
 
-            if (s.Length > 80)
+            if (queueName.Length > 80)
             {
                 throw new Exception($"Address {destination} with configured prefix {transportConfiguration.QueueNamePrefix} is longer than 80 characters and therefore cannot be used to create an SQS queue. Use a shorter queue name.");
             }
 
-            var queueNameBuilder = new StringBuilder(s);
+            var queueNameBuilder = new StringBuilder(queueName);
 
-            return GetSanitizedQueueName(queueNameBuilder, s);
+            return GetSanitizedQueueName(queueNameBuilder, queueName);
         }
 
         public static string GetSanitizedQueueName(StringBuilder queueNameBuilder, string queueName)
