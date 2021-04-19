@@ -17,7 +17,7 @@
     <PackageReference Include="AWSSDK.SQS" Version="3.7.0.10" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
     <PackageReference Include="NUnit" Version="3.13.1" />
-    <PackageReference Include="NServiceBus" Version="8.0.0-alpha.917" />
+    <PackageReference Include="NServiceBus" Version="8.0.0-alpha.940" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
     <PackageReference Include="Particular.Approvals" Version="0.3.0" />
     <PackageReference Include="PublicApiGenerator" Version="10.2.0" />
