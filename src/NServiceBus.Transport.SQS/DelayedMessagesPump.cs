@@ -119,14 +119,14 @@ namespace NServiceBus.Transport.SQS
             }
 
             var clockCorrection = CorrectClockSkew.GetClockCorrectionForEndpoint(awsEndpointUrl);
-            var preparedMessages = PrepareMessages(token, receivedMessages, clockCorrection);
+            var preparedMessages = PrepareMessages(receivedMessages, clockCorrection, token);
 
             token.ThrowIfCancellationRequested();
 
             await BatchDispatchPreparedMessages(preparedMessages).ConfigureAwait(false);
         }
 
-        IReadOnlyCollection<SqsReceivedDelayedMessage> PrepareMessages(CancellationToken token, ReceiveMessageResponse receivedMessages, TimeSpan clockCorrection)
+        IReadOnlyCollection<SqsReceivedDelayedMessage> PrepareMessages(ReceiveMessageResponse receivedMessages, TimeSpan clockCorrection, CancellationToken token)
         {
             List<SqsReceivedDelayedMessage> preparedMessages = null;
             foreach (var receivedMessage in receivedMessages.Messages)
