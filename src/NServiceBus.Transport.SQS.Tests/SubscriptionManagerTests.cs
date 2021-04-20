@@ -461,7 +461,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             public List<int> Delays { get; } = new List<int>();
 
-            protected override Task Delay(int millisecondsDelay, CancellationToken token = default)
+            protected override Task Delay(int millisecondsDelay, CancellationToken cancellationToken = default)
             {
                 Delays.Add(millisecondsDelay);
                 return Task.FromResult(0);

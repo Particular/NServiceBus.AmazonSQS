@@ -28,7 +28,7 @@
             return queueNameToPhysicalAddressCache.GetOrAdd(queueName, name => queueNameGenerator(name));
         }
 
-        public async Task<string> GetQueueArn(string queueUrl)
+        public async Task<string> GetQueueArn(string queueUrl, CancellationToken cancellationToken = default)
         {
             if (queueUrlToQueueArnCache.TryGetValue(queueUrl, out var queueArn))
             {

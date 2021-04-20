@@ -35,7 +35,7 @@
             return new MessagePump(receiveSettings, sqsClient, queueCache, s3Settings, subManager, queueDelayTimeSeconds, criticalErrorAction);
         }
 
-        public override Task Shutdown(CancellationToken cancellationToken)
+        public override Task Shutdown(CancellationToken cancellationToken = default)
         {
             sqsClient.Dispose();
             snsClient.Dispose();

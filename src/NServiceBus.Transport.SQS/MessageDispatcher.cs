@@ -69,7 +69,7 @@
             }
         }
 
-        Task DispatchMulticast(List<MulticastTransportOperation> multicastTransportOperations, HashSet<string> messageIdsOfMulticastEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken = default)
+        Task DispatchMulticast(List<MulticastTransportOperation> multicastTransportOperations, HashSet<string> messageIdsOfMulticastEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken)
         {
             List<Task> tasks = null;
             foreach (var operation in multicastTransportOperations)
@@ -82,7 +82,7 @@
             return tasks != null ? Task.WhenAll(tasks) : Task.CompletedTask;
         }
 
-        Task DispatchIsolated(IEnumerable<UnicastTransportOperation> isolatedTransportOperations, HashSet<string> messageIdsOfMulticastEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken = default)
+        Task DispatchIsolated(IEnumerable<UnicastTransportOperation> isolatedTransportOperations, HashSet<string> messageIdsOfMulticastEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken)
         {
             List<Task> tasks = null;
             foreach (var operation in isolatedTransportOperations)
@@ -94,7 +94,7 @@
             return tasks != null ? Task.WhenAll(tasks) : Task.CompletedTask;
         }
 
-        async Task DispatchBatched(IEnumerable<UnicastTransportOperation> toBeBatchedTransportOperations, HashSet<string> messageIdsOfMulticastEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken = default)
+        async Task DispatchBatched(IEnumerable<UnicastTransportOperation> toBeBatchedTransportOperations, HashSet<string> messageIdsOfMulticastEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken)
         {
             var tasks = new List<Task<SqsPreparedMessage>>();
             foreach (var operation in toBeBatchedTransportOperations)
@@ -116,7 +116,7 @@
             await Task.WhenAll(batchTasks).ConfigureAwait(false);
         }
 
-        async Task SendBatch(BatchEntry<SqsPreparedMessage> batch, int batchNumber, int totalBatches, CancellationToken cancellationToken = default)
+        async Task SendBatch(BatchEntry<SqsPreparedMessage> batch, int batchNumber, int totalBatches, CancellationToken cancellationToken)
         {
             try
             {
@@ -171,7 +171,7 @@
             }
         }
 
-        async Task Dispatch(MulticastTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken = default)
+        async Task Dispatch(MulticastTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken)
         {
             var message = await PrepareMessage<SnsPreparedMessage>(transportOperation, messageIdsOfMulticastedEvents, transportTransaction, cancellationToken)
                 .ConfigureAwait(false);
@@ -202,7 +202,7 @@
             }
         }
 
-        async Task Dispatch(UnicastTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken = default)
+        async Task Dispatch(UnicastTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken)
         {
             var message = await PrepareMessage<SqsPreparedMessage>(transportOperation, messageIdsOfMulticastedEvents, transportTransaction, cancellationToken)
                 .ConfigureAwait(false);
@@ -216,13 +216,13 @@
                 .ConfigureAwait(false);
         }
 
-        async Task SendMessageForBatch(SqsPreparedMessage message, int batchNumber, int totalBatches, CancellationToken cancellationToken = default)
+        async Task SendMessageForBatch(SqsPreparedMessage message, int batchNumber, int totalBatches, CancellationToken cancellationToken)
         {
             await SendMessage(message, cancellationToken).ConfigureAwait(false);
             Logger.Info($"Retried message with MessageId {message.MessageId} that failed in batch '{batchNumber}/{totalBatches}'.");
         }
 
-        async Task SendMessage(SqsPreparedMessage message, CancellationToken cancellationToken = default)
+        async Task SendMessage(SqsPreparedMessage message, CancellationToken cancellationToken)
         {
             try
             {
@@ -240,7 +240,7 @@
             }
         }
 
-        async Task<TMessage> PrepareMessage<TMessage>(IOutgoingTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken = default)
+        async Task<TMessage> PrepareMessage<TMessage>(IOutgoingTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken)
             where TMessage : PreparedMessage, new()
         {
             var unicastTransportOperation = transportOperation as UnicastTransportOperation;
@@ -255,10 +255,10 @@
                 var mostConcreteEnclosedMessageTypeName = unicastTransportOperation.Message.GetEnclosedMessageTypes()[0];
                 var mostConcreteEnclosedMessageType = Type.GetType(mostConcreteEnclosedMessageTypeName, true);
 
-                var existingTopic = await topicCache.GetTopicArn(mostConcreteEnclosedMessageType).ConfigureAwait(false);
+                var existingTopic = await topicCache.GetTopicArn(mostConcreteEnclosedMessageType, cancellationToken).ConfigureAwait(false);
                 if (existingTopic != null)
                 {
-                    var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination)
+                    var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination, cancellationToken: cancellationToken)
                         .ConfigureAwait(false);
                     if (matchingSubscriptionArn != null)
                     {
@@ -296,7 +296,7 @@
             var nativeMessageAttributes = forwardingANativeMessage ? nativeMessage.MessageAttributes : null;
 
             await ApplyUnicastOperationMappingIfNecessary(unicastTransportOperation, preparedMessage as SqsPreparedMessage, delaySeconds, messageId, nativeMessageAttributes, cancellationToken).ConfigureAwait(false);
-            await ApplyMulticastOperationMappingIfNecessary(transportOperation as MulticastTransportOperation, preparedMessage as SnsPreparedMessage).ConfigureAwait(false);
+            await ApplyMulticastOperationMappingIfNecessary(transportOperation as MulticastTransportOperation, preparedMessage as SnsPreparedMessage, cancellationToken).ConfigureAwait(false);
 
             preparedMessage.Body = SimpleJson.SerializeObject(sqsTransportMessage, serializerStrategy);
             preparedMessage.MessageId = messageId;
@@ -335,18 +335,18 @@
             return preparedMessage;
         }
 
-        async Task ApplyMulticastOperationMappingIfNecessary(MulticastTransportOperation transportOperation, SnsPreparedMessage snsPreparedMessage)
+        async Task ApplyMulticastOperationMappingIfNecessary(MulticastTransportOperation transportOperation, SnsPreparedMessage snsPreparedMessage, CancellationToken cancellationToken)
         {
             if (transportOperation == null || snsPreparedMessage == null)
             {
                 return;
             }
 
-            var existingTopicArn = await topicCache.GetTopicArn(transportOperation.MessageType).ConfigureAwait(false);
+            var existingTopicArn = await topicCache.GetTopicArn(transportOperation.MessageType, cancellationToken).ConfigureAwait(false);
             snsPreparedMessage.Destination = existingTopicArn;
         }
 
-        async Task ApplyUnicastOperationMappingIfNecessary(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, string messageId, Dictionary<string, MessageAttributeValue> nativeMessageAttributes, CancellationToken cancellationToken = default)
+        async Task ApplyUnicastOperationMappingIfNecessary(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, string messageId, Dictionary<string, MessageAttributeValue> nativeMessageAttributes, CancellationToken cancellationToken)
         {
             if (transportOperation == null || sqsPreparedMessage == null)
             {

@@ -1,19 +1,20 @@
 namespace NServiceBus.Transport.SQS.Extensions
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
     using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
 
     static class SnsClientExtensions
     {
-        public static Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, Type eventType, string queueName)
+        public static Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, Type eventType, string queueName, CancellationToken cancellationToken = default)
         {
             var topicName = topicCache.GetTopicName(eventType);
-            return snsClient.FindMatchingSubscription(queueCache, topicName, queueName);
+            return snsClient.FindMatchingSubscription(queueCache, topicName, queueName, cancellationToken: cancellationToken);
         }
 
-        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, string topicName, string queueName)
+        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, string topicName, string queueName, CancellationToken cancellationToken = default)
         {
             var existingTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
             if (existingTopic == null)
@@ -21,11 +22,11 @@ namespace NServiceBus.Transport.SQS.Extensions
                 return null;
             }
 
-            return await snsClient.FindMatchingSubscription(queueCache, existingTopic, queueName)
+            return await snsClient.FindMatchingSubscription(queueCache, existingTopic, queueName, cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
         }
 
-        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, Topic topic, string queueName)
+        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, Topic topic, string queueName, CancellationToken cancellationToken = default)
         {
             var physicalQueueName = queueCache.GetPhysicalQueueName(queueName);
 
@@ -33,7 +34,7 @@ namespace NServiceBus.Transport.SQS.Extensions
 
             do
             {
-                upToAHundredSubscriptions = await snsClient.ListSubscriptionsByTopicAsync(topic.TopicArn, upToAHundredSubscriptions?.NextToken)
+                upToAHundredSubscriptions = await snsClient.ListSubscriptionsByTopicAsync(topic.TopicArn, upToAHundredSubscriptions?.NextToken, cancellationToken)
                     .ConfigureAwait(false);
 
                 foreach (var upToAHundredSubscription in upToAHundredSubscriptions.Subscriptions)

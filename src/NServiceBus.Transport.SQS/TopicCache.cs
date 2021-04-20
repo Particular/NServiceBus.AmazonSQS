@@ -2,6 +2,7 @@ namespace NServiceBus.Transport.SQS
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Threading;
     using System.Threading.Tasks;
     using Amazon.SimpleNotificationService;
     using Configure;
@@ -21,9 +22,9 @@ namespace NServiceBus.Transport.SQS
 
         public EventToTopicsMappings CustomEventToTopicsMappings { get; }
 
-        public Task<string> GetTopicArn(Type eventType)
+        public Task<string> GetTopicArn(Type eventType, CancellationToken cancellationToken = default)
         {
-            return GetAndCacheTopicIfFound(eventType);
+            return GetAndCacheTopicIfFound(eventType, cancellationToken);
         }
 
         public string GetTopicName(Type evenType)
@@ -36,7 +37,7 @@ namespace NServiceBus.Transport.SQS
             return topicNameCache.GetOrAdd(evenType, topicNameGenerator(evenType, topicNamePrefix));
         }
 
-        async Task<string> GetAndCacheTopicIfFound(Type evenType)
+        async Task<string> GetAndCacheTopicIfFound(Type evenType, CancellationToken cancellationToken)
         {
             if (topicCache.TryGetValue(evenType, out var topic))
             {
