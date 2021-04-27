@@ -10,7 +10,6 @@
   </ItemGroup>
 
   <ItemGroup Label="Required to force the main project's transitive dependencies to be copied">
-    <PackageReference Include="GitHubActionsTestLogger" Version="1.2.0" />
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0" />
   </ItemGroup>
 
@@ -18,6 +17,7 @@
     <PackageReference Include="AWSSDK.S3" Version="3.5.7.6" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.5.1.30" />
     <PackageReference Include="AWSSDK.SQS" Version="3.5.1.8" />
+    <PackageReference Include="GitHubActionsTestLogger" Version="1.2.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.0" />
     <PackageReference Include="NUnit" Version="3.12.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
