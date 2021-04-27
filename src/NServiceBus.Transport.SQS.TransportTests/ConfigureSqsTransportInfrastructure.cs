@@ -12,7 +12,7 @@ using TransportTests;
 
 public class ConfigureSqsTransportInfrastructure : IConfigureTransportInfrastructure
 {
-    const string S3BucketEnvironmentVariableName = "NServiceBus_AmazonSQS_S3Bucket";
+    const string S3BucketEnvironmentVariableName = "NSERVICEBUS_AMAZONSQS_S3BUCKET";
     public const string S3Prefix = "test";
     public static string S3BucketName;
 
