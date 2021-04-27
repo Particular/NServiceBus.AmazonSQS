@@ -10,6 +10,7 @@
   </ItemGroup>
 
   <ItemGroup Label="Required to force the main project's transitive dependencies to be copied">
+    <PackageReference Include="GitHubActionsTestLogger" Version="1.2.0" />
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0" />
   </ItemGroup>
 
