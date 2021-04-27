@@ -15,9 +15,9 @@ To run the tests, the Access Key ID and Secret Access Key of an AWS IAM account 
 
 The transport can be configured using the following environment variables:
 
- * **NServiceBus_AmazonSQS_S3Bucket** corresponds to the [S3BucketForLargeMessages](https://docs.particular.net/transports/sqs/configuration-options#s3bucketforlargemessages) parameter. Default is no S3 bucket.
+ * **NSERVICEBUS_AMAZONSQS_S3BUCKET** corresponds to the [S3BucketForLargeMessages](https://docs.particular.net/transports/sqs/configuration-options#s3bucketforlargemessages) parameter. Default is no S3 bucket.
 
- The bucket should not have encryption enabled. An additional bucket `{NServiceBus_AmazonSQS_S3Bucket}.kms` with AWS KMS encryption enabled is required.
+ The bucket should not have encryption enabled. An additional bucket `{NSERVICEBUS_AMAZONSQS_S3BUCKET}.kms` with AWS KMS encryption enabled is required.
  
  Additional environment variables required for AWS:
  
