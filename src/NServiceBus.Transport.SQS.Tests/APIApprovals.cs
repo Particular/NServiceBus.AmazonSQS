@@ -12,7 +12,7 @@
         public void ApproveSqsTransport()
         {
             var publicApi = ApiGenerator.GeneratePublicApi(typeof(SqsTransport).Assembly, excludeAttributes: new[] { "System.Runtime.Versioning.TargetFrameworkAttribute", "System.Reflection.AssemblyMetadataAttribute" });
-            Approver.Verify(publicApi);
+            Approver.Verify(publicApi, api => api.Replace("\\r\\n", "\\n"));
         }
     }
 }

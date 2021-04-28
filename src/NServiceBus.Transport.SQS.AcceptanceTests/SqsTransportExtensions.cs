@@ -8,7 +8,7 @@
 
     public static class SqsTransportExtensions
     {
-        const string S3BucketEnvironmentVariableName = "NServiceBus_AmazonSQS_S3Bucket";
+        const string S3BucketEnvironmentVariableName = "NSERVICEBUS_AMAZONSQS_S3BUCKET";
 
         public static TransportExtensions<SqsTransport> ConfigureSqsTransport(this TransportExtensions<SqsTransport> transportConfiguration, string namePrefix)
         {
