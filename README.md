@@ -31,7 +31,7 @@ The names of queues used by the acceptance tests take the following form:
 
     AT<datetime>-<pre-truncated-queue-name>
 
-Where
+Where:
 
  * `AT` stands for "Acceptance Test"
  * `datetime` is a date and time as yyyyMMddHHmmss that uniquely identifies a single test run. For example, when 100 tests are executed in a single test run each queue will have the same datetime timestamp.
