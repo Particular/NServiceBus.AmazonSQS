@@ -97,7 +97,7 @@ namespace NServiceBus.Transport.SQS
                 MessageAttributeNames = new List<string> { "All" }
             };
 
-            pumpTask = Task.Run(() => ConsumeDelayedMessagesLoop(receiveDelayedMessagesRequest, tokenSource.Token), cancellationToken);
+            pumpTask = Task.Run(() => ConsumeDelayedMessagesLoop(receiveDelayedMessagesRequest, tokenSource.Token), CancellationToken.None);
         }
 
         public async Task Stop(CancellationToken cancellationToken = default)
@@ -125,9 +125,9 @@ namespace NServiceBus.Transport.SQS
                 {
                     await ConsumeDelayedMessages(request, cancellationToken).ConfigureAwait(false);
                 }
-                catch (OperationCanceledException)
+                catch (OperationCanceledException ex)
                 {
-                    // ignore for graceful shutdown
+                    Logger.Debug("Message receiving was cancelled.", ex);
                 }
                 catch (Exception ex)
                 {

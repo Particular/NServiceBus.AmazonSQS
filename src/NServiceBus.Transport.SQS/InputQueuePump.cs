@@ -102,7 +102,7 @@ namespace NServiceBus.Transport.SQS
 
             for (var i = 0; i < numberOfPumps; i++)
             {
-                pumpTasks.Add(Task.Run(() => ConsumeMessages(messagePumpCancellationTokenSource.Token), cancellationToken));
+                pumpTasks.Add(Task.Run(() => ConsumeMessages(messagePumpCancellationTokenSource.Token), CancellationToken.None));
             }
 
             return Task.CompletedTask;
@@ -156,18 +156,19 @@ namespace NServiceBus.Transport.SQS
                         {
                             await maxConcurrencySemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
                         }
-                        catch (OperationCanceledException)
+                        catch (OperationCanceledException ex)
                         {
                             // shutting, semaphore doesn't need to be released because it was never acquired
+                            Logger.Debug("Message receiving cancelled.", ex);
                             return;
                         }
 
                         _ = ProcessMessage(receivedMessage, maxConcurrencySemaphore, messageProcessingCancellationTokenSource.Token);
                     }
                 }
-                catch (OperationCanceledException)
+                catch (OperationCanceledException ex)
                 {
-                    // ignore for graceful shutdown
+                    Logger.Debug("Message receiving cancelled.", ex);
                 }
                 catch (Exception ex)
                 {
@@ -227,9 +228,16 @@ namespace NServiceBus.Transport.SQS
 
                     messageBody = await transportMessage.RetrieveBody(messageId, s3Settings, cancellationToken).ConfigureAwait(false);
                 }
-                catch (OperationCanceledException)
+                catch (OperationCanceledException ex)
                 {
-                    // shutting down
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        Logger.Debug("Message processing cancelled.", ex);
+                    }
+                    else
+                    {
+                        Logger.Warn("OperationCanceledException thrown. Aborting message processing.", ex);
+                    }
                     return;
                 }
                 catch (Exception ex)
@@ -267,8 +275,17 @@ namespace NServiceBus.Transport.SQS
                 // to a retry queue.
                 await DeleteMessage(receivedMessage, transportMessage.S3BodyKey, cancellationToken).ConfigureAwait(false);
             }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            catch (OperationCanceledException ex)
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    Logger.Debug("Message processing cancelled.", ex);
+                }
+                else
+                {
+                    Logger.Warn("OperationCanceledException thrown. Aborting message processing.", ex);
+                }
+
                 return;
             }
             finally
@@ -306,7 +323,7 @@ namespace NServiceBus.Transport.SQS
 
                     messageProcessedOk = true;
                 }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                catch (OperationCanceledException)
                 {
                     throw;
                 }
@@ -325,7 +342,7 @@ namespace NServiceBus.Transport.SQS
                             immediateProcessingAttempts,
                             context), cancellationToken).ConfigureAwait(false);
                     }
-                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                    catch (OperationCanceledException)
                     {
                         throw;
                     }
