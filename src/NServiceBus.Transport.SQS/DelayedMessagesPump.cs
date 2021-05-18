@@ -97,7 +97,8 @@ namespace NServiceBus.Transport.SQS
                 MessageAttributeNames = new List<string> { "All" }
             };
 
-            pumpTask = Task.Run(() => ConsumeDelayedMessagesLoop(receiveDelayedMessagesRequest, tokenSource.Token), CancellationToken.None);
+            // Task.Run() so the call returns immediately instead of waiting for the first await or return down the call stack
+            pumpTask = Task.Run(() => ConsumeDelayedMessagesAndSwallowExceptions(receiveDelayedMessagesRequest, tokenSource.Token), CancellationToken.None);
         }
 
         public async Task Stop(CancellationToken cancellationToken = default)
@@ -117,7 +118,7 @@ namespace NServiceBus.Transport.SQS
             tokenSource = null;
         }
 
-        async Task ConsumeDelayedMessagesLoop(ReceiveMessageRequest request, CancellationToken cancellationToken)
+        async Task ConsumeDelayedMessagesAndSwallowExceptions(ReceiveMessageRequest request, CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -125,9 +126,11 @@ namespace NServiceBus.Transport.SQS
                 {
                     await ConsumeDelayedMessages(request, cancellationToken).ConfigureAwait(false);
                 }
-                catch (OperationCanceledException ex)
+                catch (Exception ex) when (ex.IsCausedBy(cancellationToken))
                 {
-                    Logger.Debug("Message receiving was cancelled.", ex);
+                    // private token, pump is being stopped, log the exception in case the stack trace is every required for debugging
+                    Logger.Debug("Operation cancelled while stopping delayed message pump.", ex);
+                    break;
                 }
                 catch (Exception ex)
                 {
@@ -344,7 +347,7 @@ namespace NServiceBus.Transport.SQS
                     }
                 }
             }
-            catch (Exception e)
+            catch (Exception ex) when (!ex.IsCausedBy(cancellationToken))
             {
                 var builder = new StringBuilder();
                 foreach (var failed in result.Failed)
@@ -352,7 +355,7 @@ namespace NServiceBus.Transport.SQS
                     builder.AppendLine($"{failed.Id}: {failed.Message} | {failed.Code} | {failed.SenderFault}");
                 }
 
-                Logger.Error($"Changing visibility failed for {builder}", e);
+                Logger.Error($"Changing visibility failed for {builder}", ex);
             }
         }
 
@@ -406,7 +409,7 @@ namespace NServiceBus.Transport.SQS
         {
             try
             {
-                // should not be cancelled
+                // should not be canceled
                 await sqsClient.DeleteMessageAsync(messageToDeleteWithAnotherAttempt.QueueUrl, messageToDeleteWithAnotherAttempt.ReceiptHandle, cancellationToken).ConfigureAwait(false);
             }
             catch (ReceiptHandleIsInvalidException ex)
