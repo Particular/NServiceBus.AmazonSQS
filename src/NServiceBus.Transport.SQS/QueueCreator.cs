@@ -128,9 +128,9 @@
                     }
                 }
             }
-            catch (Exception e)
+            catch (Exception ex) when (!(ex is OperationCanceledException))
             {
-                Logger.Error("Exception from CreateQueueIfNecessary.", e);
+                Logger.Error("Exception from CreateQueueIfNecessary.", ex);
                 throw;
             }
         }

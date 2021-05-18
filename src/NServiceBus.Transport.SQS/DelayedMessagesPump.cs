@@ -97,7 +97,33 @@ namespace NServiceBus.Transport.SQS
                 MessageAttributeNames = new List<string> { "All" }
             };
 
-            pumpTask = Task.Run(() => ConsumeDelayedMessagesLoop(receiveDelayedMessagesRequest, tokenSource.Token), CancellationToken.None);
+            pumpTask = Task.Run(
+                async () =>
+                {
+                    while (true)
+                    {
+                        try
+                        {
+                            await ConsumeDelayedMessages(receiveDelayedMessagesRequest, tokenSource.Token).ConfigureAwait(false);
+                        }
+                        catch (OperationCanceledException ex)
+                        {
+                            if (tokenSource.IsCancellationRequested)
+                            {
+                                Logger.Debug("Consuming delayed messages cancelled.", ex);
+                            }
+                            else
+                            {
+                                Logger.Warn("OperationCanceledException thrown.", ex);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Error("Error consuming delayed messages", ex);
+                        }
+                    }
+                },
+                CancellationToken.None);
         }
 
         public async Task Stop(CancellationToken cancellationToken = default)
@@ -115,25 +141,6 @@ namespace NServiceBus.Transport.SQS
             pumpTask = null;
             tokenSource.Dispose();
             tokenSource = null;
-        }
-
-        async Task ConsumeDelayedMessagesLoop(ReceiveMessageRequest request, CancellationToken cancellationToken)
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                try
-                {
-                    await ConsumeDelayedMessages(request, cancellationToken).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException ex)
-                {
-                    Logger.Debug("Message receiving was cancelled.", ex);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error("Exception thrown when consuming delayed messages", ex);
-                }
-            }
         }
 
         internal async Task ConsumeDelayedMessages(ReceiveMessageRequest request, CancellationToken cancellationToken = default)
@@ -292,67 +299,85 @@ namespace NServiceBus.Transport.SQS
             }
 
             var deletionTask = DeleteDelayedMessagesThatWereDeliveredSuccessfullyAsBatchesInBatches(batch, result, batchNumber, totalBatches, cancellationToken);
+
             // deliberately fire&forget because we treat this as a best effort
-            _ = ChangeVisibilityOfDelayedMessagesThatFailedBatchDeliveryInBatches(batch, result, batchNumber, totalBatches, cancellationToken);
+            _ = Task.Run(
+                async () =>
+                {
+                    try
+                    {
+                        await ChangeVisibilityOfDelayedMessagesThatFailedBatchDeliveryInBatches(batch, result, batchNumber, totalBatches, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException ex)
+                    {
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            Logger.Debug("Changing visibility of delayed messages that failed batch delivery cancelled.", ex);
+                        }
+                        else
+                        {
+                            Logger.Warn("OperationCanceledException thrown.", ex);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        var builder = new StringBuilder();
+                        foreach (var failed in result.Failed)
+                        {
+                            builder.AppendLine($"{failed.Id}: {failed.Message} | {failed.Code} | {failed.SenderFault}");
+                        }
+
+                        Logger.Error($"Error changing visibility for {builder}", ex);
+                    }
+                },
+                CancellationToken.None);
+
             await deletionTask.ConfigureAwait(false);
         }
 
         async Task ChangeVisibilityOfDelayedMessagesThatFailedBatchDeliveryInBatches(BatchEntry<SqsReceivedDelayedMessage> batch, SendMessageBatchResponse result, int batchNumber, int totalBatches, CancellationToken cancellationToken)
         {
-            try
+            List<ChangeMessageVisibilityBatchRequestEntry> changeVisibilityBatchRequestEntries = null;
+            foreach (var failed in result.Failed)
             {
-                List<ChangeMessageVisibilityBatchRequestEntry> changeVisibilityBatchRequestEntries = null;
-                foreach (var failed in result.Failed)
+                changeVisibilityBatchRequestEntries = changeVisibilityBatchRequestEntries ?? new List<ChangeMessageVisibilityBatchRequestEntry>(result.Failed.Count);
+                var preparedMessage = batch.PreparedMessagesBydId[failed.Id];
+                // need to reuse the previous batch entry ID so that we can map again in failure scenarios, this is fine given that IDs only need to be unique per request
+                changeVisibilityBatchRequestEntries.Add(new ChangeMessageVisibilityBatchRequestEntry(failed.Id, preparedMessage.ReceiptHandle)
                 {
-                    changeVisibilityBatchRequestEntries = changeVisibilityBatchRequestEntries ?? new List<ChangeMessageVisibilityBatchRequestEntry>(result.Failed.Count);
-                    var preparedMessage = batch.PreparedMessagesBydId[failed.Id];
-                    // need to reuse the previous batch entry ID so that we can map again in failure scenarios, this is fine given that IDs only need to be unique per request
-                    changeVisibilityBatchRequestEntries.Add(new ChangeMessageVisibilityBatchRequestEntry(failed.Id, preparedMessage.ReceiptHandle)
-                    {
-                        VisibilityTimeout = 0
-                    });
-                }
-
-                if (changeVisibilityBatchRequestEntries != null)
-                {
-                    if (Logger.IsDebugEnabled)
-                    {
-                        var message = batch.PreparedMessagesBydId.Values.First();
-
-                        Logger.Debug($"Changing delayed message visibility for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
-                    }
-
-                    var changeVisibilityResult = await sqsClient.ChangeMessageVisibilityBatchAsync(new ChangeMessageVisibilityBatchRequest(delayedDeliveryQueueUrl, changeVisibilityBatchRequestEntries), cancellationToken)
-                        .ConfigureAwait(false);
-
-                    if (Logger.IsDebugEnabled)
-                    {
-                        var message = batch.PreparedMessagesBydId.Values.First();
-
-                        Logger.Debug($"Changed delayed message visibility for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
-                    }
-
-                    if (Logger.IsDebugEnabled && changeVisibilityResult.Failed.Count > 0)
-                    {
-                        var builder = new StringBuilder();
-                        foreach (var failed in changeVisibilityResult.Failed)
-                        {
-                            builder.AppendLine($"{failed.Id}: {failed.Message} | {failed.Code} | {failed.SenderFault}");
-                        }
-
-                        Logger.Debug($"Changing visibility failed for {builder}");
-                    }
-                }
+                    VisibilityTimeout = 0
+                });
             }
-            catch (Exception e)
+
+            if (changeVisibilityBatchRequestEntries != null)
             {
-                var builder = new StringBuilder();
-                foreach (var failed in result.Failed)
+                if (Logger.IsDebugEnabled)
                 {
-                    builder.AppendLine($"{failed.Id}: {failed.Message} | {failed.Code} | {failed.SenderFault}");
+                    var message = batch.PreparedMessagesBydId.Values.First();
+
+                    Logger.Debug($"Changing delayed message visibility for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
                 }
 
-                Logger.Error($"Changing visibility failed for {builder}", e);
+                var changeVisibilityResult = await sqsClient.ChangeMessageVisibilityBatchAsync(new ChangeMessageVisibilityBatchRequest(delayedDeliveryQueueUrl, changeVisibilityBatchRequestEntries), cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (Logger.IsDebugEnabled)
+                {
+                    var message = batch.PreparedMessagesBydId.Values.First();
+
+                    Logger.Debug($"Changed delayed message visibility for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
+                }
+
+                if (Logger.IsDebugEnabled && changeVisibilityResult.Failed.Count > 0)
+                {
+                    var builder = new StringBuilder();
+                    foreach (var failed in changeVisibilityResult.Failed)
+                    {
+                        builder.AppendLine($"{failed.Id}: {failed.Message} | {failed.Code} | {failed.SenderFault}");
+                    }
+
+                    Logger.Debug($"Changing visibility failed for {builder}");
+                }
             }
         }
 

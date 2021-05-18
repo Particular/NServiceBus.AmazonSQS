@@ -62,9 +62,9 @@
             {
                 await Task.WhenAll(concurrentDispatchTasks).ConfigureAwait(false);
             }
-            catch (Exception e)
+            catch (Exception ex) when (!(ex is OperationCanceledException))
             {
-                Logger.Error("Exception from Send.", e);
+                Logger.Error("Exception from Send.", ex);
                 throw;
             }
         }
@@ -162,7 +162,7 @@
                 Logger.Error($"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'. The destination does not exist.", e);
                 throw;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!(ex is OperationCanceledException))
             {
                 var message = batch.PreparedMessagesBydId.Values.First();
 
@@ -233,7 +233,7 @@
             {
                 throw new QueueDoesNotExistException($"Destination '{message.OriginalDestination}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(queueDelaySeconds)}. To enable support for longer delays upgrade '{message.OriginalDestination}' endpoint to Version 6 of the transport or enable unrestricted delayed delivery.", e);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!(ex is OperationCanceledException))
             {
                 Logger.Error($"Error while sending message, with MessageId '{message.MessageId}', to '{message.Destination}'", ex);
                 throw;

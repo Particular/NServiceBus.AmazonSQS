@@ -55,7 +55,7 @@ namespace NServiceBus.Transport.SQS
                 {
                     Logger.Warn("Multiple queue purges within 60 seconds are not permitted by SQS.", ex);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (!(ex is OperationCanceledException))
                 {
                     Logger.Error("Exception thrown from PurgeQueue.", ex);
                     throw;
@@ -68,24 +68,24 @@ namespace NServiceBus.Transport.SQS
 
         public Task StartReceive(CancellationToken cancellationToken = default)
         {
-            if (messagePumpCancellationTokenSource != null)
+            if (messageReceivingCancellationTokenSource != null)
             {
                 return Task.CompletedTask; //Receiver already started.
             }
 
-            messagePumpCancellationTokenSource = new CancellationTokenSource();
+            messageReceivingCancellationTokenSource = new CancellationTokenSource();
             messageProcessingCancellationTokenSource = new CancellationTokenSource();
 
-            int numberOfPumps;
+            int numberOfMessageReceivingTasks;
             if (maxConcurrency <= 10)
             {
-                numberOfPumps = 1;
+                numberOfMessageReceivingTasks = 1;
                 numberOfMessagesToFetch = maxConcurrency;
             }
             else
             {
                 numberOfMessagesToFetch = 10;
-                numberOfPumps = Convert.ToInt32(Math.Ceiling(Convert.ToDouble(maxConcurrency) / numberOfMessagesToFetch));
+                numberOfMessageReceivingTasks = Convert.ToInt32(Math.Ceiling(Convert.ToDouble(maxConcurrency) / numberOfMessagesToFetch));
             }
 
             receiveMessagesRequest = new ReceiveMessageRequest
@@ -98,11 +98,39 @@ namespace NServiceBus.Transport.SQS
             };
 
             maxConcurrencySemaphore = new SemaphoreSlim(maxConcurrency);
-            pumpTasks = new List<Task>(numberOfPumps);
+            messageReceivingTasks = new List<Task>(numberOfMessageReceivingTasks);
 
-            for (var i = 0; i < numberOfPumps; i++)
+            for (var i = 0; i < numberOfMessageReceivingTasks; i++)
             {
-                pumpTasks.Add(Task.Run(() => ConsumeMessages(messagePumpCancellationTokenSource.Token), CancellationToken.None));
+                var messageReceivingTask = Task.Run(
+                    async () =>
+                    {
+                        while (true)
+                        {
+                            try
+                            {
+                                await ReceiveMessages(messageReceivingCancellationTokenSource.Token).ConfigureAwait(false);
+                            }
+                            catch (OperationCanceledException ex)
+                            {
+                                if (messageReceivingCancellationTokenSource.IsCancellationRequested)
+                                {
+                                    Logger.Debug("Message receiving cancelled.", ex);
+                                }
+                                else
+                                {
+                                    Logger.Warn("OperationCanceledException thrown.", ex);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.Error("Error recieving messages", ex);
+                            }
+                        }
+                    },
+                    CancellationToken.None);
+
+                messageReceivingTasks.Add(messageReceivingTask);
             }
 
             return Task.CompletedTask;
@@ -110,19 +138,19 @@ namespace NServiceBus.Transport.SQS
 
         public async Task StopReceive(CancellationToken cancellationToken = default)
         {
-            if (messagePumpCancellationTokenSource == null)
+            if (messageReceivingCancellationTokenSource == null)
             {
                 return;
             }
 
-            messagePumpCancellationTokenSource.Cancel();
+            messageReceivingCancellationTokenSource.Cancel();
 
             using (cancellationToken.Register(() => messageProcessingCancellationTokenSource.Cancel()))
             {
-                if (pumpTasks != null)
+                if (messageReceivingTasks != null)
                 {
-                    await Task.WhenAll(pumpTasks).ConfigureAwait(false);
-                    pumpTasks = null;
+                    await Task.WhenAll(messageReceivingTasks).ConfigureAwait(false);
+                    messageReceivingTasks = null;
                 }
 
                 while (maxConcurrencySemaphore.CurrentCount != maxConcurrency)
@@ -133,165 +161,136 @@ namespace NServiceBus.Transport.SQS
                 }
             }
 
-            messagePumpCancellationTokenSource.Dispose();
+            messageReceivingCancellationTokenSource.Dispose();
             messageProcessingCancellationTokenSource.Dispose();
             maxConcurrencySemaphore?.Dispose();
-            messagePumpCancellationTokenSource = null;
+            messageReceivingCancellationTokenSource = null;
         }
 
         public ISubscriptionManager Subscriptions { get; }
         public string Id { get; }
 
-        async Task ConsumeMessages(CancellationToken cancellationToken)
+        async Task ReceiveMessages(CancellationToken cancellationToken)
         {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                try
-                {
-                    var receivedMessages = await sqsClient.ReceiveMessageAsync(receiveMessagesRequest, cancellationToken).ConfigureAwait(false);
+            var receivedMessages = await sqsClient.ReceiveMessageAsync(receiveMessagesRequest, cancellationToken).ConfigureAwait(false);
 
-                    foreach (var receivedMessage in receivedMessages.Messages)
+            foreach (var receivedMessage in receivedMessages.Messages)
+            {
+                _ = Task.Run(
+                    async () =>
                     {
+                        await maxConcurrencySemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
                         try
                         {
-                            await maxConcurrencySemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+                            await ProcessMessage(receivedMessage, messageProcessingCancellationTokenSource.Token).ConfigureAwait(false);
                         }
                         catch (OperationCanceledException ex)
                         {
-                            // shutting, semaphore doesn't need to be released because it was never acquired
-                            Logger.Debug("Message receiving cancelled.", ex);
-                            return;
+                            if (cancellationToken.IsCancellationRequested)
+                            {
+                                Logger.Debug("Message processing cancelled.", ex);
+                            }
+                            else
+                            {
+                                Logger.Warn("OperationCanceledException thrown.", ex);
+                            }
                         }
-
-                        _ = ProcessMessage(receivedMessage, maxConcurrencySemaphore, messageProcessingCancellationTokenSource.Token);
-                    }
-                }
-                catch (OperationCanceledException ex)
-                {
-                    Logger.Debug("Message receiving cancelled.", ex);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error("Exception thrown when consuming messages", ex);
-                }
-            } // while
+                        catch (Exception ex)
+                        {
+                            Logger.Debug("Error processing message.", ex);
+                        }
+                        finally
+                        {
+                            maxConcurrencySemaphore.Release();
+                        }
+                    },
+                    CancellationToken.None);
+            }
         }
 
-        internal async Task ProcessMessage(Message receivedMessage, SemaphoreSlim processingSemaphoreSlim, CancellationToken cancellationToken = default)
+        internal async Task ProcessMessage(Message receivedMessage, CancellationToken cancellationToken = default)
         {
+            byte[] messageBody = null;
+            TransportMessage transportMessage = null;
+            Exception exception = null;
+            var nativeMessageId = receivedMessage.MessageId;
+            string messageId = null;
+            var isPoisonMessage = false;
+
             try
             {
-                byte[] messageBody = null;
-                TransportMessage transportMessage = null;
-                Exception exception = null;
-                var nativeMessageId = receivedMessage.MessageId;
-                string messageId = null;
-                var isPoisonMessage = false;
-
-                try
+                if (receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
                 {
-                    if (receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
-                    {
-                        messageId = messageIdAttribute.StringValue;
-                    }
-                    else
-                    {
-                        messageId = nativeMessageId;
-                    }
+                    messageId = messageIdAttribute.StringValue;
+                }
+                else
+                {
+                    messageId = nativeMessageId;
+                }
 
-                    // When the MessageTypeFullName attribute is available, we're assuming native integration
-                    if (receivedMessage.MessageAttributes.TryGetValue(MessageTypeFullName, out var enclosedMessageType))
-                    {
-                        var headers = new Dictionary<string, string>
+                // When the MessageTypeFullName attribute is available, we're assuming native integration
+                if (receivedMessage.MessageAttributes.TryGetValue(MessageTypeFullName, out var enclosedMessageType))
+                {
+                    var headers = new Dictionary<string, string>
                         {
                             {Headers.MessageId, messageId},
                             {Headers.EnclosedMessageTypes, enclosedMessageType.StringValue},
                             {MessageTypeFullName, enclosedMessageType.StringValue} // we're copying over the value of the native message attribute into the headers, converting this into a nsb message
                         };
 
-                        if (receivedMessage.MessageAttributes.TryGetValue(S3BodyKey, out var s3BodyKey))
-                        {
-                            headers.Add(S3BodyKey, s3BodyKey.StringValue);
-                        }
-
-                        transportMessage = new TransportMessage
-                        {
-                            Headers = headers,
-                            S3BodyKey = s3BodyKey?.StringValue,
-                            Body = receivedMessage.Body
-                        };
-                    }
-                    else
+                    if (receivedMessage.MessageAttributes.TryGetValue(S3BodyKey, out var s3BodyKey))
                     {
-                        transportMessage = SimpleJson.DeserializeObject<TransportMessage>(receivedMessage.Body);
+                        headers.Add(S3BodyKey, s3BodyKey.StringValue);
                     }
 
-                    messageBody = await transportMessage.RetrieveBody(messageId, s3Settings, cancellationToken).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException ex)
-                {
-                    if (cancellationToken.IsCancellationRequested)
+                    transportMessage = new TransportMessage
                     {
-                        Logger.Debug("Message processing cancelled.", ex);
-                    }
-                    else
-                    {
-                        Logger.Warn("OperationCanceledException thrown. Aborting message processing.", ex);
-                    }
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    // Can't deserialize. This is a poison message
-                    exception = ex;
-                    isPoisonMessage = true;
-                }
-
-                if (isPoisonMessage || messageBody == null || transportMessage == null)
-                {
-                    var logMessage = $"Treating message with {messageId} as a poison message. Moving to error queue.";
-
-                    if (exception != null)
-                    {
-                        Logger.Warn(logMessage, exception);
-                    }
-                    else
-                    {
-                        Logger.Warn(logMessage);
-                    }
-
-                    await MovePoisonMessageToErrorQueue(receivedMessage, cancellationToken).ConfigureAwait(false);
-                    return;
-                }
-
-                if (!IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, CorrectClockSkew.GetClockCorrectionForEndpoint(awsEndpointUrl)))
-                {
-                    // here we also want to use the native message id because the core demands it like that
-                    await ProcessMessageWithInMemoryRetries(transportMessage.Headers, nativeMessageId, messageBody, receivedMessage, cancellationToken).ConfigureAwait(false);
-                }
-
-                // Always delete the message from the queue.
-                // If processing failed, the onError handler will have moved the message
-                // to a retry queue.
-                await DeleteMessage(receivedMessage, transportMessage.S3BodyKey, cancellationToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException ex)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    Logger.Debug("Message processing cancelled.", ex);
+                        Headers = headers,
+                        S3BodyKey = s3BodyKey?.StringValue,
+                        Body = receivedMessage.Body
+                    };
                 }
                 else
                 {
-                    Logger.Warn("OperationCanceledException thrown. Aborting message processing.", ex);
+                    transportMessage = SimpleJson.DeserializeObject<TransportMessage>(receivedMessage.Body);
                 }
 
+                messageBody = await transportMessage.RetrieveBody(messageId, s3Settings, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (!(ex is OperationCanceledException))
+            {
+                // Can't deserialize. This is a poison message
+                exception = ex;
+                isPoisonMessage = true;
+            }
+
+            if (isPoisonMessage || messageBody == null || transportMessage == null)
+            {
+                var logMessage = $"Treating message with {messageId} as a poison message. Moving to error queue.";
+
+                if (exception != null)
+                {
+                    Logger.Warn(logMessage, exception);
+                }
+                else
+                {
+                    Logger.Warn(logMessage);
+                }
+
+                await MovePoisonMessageToErrorQueue(receivedMessage, cancellationToken).ConfigureAwait(false);
                 return;
             }
-            finally
+
+            if (!IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, CorrectClockSkew.GetClockCorrectionForEndpoint(awsEndpointUrl)))
             {
-                processingSemaphoreSlim.Release();
+                // here we also want to use the native message id because the core demands it like that
+                await ProcessMessageWithInMemoryRetries(transportMessage.Headers, nativeMessageId, messageBody, receivedMessage, cancellationToken).ConfigureAwait(false);
             }
+
+            // Always delete the message from the queue.
+            // If processing failed, the onError handler will have moved the message
+            // to a retry queue.
+            await DeleteMessage(receivedMessage, transportMessage.S3BodyKey, cancellationToken).ConfigureAwait(false);
         }
 
         async Task ProcessMessageWithInMemoryRetries(Dictionary<string, string> headers, string nativeMessageId, byte[] body, Message nativeMessage, CancellationToken cancellationToken)
@@ -323,11 +322,7 @@ namespace NServiceBus.Transport.SQS
 
                     messageProcessedOk = true;
                 }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
+                catch (Exception ex) when (!(ex is OperationCanceledException))
                 {
                     immediateProcessingAttempts++;
                     var errorHandlerResult = ErrorHandleResult.RetryRequired;
@@ -342,11 +337,7 @@ namespace NServiceBus.Transport.SQS
                             immediateProcessingAttempts,
                             context), cancellationToken).ConfigureAwait(false);
                     }
-                    catch (OperationCanceledException)
-                    {
-                        throw;
-                    }
-                    catch (Exception onErrorEx)
+                    catch (Exception onErrorEx) when (!(onErrorEx is OperationCanceledException))
                     {
                         criticalErrorAction($"Failed to execute recoverability policy for message with native ID: `{nativeMessageId}`", onErrorEx, cancellationToken);
                     }
@@ -420,7 +411,7 @@ namespace NServiceBus.Transport.SQS
                 // and can't be re-sent. Unfortunately all the SQS metadata
                 // such as SentTimestamp is reset with this send.
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!(ex is OperationCanceledException))
             {
                 Logger.Error($"Error moving poison message to error queue at url {errorQueueUrl}. Moving back to input queue.", ex);
                 try
@@ -432,7 +423,7 @@ namespace NServiceBus.Transport.SQS
                         VisibilityTimeout = 0
                     }, cancellationToken).ConfigureAwait(false);
                 }
-                catch (Exception changeMessageVisibilityEx)
+                catch (Exception changeMessageVisibilityEx) when (!(changeMessageVisibilityEx is OperationCanceledException))
                 {
                     Logger.Warn($"Error returning poison message back to input queue at url {inputQueueUrl}. Poison message will become available at the input queue again after the visibility timeout expires.", changeMessageVisibilityEx);
                 }
@@ -448,7 +439,7 @@ namespace NServiceBus.Transport.SQS
                     ReceiptHandle = message.ReceiptHandle
                 }, cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!(ex is OperationCanceledException))
             {
                 Logger.Warn($"Error removing poison message from input queue {inputQueueUrl}. This may cause duplicate poison messages in the error queue for this endpoint.", ex);
             }
@@ -456,7 +447,7 @@ namespace NServiceBus.Transport.SQS
             // If there is a message body in S3, simply leave it there
         }
 
-        List<Task> pumpTasks;
+        List<Task> messageReceivingTasks;
         OnError onError;
         OnMessage onMessage;
         SemaphoreSlim maxConcurrencySemaphore;
@@ -473,7 +464,7 @@ namespace NServiceBus.Transport.SQS
 
         int numberOfMessagesToFetch;
         ReceiveMessageRequest receiveMessagesRequest;
-        CancellationTokenSource messagePumpCancellationTokenSource;
+        CancellationTokenSource messageReceivingCancellationTokenSource;
         CancellationTokenSource messageProcessingCancellationTokenSource;
 
         static readonly ILog Logger = LogManager.GetLogger(typeof(MessagePump));

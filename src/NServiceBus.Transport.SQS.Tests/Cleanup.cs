@@ -161,7 +161,7 @@ namespace NServiceBus.Transport.SQS.Tests
                                 await snsClient.UnsubscribeAsync(subscription.SubscriptionArn).ConfigureAwait(false);
                                 deletedSubscriptionArns.Add(subscription.SubscriptionArn);
                             }
-                            catch (Exception)
+                            catch (Exception ex) when (!(ex is OperationCanceledException))
                             {
                                 Console.WriteLine($"Unable to delete subscription '{subscription.SubscriptionArn}' '{subscription.TopicArn}'");
                             }
@@ -171,7 +171,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 }
                 while (subscriptions.NextToken != null && subscriptions.Subscriptions.Count > 0);
             }
-            catch (Exception)
+            catch (Exception ex) when (!(ex is OperationCanceledException))
             {
                 Console.WriteLine($"Unable to delete subscriptions with topic prefix '{topicNamePrefix}'");
             }
@@ -208,7 +208,7 @@ namespace NServiceBus.Transport.SQS.Tests
                                 await snsClient.DeleteTopicAsync(topic.TopicArn).ConfigureAwait(false);
                                 deletedTopicArns.Add(topic.TopicArn);
                             }
-                            catch (Exception)
+                            catch (Exception ex) when (!(ex is OperationCanceledException))
                             {
                                 Console.WriteLine($"Unable to delete topic '{topic.TopicArn}'");
                             }
@@ -217,7 +217,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 }
                 while (upToHundredTopics.NextToken != null && upToHundredTopics.Topics.Count > 0);
             }
-            catch (Exception)
+            catch (Exception ex) when (!(ex is OperationCanceledException))
             {
                 Console.WriteLine($"Unable to delete topics with prefix '{topicNamePrefix}'");
             }
@@ -248,7 +248,7 @@ namespace NServiceBus.Transport.SQS.Tests
                                 await sqsClient.DeleteQueueAsync(queueUrl);
                                 deletedQueueUrls.Add(queueUrl);
                             }
-                            catch (Exception)
+                            catch (Exception ex) when (!(ex is OperationCanceledException))
                             {
                                 Console.WriteLine($"Unable to delete queue '{queueUrl}'");
                             }
@@ -257,7 +257,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 }
                 while (upToAThousandQueues.QueueUrls.Count > 0);
             }
-            catch (Exception)
+            catch (Exception ex) when (!(ex is OperationCanceledException))
             {
                 Console.WriteLine($"Unable to delete queues with prefix '{queueNamePrefix}'");
             }
