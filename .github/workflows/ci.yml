@@ -71,7 +71,7 @@ jobs:
           retention-days: 7
       - name: Run Windows tests
         if: matrix.name == 'Windows'
-        run: dotnet test src --configuration Release --no-build --logger "GitHubActions;report-warnings=false"
+        run: dotnet test src --configuration Release --no-build -m:1 --logger "GitHubActions;report-warnings=false"
       - name: Run Linux tests
         if: matrix.name == 'Linux'
-        run: dotnet test src --configuration Release --no-build --framework netcoreapp3.1 --logger "GitHubActions;report-warnings=false"
+        run: dotnet test src --configuration Release --no-build -m:1 --framework netcoreapp3.1 --logger "GitHubActions;report-warnings=false"
