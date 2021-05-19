@@ -78,13 +78,13 @@
 
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
+            Assert.AreEqual(0, exitCode);
 
             (_, error, exitCode) = await Execute($"endpoint add {EndpointName} large-message-support {bucketName}");
 
-            Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
+            Assert.AreEqual(0, exitCode);
 
             await VerifyBucket(bucketName);
         }
@@ -98,13 +98,13 @@
 
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
+            Assert.AreEqual(0, exitCode);
 
             (_, error, exitCode) = await Execute($"endpoint add {EndpointName} large-message-support {bucketName} --key-prefix {keyPrefix}");
 
-            Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
+            Assert.AreEqual(0, exitCode);
 
             await VerifyBucket(bucketName);
             await VerifyLifecycleConfiguration(bucketName, keyPrefix: keyPrefix);
@@ -119,13 +119,13 @@
 
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
+            Assert.AreEqual(0, exitCode);
 
             (_, error, exitCode) = await Execute($"endpoint add {EndpointName} large-message-support {bucketName} --expiration {expiration}");
 
-            Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
+            Assert.AreEqual(0, exitCode);
 
             await VerifyBucket(bucketName);
             await VerifyLifecycleConfiguration(bucketName, expiration: expiration);
@@ -440,20 +440,20 @@
 
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
+            Assert.AreEqual(0, exitCode);
 
             (_, error, exitCode) = await Execute($"endpoint add {EndpointName} large-message-support {bucketName}");
 
-            Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
+            Assert.AreEqual(0, exitCode);
 
             await VerifyBucket(bucketName);
 
             (_, error, exitCode) = await Execute($"endpoint remove {EndpointName} large-message-support {bucketName}");
 
-            Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
+            Assert.AreEqual(0, exitCode);
 
             await VerifyBucket(bucketName);
         }
@@ -465,20 +465,20 @@
 
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
+            Assert.AreEqual(0, exitCode);
 
             (_, error, exitCode) = await Execute($"endpoint add {EndpointName} large-message-support {bucketName}");
 
-            Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
+            Assert.AreEqual(0, exitCode);
 
             await VerifyBucket(bucketName);
 
             (_, error, exitCode) = await Execute($"endpoint remove {EndpointName} large-message-support {bucketName} --remove-shared-resources");
 
-            Assert.AreEqual(0, exitCode);
             Assert.IsTrue(error == string.Empty);
+            Assert.AreEqual(0, exitCode);
 
             await VerifyBucketDeleted(bucketName);
         }
