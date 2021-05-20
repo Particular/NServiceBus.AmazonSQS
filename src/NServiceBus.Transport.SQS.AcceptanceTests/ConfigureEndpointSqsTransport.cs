@@ -49,7 +49,7 @@
 
             if (endpointName == Conventions.EndpointNamingConvention(typeof(When_started_by_base_event_from_other_saga.SagaThatIsStartedByABaseEvent)))
             {
-                transportConfig.MapEvent<When_started_by_base_event_from_other_saga.BaseEvent, When_started_by_base_event_from_other_saga.SomethingHappenedEvent>();
+                transportConfig.MapEvent<When_started_by_base_event_from_other_saga.IBaseEvent, When_started_by_base_event_from_other_saga.ISomethingHappenedEvent>();
             }
 
             if (endpointName == Conventions.EndpointNamingConvention(typeof(When_multiple_versions_of_a_message_is_published.V1Subscriber)))
