@@ -20,8 +20,10 @@
                     QueueName = TestNameHelper.GetSqsQueueName(errorQueueAddress, SetupFixture.NamePrefix)
                 }, cancellationToken).ConfigureAwait(false);
 
-                while (!cancellationToken.IsCancellationRequested)
+                while (true)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     var receiveMessageResponse = await sqsClient.ReceiveMessageAsync(new ReceiveMessageRequest
                     {
                         QueueUrl = getQueueUrlResponse.QueueUrl,

@@ -97,7 +97,8 @@ namespace NServiceBus.Transport.SQS
                 MessageAttributeNames = new List<string> { "All" }
             };
 
-            pumpTask = Task.Run(() => ConsumeDelayedMessagesLoop(receiveDelayedMessagesRequest, tokenSource.Token), CancellationToken.None);
+            // Task.Run() so the call returns immediately instead of waiting for the first await or return down the call stack
+            pumpTask = Task.Run(() => ConsumeDelayedMessagesAndSwallowExceptions(receiveDelayedMessagesRequest, tokenSource.Token), CancellationToken.None);
         }
 
         public async Task Stop(CancellationToken cancellationToken = default)
@@ -117,21 +118,33 @@ namespace NServiceBus.Transport.SQS
             tokenSource = null;
         }
 
-        async Task ConsumeDelayedMessagesLoop(ReceiveMessageRequest request, CancellationToken cancellationToken)
+        async Task ConsumeDelayedMessagesAndSwallowExceptions(ReceiveMessageRequest request, CancellationToken cancellationToken)
         {
-            while (!cancellationToken.IsCancellationRequested)
+            try
             {
-                try
+                while (true)
                 {
-                    await ConsumeDelayedMessages(request, cancellationToken).ConfigureAwait(false);
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    try
+                    {
+                        await ConsumeDelayedMessages(request, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (Exception ex) when (!(ex is OperationCanceledException))
+                    {
+                        Logger.Error("Exception thrown when consuming delayed messages", ex);
+                    }
                 }
-                catch (OperationCanceledException ex)
+            }
+            catch (OperationCanceledException ex)
+            {
+                if (cancellationToken.IsCancellationRequested)
                 {
-                    Logger.Debug("Message receiving was cancelled.", ex);
+                    Logger.Debug("Consuming delayed message cancelled.", ex);
                 }
-                catch (Exception ex)
+                else
                 {
-                    Logger.Error("Exception thrown when consuming delayed messages", ex);
+                    Logger.Warn("OperationCanceledException thrown", ex);
                 }
             }
         }
