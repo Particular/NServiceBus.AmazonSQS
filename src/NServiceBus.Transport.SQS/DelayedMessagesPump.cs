@@ -97,38 +97,7 @@ namespace NServiceBus.Transport.SQS
                 MessageAttributeNames = new List<string> { "All" }
             };
 
-            pumpTask = Task.Run(
-                async () =>
-                {
-                    try
-                    {
-                        while (true)
-                        {
-                            cancellationToken.ThrowIfCancellationRequested();
-
-                            try
-                            {
-                                await ConsumeDelayedMessages(receiveDelayedMessagesRequest, cancellationToken).ConfigureAwait(false);
-                            }
-                            catch (Exception ex) when (!(ex is OperationCanceledException))
-                            {
-                                Logger.Error("Error consuming delayed messages.", ex);
-                            }
-                        }
-                    }
-                    catch (OperationCanceledException ex)
-                    {
-                        if (tokenSource.Token.IsCancellationRequested)
-                        {
-                            Logger.Debug("Consuming delayed messages canceled.", ex);
-                        }
-                        else
-                        {
-                            Logger.Warn("OperationCanceledException thrown.", ex);
-                        }
-                    }
-                },
-                CancellationToken.None);
+            pumpTask = Task.Run(() => ConsumeDelayedMessagesLoop(receiveDelayedMessagesRequest, tokenSource.Token), CancellationToken.None);
         }
 
         public async Task Stop(CancellationToken cancellationToken = default)
@@ -146,6 +115,25 @@ namespace NServiceBus.Transport.SQS
             pumpTask = null;
             tokenSource.Dispose();
             tokenSource = null;
+        }
+
+        async Task ConsumeDelayedMessagesLoop(ReceiveMessageRequest request, CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    await ConsumeDelayedMessages(request, cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException ex)
+                {
+                    Logger.Debug("Message receiving was cancelled.", ex);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("Exception thrown when consuming delayed messages", ex);
+                }
+            }
         }
 
         internal async Task ConsumeDelayedMessages(ReceiveMessageRequest request, CancellationToken cancellationToken = default)
@@ -304,85 +292,67 @@ namespace NServiceBus.Transport.SQS
             }
 
             var deletionTask = DeleteDelayedMessagesThatWereDeliveredSuccessfullyAsBatchesInBatches(batch, result, batchNumber, totalBatches, cancellationToken);
-
             // deliberately fire&forget because we treat this as a best effort
-            _ = Task.Run(
-                async () =>
-                {
-                    try
-                    {
-                        await ChangeVisibilityOfDelayedMessagesThatFailedBatchDeliveryInBatches(batch, result, batchNumber, totalBatches, cancellationToken).ConfigureAwait(false);
-                    }
-                    catch (OperationCanceledException ex)
-                    {
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            Logger.Debug("Changing visibility was canceled.", ex);
-                        }
-                        else
-                        {
-                            Logger.Warn("OperationCanceledException thrown.", ex);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        var builder = new StringBuilder();
-                        foreach (var failed in result.Failed)
-                        {
-                            builder.AppendLine($"{failed.Id}: {failed.Message} | {failed.Code} | {failed.SenderFault}");
-                        }
-
-                        Logger.Error($"Changing visibility failed for {builder}", ex);
-                    }
-                },
-                CancellationToken.None);
-
+            _ = ChangeVisibilityOfDelayedMessagesThatFailedBatchDeliveryInBatches(batch, result, batchNumber, totalBatches, cancellationToken);
             await deletionTask.ConfigureAwait(false);
         }
 
         async Task ChangeVisibilityOfDelayedMessagesThatFailedBatchDeliveryInBatches(BatchEntry<SqsReceivedDelayedMessage> batch, SendMessageBatchResponse result, int batchNumber, int totalBatches, CancellationToken cancellationToken)
         {
-            List<ChangeMessageVisibilityBatchRequestEntry> changeVisibilityBatchRequestEntries = null;
-            foreach (var failed in result.Failed)
+            try
             {
-                changeVisibilityBatchRequestEntries = changeVisibilityBatchRequestEntries ?? new List<ChangeMessageVisibilityBatchRequestEntry>(result.Failed.Count);
-                var preparedMessage = batch.PreparedMessagesBydId[failed.Id];
-                // need to reuse the previous batch entry ID so that we can map again in failure scenarios, this is fine given that IDs only need to be unique per request
-                changeVisibilityBatchRequestEntries.Add(new ChangeMessageVisibilityBatchRequestEntry(failed.Id, preparedMessage.ReceiptHandle)
+                List<ChangeMessageVisibilityBatchRequestEntry> changeVisibilityBatchRequestEntries = null;
+                foreach (var failed in result.Failed)
                 {
-                    VisibilityTimeout = 0
-                });
-            }
-
-            if (changeVisibilityBatchRequestEntries != null)
-            {
-                if (Logger.IsDebugEnabled)
-                {
-                    var message = batch.PreparedMessagesBydId.Values.First();
-
-                    Logger.Debug($"Changing delayed message visibility for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
-                }
-
-                var changeVisibilityResult = await sqsClient.ChangeMessageVisibilityBatchAsync(new ChangeMessageVisibilityBatchRequest(delayedDeliveryQueueUrl, changeVisibilityBatchRequestEntries), cancellationToken)
-                    .ConfigureAwait(false);
-
-                if (Logger.IsDebugEnabled)
-                {
-                    var message = batch.PreparedMessagesBydId.Values.First();
-
-                    Logger.Debug($"Changed delayed message visibility for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
-                }
-
-                if (Logger.IsDebugEnabled && changeVisibilityResult.Failed.Count > 0)
-                {
-                    var builder = new StringBuilder();
-                    foreach (var failed in changeVisibilityResult.Failed)
+                    changeVisibilityBatchRequestEntries = changeVisibilityBatchRequestEntries ?? new List<ChangeMessageVisibilityBatchRequestEntry>(result.Failed.Count);
+                    var preparedMessage = batch.PreparedMessagesBydId[failed.Id];
+                    // need to reuse the previous batch entry ID so that we can map again in failure scenarios, this is fine given that IDs only need to be unique per request
+                    changeVisibilityBatchRequestEntries.Add(new ChangeMessageVisibilityBatchRequestEntry(failed.Id, preparedMessage.ReceiptHandle)
                     {
-                        builder.AppendLine($"{failed.Id}: {failed.Message} | {failed.Code} | {failed.SenderFault}");
+                        VisibilityTimeout = 0
+                    });
+                }
+
+                if (changeVisibilityBatchRequestEntries != null)
+                {
+                    if (Logger.IsDebugEnabled)
+                    {
+                        var message = batch.PreparedMessagesBydId.Values.First();
+
+                        Logger.Debug($"Changing delayed message visibility for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
                     }
 
-                    Logger.Debug($"Changing visibility failed for {builder}");
+                    var changeVisibilityResult = await sqsClient.ChangeMessageVisibilityBatchAsync(new ChangeMessageVisibilityBatchRequest(delayedDeliveryQueueUrl, changeVisibilityBatchRequestEntries), cancellationToken)
+                        .ConfigureAwait(false);
+
+                    if (Logger.IsDebugEnabled)
+                    {
+                        var message = batch.PreparedMessagesBydId.Values.First();
+
+                        Logger.Debug($"Changed delayed message visibility for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
+                    }
+
+                    if (Logger.IsDebugEnabled && changeVisibilityResult.Failed.Count > 0)
+                    {
+                        var builder = new StringBuilder();
+                        foreach (var failed in changeVisibilityResult.Failed)
+                        {
+                            builder.AppendLine($"{failed.Id}: {failed.Message} | {failed.Code} | {failed.SenderFault}");
+                        }
+
+                        Logger.Debug($"Changing visibility failed for {builder}");
+                    }
                 }
+            }
+            catch (Exception ex) when (!(ex is OperationCanceledException))
+            {
+                var builder = new StringBuilder();
+                foreach (var failed in result.Failed)
+                {
+                    builder.AppendLine($"{failed.Id}: {failed.Message} | {failed.Code} | {failed.SenderFault}");
+                }
+
+                Logger.Error($"Changing visibility failed for {builder}", ex);
             }
         }
 
@@ -436,7 +406,7 @@ namespace NServiceBus.Transport.SQS
         {
             try
             {
-                // should not be canceled
+                // should not be cancelled
                 await sqsClient.DeleteMessageAsync(messageToDeleteWithAnotherAttempt.QueueUrl, messageToDeleteWithAnotherAttempt.ReceiptHandle, cancellationToken).ConfigureAwait(false);
             }
             catch (ReceiptHandleIsInvalidException ex)

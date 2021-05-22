@@ -83,7 +83,9 @@ namespace NServiceBus.Transport.SQS.Tests
                 Body = null //poison message
             };
 
-            await pump.ProcessMessage(message).ConfigureAwait(false);
+            var semaphore = new SemaphoreSlim(0, 1);
+
+            await pump.ProcessMessage(message, semaphore).ConfigureAwait(false);
 
             Assert.IsFalse(processed);
             Assert.AreEqual(1, mockSqsClient.RequestsSent.Count);
@@ -131,7 +133,9 @@ namespace NServiceBus.Transport.SQS.Tests
                 Body = json
             };
 
-            await pump.ProcessMessage(message).ConfigureAwait(false);
+            var semaphore = new SemaphoreSlim(0, 1);
+
+            await pump.ProcessMessage(message, semaphore).ConfigureAwait(false);
 
             Assert.IsFalse(processed);
             Assert.AreEqual(1, mockSqsClient.DeleteMessageRequestsSent.Count);
@@ -172,7 +176,9 @@ namespace NServiceBus.Transport.SQS.Tests
                 Body = json
             };
 
-            await pump.ProcessMessage(message).ConfigureAwait(false);
+            var semaphore = new SemaphoreSlim(0, 1);
+
+            await pump.ProcessMessage(message, semaphore).ConfigureAwait(false);
 
             Assert.IsTrue(processed);
             Assert.AreEqual(1, mockSqsClient.DeleteMessageRequestsSent.Count);
