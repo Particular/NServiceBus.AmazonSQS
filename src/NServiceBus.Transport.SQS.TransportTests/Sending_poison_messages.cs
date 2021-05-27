@@ -71,7 +71,7 @@
                 var messageReceived = false;
                 ReceiveMessageResponse receiveMessageResponse = null;
 
-                while (messageReceived == false)
+                while (!messageReceived)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
