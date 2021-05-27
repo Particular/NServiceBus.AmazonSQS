@@ -71,8 +71,10 @@
                 var messageReceived = false;
                 ReceiveMessageResponse receiveMessageResponse = null;
 
-                while (messageReceived == false && !cancellationToken.IsCancellationRequested)
+                while (!messageReceived)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     receiveMessageResponse = await sqsClient.ReceiveMessageAsync(new ReceiveMessageRequest
                     {
                         QueueUrl = getQueueUrlResponse.QueueUrl,

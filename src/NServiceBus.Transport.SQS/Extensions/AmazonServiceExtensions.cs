@@ -18,6 +18,8 @@
 
             while (true)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 try
                 {
                     tryCount++;
