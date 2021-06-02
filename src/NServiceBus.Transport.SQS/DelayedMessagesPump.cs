@@ -129,7 +129,7 @@ namespace NServiceBus.Transport.SQS
                 catch (Exception ex) when (ex.IsCausedBy(cancellationToken))
                 {
                     // private token, pump is being stopped, log the exception in case the stack trace is every required for debugging
-                    Logger.Debug("Operation cancelled while stopping delayed message pump.", ex);
+                    Logger.Debug("Operation canceled while stopping delayed message pump.", ex);
                     break;
                 }
                 catch (Exception ex)
