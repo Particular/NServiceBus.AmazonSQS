@@ -147,8 +147,14 @@ namespace NServiceBus.Transport.SQS
         {
             while (!messagePumpCancellationToken.IsCancellationRequested)
             {
+#pragma warning disable PS0021 // Highlight when a try block passes multiple cancellation tokens - justification:
+                // The message processing cancellation token is used for processing,
+                // since we only want that to be cancelled when the public token passed to Stop() is cancelled.
+                // The message pump token is being used elsewhere, because we want those operations to be cancelled as soon as Stop() is called.
+                // The catch clause is correctly filtered on the message pump cancellation token.
                 try
                 {
+#pragma warning restore PS0021 // Highlight when a try block passes multiple cancellation tokens
                     var receivedMessages = await sqsClient.ReceiveMessageAsync(receiveMessagesRequest, messagePumpCancellationToken).ConfigureAwait(false);
 
                     foreach (var receivedMessage in receivedMessages.Messages)
