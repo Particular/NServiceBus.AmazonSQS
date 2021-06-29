@@ -12,7 +12,6 @@
     using Amazon.SQS.Model;
     using DelayedDelivery;
     using Extensibility;
-    using Extensions;
     using Logging;
     using SimpleJson;
     using Transport;
@@ -44,10 +43,10 @@
                 switch (dispatchConsistencyGroup.Key)
                 {
                     case DispatchConsistency.Isolated:
-                        concurrentDispatchTasks.Add(DispatchIsolated(dispatchConsistencyGroup, messageIdsOfMulticastEvents, transaction));
+                        concurrentDispatchTasks.Add(DispatchIsolated(dispatchConsistencyGroup, transaction));
                         break;
                     case DispatchConsistency.Default:
-                        concurrentDispatchTasks.Add(DispatchBatched(dispatchConsistencyGroup, messageIdsOfMulticastEvents, transaction));
+                        concurrentDispatchTasks.Add(DispatchBatched(dispatchConsistencyGroup, transaction));
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -73,32 +72,32 @@
             {
                 messageIdsOfMulticastEvents.Add(operation.Message.MessageId);
                 tasks = tasks ?? new List<Task>(multicastTransportOperations.Count);
-                tasks.Add(Dispatch(operation, emptyHashset, transportTransaction));
+                tasks.Add(Dispatch(operation, transportTransaction));
             }
 
             return tasks != null ? Task.WhenAll(tasks) : TaskExtensions.Completed;
         }
 
-        Task DispatchIsolated(IEnumerable<UnicastTransportOperation> isolatedTransportOperations, HashSet<string> messageIdsOfMulticastEvents, TransportTransaction transportTransaction)
+        Task DispatchIsolated(IEnumerable<UnicastTransportOperation> isolatedTransportOperations, TransportTransaction transportTransaction)
         {
             List<Task> tasks = null;
             // ReSharper disable once LoopCanBeConvertedToQuery
             foreach (var operation in isolatedTransportOperations)
             {
                 tasks = tasks ?? new List<Task>();
-                tasks.Add(Dispatch(operation, messageIdsOfMulticastEvents, transportTransaction));
+                tasks.Add(Dispatch(operation, transportTransaction));
             }
 
             return tasks != null ? Task.WhenAll(tasks) : TaskExtensions.Completed;
         }
 
-        async Task DispatchBatched(IEnumerable<UnicastTransportOperation> toBeBatchedTransportOperations, HashSet<string> messageIdsOfMulticastEvents, TransportTransaction transportTransaction)
+        async Task DispatchBatched(IEnumerable<UnicastTransportOperation> toBeBatchedTransportOperations, TransportTransaction transportTransaction)
         {
             var tasks = new List<Task<SqsPreparedMessage>>();
             // ReSharper disable once LoopCanBeConvertedToQuery
             foreach (var operation in toBeBatchedTransportOperations)
             {
-                tasks.Add(PrepareMessage<SqsPreparedMessage>(operation, messageIdsOfMulticastEvents, transportTransaction));
+                tasks.Add(PrepareMessage<SqsPreparedMessage>(operation, transportTransaction));
             }
 
             await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -170,9 +169,9 @@
             }
         }
 
-        async Task Dispatch(MulticastTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction)
+        async Task Dispatch(MulticastTransportOperation transportOperation, TransportTransaction transportTransaction)
         {
-            var message = await PrepareMessage<SnsPreparedMessage>(transportOperation, messageIdsOfMulticastedEvents, transportTransaction)
+            var message = await PrepareMessage<SnsPreparedMessage>(transportOperation, transportTransaction)
                 .ConfigureAwait(false);
 
             if (message == null)
@@ -201,9 +200,9 @@
             }
         }
 
-        async Task Dispatch(UnicastTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction)
+        async Task Dispatch(UnicastTransportOperation transportOperation, TransportTransaction transportTransaction)
         {
-            var message = await PrepareMessage<SqsPreparedMessage>(transportOperation, messageIdsOfMulticastedEvents, transportTransaction)
+            var message = await PrepareMessage<SqsPreparedMessage>(transportOperation, transportTransaction)
                 .ConfigureAwait(false);
 
             if (message == null)
@@ -239,29 +238,10 @@
             }
         }
 
-        async Task<TMessage> PrepareMessage<TMessage>(IOutgoingTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction)
+        async Task<TMessage> PrepareMessage<TMessage>(IOutgoingTransportOperation transportOperation, TransportTransaction transportTransaction)
             where TMessage : PreparedMessage, new()
         {
             var unicastTransportOperation = transportOperation as UnicastTransportOperation;
-
-            // these conditions are carefully chosen to only execute the code if really necessary
-            if (unicastTransportOperation != null
-                && messageIdsOfMulticastedEvents.Contains(unicastTransportOperation.Message.MessageId)
-                && unicastTransportOperation.Message.GetMessageIntent() == MessageIntentEnum.Publish
-                && unicastTransportOperation.Message.Headers.ContainsKey(Headers.EnclosedMessageTypes))
-            {
-                var mostConcreteEnclosedMessageType = unicastTransportOperation.Message.GetEnclosedMessageTypes()[0];
-                var existingTopic = await topicCache.GetTopicArn(mostConcreteEnclosedMessageType).ConfigureAwait(false);
-                if (existingTopic != null)
-                {
-                    var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination)
-                        .ConfigureAwait(false);
-                    if (matchingSubscriptionArn != null)
-                    {
-                        return null;
-                    }
-                }
-            }
 
             var delayDeliveryWith = transportOperation.DeliveryConstraints.OfType<DelayDeliveryWith>().SingleOrDefault();
             var doNotDeliverBefore = transportOperation.DeliveryConstraints.OfType<DoNotDeliverBefore>().SingleOrDefault();
@@ -420,7 +400,6 @@
         IAmazonS3 s3Client;
         QueueCache queueCache;
         IJsonSerializerStrategy serializerStrategy;
-        static readonly HashSet<string> emptyHashset = new HashSet<string>();
 
         static ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
     }
