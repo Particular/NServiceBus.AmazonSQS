@@ -14,7 +14,7 @@
 
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="3.7.1.9" />
-    <PackageReference Include="AWSSDK.SQS" Version="3.7.0.38" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.0.42" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.1.1" />
     <PackageReference Include="GitHubActionsTestLogger" Version="1.2.0" />
     <PackageReference Include="NServiceBus.AcceptanceTests.Sources" Version="8.0.0-alpha.1895" GeneratePathProperty="true" />
