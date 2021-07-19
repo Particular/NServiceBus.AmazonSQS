@@ -72,6 +72,8 @@ namespace NServiceBus.Transport.SQS.Tests
             return Task.FromResult(SubscribeResponse(request));
         }
 
+        #region NotImplemented
+
         public TagResourceResponse TagResource(TagResourceRequest request)
         {
             throw new NotImplementedException();
@@ -81,8 +83,6 @@ namespace NServiceBus.Transport.SQS.Tests
         {
             throw new NotImplementedException();
         }
-
-        #region NotImplemented
 
         public Task<SetSubscriptionAttributesResponse> SetSubscriptionAttributesAsync(SetSubscriptionAttributesRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
