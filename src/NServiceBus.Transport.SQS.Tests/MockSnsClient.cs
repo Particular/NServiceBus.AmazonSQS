@@ -1,3 +1,5 @@
+#pragma warning disable IDE0060 // Remove unused parameter
+
 namespace NServiceBus.Transport.SQS.Tests
 {
     using System;
@@ -72,6 +74,8 @@ namespace NServiceBus.Transport.SQS.Tests
             return Task.FromResult(SubscribeResponse(request));
         }
 
+        #region NotImplemented
+
         public TagResourceResponse TagResource(TagResourceRequest request)
         {
             throw new NotImplementedException();
@@ -81,8 +85,6 @@ namespace NServiceBus.Transport.SQS.Tests
         {
             throw new NotImplementedException();
         }
-
-        #region NotImplemented
 
         public Task<SetSubscriptionAttributesResponse> SetSubscriptionAttributesAsync(SetSubscriptionAttributesRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
@@ -633,6 +635,21 @@ namespace NServiceBus.Transport.SQS.Tests
             throw new NotImplementedException();
         }
 
+        public CreateSMSSandboxPhoneNumberResponse CreateSMSSandboxPhoneNumber(CreateSMSSandboxPhoneNumberRequest request) => throw new NotImplementedException();
+        public Task<CreateSMSSandboxPhoneNumberResponse> CreateSMSSandboxPhoneNumberAsync(CreateSMSSandboxPhoneNumberRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public DeleteSMSSandboxPhoneNumberResponse DeleteSMSSandboxPhoneNumber(DeleteSMSSandboxPhoneNumberRequest request) => throw new NotImplementedException();
+        public Task<DeleteSMSSandboxPhoneNumberResponse> DeleteSMSSandboxPhoneNumberAsync(DeleteSMSSandboxPhoneNumberRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public GetSMSSandboxAccountStatusResponse GetSMSSandboxAccountStatus(GetSMSSandboxAccountStatusRequest request) => throw new NotImplementedException();
+        public Task<GetSMSSandboxAccountStatusResponse> GetSMSSandboxAccountStatusAsync(GetSMSSandboxAccountStatusRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public ListOriginationNumbersResponse ListOriginationNumbers(ListOriginationNumbersRequest request) => throw new NotImplementedException();
+        public Task<ListOriginationNumbersResponse> ListOriginationNumbersAsync(ListOriginationNumbersRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public ListSMSSandboxPhoneNumbersResponse ListSMSSandboxPhoneNumbers(ListSMSSandboxPhoneNumbersRequest request) => throw new NotImplementedException();
+        public Task<ListSMSSandboxPhoneNumbersResponse> ListSMSSandboxPhoneNumbersAsync(ListSMSSandboxPhoneNumbersRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public VerifySMSSandboxPhoneNumberResponse VerifySMSSandboxPhoneNumber(VerifySMSSandboxPhoneNumberRequest request) => throw new NotImplementedException();
+        public Task<VerifySMSSandboxPhoneNumberResponse> VerifySMSSandboxPhoneNumberAsync(VerifySMSSandboxPhoneNumberRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+
         #endregion
     }
 }
+
+#pragma warning restore IDE0060 // Remove unused parameter
