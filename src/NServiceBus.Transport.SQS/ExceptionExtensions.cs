@@ -1,4 +1,4 @@
-namespace NServiceBus
+namespace NServiceBus.Transport.SQS
 {
     using System;
     using System.Threading;
