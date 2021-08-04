@@ -27,7 +27,11 @@
                 TimeToBeReceived = properties.DiscardIfNotReceivedBefore.MaxTime.ToString();
             }
 
+#if NETFRAMEWORK
             Body = outgoingMessage.Body.Length != 0 ? Convert.ToBase64String(outgoingMessage.Body.ToArray()) : "empty message";
+#else
+            Body = outgoingMessage.Body.Length != 0 ? Convert.ToBase64String(outgoingMessage.Body.Span) : "empty message";
+#endif
         }
 
         public Dictionary<string, string> Headers { get; set; }
