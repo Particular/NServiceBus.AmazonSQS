@@ -255,7 +255,7 @@
             // these conditions are carefully chosen to only execute the code if really necessary
             if (unicastTransportOperation != null
                 && messageIdsOfMulticastedEvents.Contains(unicastTransportOperation.Message.MessageId)
-                && unicastTransportOperation.Message.GetMessageIntent() == MessageIntentEnum.Publish
+                && unicastTransportOperation.Message.GetMessageIntent() == MessageIntent.Publish
                 && unicastTransportOperation.Message.Headers.ContainsKey(Headers.EnclosedMessageTypes))
             {
                 //The first type in the enclosed message types is the most concrete type associated with the message. The name is assembly-qualified and the type is guaranteed to be loaded.
