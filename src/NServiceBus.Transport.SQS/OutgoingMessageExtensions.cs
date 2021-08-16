@@ -5,9 +5,9 @@ namespace NServiceBus.Transport.SQS
 
     static class OutgoingMessageExtensions
     {
-        public static MessageIntentEnum GetMessageIntent(this OutgoingMessage message)
+        public static MessageIntent GetMessageIntent(this OutgoingMessage message)
         {
-            var messageIntent = default(MessageIntentEnum);
+            var messageIntent = default(MessageIntent);
             if (message.Headers.TryGetValue(Headers.MessageIntent, out var messageIntentString))
             {
                 Enum.TryParse(messageIntentString, true, out messageIntent);

@@ -215,7 +215,7 @@
             var headers = new Dictionary<string, string>()
             {
                 {Headers.EnclosedMessageTypes, typeof(Event).AssemblyQualifiedName},
-                {Headers.MessageIntent, MessageIntentEnum.Publish.ToString() }
+                {Headers.MessageIntent, MessageIntent.Publish.ToString() }
             };
             var transportOperations = new TransportOperations(
                 new TransportOperation(

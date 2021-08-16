@@ -59,10 +59,10 @@
 
         static void ApplyMappingsToSupportMultipleInheritance(string endpointName, SqsTransport transportConfig)
         {
-            if (endpointName == Conventions.EndpointNamingConvention(typeof(When_multi_subscribing_to_a_polymorphic_event.Subscriber)))
+            if (endpointName == Conventions.EndpointNamingConvention(typeof(MultiSubscribeToPolymorphicEvent.Subscriber)))
             {
-                transportConfig.MapEvent<When_multi_subscribing_to_a_polymorphic_event.IMyEvent, When_multi_subscribing_to_a_polymorphic_event.MyEvent1>();
-                transportConfig.MapEvent<When_multi_subscribing_to_a_polymorphic_event.IMyEvent, When_multi_subscribing_to_a_polymorphic_event.MyEvent2>();
+                transportConfig.MapEvent<MultiSubscribeToPolymorphicEvent.IMyEvent, MultiSubscribeToPolymorphicEvent.MyEvent1>();
+                transportConfig.MapEvent<MultiSubscribeToPolymorphicEvent.IMyEvent, MultiSubscribeToPolymorphicEvent.MyEvent2>();
             }
 
             if (endpointName == Conventions.EndpointNamingConvention(typeof(When_subscribing_to_a_base_event.GeneralSubscriber)))
@@ -113,7 +113,7 @@
 
         static void PreventInconclusiveTestsFromRunning(string endpointName)
         {
-            if (endpointName == Conventions.EndpointNamingConvention(typeof(MessageDriven.When_publishing_from_sendonly.SendOnlyPublisher)))
+            if (endpointName == Conventions.EndpointNamingConvention(typeof(MessageDriven.Pub_from_sendonly.SendOnlyPublisher)))
             {
                 Assert.Inconclusive("Test is not using endpoint naming conventions in hardcoded subscription storage. Should be fixed in core vNext.");
             }
