@@ -56,9 +56,9 @@
                 EndpointSetup<DefaultServer>();
             }
 
-            class MyEventHandler : IHandleMessages<Message>
+            class MyHandler : IHandleMessages<Message>
             {
-                public MyEventHandler(Context testContext)
+                public MyHandler(Context testContext)
                 {
                     this.testContext = testContext;
                 }

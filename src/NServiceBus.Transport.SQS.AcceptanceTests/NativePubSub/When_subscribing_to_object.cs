@@ -45,11 +45,11 @@
                 });
             }
 
-            public class MyEventHandler : IHandleMessages<object>
+            public class MyHandler : IHandleMessages<object>
             {
                 Context testContext;
 
-                public MyEventHandler(Context testContext)
+                public MyHandler(Context testContext)
                 {
                     this.testContext = testContext;
                 }
