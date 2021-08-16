@@ -12,7 +12,6 @@
     using Amazon.SQS.Model;
     using DelayedDelivery;
     using Extensibility;
-    using Extensions;
     using Logging;
     using SimpleJson;
     using Transport;
@@ -239,35 +238,16 @@
             }
         }
 
+        HybridPubSubChecker checker = new HybridPubSubChecker();
+
         async Task<TMessage> PrepareMessage<TMessage>(IOutgoingTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction)
             where TMessage : PreparedMessage, new()
         {
             var unicastTransportOperation = transportOperation as UnicastTransportOperation;
 
-            // The following check is required by the message-driven pub/sub hybrid mode in Core
-            // to allow endpoints to migrate from message-driven pub/sub to native pub/sub
-            // If the message we're trying to dispatch is a unicast message with a `Publish` intent
-            // but the subscriber is also subscribed via SNS we don't want to dispatch the message twice
-            // the subscriber will receive it via SNS and not via a unicast send.
-            // We can improve the situation a bit by caching the information and thus reduce the amount of times we hit the SNS API.
-            // We need to think abut what happens in case the destination endpoint unsubscribes from the event.
-            // these conditions are carefully chosen to only execute the code if really necessary
-            if (unicastTransportOperation != null
-                && messageIdsOfMulticastedEvents.Contains(unicastTransportOperation.Message.MessageId)
-                && unicastTransportOperation.Message.GetMessageIntent() == MessageIntentEnum.Publish
-                && unicastTransportOperation.Message.Headers.ContainsKey(Headers.EnclosedMessageTypes))
+            if (!await checker.PublishUsingMessageDrivenPubSub(unicastTransportOperation, messageIdsOfMulticastedEvents, topicCache, queueCache, snsClient).ConfigureAwait(false))
             {
-                var mostConcreteEnclosedMessageType = unicastTransportOperation.Message.GetEnclosedMessageTypes()[0];
-                var existingTopic = await topicCache.GetTopicArn(mostConcreteEnclosedMessageType).ConfigureAwait(false);
-                if (existingTopic != null)
-                {
-                    var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination)
-                        .ConfigureAwait(false);
-                    if (matchingSubscriptionArn != null)
-                    {
-                        return null;
-                    }
-                }
+                return null;
             }
 
             var delayDeliveryWith = transportOperation.DeliveryConstraints.OfType<DelayDeliveryWith>().SingleOrDefault();
