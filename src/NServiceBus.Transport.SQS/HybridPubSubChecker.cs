@@ -32,37 +32,39 @@
             {
                 var mostConcreteEnclosedMessageType = unicastTransportOperation.Message.GetEnclosedMessageTypes()[0];
                 var existingTopic = await topicCache.GetTopicArn(mostConcreteEnclosedMessageType).ConfigureAwait(false);
-                if (existingTopic != null)
+                if (existingTopic == null)
                 {
-                    var cacheKey = existingTopic + unicastTransportOperation.Destination;
-                    if (subscriptionsCache.ContainsKey(cacheKey))
-                    {
-                        var cacheItem = subscriptionsCache[cacheKey];
-                        if (cacheItem.Age.AddSeconds(5) < DateTime.Now)
-                        {
-                            subscriptionsCache.TryRemove(cacheKey, out _);
-                        }
-                    }
+                    return true;
+                }
 
-                    if (!subscriptionsCache.ContainsKey(cacheKey))
+                var cacheKey = existingTopic + unicastTransportOperation.Destination;
+                if (subscriptionsCache.ContainsKey(cacheKey))
+                {
+                    var cacheItem = subscriptionsCache[cacheKey];
+                    if (cacheItem.Age.AddSeconds(5) < DateTime.Now)
                     {
-                        var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination)
-                            .ConfigureAwait(false);
-                        if (matchingSubscriptionArn != null)
-                        {
-                            subscriptionsCache.TryAdd(cacheKey, new SubscritionCacheItem { IsThereAnSnsSubscription = true });
-                        }
-                        else
-                        {
-                            subscriptionsCache.TryAdd(cacheKey, new SubscritionCacheItem { IsThereAnSnsSubscription = false });
-                        }
+                        _ = subscriptionsCache.TryRemove(cacheKey, out _);
                     }
+                }
 
-                    var isThereAnSnsSubscription = subscriptionsCache[cacheKey].IsThereAnSnsSubscription;
-                    if (isThereAnSnsSubscription)
+                if (!subscriptionsCache.ContainsKey(cacheKey))
+                {
+                    var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination)
+                        .ConfigureAwait(false);
+                    if (matchingSubscriptionArn != null)
                     {
-                        return false;
+                        _ = subscriptionsCache.TryAdd(cacheKey, new SubscritionCacheItem { IsThereAnSnsSubscription = true });
                     }
+                    else
+                    {
+                        _ = subscriptionsCache.TryAdd(cacheKey, new SubscritionCacheItem { IsThereAnSnsSubscription = false });
+                    }
+                }
+
+                var isThereAnSnsSubscription = subscriptionsCache[cacheKey].IsThereAnSnsSubscription;
+                if (isThereAnSnsSubscription)
+                {
+                    return false;
                 }
             }
 

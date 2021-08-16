@@ -18,33 +18,33 @@
             int numberOfEvents = 300;
             Assert.DoesNotThrowAsync(async () =>
             {
-                var context = await Scenario.Define<Context>()
-                .WithEndpoint<Publisher>(b =>
-                {
-                    b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, session =>
+                await Scenario.Define<Context>()
+                    .WithEndpoint<Publisher>(b =>
                     {
-                        var tasks = new List<Task>();
-                        for (int i = 0; i < numberOfEvents; i++)
+                        b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, session =>
                         {
-                            tasks.Add(session.Publish(new MyEvent()));
-                        }
-                        return Task.WhenAll(tasks);
-                    });
-                })
-                .WithEndpoint<NativePubSubSubscriber>(b =>
-                {
-                    b.When((_, ctx) =>
+                            var tasks = new List<Task>();
+                            for (int i = 0; i < numberOfEvents; i++)
+                            {
+                                tasks.Add(session.Publish(new MyEvent()));
+                            }
+                            return Task.WhenAll(tasks);
+                        });
+                    })
+                    .WithEndpoint<NativePubSubSubscriber>(b =>
                     {
-                        ctx.SubscribedNative = true;
-                        return Task.FromResult(0);
-                    });
-                })
-                .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
-                {
-                    b.When((session, ctx) => session.Subscribe<MyEvent>());
-                })
-                .Done(c => c.NativePubSubSubscriberReceivedEventsCount == numberOfEvents && c.MessageDrivenPubSubSubscriberReceivedEventsCount == numberOfEvents)
-                .Run();
+                        b.When((_, ctx) =>
+                        {
+                            ctx.SubscribedNative = true;
+                            return Task.FromResult(0);
+                        });
+                    })
+                    .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
+                    {
+                        b.When((session, ctx) => session.Subscribe<MyEvent>());
+                    })
+                    .Done(c => c.NativePubSubSubscriberReceivedEventsCount == numberOfEvents && c.MessageDrivenPubSubSubscriberReceivedEventsCount == numberOfEvents)
+                    .Run();
             });
         }
 
