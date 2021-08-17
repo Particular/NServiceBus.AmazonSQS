@@ -4,6 +4,7 @@ namespace NServiceBus.Transport.SQS
     using System.Collections.Concurrent;
     using System.Threading.Tasks;
     using Amazon.SimpleNotificationService;
+    using Amazon.SimpleNotificationService.Model;
     using Configure;
     using Unicast.Messages;
 
@@ -57,7 +58,29 @@ namespace NServiceBus.Transport.SQS
             }
 
             var topicName = GetTopicName(metadata);
-            var foundTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
+            Topic foundTopic = null;
+            var succeeded = false;
+            int numberOfAttempts = 0;
+
+            while (!succeeded)
+            {
+                try
+                {
+                    foundTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
+                    succeeded = true;
+                }
+                catch (AmazonSimpleNotificationServiceException ex) when (ex.ErrorCode == "Throttling")
+                {
+                    numberOfAttempts++;
+                    if (numberOfAttempts > 3)
+                    {
+                        throw new Exception($"Topics cache failed to find topic '{topicName}'. The operation has been " +
+                            $"retried {numberOfAttempts} times.", ex);
+                    }
+                    await Task.Delay(delayBetweenFindAttempts).ConfigureAwait(false);
+                }
+            }
+
             return foundTopic != null ? topicCache.GetOrAdd(metadata.MessageType, foundTopic.TopicArn) : null;
         }
 
@@ -66,5 +89,6 @@ namespace NServiceBus.Transport.SQS
         TransportConfiguration configuration;
         ConcurrentDictionary<Type, string> topicCache = new ConcurrentDictionary<Type, string>();
         ConcurrentDictionary<Type, string> topicNameCache = new ConcurrentDictionary<Type, string>();
+        static readonly TimeSpan delayBetweenFindAttempts = TimeSpan.FromSeconds(2);
     }
 }
