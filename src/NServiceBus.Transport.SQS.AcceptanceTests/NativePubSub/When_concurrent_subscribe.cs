@@ -50,7 +50,7 @@
                 });
             }
 
-            public class MyEventHandler : IHandleMessages<MyEvent>
+            public class MyHandler : IHandleMessages<MyEvent>
             {
                 public Context Context { get; set; }
 
@@ -61,7 +61,7 @@
                 }
             }
 
-            public class MyInterfaceEventHandler : IHandleMessages<MyOtherEvent>
+            public class MyInterfaceHandler : IHandleMessages<MyOtherEvent>
             {
                 public Context Context { get; set; }
 

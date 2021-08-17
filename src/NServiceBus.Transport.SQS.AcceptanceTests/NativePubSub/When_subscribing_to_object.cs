@@ -45,7 +45,7 @@
                 });
             }
 
-            public class MyEventHandler : IHandleMessages<object>
+            public class MyHandler : IHandleMessages<object>
             {
                 public Context Context { get; set; }
 

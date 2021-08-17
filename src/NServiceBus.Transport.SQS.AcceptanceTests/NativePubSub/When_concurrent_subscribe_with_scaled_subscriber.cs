@@ -53,7 +53,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub
                 EndpointSetup<DefaultServer>(c => { c.DisableFeature<AutoSubscribe>(); });
             }
 
-            public class MyEventHandler : IHandleMessages<MyEvent>
+            public class MyHandler : IHandleMessages<MyEvent>
             {
                 public Context Context { get; set; }
 
@@ -64,7 +64,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub
                 }
             }
 
-            public class MyInterfaceEventHandler : IHandleMessages<MyOtherEvent>
+            public class MyInterfaceHandler : IHandleMessages<MyOtherEvent>
             {
                 public Context Context { get; set; }
 

@@ -79,7 +79,7 @@
                 });
             }
 
-            public class MyEventHandler : IHandleMessages<IMyEvent>
+            public class MyHandler : IHandleMessages<IMyEvent>
             {
                 public Context Context { get; set; }
 
