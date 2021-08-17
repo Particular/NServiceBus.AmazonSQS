@@ -41,7 +41,7 @@
                 if (subscriptionsCache.ContainsKey(cacheKey))
                 {
                     var cacheItem = subscriptionsCache[cacheKey];
-                    if (cacheItem.Age.AddSeconds(5) < DateTime.Now)
+                    if (cacheItem.Age.Add(cacheTTL) < DateTime.Now)
                     {
                         _ = subscriptionsCache.TryRemove(cacheKey, out _);
                     }
@@ -49,15 +49,37 @@
 
                 if (!subscriptionsCache.ContainsKey(cacheKey))
                 {
-                    var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination)
-                        .ConfigureAwait(false);
-                    if (matchingSubscriptionArn != null)
+                    var succeeded = false;
+                    int numberOfAttempts = 0;
+
+                    while (!succeeded)
                     {
-                        _ = subscriptionsCache.TryAdd(cacheKey, new SubscritionCacheItem { IsThereAnSnsSubscription = true });
-                    }
-                    else
-                    {
-                        _ = subscriptionsCache.TryAdd(cacheKey, new SubscritionCacheItem { IsThereAnSnsSubscription = false });
+                        try
+                        {
+                            var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination)
+                                .ConfigureAwait(false);
+                            if (matchingSubscriptionArn != null)
+                            {
+                                _ = subscriptionsCache.TryAdd(cacheKey, new SubscritionCacheItem { IsThereAnSnsSubscription = true });
+                            }
+                            else
+                            {
+                                _ = subscriptionsCache.TryAdd(cacheKey, new SubscritionCacheItem { IsThereAnSnsSubscription = false });
+                            }
+                            succeeded = true;
+                        }
+                        catch (AmazonSimpleNotificationServiceException ex) when (ex.ErrorCode == "Throttling")
+                        {
+                            numberOfAttempts++;
+                            if (numberOfAttempts > 3)
+                            {
+                                throw new Exception($"Message-driven pub/sub hybrid mode failed to find a matching subscription " +
+                                    $"on topic '{existingTopic}', for message '{unicastTransportOperation.Message.MessageId}' " +
+                                    $"destined to '{unicastTransportOperation.Destination}'. The operation has been " +
+                                    $"retried {numberOfAttempts} times.", ex);
+                            }
+                            await Task.Delay(delayBetweenFindMatchingSubscriptionLookupAttempts).ConfigureAwait(false);
+                        }
                     }
                 }
 
@@ -71,6 +93,8 @@
             return true;
         }
 
+        static readonly TimeSpan cacheTTL = TimeSpan.FromSeconds(15);
+        static readonly TimeSpan delayBetweenFindMatchingSubscriptionLookupAttempts = TimeSpan.FromSeconds(2);
         readonly ConcurrentDictionary<string, SubscritionCacheItem> subscriptionsCache = new ConcurrentDictionary<string, SubscritionCacheItem>();
     }
 }
