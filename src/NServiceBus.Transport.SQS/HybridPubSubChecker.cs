@@ -93,7 +93,7 @@
             return true;
         }
 
-        static readonly TimeSpan cacheTTL = TimeSpan.FromSeconds(15);
+        static readonly TimeSpan cacheTTL = TimeSpan.FromSeconds(60);
         static readonly TimeSpan delayBetweenFindMatchingSubscriptionLookupAttempts = TimeSpan.FromSeconds(2);
         readonly ConcurrentDictionary<string, SubscritionCacheItem> subscriptionsCache = new ConcurrentDictionary<string, SubscritionCacheItem>();
     }
