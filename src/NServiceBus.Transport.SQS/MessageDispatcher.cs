@@ -238,8 +238,6 @@
             }
         }
 
-        HybridPubSubChecker checker = new HybridPubSubChecker();
-
         async Task<TMessage> PrepareMessage<TMessage>(IOutgoingTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction)
             where TMessage : PreparedMessage, new()
         {
@@ -407,6 +405,7 @@
         IAmazonS3 s3Client;
         QueueCache queueCache;
         IJsonSerializerStrategy serializerStrategy;
+        readonly HybridPubSubChecker checker = new HybridPubSubChecker();
         static readonly HashSet<string> emptyHashset = new HashSet<string>();
 
         static ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
