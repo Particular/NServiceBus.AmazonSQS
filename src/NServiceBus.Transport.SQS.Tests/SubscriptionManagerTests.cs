@@ -1,5 +1,6 @@
 namespace NServiceBus.Transport.SQS.Tests
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
@@ -52,6 +53,7 @@ namespace NServiceBus.Transport.SQS.Tests
                     new TransportConfiguration(settings)),
                 messageMetadataRegistry,
                 new TopicCache(snsClient,
+                    new RateLimiter(30, TimeSpan.FromSeconds(1)),
                     messageMetadataRegistry,
                     new TransportConfiguration(settings))
                 );
@@ -72,6 +74,7 @@ namespace NServiceBus.Transport.SQS.Tests
                     new TransportConfiguration(settings)),
                 messageMetadataRegistry,
                 new TopicCache(snsClient,
+                    new RateLimiter(30, TimeSpan.FromSeconds(1)),
                     messageMetadataRegistry,
                     new TransportConfiguration(settings))
                 );

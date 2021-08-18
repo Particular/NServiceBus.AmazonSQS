@@ -23,7 +23,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var metadataRegistry = settings.SetupMessageMetadataRegistry();
 
-            var cache = new TopicCache(snsClient, metadataRegistry, configuration);
+            var cache = new TopicCache(snsClient, new RateLimiter(30, TimeSpan.FromSeconds(1)), metadataRegistry, configuration);
 
             await cache.GetTopicArn(typeof(Event));
 
@@ -56,7 +56,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var metadataRegistry = settings.SetupMessageMetadataRegistry();
             var metadata = metadataRegistry.GetMessageMetadata(typeof(Event));
 
-            var cache = new TopicCache(null, metadataRegistry, configuration);
+            var cache = new TopicCache(null, new RateLimiter(30, TimeSpan.FromSeconds(1)), metadataRegistry, configuration);
 
             cache.GetTopicName(metadata);
             cache.GetTopicName(metadata);
