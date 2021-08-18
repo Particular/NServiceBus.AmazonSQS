@@ -18,7 +18,7 @@
 
     class MessageDispatcher : IDispatchMessages
     {
-        public MessageDispatcher(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, RateLimiter snsRequestsRateLimiter)
+        public MessageDispatcher(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache)
         {
             this.topicCache = topicCache;
             this.snsClient = snsClient;
@@ -26,7 +26,7 @@
             this.s3Client = s3Client;
             this.sqsClient = sqsClient;
             this.queueCache = queueCache;
-            hybridPubSubChecker = new HybridPubSubChecker(snsRequestsRateLimiter);
+            hybridPubSubChecker = new HybridPubSubChecker();
             serializerStrategy = configuration.UseV1CompatiblePayload ? SimpleJson.PocoJsonSerializerStrategy : ReducedPayloadSerializerStrategy.Instance;
         }
 

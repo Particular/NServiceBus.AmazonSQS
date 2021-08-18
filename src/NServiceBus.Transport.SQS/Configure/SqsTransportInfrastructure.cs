@@ -70,7 +70,7 @@
             }
 
             queueCache = new QueueCache(sqsClient, configuration);
-            topicCache = new TopicCache(snsClient, (RateLimiter)settings.Get(SettingsKeys.SnsRequestsRateLimiter), messageMetadataRegistry, configuration);
+            topicCache = new TopicCache(snsClient, (RateLimiter)settings.Get(SettingsKeys.SnsListTopicsRateLimiter), messageMetadataRegistry, configuration);
         }
 
         public SubscriptionManager SubscriptionManager { get; private set; }
@@ -98,7 +98,7 @@
 
         MessageDispatcher CreateMessageDispatcher()
         {
-            return new MessageDispatcher(configuration, s3Client, sqsClient, snsClient, queueCache, topicCache, (RateLimiter)settings.Get(SettingsKeys.SnsRequestsRateLimiter));
+            return new MessageDispatcher(configuration, s3Client, sqsClient, snsClient, queueCache, topicCache);
         }
 
         public override TransportReceiveInfrastructure ConfigureReceiveInfrastructure()
@@ -135,7 +135,8 @@
                     settings.LocalAddress(),
                     queueCache,
                     messageMetadataRegistry,
-                    topicCache);
+                    topicCache,
+                    (RateLimiter)settings.Get(SettingsKeys.SnsListTopicsRateLimiter));
             }
             return new TransportSubscriptionInfrastructure(() => SubscriptionManager);
         }
