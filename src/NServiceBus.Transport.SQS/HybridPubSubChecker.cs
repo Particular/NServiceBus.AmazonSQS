@@ -15,8 +15,6 @@
             public DateTime Age { get; } = DateTime.Now;
         }
 
-        public HybridPubSubChecker(RateLimiter snsRequestsRateLimiter) => this.snsRequestsRateLimiter = snsRequestsRateLimiter;
-
         public async Task<bool> PublishUsingMessageDrivenPubSub(UnicastTransportOperation unicastTransportOperation, HashSet<string> messageIdsOfMulticastedEvents, TopicCache topicCache, QueueCache queueCache, IAmazonSimpleNotificationService snsClient)
         {
             // The following check is required by the message-driven pub/sub hybrid mode in Core
@@ -33,13 +31,13 @@
                 && unicastTransportOperation.Message.Headers.ContainsKey(Headers.EnclosedMessageTypes))
             {
                 var mostConcreteEnclosedMessageType = unicastTransportOperation.Message.GetEnclosedMessageTypes()[0];
-                var existingTopic = await topicCache.GetTopicArn(mostConcreteEnclosedMessageType).ConfigureAwait(false);
+                var existingTopic = await topicCache.GetTopic(mostConcreteEnclosedMessageType).ConfigureAwait(false);
                 if (existingTopic == null)
                 {
                     return true;
                 }
 
-                var cacheKey = existingTopic + unicastTransportOperation.Destination;
+                var cacheKey = existingTopic.TopicArn + unicastTransportOperation.Destination;
                 if (subscriptionsCache.ContainsKey(cacheKey))
                 {
                     var cacheItem = subscriptionsCache[cacheKey];
@@ -51,8 +49,8 @@
 
                 if (!subscriptionsCache.ContainsKey(cacheKey))
                 {
-                    var matchingSubscriptionArn = await snsRequestsRateLimiter.Execute(async () => await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination)
-                                .ConfigureAwait(false)).ConfigureAwait(false);
+                    var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination)
+                        .ConfigureAwait(false);
 
                     if (matchingSubscriptionArn != null)
                     {
@@ -76,6 +74,5 @@
 
         static readonly TimeSpan cacheTTL = TimeSpan.FromSeconds(60);
         readonly ConcurrentDictionary<string, SubscritionCacheItem> subscriptionsCache = new ConcurrentDictionary<string, SubscritionCacheItem>();
-        readonly RateLimiter snsRequestsRateLimiter;
     }
 }
