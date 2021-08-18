@@ -7,7 +7,7 @@
     using System.Threading.Tasks;
     using NServiceBus.Logging;
 
-    class RateLimiter
+    partial class RateLimiter
     {
         class AwaitableConstraint
         {
@@ -84,53 +84,5 @@
             readonly SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
             static ILog Logger = LogManager.GetLogger(typeof(QueueCreator));
         }
-
-        class SizeConstrainedStack<T> : LinkedList<T>
-        {
-            public SizeConstrainedStack(int maxSize)
-            {
-                this.maxSize = maxSize;
-            }
-
-            public void Push(T item)
-            {
-                AddFirst(item);
-
-                if (Count > maxSize)
-                {
-                    RemoveLast();
-                }
-            }
-
-            readonly int maxSize;
-        }
-
-        class DisposableAction : IDisposable
-        {
-            public DisposableAction(Action onDisposedCallback)
-            {
-                this.onDisposedCallback = onDisposedCallback;
-            }
-
-            public void Dispose()
-            {
-                onDisposedCallback?.Invoke();
-                onDisposedCallback = null;
-            }
-
-            Action onDisposedCallback;
-        }
-
-        public RateLimiter(int maxAllowedRequests, TimeSpan timeConstraint, string limitedApiName) => awaitableConstraint = new AwaitableConstraint(maxAllowedRequests, timeConstraint, limitedApiName);
-
-        public async Task<T> Execute<T>(Func<Task<T>> taskToExecute)
-        {
-            using (await awaitableConstraint.WaitIfNeeded().ConfigureAwait(false))
-            {
-                return await taskToExecute().ConfigureAwait(false);
-            }
-        }
-
-        readonly AwaitableConstraint awaitableConstraint;
     }
 }
