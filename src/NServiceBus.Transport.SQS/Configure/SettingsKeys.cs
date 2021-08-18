@@ -31,7 +31,5 @@
         public const string V1CompatibilityMode = Prefix + nameof(V1CompatibilityMode);
         public const string DisableNativePubSub = Prefix + nameof(DisableNativePubSub);
         public const string DisableSubscribeBatchingOnStart = Prefix + nameof(DisableSubscribeBatchingOnStart);
-
-        public const string SnsListTopicsRateLimiter = Prefix + nameof(SnsListTopicsRateLimiter);
     }
 }

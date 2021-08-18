@@ -15,11 +15,10 @@ namespace NServiceBus.Transport.SQS
 
     class SubscriptionManager : IManageSubscriptions
     {
-        public SubscriptionManager(TransportConfiguration configuration, IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, MessageMetadataRegistry messageMetadataRegistry, TopicCache topicCache, RateLimiter snsListTopicsRateLimiter)
+        public SubscriptionManager(TransportConfiguration configuration, IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, MessageMetadataRegistry messageMetadataRegistry, TopicCache topicCache)
         {
             this.configuration = configuration;
             this.topicCache = topicCache;
-            this.snsListTopicsRateLimiter = snsListTopicsRateLimiter;
             this.messageMetadataRegistry = messageMetadataRegistry;
             this.queueCache = queueCache;
             this.sqsClient = sqsClient;
@@ -88,7 +87,7 @@ namespace NServiceBus.Transport.SQS
             foreach (var mappedTopicName in mappedTopicsNames)
             {
                 //we skip the topic name generation assuming the topic name is already good
-                var mappedTypeMatchingSubscription = await snsClient.FindMatchingSubscription(queueCache, mappedTopicName, queueName, snsListTopicsRateLimiter)
+                var mappedTypeMatchingSubscription = await snsClient.FindMatchingSubscription(queueCache, mappedTopicName, queueName, configuration.SnsListTopicsRateLimiter)
                     .ConfigureAwait(false);
                 if (mappedTypeMatchingSubscription != null)
                 {
@@ -322,7 +321,6 @@ namespace NServiceBus.Transport.SQS
         readonly string queueName;
         readonly MessageMetadataRegistry messageMetadataRegistry;
         readonly TopicCache topicCache;
-        readonly RateLimiter snsListTopicsRateLimiter;
         readonly TransportConfiguration configuration;
         readonly SemaphoreSlim subscribeQueueLimiter = new SemaphoreSlim(1);
         volatile bool endpointStartingMode;

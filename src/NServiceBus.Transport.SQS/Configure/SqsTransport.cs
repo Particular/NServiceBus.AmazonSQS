@@ -35,7 +35,6 @@
             settings.SetDefault(SettingsKeys.TopicNamePrefix, string.Empty);
             settings.SetDefault(SettingsKeys.FullTopicNameForPolicies, true);
             settings.SetDefault(SettingsKeys.AssumePolicyHasAppropriatePermissions, false);
-            settings.SetDefault(SettingsKeys.SnsListTopicsRateLimiter, new RateLimiter(30, TimeSpan.FromSeconds(1)));
 
             // needed to only enable the feature when the transport is used
             settings.Set(typeof(SettlePolicy).FullName, FeatureState.Enabled);

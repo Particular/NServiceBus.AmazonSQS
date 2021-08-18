@@ -329,6 +329,8 @@
             }
         }
 
+        public RateLimiter SnsListTopicsRateLimiter { get; } = new RateLimiter(30, TimeSpan.FromSeconds(1));
+
         public EventToTopicsMappings CustomEventToTopicsMappings => settings.GetOrDefault<EventToTopicsMappings>();
         public EventToEventsMappings CustomEventToEventsMappings => settings.GetOrDefault<EventToEventsMappings>();
 

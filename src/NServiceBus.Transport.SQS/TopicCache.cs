@@ -10,12 +10,11 @@ namespace NServiceBus.Transport.SQS
 
     class TopicCache
     {
-        public TopicCache(IAmazonSimpleNotificationService snsClient, RateLimiter snsListTopicsRateLimiter, MessageMetadataRegistry messageMetadataRegistry, TransportConfiguration configuration)
+        public TopicCache(IAmazonSimpleNotificationService snsClient, MessageMetadataRegistry messageMetadataRegistry, TransportConfiguration configuration)
         {
             this.configuration = configuration;
             this.messageMetadataRegistry = messageMetadataRegistry;
             this.snsClient = snsClient;
-            this.snsListTopicsRateLimiter = snsListTopicsRateLimiter;
             CustomEventToTopicsMappings = configuration.CustomEventToTopicsMappings ?? new EventToTopicsMappings();
             CustomEventToEventsMappings = configuration.CustomEventToEventsMappings ?? new EventToEventsMappings();
         }
@@ -69,7 +68,7 @@ namespace NServiceBus.Transport.SQS
                 return topic;
             }
 
-            var foundTopic = await snsListTopicsRateLimiter.Execute(async () =>
+            var foundTopic = await configuration.SnsListTopicsRateLimiter.Execute(async () =>
             {
                 var topicName = GetTopicName(metadata);
                 return await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
@@ -79,7 +78,6 @@ namespace NServiceBus.Transport.SQS
         }
 
         IAmazonSimpleNotificationService snsClient;
-        readonly RateLimiter snsListTopicsRateLimiter;
         MessageMetadataRegistry messageMetadataRegistry;
         TransportConfiguration configuration;
         ConcurrentDictionary<Type, Topic> topicCache = new ConcurrentDictionary<Type, Topic>();

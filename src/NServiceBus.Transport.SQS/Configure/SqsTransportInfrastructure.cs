@@ -70,7 +70,7 @@
             }
 
             queueCache = new QueueCache(sqsClient, configuration);
-            topicCache = new TopicCache(snsClient, (RateLimiter)settings.Get(SettingsKeys.SnsListTopicsRateLimiter), messageMetadataRegistry, configuration);
+            topicCache = new TopicCache(snsClient, messageMetadataRegistry, configuration);
         }
 
         public SubscriptionManager SubscriptionManager { get; private set; }
@@ -135,8 +135,7 @@
                     settings.LocalAddress(),
                     queueCache,
                     messageMetadataRegistry,
-                    topicCache,
-                    (RateLimiter)settings.Get(SettingsKeys.SnsListTopicsRateLimiter));
+                    topicCache);
             }
             return new TransportSubscriptionInfrastructure(() => SubscriptionManager);
         }
