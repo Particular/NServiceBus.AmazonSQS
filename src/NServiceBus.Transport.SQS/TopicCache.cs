@@ -4,17 +4,18 @@ namespace NServiceBus.Transport.SQS
     using System.Collections.Concurrent;
     using System.Threading.Tasks;
     using Amazon.SimpleNotificationService;
+    using Amazon.SimpleNotificationService.Model;
     using Configure;
     using Unicast.Messages;
 
     class TopicCache
     {
-        public TopicCache(IAmazonSimpleNotificationService snsClient, RateLimiter snsRequestsRateLimiter, MessageMetadataRegistry messageMetadataRegistry, TransportConfiguration configuration)
+        public TopicCache(IAmazonSimpleNotificationService snsClient, RateLimiter snsListTopicsRateLimiter, MessageMetadataRegistry messageMetadataRegistry, TransportConfiguration configuration)
         {
             this.configuration = configuration;
             this.messageMetadataRegistry = messageMetadataRegistry;
             this.snsClient = snsClient;
-            this.snsRequestsRateLimiter = snsRequestsRateLimiter;
+            this.snsListTopicsRateLimiter = snsListTopicsRateLimiter;
             CustomEventToTopicsMappings = configuration.CustomEventToTopicsMappings ?? new EventToTopicsMappings();
             CustomEventToEventsMappings = configuration.CustomEventToEventsMappings ?? new EventToEventsMappings();
         }
@@ -25,16 +26,27 @@ namespace NServiceBus.Transport.SQS
 
         public Task<string> GetTopicArn(MessageMetadata metadata)
         {
+            return GetAndCacheTopicIfFound(metadata).ContinueWith(t => t.Result?.TopicArn);
+        }
+
+        public Task<Topic> GetTopic(MessageMetadata metadata)
+        {
             return GetAndCacheTopicIfFound(metadata);
         }
 
         public Task<string> GetTopicArn(Type eventType)
         {
             var metadata = messageMetadataRegistry.GetMessageMetadata(eventType);
-            return GetAndCacheTopicIfFound(metadata);
+            return GetAndCacheTopicIfFound(metadata).ContinueWith(t => t.Result?.TopicArn);
         }
 
         public Task<string> GetTopicArn(string messageTypeIdentifier)
+        {
+            var metadata = messageMetadataRegistry.GetMessageMetadata(messageTypeIdentifier);
+            return GetAndCacheTopicIfFound(metadata).ContinueWith(t => t.Result?.TopicArn);
+        }
+
+        public Task<Topic> GetTopic(string messageTypeIdentifier)
         {
             var metadata = messageMetadataRegistry.GetMessageMetadata(messageTypeIdentifier);
             return GetAndCacheTopicIfFound(metadata);
@@ -50,27 +62,27 @@ namespace NServiceBus.Transport.SQS
             return topicNameCache.GetOrAdd(metadata.MessageType, configuration.TopicNameGenerator(metadata));
         }
 
-        async Task<string> GetAndCacheTopicIfFound(MessageMetadata metadata)
+        async Task<Topic> GetAndCacheTopicIfFound(MessageMetadata metadata)
         {
             if (topicCache.TryGetValue(metadata.MessageType, out var topic))
             {
                 return topic;
             }
 
-            var foundTopic = await snsRequestsRateLimiter.Execute(async () =>
+            var foundTopic = await snsListTopicsRateLimiter.Execute(async () =>
             {
                 var topicName = GetTopicName(metadata);
                 return await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
             }).ConfigureAwait(false);
 
-            return foundTopic != null ? topicCache.GetOrAdd(metadata.MessageType, foundTopic.TopicArn) : null;
+            return foundTopic != null ? topicCache.GetOrAdd(metadata.MessageType, foundTopic) : null;
         }
 
         IAmazonSimpleNotificationService snsClient;
-        readonly RateLimiter snsRequestsRateLimiter;
+        readonly RateLimiter snsListTopicsRateLimiter;
         MessageMetadataRegistry messageMetadataRegistry;
         TransportConfiguration configuration;
-        ConcurrentDictionary<Type, string> topicCache = new ConcurrentDictionary<Type, string>();
+        ConcurrentDictionary<Type, Topic> topicCache = new ConcurrentDictionary<Type, Topic>();
         ConcurrentDictionary<Type, string> topicNameCache = new ConcurrentDictionary<Type, string>();
     }
 }
