@@ -5,12 +5,13 @@
     using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
+    using NServiceBus.Logging;
 
     class RateLimiter
     {
         class AwaitableConstraint
         {
-            public AwaitableConstraint(int maxAllowedRequests, TimeSpan timeConstraint)
+            public AwaitableConstraint(int maxAllowedRequests, TimeSpan timeConstraint, string apiName)
             {
                 if (maxAllowedRequests <= 0)
                 {
@@ -24,6 +25,7 @@
 
                 this.maxAllowedRequests = maxAllowedRequests;
                 this.timeConstraint = timeConstraint;
+                this.apiName = apiName;
                 requestsTimeStamps = new SizeConstrainedStack<DateTime>(this.maxAllowedRequests);
             }
 
@@ -55,6 +57,7 @@
                 var timeToWait = lastRequest.Value.Add(timeConstraint) - now;
                 try
                 {
+                    Logger.Info($"Requests threshold of {maxAllowedRequests} requests every {timeConstraint} reached for API '{apiName}'. Waiting {timeToWait}.");
                     await Task.Delay(timeToWait).ConfigureAwait(false);
                 }
                 catch (Exception)
@@ -77,7 +80,9 @@
 
             readonly int maxAllowedRequests;
             TimeSpan timeConstraint;
+            readonly string apiName;
             readonly SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
+            static ILog Logger = LogManager.GetLogger(typeof(QueueCreator));
         }
 
         class SizeConstrainedStack<T> : LinkedList<T>
@@ -116,7 +121,7 @@
             Action onDisposedCallback;
         }
 
-        public RateLimiter(int maxAllowedRequests, TimeSpan timeConstraint) => awaitableConstraint = new AwaitableConstraint(maxAllowedRequests, timeConstraint);
+        public RateLimiter(int maxAllowedRequests, TimeSpan timeConstraint, string limitedApiName) => awaitableConstraint = new AwaitableConstraint(maxAllowedRequests, timeConstraint, limitedApiName);
 
         public async Task<T> Execute<T>(Func<Task<T>> taskToExecute)
         {
