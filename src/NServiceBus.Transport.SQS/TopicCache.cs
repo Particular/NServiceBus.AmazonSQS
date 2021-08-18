@@ -4,17 +4,17 @@ namespace NServiceBus.Transport.SQS
     using System.Collections.Concurrent;
     using System.Threading.Tasks;
     using Amazon.SimpleNotificationService;
-    using Amazon.SimpleNotificationService.Model;
     using Configure;
     using Unicast.Messages;
 
     class TopicCache
     {
-        public TopicCache(IAmazonSimpleNotificationService snsClient, MessageMetadataRegistry messageMetadataRegistry, TransportConfiguration configuration)
+        public TopicCache(IAmazonSimpleNotificationService snsClient, RateLimiter snsRequestsRateLimiter, MessageMetadataRegistry messageMetadataRegistry, TransportConfiguration configuration)
         {
             this.configuration = configuration;
             this.messageMetadataRegistry = messageMetadataRegistry;
             this.snsClient = snsClient;
+            this.snsRequestsRateLimiter = snsRequestsRateLimiter;
             CustomEventToTopicsMappings = configuration.CustomEventToTopicsMappings ?? new EventToTopicsMappings();
             CustomEventToEventsMappings = configuration.CustomEventToEventsMappings ?? new EventToEventsMappings();
         }
@@ -57,38 +57,20 @@ namespace NServiceBus.Transport.SQS
                 return topic;
             }
 
-            var topicName = GetTopicName(metadata);
-            Topic foundTopic = null;
-            var succeeded = false;
-            int numberOfAttempts = 0;
-
-            while (!succeeded)
+            var foundTopic = await snsRequestsRateLimiter.Execute(async () =>
             {
-                try
-                {
-                    foundTopic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
-                    succeeded = true;
-                }
-                catch (AmazonSimpleNotificationServiceException ex) when (ex.ErrorCode == "Throttling")
-                {
-                    numberOfAttempts++;
-                    if (numberOfAttempts > 3)
-                    {
-                        throw new Exception($"Topics cache failed to find topic '{topicName}'. The operation has been " +
-                            $"retried {numberOfAttempts} times.", ex);
-                    }
-                    await Task.Delay(delayBetweenFindAttempts).ConfigureAwait(false);
-                }
-            }
+                var topicName = GetTopicName(metadata);
+                return await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
+            }).ConfigureAwait(false);
 
             return foundTopic != null ? topicCache.GetOrAdd(metadata.MessageType, foundTopic.TopicArn) : null;
         }
 
         IAmazonSimpleNotificationService snsClient;
+        readonly RateLimiter snsRequestsRateLimiter;
         MessageMetadataRegistry messageMetadataRegistry;
         TransportConfiguration configuration;
         ConcurrentDictionary<Type, string> topicCache = new ConcurrentDictionary<Type, string>();
         ConcurrentDictionary<Type, string> topicNameCache = new ConcurrentDictionary<Type, string>();
-        static readonly TimeSpan delayBetweenFindAttempts = TimeSpan.FromSeconds(2);
     }
 }

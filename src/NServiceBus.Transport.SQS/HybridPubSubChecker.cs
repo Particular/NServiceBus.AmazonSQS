@@ -15,6 +15,8 @@
             public DateTime Age { get; } = DateTime.Now;
         }
 
+        public HybridPubSubChecker(RateLimiter snsRequestsRateLimiter) => this.snsRequestsRateLimiter = snsRequestsRateLimiter;
+
         public async Task<bool> PublishUsingMessageDrivenPubSub(UnicastTransportOperation unicastTransportOperation, HashSet<string> messageIdsOfMulticastedEvents, TopicCache topicCache, QueueCache queueCache, IAmazonSimpleNotificationService snsClient)
         {
             // The following check is required by the message-driven pub/sub hybrid mode in Core
@@ -49,37 +51,16 @@
 
                 if (!subscriptionsCache.ContainsKey(cacheKey))
                 {
-                    var succeeded = false;
-                    int numberOfAttempts = 0;
+                    var matchingSubscriptionArn = await snsRequestsRateLimiter.Execute(async () => await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination)
+                                .ConfigureAwait(false)).ConfigureAwait(false);
 
-                    while (!succeeded)
+                    if (matchingSubscriptionArn != null)
                     {
-                        try
-                        {
-                            var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination)
-                                .ConfigureAwait(false);
-                            if (matchingSubscriptionArn != null)
-                            {
-                                _ = subscriptionsCache.TryAdd(cacheKey, new SubscritionCacheItem { IsThereAnSnsSubscription = true });
-                            }
-                            else
-                            {
-                                _ = subscriptionsCache.TryAdd(cacheKey, new SubscritionCacheItem { IsThereAnSnsSubscription = false });
-                            }
-                            succeeded = true;
-                        }
-                        catch (AmazonSimpleNotificationServiceException ex) when (ex.ErrorCode == "Throttling")
-                        {
-                            numberOfAttempts++;
-                            if (numberOfAttempts > 3)
-                            {
-                                throw new Exception($"Message-driven pub/sub hybrid mode failed to find a matching subscription " +
-                                    $"on topic '{existingTopic}', for message '{unicastTransportOperation.Message.MessageId}' " +
-                                    $"destined to '{unicastTransportOperation.Destination}'. The operation has been " +
-                                    $"retried {numberOfAttempts} times.", ex);
-                            }
-                            await Task.Delay(delayBetweenFindMatchingSubscriptionLookupAttempts).ConfigureAwait(false);
-                        }
+                        _ = subscriptionsCache.TryAdd(cacheKey, new SubscritionCacheItem { IsThereAnSnsSubscription = true });
+                    }
+                    else
+                    {
+                        _ = subscriptionsCache.TryAdd(cacheKey, new SubscritionCacheItem { IsThereAnSnsSubscription = false });
                     }
                 }
 
@@ -94,7 +75,7 @@
         }
 
         static readonly TimeSpan cacheTTL = TimeSpan.FromSeconds(60);
-        static readonly TimeSpan delayBetweenFindMatchingSubscriptionLookupAttempts = TimeSpan.FromSeconds(2);
         readonly ConcurrentDictionary<string, SubscritionCacheItem> subscriptionsCache = new ConcurrentDictionary<string, SubscritionCacheItem>();
+        readonly RateLimiter snsRequestsRateLimiter;
     }
 }
