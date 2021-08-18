@@ -18,7 +18,7 @@
 
     class MessageDispatcher : IDispatchMessages
     {
-        public MessageDispatcher(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache)
+        public MessageDispatcher(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, RateLimiter snsRequestsRateLimiter)
         {
             this.topicCache = topicCache;
             this.snsClient = snsClient;
@@ -26,6 +26,7 @@
             this.s3Client = s3Client;
             this.sqsClient = sqsClient;
             this.queueCache = queueCache;
+            hybridPubSubChecker = new HybridPubSubChecker(snsRequestsRateLimiter);
             serializerStrategy = configuration.UseV1CompatiblePayload ? SimpleJson.PocoJsonSerializerStrategy : ReducedPayloadSerializerStrategy.Instance;
         }
 
@@ -243,7 +244,7 @@
         {
             var unicastTransportOperation = transportOperation as UnicastTransportOperation;
 
-            if (!await checker.PublishUsingMessageDrivenPubSub(unicastTransportOperation, messageIdsOfMulticastedEvents, topicCache, queueCache, snsClient).ConfigureAwait(false))
+            if (!await hybridPubSubChecker.PublishUsingMessageDrivenPubSub(unicastTransportOperation, messageIdsOfMulticastedEvents, topicCache, queueCache, snsClient).ConfigureAwait(false))
             {
                 return null;
             }
@@ -405,7 +406,7 @@
         IAmazonS3 s3Client;
         QueueCache queueCache;
         IJsonSerializerStrategy serializerStrategy;
-        readonly HybridPubSubChecker checker = new HybridPubSubChecker();
+        readonly HybridPubSubChecker hybridPubSubChecker;
         static readonly HashSet<string> emptyHashset = new HashSet<string>();
 
         static ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
