@@ -186,8 +186,7 @@
 
             var transportConfiguration = new TransportConfiguration(settings);
 
-            var rateLimiter = new RateLimiter(30, TimeSpan.FromSeconds(1));
-            var dispatcher = new MessageDispatcher(transportConfiguration, null, null, mockSnsClient, new QueueCache(null, transportConfiguration), new TopicCache(mockSnsClient, rateLimiter, settings.SetupMessageMetadataRegistry(), transportConfiguration));
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, null, mockSnsClient, new QueueCache(null, transportConfiguration), new TopicCache(mockSnsClient, settings.SetupMessageMetadataRegistry(), transportConfiguration));
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -217,8 +216,7 @@
             var mockSqsClient = new MockSqsClient();
 
             var transportConfiguration = new TransportConfiguration(settings);
-            var rateLimiter = new RateLimiter(30, TimeSpan.FromSeconds(1));
-            var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, mockSnsClient, new QueueCache(mockSqsClient, transportConfiguration), new TopicCache(mockSnsClient, rateLimiter, settings.SetupMessageMetadataRegistry(), transportConfiguration));
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, mockSnsClient, new QueueCache(mockSqsClient, transportConfiguration), new TopicCache(mockSnsClient, settings.SetupMessageMetadataRegistry(), transportConfiguration));
 
             mockSnsClient.ListSubscriptionsByTopicResponse = topic => new ListSubscriptionsByTopicResponse
             {
@@ -262,8 +260,7 @@
             var mockSqsClient = new MockSqsClient();
 
             var transportConfiguration = new TransportConfiguration(settings);
-            var rateLimiter = new RateLimiter(30, TimeSpan.FromSeconds(1));
-            var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, mockSnsClient, new QueueCache(mockSqsClient, transportConfiguration), new TopicCache(mockSnsClient, rateLimiter, settings.SetupMessageMetadataRegistry(), transportConfiguration));
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, mockSnsClient, new QueueCache(mockSqsClient, transportConfiguration), new TopicCache(mockSnsClient, settings.SetupMessageMetadataRegistry(), transportConfiguration));
 
             var messageId = Guid.NewGuid().ToString();
             var headers = new Dictionary<string, string>()
@@ -299,8 +296,7 @@
             };
 
             var transportConfiguration = new TransportConfiguration(settings);
-            var rateLimiter = new RateLimiter(30, TimeSpan.FromSeconds(1));
-            var dispatcher = new MessageDispatcher(transportConfiguration, null, null, mockSnsClient, new QueueCache(null, transportConfiguration), new TopicCache(mockSnsClient, rateLimiter, settings.SetupMessageMetadataRegistry(), transportConfiguration));
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, null, mockSnsClient, new QueueCache(null, transportConfiguration), new TopicCache(mockSnsClient, settings.SetupMessageMetadataRegistry(), transportConfiguration));
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -329,8 +325,7 @@
             };
 
             var transportConfiguration = new TransportConfiguration(settings);
-            var rateLimiter = new RateLimiter(30, TimeSpan.FromSeconds(1));
-            var dispatcher = new MessageDispatcher(transportConfiguration, null, null, mockSnsClient, new QueueCache(null, transportConfiguration), new TopicCache(mockSnsClient, rateLimiter, settings.SetupMessageMetadataRegistry(), transportConfiguration));
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, null, mockSnsClient, new QueueCache(null, transportConfiguration), new TopicCache(mockSnsClient, settings.SetupMessageMetadataRegistry(), transportConfiguration));
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -357,8 +352,7 @@
             var mockSnsClient = new MockSnsClient();
 
             var transportConfiguration = new TransportConfiguration(settings);
-            var rateLimiter = new RateLimiter(30, TimeSpan.FromSeconds(1));
-            var dispatcher = new MessageDispatcher(transportConfiguration, mockS3Client, null, mockSnsClient, new QueueCache(null, transportConfiguration), new TopicCache(mockSnsClient, rateLimiter, settings.SetupMessageMetadataRegistry(), transportConfiguration));
+            var dispatcher = new MessageDispatcher(transportConfiguration, mockS3Client, null, mockSnsClient, new QueueCache(null, transportConfiguration), new TopicCache(mockSnsClient, settings.SetupMessageMetadataRegistry(), transportConfiguration));
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(

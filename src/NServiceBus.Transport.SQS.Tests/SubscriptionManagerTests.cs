@@ -1,6 +1,5 @@
 namespace NServiceBus.Transport.SQS.Tests
 {
-    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
@@ -44,7 +43,6 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var transportConfiguration = new TransportConfiguration(settings);
 
-            var snsListTopicsRateLimiter = new RateLimiter(30, TimeSpan.FromSeconds(1));
             return new TestableSubscriptionManager(
                 transportConfiguration,
                 sqsClient,
@@ -54,10 +52,9 @@ namespace NServiceBus.Transport.SQS.Tests
                     new TransportConfiguration(settings)),
                 messageMetadataRegistry,
                 new TopicCache(snsClient,
-                    snsListTopicsRateLimiter,
                     messageMetadataRegistry,
-                    new TransportConfiguration(settings)),
-                snsListTopicsRateLimiter);
+                    new TransportConfiguration(settings))
+                );
         }
 
         TestableSubscriptionManager CreateBatchingSubscriptionManager()
@@ -66,7 +63,6 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var transportConfiguration = new TransportConfiguration(settings);
 
-            var snsListTopicsRateLimiter = new RateLimiter(30, TimeSpan.FromSeconds(1));
             return new TestableSubscriptionManager(
                 transportConfiguration,
                 sqsClient,
@@ -76,10 +72,9 @@ namespace NServiceBus.Transport.SQS.Tests
                     new TransportConfiguration(settings)),
                 messageMetadataRegistry,
                 new TopicCache(snsClient,
-                    snsListTopicsRateLimiter,
                     messageMetadataRegistry,
-                    new TransportConfiguration(settings)),
-                snsListTopicsRateLimiter);
+                    new TransportConfiguration(settings))
+                );
         }
 
         [Test]
@@ -730,8 +725,8 @@ namespace NServiceBus.Transport.SQS.Tests
 
         class TestableSubscriptionManager : SubscriptionManager
         {
-            public TestableSubscriptionManager(TransportConfiguration configuration, IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, MessageMetadataRegistry messageMetadataRegistry, TopicCache topicCache, RateLimiter snsListTopicsRateLimiter)
-                : base(configuration, sqsClient, snsClient, queueName, queueCache, messageMetadataRegistry, topicCache, snsListTopicsRateLimiter)
+            public TestableSubscriptionManager(TransportConfiguration configuration, IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, MessageMetadataRegistry messageMetadataRegistry, TopicCache topicCache)
+                : base(configuration, sqsClient, snsClient, queueName, queueCache, messageMetadataRegistry, topicCache)
             {
             }
 
