@@ -86,11 +86,11 @@
                 EndpointSetup<DefaultServer>(c => { });
             }
 
-            public class MyEventHandler : IHandleMessages<MyEvent>
+            public class MessageHandler : IHandleMessages<MyEvent>
             {
                 Context testContext;
 
-                public MyEventHandler(Context testContext)
+                public MessageHandler(Context testContext)
                 {
                     this.testContext = testContext;
                 }
@@ -119,11 +119,11 @@
                 metadata => metadata.RegisterPublisherFor<MyEvent>(typeof(Publisher)));
             }
 
-            public class MyEventHandler : IHandleMessages<MyEvent>
+            public class MessageHandler : IHandleMessages<MyEvent>
             {
                 Context testContext;
 
-                public MyEventHandler(Context testContext)
+                public MessageHandler(Context testContext)
                 {
                     this.testContext = testContext;
                 }
