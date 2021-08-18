@@ -38,6 +38,11 @@ namespace NServiceBus.Transport.SQS.Extensions
 
             do
             {
+                //ListSubscriptionsByTopic comes with a rate limit of 30 requests/second.
+                //Each request can return up to 100 subscriptions. To exceed the limit a
+                //publisher, in hybrid mode, should be trying to publish the same event to
+                //3000+1 subscribers, or 10 different events should be published in a tight
+                //loop to 300+1 subscribers, and so on.
                 upToAHundredSubscriptions = await snsClient.ListSubscriptionsByTopicAsync(topic.TopicArn, upToAHundredSubscriptions?.NextToken)
                     .ConfigureAwait(false);
 
