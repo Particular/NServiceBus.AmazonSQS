@@ -8,13 +8,13 @@ namespace NServiceBus.Transport.SQS.Extensions
 
     static class SnsClientExtensions
     {
-        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, MessageMetadata metadata, string queueName)
+        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, MessageMetadata metadata, string queueName, RateLimiter snsListSubscriptionsByTopicRateLimiter)
         {
             var topic = await topicCache.GetTopic(metadata).ConfigureAwait(false);
-            return await snsClient.FindMatchingSubscription(queueCache, topic, queueName).ConfigureAwait(false);
+            return await snsClient.FindMatchingSubscription(queueCache, topic, queueName, snsListSubscriptionsByTopicRateLimiter).ConfigureAwait(false);
         }
 
-        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, string topicName, string queueName, RateLimiter snsListTopicsRateLimiter)
+        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, string topicName, string queueName, RateLimiter snsListTopicsRateLimiter, RateLimiter snsListSubscriptionsByTopicRateLimiter)
         {
             var existingTopic = await snsListTopicsRateLimiter.Execute(async () =>
             {
@@ -26,11 +26,11 @@ namespace NServiceBus.Transport.SQS.Extensions
                 return null;
             }
 
-            return await snsClient.FindMatchingSubscription(queueCache, existingTopic, queueName)
+            return await snsClient.FindMatchingSubscription(queueCache, existingTopic, queueName, snsListSubscriptionsByTopicRateLimiter)
                 .ConfigureAwait(false);
         }
 
-        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, Topic topic, string queueName)
+        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, Topic topic, string queueName, RateLimiter snsListSubscriptionsByTopicRateLimiter)
         {
             var physicalQueueName = queueCache.GetPhysicalQueueName(queueName);
 
@@ -38,13 +38,11 @@ namespace NServiceBus.Transport.SQS.Extensions
 
             do
             {
-                //ListSubscriptionsByTopic comes with a rate limit of 30 requests/second.
-                //Each request can return up to 100 subscriptions. To exceed the limit a
-                //publisher, in hybrid mode, should be trying to publish the same event to
-                //3000+1 subscribers, or 10 different events should be published in a tight
-                //loop to 300+1 subscribers, and so on.
-                upToAHundredSubscriptions = await snsClient.ListSubscriptionsByTopicAsync(topic.TopicArn, upToAHundredSubscriptions?.NextToken)
-                    .ConfigureAwait(false);
+                upToAHundredSubscriptions = await snsListSubscriptionsByTopicRateLimiter.Execute(async () =>
+                {
+                    return await snsClient.ListSubscriptionsByTopicAsync(topic.TopicArn, upToAHundredSubscriptions?.NextToken)
+                        .ConfigureAwait(false);
+                }).ConfigureAwait(false);
 
                 // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
                 foreach (var upToAHundredSubscription in upToAHundredSubscriptions.Subscriptions)

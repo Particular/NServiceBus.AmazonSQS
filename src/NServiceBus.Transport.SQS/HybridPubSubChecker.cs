@@ -15,6 +15,11 @@
             public DateTime Age { get; } = DateTime.Now;
         }
 
+        public HybridPubSubChecker(RateLimiter snsListSubscriptionsByTopicRateLimiter)
+        {
+            this.snsListSubscriptionsByTopicRateLimiter = snsListSubscriptionsByTopicRateLimiter;
+        }
+
         public async Task<bool> PublishUsingMessageDrivenPubSub(UnicastTransportOperation unicastTransportOperation, HashSet<string> messageIdsOfMulticastedEvents, TopicCache topicCache, QueueCache queueCache, IAmazonSimpleNotificationService snsClient)
         {
             // The following check is required by the message-driven pub/sub hybrid mode in Core
@@ -49,7 +54,7 @@
 
                 if (!subscriptionsCache.ContainsKey(cacheKey))
                 {
-                    var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination)
+                    var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination, snsListSubscriptionsByTopicRateLimiter)
                         .ConfigureAwait(false);
 
                     if (matchingSubscriptionArn != null)
@@ -72,7 +77,8 @@
             return true;
         }
 
-        static readonly TimeSpan cacheTTL = TimeSpan.FromSeconds(60);
+        RateLimiter snsListSubscriptionsByTopicRateLimiter;
+        static readonly TimeSpan cacheTTL = TimeSpan.FromSeconds(5);
         readonly ConcurrentDictionary<string, SubscritionCacheItem> subscriptionsCache = new ConcurrentDictionary<string, SubscritionCacheItem>();
     }
 }
