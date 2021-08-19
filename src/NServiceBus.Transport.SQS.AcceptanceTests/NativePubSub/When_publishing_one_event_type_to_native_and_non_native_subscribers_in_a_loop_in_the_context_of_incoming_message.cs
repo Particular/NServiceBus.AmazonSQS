@@ -10,12 +10,13 @@
     using System.Threading.Tasks;
     using Conventions = AcceptanceTesting.Customization.Conventions;
 
-    public class When_publishing_in_a_loop : NServiceBusAcceptanceTest
+    public class When_publishing_one_event_type_to_native_and_non_native_subscribers_in_a_loop_in_the_context_of_incoming_message : NServiceBusAcceptanceTest
     {
         [Test]
-        public void Should_not_rate_exceed()
+        [TestCase(300)]
+        [TestCase(3000)]
+        public void Should_not_rate_exceed(int numberOfEvents)
         {
-            int numberOfEvents = 300;
             Assert.DoesNotThrowAsync(async () =>
             {
                 await Scenario.Define<Context>()
@@ -23,12 +24,7 @@
                     {
                         b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, session =>
                         {
-                            var tasks = new List<Task>();
-                            for (int i = 0; i < numberOfEvents; i++)
-                            {
-                                tasks.Add(session.Publish(new MyEvent()));
-                            }
-                            return Task.WhenAll(tasks);
+                            return session.SendLocal(new KickOff { NumberOfEvents = numberOfEvents });
                         });
                     })
                     .WithEndpoint<NativePubSubSubscriber>(b =>
@@ -77,6 +73,19 @@
                     });
                 }).IncludeType<TestingInMemorySubscriptionPersistence>();
             }
+
+            public class KickOffMessageHandler : IHandleMessages<KickOff>
+            {
+                public Task Handle(KickOff message, IMessageHandlerContext context)
+                {
+                    var tasks = new List<Task>();
+                    for (int i = 0; i < message.NumberOfEvents; i++)
+                    {
+                        tasks.Add(context.Publish(new MyEvent()));
+                    }
+                    return Task.WhenAll(tasks);
+                }
+            }
         }
 
         public class NativePubSubSubscriber : EndpointConfigurationBuilder
@@ -86,11 +95,11 @@
                 EndpointSetup<DefaultServer>(c => { });
             }
 
-            public class MessageHandler : IHandleMessages<MyEvent>
+            public class MyEventMessageHandler : IHandleMessages<MyEvent>
             {
                 Context testContext;
 
-                public MessageHandler(Context testContext)
+                public MyEventMessageHandler(Context testContext)
                 {
                     this.testContext = testContext;
                 }
@@ -119,11 +128,11 @@
                 metadata => metadata.RegisterPublisherFor<MyEvent>(typeof(Publisher)));
             }
 
-            public class MessageHandler : IHandleMessages<MyEvent>
+            public class MyEventMessageHandler : IHandleMessages<MyEvent>
             {
                 Context testContext;
 
-                public MessageHandler(Context testContext)
+                public MyEventMessageHandler(Context testContext)
                 {
                     this.testContext = testContext;
                 }
@@ -134,6 +143,11 @@
                     return Task.FromResult(0);
                 }
             }
+        }
+
+        public class KickOff : ICommand
+        {
+            public int NumberOfEvents { get; set; }
         }
 
         public class MyEvent : IEvent
