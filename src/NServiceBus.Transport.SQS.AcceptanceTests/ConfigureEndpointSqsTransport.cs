@@ -23,7 +23,12 @@
 
             ApplyMappingsToSupportMultipleInheritance(endpointName, transportConfig);
 
-            settings.TestExecutionTimeout = TimeSpan.FromSeconds(120);
+            if (settings.TestExecutionTimeout == null)
+            {
+                //If it's not null it means it has been set to a custom
+                //value in the test. We don't want to overwrite that
+                settings.TestExecutionTimeout = TimeSpan.FromSeconds(120);
+            }
 
             return Task.FromResult(0);
         }
