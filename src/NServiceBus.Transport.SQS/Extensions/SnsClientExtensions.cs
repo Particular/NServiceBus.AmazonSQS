@@ -8,13 +8,13 @@ namespace NServiceBus.Transport.SQS.Extensions
 
     static class SnsClientExtensions
     {
-        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, MessageMetadata metadata, string queueName, RateLimiter snsListSubscriptionsByTopicRateLimiter)
+        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, MessageMetadata metadata, string queueName, SnsListSubscriptionsByTopicRateLimiter snsListSubscriptionsByTopicRateLimiter)
         {
             var topic = await topicCache.GetTopic(metadata).ConfigureAwait(false);
             return await snsClient.FindMatchingSubscription(queueCache, topic, queueName, snsListSubscriptionsByTopicRateLimiter).ConfigureAwait(false);
         }
 
-        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, string topicName, string queueName, RateLimiter snsListTopicsRateLimiter, RateLimiter snsListSubscriptionsByTopicRateLimiter)
+        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, string topicName, string queueName, SnsListTopicsRateLimiter snsListTopicsRateLimiter, SnsListSubscriptionsByTopicRateLimiter snsListSubscriptionsByTopicRateLimiter)
         {
             var existingTopic = await snsListTopicsRateLimiter.Execute(async () =>
             {
@@ -30,7 +30,7 @@ namespace NServiceBus.Transport.SQS.Extensions
                 .ConfigureAwait(false);
         }
 
-        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, Topic topic, string queueName, RateLimiter snsListSubscriptionsByTopicRateLimiter)
+        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, Topic topic, string queueName, SnsListSubscriptionsByTopicRateLimiter snsListSubscriptionsByTopicRateLimiter)
         {
             var physicalQueueName = queueCache.GetPhysicalQueueName(queueName);
 

@@ -329,9 +329,9 @@
             }
         }
 
-        public RateLimiter SnsListTopicsRateLimiter { get; } = new RateLimiter(30, TimeSpan.FromSeconds(1), "ListTopics");
+        public SnsListTopicsRateLimiter SnsListTopicsRateLimiter { get; } = new SnsListTopicsRateLimiter();
 
-        public RateLimiter SnsListSubscriptionsByTopicRateLimiter { get; } = new RateLimiter(30, TimeSpan.FromSeconds(1), "ListSubscriptionsByTopic");
+        public SnsListSubscriptionsByTopicRateLimiter SnsListSubscriptionsByTopicRateLimiter { get; } = new SnsListSubscriptionsByTopicRateLimiter();
 
         public EventToTopicsMappings CustomEventToTopicsMappings => settings.GetOrDefault<EventToTopicsMappings>();
         public EventToEventsMappings CustomEventToEventsMappings => settings.GetOrDefault<EventToEventsMappings>();

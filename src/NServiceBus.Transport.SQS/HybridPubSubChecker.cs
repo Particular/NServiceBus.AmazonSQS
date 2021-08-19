@@ -15,7 +15,7 @@
             public DateTime Age { get; } = DateTime.Now;
         }
 
-        public HybridPubSubChecker(RateLimiter snsListSubscriptionsByTopicRateLimiter)
+        public HybridPubSubChecker(SnsListSubscriptionsByTopicRateLimiter snsListSubscriptionsByTopicRateLimiter)
         {
             this.snsListSubscriptionsByTopicRateLimiter = snsListSubscriptionsByTopicRateLimiter;
         }
@@ -77,7 +77,7 @@
             return true;
         }
 
-        RateLimiter snsListSubscriptionsByTopicRateLimiter;
+        SnsListSubscriptionsByTopicRateLimiter snsListSubscriptionsByTopicRateLimiter;
         static readonly TimeSpan cacheTTL = TimeSpan.FromSeconds(5);
         readonly ConcurrentDictionary<string, SubscritionCacheItem> subscriptionsCache = new ConcurrentDictionary<string, SubscritionCacheItem>();
     }
