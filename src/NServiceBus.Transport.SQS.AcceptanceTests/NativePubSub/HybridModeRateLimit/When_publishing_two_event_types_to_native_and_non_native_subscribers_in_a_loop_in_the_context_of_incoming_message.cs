@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.AcceptanceTests.NativePubSub
+﻿namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
 {
     using AcceptanceTesting;
     using EndpointTemplates;
@@ -8,29 +8,35 @@
     using NUnit.Framework;
     using System;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
     using Conventions = AcceptanceTesting.Customization.Conventions;
 
-    public class When_publishing_two_event_types_to_native_and_non_native_subscribers_in_a_loop : NServiceBusAcceptanceTest
+    public class When_publishing_two_event_types_to_native_and_non_native_subscribers_in_a_loop_in_the_context_of_incoming_message : NServiceBusAcceptanceTest
     {
-        [Test]
-        [TestCase(300)]
-        public void Should_not_rate_exceed(int numberOfEvents)
+        static TestCase[] TestCases = new TestCase[]
+        {
+            new TestCase{ NumberOfEvents = 1 },
+            new TestCase{ NumberOfEvents = 100 },
+            new TestCase{ NumberOfEvents = 200, MessageVisibilityTimeout = 45 },
+            new TestCase{ NumberOfEvents = 300, MessageVisibilityTimeout = 60 },
+            new TestCase{ NumberOfEvents = 1000, MessageVisibilityTimeout = 120, TestExecutionTimeout = TimeSpan.FromMinutes(4) },
+        };
+
+        [Test, TestCaseSource(nameof(TestCases))]
+        public void Should_not_rate_exceed(TestCase testCase)
         {
             Assert.DoesNotThrowAsync(async () =>
             {
                 await Scenario.Define<Context>()
-                    .WithEndpoint<Publisher>(b =>
+                    .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
                     {
-                        b.When(c => c.SubscribedMessageDrivenToMyEvent && c.SubscribedMessageDrivenToMySecondEvent && c.SubscribedNative, session =>
+                        b.When((session, ctx) =>
                         {
-                            var tasks = new List<Task>();
-                            for (int i = 0; i < numberOfEvents; i++)
-                            {
-                                tasks.Add(session.Publish(new MyEvent()));
-                                tasks.Add(session.Publish(new MySecondEvent()));
-                            }
-                            return Task.WhenAll(tasks);
+                            return Task.WhenAll(
+                                session.Subscribe<MyEvent>(),
+                                session.Subscribe<MySecondEvent>()
+                            );
                         });
                     })
                     .WithEndpoint<NativePubSubSubscriber>(b =>
@@ -41,26 +47,49 @@
                             return Task.FromResult(0);
                         });
                     })
-                    .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
+                    .WithEndpoint<Publisher>(b =>
                     {
-                        b.When(async (session, ctx) =>
+                        b.CustomConfig(config =>
                         {
-                            await session.Subscribe<MyEvent>();
-                            await session.Subscribe<MySecondEvent>();
+                            var settings = config.GetSettings();
+                            settings.Set("NServiceBus.AmazonSQS.MessageVisibilityTimeout", testCase.MessageVisibilityTimeout);
+                        });
+
+                        b.When(c => c.SubscribedMessageDrivenToMyEvent && c.SubscribedMessageDrivenToMySecondEvent && c.SubscribedNative, session =>
+                        {
+                            return session.SendLocal(new KickOff { NumberOfEvents = testCase.NumberOfEvents });
                         });
                     })
-                    .Done(c => c.NativePubSubSubscriberReceivedMyEventCount == numberOfEvents
-                        && c.MessageDrivenPubSubSubscriberReceivedMyEventCount == numberOfEvents
-                        && c.MessageDrivenPubSubSubscriberReceivedMySecondEventCount == numberOfEvents)
-                    .Run();
+                    .Done(c => c.NativePubSubSubscriberReceivedMyEventCount == testCase.NumberOfEvents
+                        && c.MessageDrivenPubSubSubscriberReceivedMyEventCount == testCase.NumberOfEvents
+                        && c.MessageDrivenPubSubSubscriberReceivedMySecondEventCount == testCase.NumberOfEvents)
+                    .Run(testCase.TestExecutionTimeout);
             });
         }
 
         public class Context : ScenarioContext
         {
-            public int NativePubSubSubscriberReceivedMyEventCount { get; set; }
-            public int MessageDrivenPubSubSubscriberReceivedMyEventCount { get; set; }
-            public int MessageDrivenPubSubSubscriberReceivedMySecondEventCount { get; set; }
+            int nativePubSubSubscriberReceivedMyEventCount;
+            internal void IncrementNativePubSubSubscriberReceivedMyEventCount()
+            {
+                Interlocked.Increment(ref nativePubSubSubscriberReceivedMyEventCount);
+            }
+            public int NativePubSubSubscriberReceivedMyEventCount => nativePubSubSubscriberReceivedMyEventCount;
+
+            int messageDrivenPubSubSubscriberReceivedMyEventCount;
+            internal void IncrementMessageDrivenPubSubSubscriberReceivedMyEventCount()
+            {
+                Interlocked.Increment(ref messageDrivenPubSubSubscriberReceivedMyEventCount);
+            }
+            public int MessageDrivenPubSubSubscriberReceivedMyEventCount => messageDrivenPubSubSubscriberReceivedMyEventCount;
+
+            int messageDrivenPubSubSubscriberReceivedMySecondEventCount;
+            internal void IncrementMessageDrivenPubSubSubscriberReceivedMySecondEventCount()
+            {
+                Interlocked.Increment(ref messageDrivenPubSubSubscriberReceivedMySecondEventCount);
+            }
+            public int MessageDrivenPubSubSubscriberReceivedMySecondEventCount => messageDrivenPubSubSubscriberReceivedMySecondEventCount;
+
             public bool SubscribedMessageDrivenToMyEvent { get; set; }
             public bool SubscribedMessageDrivenToMySecondEvent { get; set; }
             public bool SubscribedNative { get; set; }
@@ -97,6 +126,20 @@
                     });
                 }).IncludeType<TestingInMemorySubscriptionPersistence>();
             }
+
+            public class KickOffMessageHandler : IHandleMessages<KickOff>
+            {
+                public Task Handle(KickOff message, IMessageHandlerContext context)
+                {
+                    var tasks = new List<Task>();
+                    for (int i = 0; i < message.NumberOfEvents; i++)
+                    {
+                        tasks.Add(context.Publish(new MyEvent()));
+                        tasks.Add(context.Publish(new MySecondEvent()));
+                    }
+                    return Task.WhenAll(tasks);
+                }
+            }
         }
 
         public class NativePubSubSubscriber : EndpointConfigurationBuilder
@@ -117,7 +160,7 @@
 
                 public Task Handle(MyEvent @event, IMessageHandlerContext context)
                 {
-                    testContext.NativePubSubSubscriberReceivedMyEventCount++;
+                    testContext.IncrementNativePubSubSubscriberReceivedMyEventCount();
                     return Task.FromResult(0);
                 }
             }
@@ -137,7 +180,11 @@
                         new PublisherTableEntry(typeof(MySecondEvent), PublisherAddress.CreateFromEndpointName(Conventions.EndpointNamingConvention(typeof(Publisher))))
                     });
                 },
-                metadata => metadata.RegisterPublisherFor<MyEvent>(typeof(Publisher)));
+                metadata =>
+                {
+                    metadata.RegisterPublisherFor<MyEvent>(typeof(Publisher));
+                    metadata.RegisterPublisherFor<MySecondEvent>(typeof(Publisher));
+                });
             }
 
             public class MyEventMessageHandler : IHandleMessages<MyEvent>
@@ -151,7 +198,7 @@
 
                 public Task Handle(MyEvent @event, IMessageHandlerContext context)
                 {
-                    testContext.MessageDrivenPubSubSubscriberReceivedMyEventCount++;
+                    testContext.IncrementMessageDrivenPubSubSubscriberReceivedMyEventCount();
                     return Task.FromResult(0);
                 }
             }
@@ -167,10 +214,15 @@
 
                 public Task Handle(MySecondEvent @event, IMessageHandlerContext context)
                 {
-                    testContext.MessageDrivenPubSubSubscriberReceivedMySecondEventCount++;
+                    testContext.IncrementMessageDrivenPubSubSubscriberReceivedMySecondEventCount();
                     return Task.FromResult(0);
                 }
             }
+        }
+
+        public class KickOff : ICommand
+        {
+            public int NumberOfEvents { get; set; }
         }
 
         public class MyEvent : IEvent

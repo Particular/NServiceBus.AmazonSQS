@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.AcceptanceTests.NativePubSub
+﻿namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
 {
     using AcceptanceTesting;
     using EndpointTemplates;
@@ -6,25 +6,41 @@
     using NServiceBus.Features;
     using NServiceBus.Routing.MessageDrivenSubscriptions;
     using NUnit.Framework;
+    using System;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
     using Conventions = AcceptanceTesting.Customization.Conventions;
 
     public class When_publishing_one_event_type_to_native_and_non_native_subscribers_in_a_loop_in_the_context_of_incoming_message : NServiceBusAcceptanceTest
     {
-        [Test]
-        [TestCase(300)]
-        [TestCase(3000)]
-        public void Should_not_rate_exceed(int numberOfEvents)
+        static TestCase[] TestCases = new TestCase[]
+{
+            new TestCase{ NumberOfEvents = 1 },
+            new TestCase{ NumberOfEvents = 100 },
+            new TestCase{ NumberOfEvents = 200, MessageVisibilityTimeout = 45 },
+            new TestCase{ NumberOfEvents = 300, MessageVisibilityTimeout = 60 },
+            new TestCase{ NumberOfEvents = 1000, MessageVisibilityTimeout = 120, TestExecutionTimeout = TimeSpan.FromMinutes(4) },
+            new TestCase{ NumberOfEvents = 3000, MessageVisibilityTimeout = 120, TestExecutionTimeout = TimeSpan.FromMinutes(4) },
+};
+
+        [Test, TestCaseSource(nameof(TestCases))]
+        public void Should_not_rate_exceed(TestCase testCase)
         {
             Assert.DoesNotThrowAsync(async () =>
             {
                 await Scenario.Define<Context>()
                     .WithEndpoint<Publisher>(b =>
                     {
+                        b.CustomConfig(config =>
+                        {
+                            var settings = config.GetSettings();
+                            settings.Set("NServiceBus.AmazonSQS.MessageVisibilityTimeout", testCase.MessageVisibilityTimeout);
+                        });
+
                         b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, session =>
                         {
-                            return session.SendLocal(new KickOff { NumberOfEvents = numberOfEvents });
+                            return session.SendLocal(new KickOff { NumberOfEvents = testCase.NumberOfEvents });
                         });
                     })
                     .WithEndpoint<NativePubSubSubscriber>(b =>
@@ -39,15 +55,16 @@
                     {
                         b.When((session, ctx) => session.Subscribe<MyEvent>());
                     })
-                    .Done(c => c.NativePubSubSubscriberReceivedEventsCount == numberOfEvents && c.MessageDrivenPubSubSubscriberReceivedEventsCount == numberOfEvents)
-                    .Run();
+                    .Done(c => c.NativePubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents
+                    && c.MessageDrivenPubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents)
+                    .Run(testCase.TestExecutionTimeout);
             });
         }
 
         public class Context : ScenarioContext
         {
-            public int NativePubSubSubscriberReceivedEventsCount { get; set; }
-            public int MessageDrivenPubSubSubscriberReceivedEventsCount { get; set; }
+            public int NativePubSubSubscriberReceivedEventsCount;
+            public int MessageDrivenPubSubSubscriberReceivedEventsCount;
             public bool SubscribedMessageDriven { get; set; }
             public bool SubscribedNative { get; set; }
         }
@@ -106,7 +123,7 @@
 
                 public Task Handle(MyEvent @event, IMessageHandlerContext context)
                 {
-                    testContext.NativePubSubSubscriberReceivedEventsCount++;
+                    Interlocked.Increment(ref testContext.NativePubSubSubscriberReceivedEventsCount);
                     return Task.FromResult(0);
                 }
             }
@@ -139,7 +156,7 @@
 
                 public Task Handle(MyEvent @event, IMessageHandlerContext context)
                 {
-                    testContext.MessageDrivenPubSubSubscriberReceivedEventsCount++;
+                    Interlocked.Increment(ref testContext.MessageDrivenPubSubSubscriberReceivedEventsCount);
                     return Task.FromResult(0);
                 }
             }
