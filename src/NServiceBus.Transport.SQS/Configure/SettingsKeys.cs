@@ -1,4 +1,4 @@
-namespace NServiceBus.Transport.SQS.Configure
+﻿namespace NServiceBus.Transport.SQS.Configure
 {
     static class SettingsKeys
     {
@@ -31,6 +31,8 @@ namespace NServiceBus.Transport.SQS.Configure
         public const string V1CompatibilityMode = Prefix + nameof(V1CompatibilityMode);
         public const string DisableNativePubSub = Prefix + nameof(DisableNativePubSub);
         public const string DisableSubscribeBatchingOnStart = Prefix + nameof(DisableSubscribeBatchingOnStart);
+
         public const string MessageVisibilityTimeout = Prefix + nameof(MessageVisibilityTimeout);
+        public const string SubscriptionsCacheTTL = Prefix + nameof(SubscriptionsCacheTTL);
     }
 }

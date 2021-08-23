@@ -15,9 +15,10 @@
             public DateTime Age { get; } = DateTime.Now;
         }
 
-        public HybridPubSubChecker(SnsListSubscriptionsByTopicRateLimiter snsListSubscriptionsByTopicRateLimiter)
+        public HybridPubSubChecker(TransportConfiguration configuration)
         {
-            this.snsListSubscriptionsByTopicRateLimiter = snsListSubscriptionsByTopicRateLimiter;
+            this.configuration = configuration;
+            cacheTTL = configuration.SubscriptionsCacheTTL;
         }
 
         public async Task<bool> PublishUsingMessageDrivenPubSub(UnicastTransportOperation unicastTransportOperation, HashSet<string> messageIdsOfMulticastedEvents, TopicCache topicCache, QueueCache queueCache, IAmazonSimpleNotificationService snsClient)
@@ -54,7 +55,7 @@
 
                 if (!subscriptionsCache.ContainsKey(cacheKey))
                 {
-                    var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination, snsListSubscriptionsByTopicRateLimiter)
+                    var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination, configuration.SnsListSubscriptionsByTopicRateLimiter)
                         .ConfigureAwait(false);
 
                     if (matchingSubscriptionArn != null)
@@ -77,8 +78,8 @@
             return true;
         }
 
-        SnsListSubscriptionsByTopicRateLimiter snsListSubscriptionsByTopicRateLimiter;
-        static readonly TimeSpan cacheTTL = TimeSpan.FromSeconds(5);
+        TransportConfiguration configuration;
+        readonly TimeSpan cacheTTL;
         readonly ConcurrentDictionary<string, SubscritionCacheItem> subscriptionsCache = new ConcurrentDictionary<string, SubscritionCacheItem>();
     }
 }

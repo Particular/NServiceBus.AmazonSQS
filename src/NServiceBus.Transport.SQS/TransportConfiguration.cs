@@ -1,4 +1,4 @@
-namespace NServiceBus.Transport.SQS
+﻿namespace NServiceBus.Transport.SQS
 {
     using System;
     using System.Collections.Generic;
@@ -342,6 +342,19 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
+        public TimeSpan SubscriptionsCacheTTL
+        {
+            get
+            {
+                if (!subscriptionsCacheTTL.HasValue)
+                {
+                    subscriptionsCacheTTL = settings.GetOrDefault<TimeSpan?>(SettingsKeys.SubscriptionsCacheTTL) ?? TimeSpan.FromSeconds(5);
+                }
+
+                return subscriptionsCacheTTL.Value;
+            }
+        }
+
         public SnsListTopicsRateLimiter SnsListTopicsRateLimiter { get; } = new SnsListTopicsRateLimiter();
 
         public SnsListSubscriptionsByTopicRateLimiter SnsListSubscriptionsByTopicRateLimiter { get; } = new SnsListSubscriptionsByTopicRateLimiter();
@@ -388,6 +401,7 @@ namespace NServiceBus.Transport.SQS
         bool? useV1CompatiblePayload;
         int? queueDelayTime;
         int? messageVisibilityTimeout;
+        TimeSpan? subscriptionsCacheTTL;
         Func<IAmazonS3> s3ClientFactory;
         Func<IAmazonSQS> sqsClientFactory;
         Func<IAmazonSimpleNotificationService> snsClientFactory;

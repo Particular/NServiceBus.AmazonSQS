@@ -26,7 +26,7 @@
             this.s3Client = s3Client;
             this.sqsClient = sqsClient;
             this.queueCache = queueCache;
-            hybridPubSubChecker = new HybridPubSubChecker(configuration.SnsListSubscriptionsByTopicRateLimiter);
+            hybridPubSubChecker = new HybridPubSubChecker(configuration);
             serializerStrategy = configuration.UseV1CompatiblePayload ? SimpleJson.PocoJsonSerializerStrategy : ReducedPayloadSerializerStrategy.Instance;
         }
 
