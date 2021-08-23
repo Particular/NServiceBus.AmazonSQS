@@ -36,6 +36,7 @@
                         {
                             var settings = config.GetSettings();
                             settings.Set("NServiceBus.AmazonSQS.MessageVisibilityTimeout", testCase.MessageVisibilityTimeout);
+                            settings.Set("NServiceBus.AmazonSQS.SubscriptionsCacheTTL", testCase.SubscriptionsCacheTTL);
                         });
 
                         b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, session =>

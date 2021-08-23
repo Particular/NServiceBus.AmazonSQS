@@ -23,39 +23,50 @@
         };
 
         [Test, TestCaseSource(nameof(TestCases))]
-        public void Should_not_rate_exceed(TestCase testCase)
+        public async Task Should_not_rate_exceed(TestCase testCase)
         {
-            Assert.DoesNotThrowAsync(async () =>
-            {
-                await Scenario.Define<Context>()
-                    .WithEndpoint<Publisher>(b =>
+            var context = await Scenario.Define<Context>()
+                .WithEndpoint<Publisher>(b =>
+                {
+                    b.CustomConfig(config =>
                     {
-                        b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, session =>
+                        var settings = config.GetSettings();
+                        settings.Set("NServiceBus.AmazonSQS.SubscriptionsCacheTTL", testCase.SubscriptionsCacheTTL);
+                    });
+
+                    b.When(c =>
+                    {
+                        TestContext.WriteLine("bool condition");
+                        return c.SubscribedMessageDriven && c.SubscribedNative;
+                    }, session =>
+                    {
+                        var tasks = new List<Task>();
+                        for (int i = 0; i < testCase.NumberOfEvents; i++)
                         {
-                            var tasks = new List<Task>();
-                            for (int i = 0; i < testCase.NumberOfEvents; i++)
-                            {
-                                tasks.Add(session.Publish(new MyEvent()));
-                            }
-                            return Task.WhenAll(tasks);
-                        });
-                    })
-                    .WithEndpoint<NativePubSubSubscriber>(b =>
+                            tasks.Add(session.Publish(new MyEvent()));
+                        }
+                        return Task.WhenAll(tasks);
+                    });
+                })
+                .WithEndpoint<NativePubSubSubscriber>(b =>
+                {
+                    b.When((_, ctx) =>
                     {
-                        b.When((_, ctx) =>
-                        {
-                            ctx.SubscribedNative = true;
-                            return Task.FromResult(0);
-                        });
-                    })
-                    .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
-                    {
-                        b.When((session, ctx) => session.Subscribe<MyEvent>());
-                    })
-                    .Done(c => c.NativePubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents
+                        TestContext.WriteLine("ctx.SubscribedNative = true;");
+                        ctx.SubscribedNative = true;
+                        return Task.FromResult(0);
+                    });
+                })
+                .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
+                {
+                    b.When((session, ctx) => session.Subscribe<MyEvent>());
+                })
+                .Done(c => c.NativePubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents
                     && c.MessageDrivenPubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents)
-                    .Run(testCase.TestExecutionTimeout);
-            });
+                .Run(testCase.TestExecutionTimeout);
+
+            Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedEventsCount);
+            Assert.AreEqual(testCase.NumberOfEvents, context.NativePubSubSubscriberReceivedEventsCount);
         }
 
         public class Context : ScenarioContext
@@ -82,6 +93,7 @@
                     {
                         if (s.SubscriberEndpoint.Contains(Conventions.EndpointNamingConvention(typeof(MessageDrivenPubSubSubscriber))))
                         {
+                            TestContext.WriteLine("context.SubscribedMessageDriven = true;");
                             context.SubscribedMessageDriven = true;
                         }
                     });

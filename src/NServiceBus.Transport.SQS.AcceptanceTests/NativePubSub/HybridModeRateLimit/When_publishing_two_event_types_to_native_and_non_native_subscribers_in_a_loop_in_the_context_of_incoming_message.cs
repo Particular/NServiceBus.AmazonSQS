@@ -20,51 +20,61 @@
             new TestCase{ NumberOfEvents = 100 },
             new TestCase{ NumberOfEvents = 200, MessageVisibilityTimeout = 45 },
             new TestCase{ NumberOfEvents = 300, MessageVisibilityTimeout = 60 },
-            new TestCase{ NumberOfEvents = 1000, MessageVisibilityTimeout = 120, TestExecutionTimeout = TimeSpan.FromMinutes(4) },
+            new TestCase
+            {
+                NumberOfEvents = 1000,
+                MessageVisibilityTimeout = 240,
+                SubscriptionsCacheTTL = TimeSpan.FromSeconds(30),
+                TestExecutionTimeout = TimeSpan.FromMinutes(4)
+            },
         };
 
         [Test, TestCaseSource(nameof(TestCases))]
-        public void Should_not_rate_exceed(TestCase testCase)
+        public async Task Should_not_rate_exceed(TestCase testCase)
         {
-            Assert.DoesNotThrowAsync(async () =>
-            {
-                await Scenario.Define<Context>()
-                    .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
+            var context = await Scenario.Define<Context>()
+                .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
+                {
+                    b.When(async (session, ctx) =>
                     {
-                        b.When((session, ctx) =>
-                        {
-                            return Task.WhenAll(
-                                session.Subscribe<MyEvent>(),
-                                session.Subscribe<MySecondEvent>()
-                            );
-                        });
-                    })
-                    .WithEndpoint<NativePubSubSubscriber>(b =>
+                        TestContext.WriteLine("Sending subscriptions");
+                        await Task.WhenAll(
+                            session.Subscribe<MyEvent>(),
+                            session.Subscribe<MySecondEvent>()
+                        );
+                        TestContext.WriteLine("Subscriptions sent");
+                    });
+                })
+                .WithEndpoint<NativePubSubSubscriber>(b =>
+                {
+                    b.When((_, ctx) =>
                     {
-                        b.When((_, ctx) =>
-                        {
-                            ctx.SubscribedNative = true;
-                            return Task.FromResult(0);
-                        });
-                    })
-                    .WithEndpoint<Publisher>(b =>
+                        ctx.SubscribedNative = true;
+                        return Task.FromResult(0);
+                    });
+                })
+                .WithEndpoint<Publisher>(b =>
+                {
+                    b.CustomConfig(config =>
                     {
-                        b.CustomConfig(config =>
-                        {
-                            var settings = config.GetSettings();
-                            settings.Set("NServiceBus.AmazonSQS.MessageVisibilityTimeout", testCase.MessageVisibilityTimeout);
-                        });
+                        var settings = config.GetSettings();
+                        settings.Set("NServiceBus.AmazonSQS.MessageVisibilityTimeout", testCase.MessageVisibilityTimeout);
+                        settings.Set("NServiceBus.AmazonSQS.SubscriptionsCacheTTL", testCase.SubscriptionsCacheTTL);
+                    });
 
-                        b.When(c => c.SubscribedMessageDrivenToMyEvent && c.SubscribedMessageDrivenToMySecondEvent && c.SubscribedNative, session =>
-                        {
-                            return session.SendLocal(new KickOff { NumberOfEvents = testCase.NumberOfEvents });
-                        });
-                    })
-                    .Done(c => c.NativePubSubSubscriberReceivedMyEventCount == testCase.NumberOfEvents
-                        && c.MessageDrivenPubSubSubscriberReceivedMyEventCount == testCase.NumberOfEvents
-                        && c.MessageDrivenPubSubSubscriberReceivedMySecondEventCount == testCase.NumberOfEvents)
-                    .Run(testCase.TestExecutionTimeout);
-            });
+                    b.When(c => c.SubscribedMessageDrivenToMyEvent && c.SubscribedMessageDrivenToMySecondEvent && c.SubscribedNative, session =>
+                    {
+                        return session.SendLocal(new KickOff { NumberOfEvents = testCase.NumberOfEvents });
+                    });
+                })
+                .Done(c => c.NativePubSubSubscriberReceivedMyEventCount == testCase.NumberOfEvents
+                    && c.MessageDrivenPubSubSubscriberReceivedMyEventCount == testCase.NumberOfEvents
+                    && c.MessageDrivenPubSubSubscriberReceivedMySecondEventCount == testCase.NumberOfEvents)
+                .Run(testCase.TestExecutionTimeout);
+
+            Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedMyEventCount);
+            Assert.AreEqual(testCase.NumberOfEvents, context.NativePubSubSubscriberReceivedMyEventCount);
+            Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedMySecondEventCount);
         }
 
         public class Context : ScenarioContext
@@ -109,6 +119,7 @@
 
                     c.OnEndpointSubscribed<Context>((s, context) =>
                     {
+                        TestContext.WriteLine($"Received subscription message {s.MessageType} from {s.SubscriberEndpoint}.");
                         if (!s.SubscriberEndpoint.Contains(Conventions.EndpointNamingConvention(typeof(MessageDrivenPubSubSubscriber))))
                         {
                             return;
@@ -123,6 +134,7 @@
                         {
                             context.SubscribedMessageDrivenToMySecondEvent = true;
                         }
+                        TestContext.WriteLine($"Subscription message processed.");
                     });
                 }).IncludeType<TestingInMemorySubscriptionPersistence>();
             }

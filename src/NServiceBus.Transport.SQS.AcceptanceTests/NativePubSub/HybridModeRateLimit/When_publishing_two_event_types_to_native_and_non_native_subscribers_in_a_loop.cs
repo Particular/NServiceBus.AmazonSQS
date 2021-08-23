@@ -28,6 +28,12 @@
                 await Scenario.Define<Context>()
                     .WithEndpoint<Publisher>(b =>
                     {
+                        b.CustomConfig(config =>
+                        {
+                            var settings = config.GetSettings();
+                            settings.Set("NServiceBus.AmazonSQS.SubscriptionsCacheTTL", testCase.SubscriptionsCacheTTL);
+                        });
+
                         b.When(c => c.SubscribedMessageDrivenToMyEvent && c.SubscribedMessageDrivenToMySecondEvent && c.SubscribedNative, session =>
                         {
                             var tasks = new List<Task>();
