@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.Transport.SQS
+namespace NServiceBus.Transport.SQS
 {
     using System;
     using System.Collections.Generic;
@@ -329,6 +329,19 @@
             }
         }
 
+        public int MessageVisibilityTimeout
+        {
+            get
+            {
+                if (!messageVisibilityTimeout.HasValue)
+                {
+                    messageVisibilityTimeout = settings.GetOrDefault<int?>(SettingsKeys.MessageVisibilityTimeout) ?? 30;
+                }
+
+                return messageVisibilityTimeout.Value;
+            }
+        }
+
         public SnsListTopicsRateLimiter SnsListTopicsRateLimiter { get; } = new SnsListTopicsRateLimiter();
 
         public SnsListSubscriptionsByTopicRateLimiter SnsListSubscriptionsByTopicRateLimiter { get; } = new SnsListSubscriptionsByTopicRateLimiter();
@@ -374,6 +387,7 @@
         bool? preTruncateTopicNames;
         bool? useV1CompatiblePayload;
         int? queueDelayTime;
+        int? messageVisibilityTimeout;
         Func<IAmazonS3> s3ClientFactory;
         Func<IAmazonSQS> sqsClientFactory;
         Func<IAmazonSimpleNotificationService> snsClientFactory;
