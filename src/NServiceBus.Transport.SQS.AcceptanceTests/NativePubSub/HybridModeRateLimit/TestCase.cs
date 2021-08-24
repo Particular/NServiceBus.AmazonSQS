@@ -11,7 +11,7 @@
 
         public override string ToString() => $"{nameof(NumberOfEvents)}: {NumberOfEvents}, " +
             $"{nameof(MessageVisibilityTimeout)}: {MessageVisibilityTimeout?.ToString() ?? "default"}, " +
-            $"{nameof(TestExecutionTimeout)}: {TestExecutionTimeout?.ToString() ?? "default"} " +
+            $"{nameof(TestExecutionTimeout)}: {TestExecutionTimeout?.ToString() ?? "default"}, " +
             $"{nameof(SubscriptionsCacheTTL)}: {SubscriptionsCacheTTL?.ToString() ?? "default"}";
     }
 }
