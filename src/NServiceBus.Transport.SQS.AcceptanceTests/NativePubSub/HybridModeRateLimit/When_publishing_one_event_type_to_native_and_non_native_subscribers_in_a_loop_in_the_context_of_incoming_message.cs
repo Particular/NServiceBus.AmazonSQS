@@ -15,14 +15,14 @@
     public class When_publishing_one_event_type_to_native_and_non_native_subscribers_in_a_loop_in_the_context_of_incoming_message : NServiceBusAcceptanceTest
     {
         static TestCase[] TestCases = new TestCase[]
-{
+        {
             new TestCase{ NumberOfEvents = 1 },
             new TestCase{ NumberOfEvents = 100 },
             new TestCase{ NumberOfEvents = 200, MessageVisibilityTimeout = 45 },
             new TestCase{ NumberOfEvents = 300, MessageVisibilityTimeout = 60 },
             new TestCase{ NumberOfEvents = 1000, MessageVisibilityTimeout = 120, TestExecutionTimeout = TimeSpan.FromMinutes(4) },
             new TestCase{ NumberOfEvents = 3000, MessageVisibilityTimeout = 120, TestExecutionTimeout = TimeSpan.FromMinutes(4) },
-};
+        };
 
         [Test, TestCaseSource(nameof(TestCases))]
         public void Should_not_rate_exceed(TestCase testCase)
@@ -64,8 +64,19 @@
 
         public class Context : ScenarioContext
         {
-            public int NativePubSubSubscriberReceivedEventsCount;
-            public int MessageDrivenPubSubSubscriberReceivedEventsCount;
+            int nativePubSubSubscriberReceivedEventsCount;
+            public int NativePubSubSubscriberReceivedEventsCount => nativePubSubSubscriberReceivedEventsCount;
+            public void IncrementNativePubSubSubscriberReceivedEventsCount()
+            {
+                Interlocked.Increment(ref nativePubSubSubscriberReceivedEventsCount);
+            }
+
+            int messageDrivenPubSubSubscriberReceivedEventsCount;
+            public int MessageDrivenPubSubSubscriberReceivedEventsCount => messageDrivenPubSubSubscriberReceivedEventsCount;
+            public void IncrementMessageDrivenPubSubSubscriberReceivedEventsCount()
+            {
+                Interlocked.Increment(ref messageDrivenPubSubSubscriberReceivedEventsCount);
+            }
             public bool SubscribedMessageDriven { get; set; }
             public bool SubscribedNative { get; set; }
         }
@@ -124,7 +135,7 @@
 
                 public Task Handle(MyEvent @event, IMessageHandlerContext context)
                 {
-                    Interlocked.Increment(ref testContext.NativePubSubSubscriberReceivedEventsCount);
+                    testContext.IncrementNativePubSubSubscriberReceivedEventsCount();
                     return Task.FromResult(0);
                 }
             }
@@ -157,7 +168,7 @@
 
                 public Task Handle(MyEvent @event, IMessageHandlerContext context)
                 {
-                    Interlocked.Increment(ref testContext.MessageDrivenPubSubSubscriberReceivedEventsCount);
+                    testContext.IncrementMessageDrivenPubSubSubscriberReceivedEventsCount();
                     return Task.FromResult(0);
                 }
             }

@@ -70,9 +70,26 @@
 
         public class Context : ScenarioContext
         {
-            public int NativePubSubSubscriberReceivedMyEventCount;
-            public int MessageDrivenPubSubSubscriberReceivedMyEventCount;
-            public int MessageDrivenPubSubSubscriberReceivedMySecondEventCount;
+            int nativePubSubSubscriberReceivedMyEventCount;
+            internal void IncrementNativePubSubSubscriberReceivedMyEventCount()
+            {
+                Interlocked.Increment(ref nativePubSubSubscriberReceivedMyEventCount);
+            }
+            public int NativePubSubSubscriberReceivedMyEventCount => nativePubSubSubscriberReceivedMyEventCount;
+
+            int messageDrivenPubSubSubscriberReceivedMyEventCount;
+            internal void IncrementMessageDrivenPubSubSubscriberReceivedMyEventCount()
+            {
+                Interlocked.Increment(ref messageDrivenPubSubSubscriberReceivedMyEventCount);
+            }
+            public int MessageDrivenPubSubSubscriberReceivedMyEventCount => messageDrivenPubSubSubscriberReceivedMyEventCount;
+
+            int messageDrivenPubSubSubscriberReceivedMySecondEventCount;
+            internal void IncrementMessageDrivenPubSubSubscriberReceivedMySecondEventCount()
+            {
+                Interlocked.Increment(ref messageDrivenPubSubSubscriberReceivedMySecondEventCount);
+            }
+            public int MessageDrivenPubSubSubscriberReceivedMySecondEventCount => messageDrivenPubSubSubscriberReceivedMySecondEventCount;
             public bool SubscribedMessageDrivenToMyEvent { get; set; }
             public bool SubscribedMessageDrivenToMySecondEvent { get; set; }
             public bool SubscribedNative { get; set; }
@@ -129,7 +146,7 @@
 
                 public Task Handle(MyEvent @event, IMessageHandlerContext context)
                 {
-                    Interlocked.Increment(ref testContext.NativePubSubSubscriberReceivedMyEventCount);
+                    testContext.IncrementNativePubSubSubscriberReceivedMyEventCount();
                     return Task.FromResult(0);
                 }
             }
@@ -167,7 +184,7 @@
 
                 public Task Handle(MyEvent @event, IMessageHandlerContext context)
                 {
-                    Interlocked.Increment(ref testContext.MessageDrivenPubSubSubscriberReceivedMyEventCount);
+                    testContext.IncrementMessageDrivenPubSubSubscriberReceivedMyEventCount();
                     return Task.FromResult(0);
                 }
             }
@@ -183,7 +200,7 @@
 
                 public Task Handle(MySecondEvent @event, IMessageHandlerContext context)
                 {
-                    Interlocked.Increment(ref testContext.MessageDrivenPubSubSubscriberReceivedMySecondEventCount);
+                    testContext.IncrementMessageDrivenPubSubSubscriberReceivedMySecondEventCount();
                     return Task.FromResult(0);
                 }
             }

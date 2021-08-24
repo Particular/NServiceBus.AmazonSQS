@@ -71,8 +71,18 @@
 
         public class Context : ScenarioContext
         {
-            public int NativePubSubSubscriberReceivedEventsCount;
-            public int MessageDrivenPubSubSubscriberReceivedEventsCount;
+            int nativePubSubSubscriberReceivedEventsCount;
+            public int NativePubSubSubscriberReceivedEventsCount => nativePubSubSubscriberReceivedEventsCount;
+            public void IncrementNativePubSubSubscriberReceivedEventsCount()
+            {
+                Interlocked.Increment(ref nativePubSubSubscriberReceivedEventsCount);
+            }
+            int messageDrivenPubSubSubscriberReceivedEventsCount;
+            public int MessageDrivenPubSubSubscriberReceivedEventsCount => messageDrivenPubSubSubscriberReceivedEventsCount;
+            public void IncrementMessageDrivenPubSubSubscriberReceivedEventsCount()
+            {
+                Interlocked.Increment(ref messageDrivenPubSubSubscriberReceivedEventsCount);
+            }
             public bool SubscribedMessageDriven { get; set; }
             public bool SubscribedNative { get; set; }
         }
@@ -119,7 +129,7 @@
 
                 public Task Handle(MyEvent @event, IMessageHandlerContext context)
                 {
-                    Interlocked.Increment(ref testContext.NativePubSubSubscriberReceivedEventsCount);
+                    testContext.IncrementNativePubSubSubscriberReceivedEventsCount();
                     return Task.FromResult(0);
                 }
             }
@@ -152,7 +162,7 @@
 
                 public Task Handle(MyEvent @event, IMessageHandlerContext context)
                 {
-                    Interlocked.Increment(ref testContext.MessageDrivenPubSubSubscriberReceivedEventsCount);
+                    testContext.IncrementMessageDrivenPubSubSubscriberReceivedEventsCount();
                     return Task.FromResult(0);
                 }
             }
