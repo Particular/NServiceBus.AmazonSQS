@@ -5,6 +5,7 @@
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using Amazon.SimpleNotificationService;
+    using NServiceBus.Logging;
     using NServiceBus.Transport.SQS.Extensions;
 
     class HybridPubSubChecker
@@ -49,6 +50,7 @@
                     var cacheItem = subscriptionsCache[cacheKey];
                     if (cacheItem.Age.Add(cacheTTL) < DateTime.Now)
                     {
+                        Logger.Debug($"Removing subscription '{cacheKey}' from cache: TTL expired.");
                         _ = subscriptionsCache.TryRemove(cacheKey, out _);
                     }
                 }
@@ -60,10 +62,12 @@
 
                     if (matchingSubscriptionArn != null)
                     {
+                        Logger.Debug($"Adding subscription with key '{cacheKey}': found.");
                         _ = subscriptionsCache.TryAdd(cacheKey, new SubscritionCacheItem { IsThereAnSnsSubscription = true });
                     }
                     else
                     {
+                        Logger.Debug($"Adding subscription with key '{cacheKey}': Not found.");
                         _ = subscriptionsCache.TryAdd(cacheKey, new SubscritionCacheItem { IsThereAnSnsSubscription = false });
                     }
                 }
@@ -81,5 +85,6 @@
         TransportConfiguration configuration;
         readonly TimeSpan cacheTTL;
         readonly ConcurrentDictionary<string, SubscritionCacheItem> subscriptionsCache = new ConcurrentDictionary<string, SubscritionCacheItem>();
+        static ILog Logger = LogManager.GetLogger(typeof(HybridPubSubChecker));
     }
 }

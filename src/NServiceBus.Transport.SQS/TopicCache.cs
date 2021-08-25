@@ -75,14 +75,17 @@ namespace NServiceBus.Transport.SQS
             {
                 if (topicCacheItem.Topic == null && topicCacheItem.CreatedOn.Add(configuration.NotFoundTopicsCacheTTL) < DateTime.Now)
                 {
-                    Logger.Debug($"Removing topic '<null>' with key '{metadata.MessageType}' from cache.");
+                    Logger.Debug($"Removing topic '<null>' with key '{metadata.MessageType}' from cache: TTL expired.");
                     _ = topicCache.TryRemove(metadata.MessageType, out _);
                 }
                 else
                 {
+                    Logger.Debug($"Returning topic for '{metadata.MessageType}' from cache. Topic '{topicCacheItem.Topic?.TopicArn ?? "<null>"}'.");
                     return topicCacheItem.Topic;
                 }
             }
+
+            Logger.Debug($"Topic for '{metadata.MessageType}' not found in cache.");
 
             var foundTopic = await configuration.SnsListTopicsRateLimiter.Execute(async () =>
             {
@@ -90,11 +93,17 @@ namespace NServiceBus.Transport.SQS
                 return await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
             }).ConfigureAwait(false);
 
-            Logger.Debug($"Adding topic '{foundTopic?.TopicArn ?? "<null>"}' to cache.");
-
             //We cache also null/not found topics, they'll be wiped
             //from the cache at lookup time based on the nullTopicCacheTTL
-            topicCache.GetOrAdd(metadata.MessageType, new TopicCacheItem() { Topic = foundTopic });
+            var added = topicCache.TryAdd(metadata.MessageType, new TopicCacheItem() { Topic = foundTopic });
+            if (added)
+            {
+                Logger.Debug($"Added topic '{foundTopic?.TopicArn ?? "<null>"}' to cache. Cache items count: {topicCache.Count}.");
+            }
+            else
+            {
+                Logger.Debug($"Topic already present in cache. Topic '{foundTopic?.TopicArn ?? "<null>"}'. Cache items count: {topicCache.Count}.");
+            }
 
             return foundTopic;
         }
