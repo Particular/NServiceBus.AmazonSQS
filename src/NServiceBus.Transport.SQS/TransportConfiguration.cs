@@ -355,6 +355,19 @@
             }
         }
 
+        public TimeSpan NotFoundTopicsCacheTTL
+        {
+            get
+            {
+                if (!notFoundTopicsCacheTTL.HasValue)
+                {
+                    notFoundTopicsCacheTTL = settings.GetOrDefault<TimeSpan?>(SettingsKeys.NotFoundTopicsCacheTTL) ?? TimeSpan.FromSeconds(5);
+                }
+
+                return notFoundTopicsCacheTTL.Value;
+            }
+        }
+
         public SnsListTopicsRateLimiter SnsListTopicsRateLimiter { get; } = new SnsListTopicsRateLimiter();
 
         public SnsListSubscriptionsByTopicRateLimiter SnsListSubscriptionsByTopicRateLimiter { get; } = new SnsListSubscriptionsByTopicRateLimiter();
@@ -402,6 +415,7 @@
         int? queueDelayTime;
         int? messageVisibilityTimeout;
         TimeSpan? subscriptionsCacheTTL;
+        TimeSpan? notFoundTopicsCacheTTL;
         Func<IAmazonS3> s3ClientFactory;
         Func<IAmazonSQS> sqsClientFactory;
         Func<IAmazonSimpleNotificationService> snsClientFactory;

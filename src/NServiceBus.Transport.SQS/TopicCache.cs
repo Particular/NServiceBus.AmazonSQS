@@ -6,10 +6,18 @@ namespace NServiceBus.Transport.SQS
     using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
     using Configure;
+    using NServiceBus.Logging;
     using Unicast.Messages;
 
     class TopicCache
     {
+        class TopicCacheItem
+        {
+            public Topic Topic { get; set; }
+
+            public DateTime CreatedOn { get; } = DateTime.Now;
+        }
+
         public TopicCache(IAmazonSimpleNotificationService snsClient, MessageMetadataRegistry messageMetadataRegistry, TransportConfiguration configuration)
         {
             this.configuration = configuration;
@@ -63,9 +71,17 @@ namespace NServiceBus.Transport.SQS
 
         async Task<Topic> GetAndCacheTopicIfFound(MessageMetadata metadata)
         {
-            if (topicCache.TryGetValue(metadata.MessageType, out var topic))
+            if (topicCache.TryGetValue(metadata.MessageType, out var topicCacheItem))
             {
-                return topic;
+                if (topicCacheItem.Topic == null && topicCacheItem.CreatedOn.Add(configuration.NotFoundTopicsCacheTTL) < DateTime.Now)
+                {
+                    Logger.Debug($"Removing topic '<null>' with key '{metadata.MessageType}' from cache.");
+                    _ = topicCache.TryRemove(metadata.MessageType, out _);
+                }
+                else
+                {
+                    return topicCacheItem.Topic;
+                }
             }
 
             var foundTopic = await configuration.SnsListTopicsRateLimiter.Execute(async () =>
@@ -74,13 +90,20 @@ namespace NServiceBus.Transport.SQS
                 return await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
             }).ConfigureAwait(false);
 
-            return foundTopic != null ? topicCache.GetOrAdd(metadata.MessageType, foundTopic) : null;
+            Logger.Debug($"Adding topic '{foundTopic?.TopicArn ?? "<null>"}' to cache.");
+
+            //We cache also null/not found topics, they'll be wiped
+            //from the cache at lookup time based on the nullTopicCacheTTL
+            topicCache.GetOrAdd(metadata.MessageType, new TopicCacheItem() { Topic = foundTopic });
+
+            return foundTopic;
         }
 
         IAmazonSimpleNotificationService snsClient;
         MessageMetadataRegistry messageMetadataRegistry;
         TransportConfiguration configuration;
-        ConcurrentDictionary<Type, Topic> topicCache = new ConcurrentDictionary<Type, Topic>();
+        ConcurrentDictionary<Type, TopicCacheItem> topicCache = new ConcurrentDictionary<Type, TopicCacheItem>();
         ConcurrentDictionary<Type, string> topicNameCache = new ConcurrentDictionary<Type, string>();
+        static ILog Logger = LogManager.GetLogger(typeof(TopicCache));
     }
 }
