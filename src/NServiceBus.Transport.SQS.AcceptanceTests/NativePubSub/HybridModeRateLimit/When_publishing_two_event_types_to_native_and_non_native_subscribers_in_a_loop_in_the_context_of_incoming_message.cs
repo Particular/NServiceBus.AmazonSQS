@@ -38,7 +38,7 @@
                 NumberOfEvents = 1000,
                 MessageVisibilityTimeout = 360,
                 SubscriptionsCacheTTL = TimeSpan.FromSeconds(120),
-                TestExecutionTimeout = TimeSpan.FromMinutes(6),
+                TestExecutionTimeout = TimeSpan.FromMinutes(8),
                 NotFoundTopicsCacheTTL = TimeSpan.FromSeconds(120)
             },
         };

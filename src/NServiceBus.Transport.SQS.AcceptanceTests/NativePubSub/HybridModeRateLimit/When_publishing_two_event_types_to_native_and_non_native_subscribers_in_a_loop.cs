@@ -61,7 +61,8 @@
                             tasks.Add(session.Publish(new MyEvent()));
                             tasks.Add(session.Publish(new MySecondEvent()));
                         }
-                        return Task.WhenAll(tasks);
+                        _ = Task.WhenAll(tasks);
+                        return Task.FromResult(0);
                     });
                 })
                 .WithEndpoint<NativePubSubSubscriber>(b =>
