@@ -82,7 +82,7 @@
             TimeSpan timeConstraint;
             readonly string apiName;
             readonly SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
-            static ILog Logger = LogManager.GetLogger(typeof(QueueCreator));
+            static ILog Logger = LogManager.GetLogger(typeof(AwaitableConstraint));
         }
     }
 }
