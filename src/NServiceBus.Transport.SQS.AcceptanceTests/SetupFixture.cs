@@ -18,6 +18,16 @@
         /// </summary>
         public static string NamePrefix { get; private set; }
 
+        public static void AppendSequenceToCustomNamePrefix(int sequence)
+        {
+            var idx = NamePrefix.LastIndexOf('-');
+            if (idx >= 0)
+            {
+                NamePrefix = NamePrefix.Substring(0, idx);
+            }
+            NamePrefix += $"-{sequence}";
+        }
+
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
@@ -32,6 +42,13 @@
         [OneTimeTearDown]
         public async Task OneTimeTearDown()
         {
+            var idx = NamePrefix.LastIndexOf('-');
+            if (idx >= 0)
+            {
+                //remove the sequence number before cleaning up
+                NamePrefix = NamePrefix.Substring(0, idx);
+            }
+
             var accessKeyId = EnvironmentHelper.GetEnvironmentVariable("CLEANUP_AWS_ACCESS_KEY_ID");
             var secretAccessKey = EnvironmentHelper.GetEnvironmentVariable("CLEANUP_AWS_SECRET_ACCESS_KEY");
 
