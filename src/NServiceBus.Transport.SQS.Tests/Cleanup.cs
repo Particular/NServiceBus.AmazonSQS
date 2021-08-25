@@ -77,8 +77,7 @@ namespace NServiceBus.Transport.SQS.Tests
             return Task.WhenAll(
                 DeleteAllQueuesWithPrefix(sqsClient, namePrefix),
                 DeleteAllTopicsWithPrefix(snsClient, namePrefix),
-                DeleteAllSubscriptionsWithPrefix(snsClient, namePrefix),
-                DeleteAllBucketsWithPrefix(s3Client, namePrefix)
+                DeleteAllSubscriptionsWithPrefix(snsClient, namePrefix)//,DeleteAllBucketsWithPrefix(s3Client, namePrefix)
             );
         }
 
