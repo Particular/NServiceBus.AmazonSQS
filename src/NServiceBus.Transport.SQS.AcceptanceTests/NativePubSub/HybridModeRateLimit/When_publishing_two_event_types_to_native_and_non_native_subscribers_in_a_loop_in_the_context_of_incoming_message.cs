@@ -17,15 +17,29 @@
         static TestCase[] TestCases = new TestCase[]
         {
             new TestCase(1){ NumberOfEvents = 1 },
-            new TestCase(2){ NumberOfEvents = 100 },
-            new TestCase(3){ NumberOfEvents = 200, MessageVisibilityTimeout = 45, SubscriptionsCacheTTL = TimeSpan.FromMinutes(2) },
-            new TestCase(4){ NumberOfEvents = 300, MessageVisibilityTimeout = 120, SubscriptionsCacheTTL = TimeSpan.FromMinutes(2) },
+            new TestCase(2){ NumberOfEvents = 100, MessageVisibilityTimeout = 60, },
+            new TestCase(3)
+            {
+                NumberOfEvents = 200,
+                MessageVisibilityTimeout = 120,
+                SubscriptionsCacheTTL = TimeSpan.FromMinutes(2),
+                NotFoundTopicsCacheTTL = TimeSpan.FromSeconds(120)
+            },
+            new TestCase(4)
+            {
+                NumberOfEvents = 300,
+                MessageVisibilityTimeout = 180,
+                TestExecutionTimeout = TimeSpan.FromMinutes(3),
+                SubscriptionsCacheTTL = TimeSpan.FromMinutes(2),
+                NotFoundTopicsCacheTTL = TimeSpan.FromSeconds(120)
+            },
             new TestCase(5)
             {
                 NumberOfEvents = 1000,
-                MessageVisibilityTimeout = 240,
+                MessageVisibilityTimeout = 360,
                 SubscriptionsCacheTTL = TimeSpan.FromSeconds(120),
-                TestExecutionTimeout = TimeSpan.FromMinutes(5)
+                TestExecutionTimeout = TimeSpan.FromMinutes(6),
+                NotFoundTopicsCacheTTL = TimeSpan.FromSeconds(120)
             },
         };
 

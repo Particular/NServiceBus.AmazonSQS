@@ -18,18 +18,21 @@
         {
             new TestCase(1)
             {
-                NumberOfEvents = 300,
-                TestExecutionTimeout = TimeSpan.FromMinutes(3),
-                SubscriptionsCacheTTL = TimeSpan.FromMinutes(3),
-                NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(3),
+                NumberOfEvents = 1
             },
             new TestCase(2)
             {
-                NumberOfEvents = 700,
-                TestExecutionTimeout = TimeSpan.FromMinutes(4),
-                SubscriptionsCacheTTL = TimeSpan.FromMinutes(4),
-                NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(4),
+                NumberOfEvents = 100,
+                SubscriptionsCacheTTL = TimeSpan.FromMinutes(1),
+                NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(1),
             },
+            new TestCase(3)
+            {
+                NumberOfEvents = 200,
+                TestExecutionTimeout = TimeSpan.FromMinutes(3),
+                SubscriptionsCacheTTL = TimeSpan.FromMinutes(3),
+                NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(3),
+            }
         };
 
         [Test, TestCaseSource(nameof(TestCases))]
