@@ -16,17 +16,33 @@
     {
         static TestCase[] TestCases = new TestCase[]
         {
-            new TestCase{ NumberOfEvents = 1 },
-            new TestCase{ NumberOfEvents = 100 },
-            new TestCase{ NumberOfEvents = 200, MessageVisibilityTimeout = 45 },
-            new TestCase{ NumberOfEvents = 300, MessageVisibilityTimeout = 60 },
-            new TestCase{ NumberOfEvents = 1000, MessageVisibilityTimeout = 120, TestExecutionTimeout = TimeSpan.FromMinutes(4) },
-            new TestCase{ NumberOfEvents = 3000, MessageVisibilityTimeout = 120, TestExecutionTimeout = TimeSpan.FromMinutes(4) },
+            new TestCase(1){ NumberOfEvents = 1 },
+            new TestCase(2){ NumberOfEvents = 100 },
+            new TestCase(3){ NumberOfEvents = 200, MessageVisibilityTimeout = 45 },
+            new TestCase(4){ NumberOfEvents = 300, MessageVisibilityTimeout = 60 },
+            new TestCase(5)
+            {
+                NumberOfEvents = 1000,
+                MessageVisibilityTimeout = 180,
+                SubscriptionsCacheTTL = TimeSpan.FromSeconds(180)
+            },
+            new TestCase(6)
+            {
+                NumberOfEvents = 3000,
+                MessageVisibilityTimeout = 360,
+                TestExecutionTimeout = TimeSpan.FromMinutes(6),
+                SubscriptionsCacheTTL = TimeSpan.FromMinutes(6)
+            },
         };
 
         [Test, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
+            if (testCase.Sequence.HasValue)
+            {
+                SetupFixture.AppendSequenceToCustomNamePrefix(testCase.Sequence.Value);
+            }
+
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<Publisher>(b =>
                 {
@@ -35,6 +51,7 @@
                         var settings = config.GetSettings();
                         settings.Set("NServiceBus.AmazonSQS.MessageVisibilityTimeout", testCase.MessageVisibilityTimeout);
                         settings.Set("NServiceBus.AmazonSQS.SubscriptionsCacheTTL", testCase.SubscriptionsCacheTTL);
+                        settings.Set("NServiceBus.AmazonSQS.NotFoundTopicsCacheTTL", testCase.NotFoundTopicsCacheTTL);
                     });
 
                     b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, session =>

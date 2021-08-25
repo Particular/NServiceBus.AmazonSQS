@@ -16,13 +16,30 @@
     {
         static TestCase[] TestCases = new TestCase[]
         {
-            new TestCase{ NumberOfEvents = 300 },
-            new TestCase{ NumberOfEvents = 1000, TestExecutionTimeout = TimeSpan.FromMinutes(4) },
+            new TestCase(1)
+            {
+                NumberOfEvents = 300,
+                TestExecutionTimeout = TimeSpan.FromMinutes(3),
+                SubscriptionsCacheTTL = TimeSpan.FromMinutes(3),
+                NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(3),
+            },
+            new TestCase(2)
+            {
+                NumberOfEvents = 700,
+                TestExecutionTimeout = TimeSpan.FromMinutes(4),
+                SubscriptionsCacheTTL = TimeSpan.FromMinutes(4),
+                NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(4),
+            },
         };
 
         [Test, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
+            if (testCase.Sequence.HasValue)
+            {
+                SetupFixture.AppendSequenceToCustomNamePrefix(testCase.Sequence.Value);
+            }
+
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<Publisher>(b =>
                 {
@@ -30,6 +47,7 @@
                     {
                         var settings = config.GetSettings();
                         settings.Set("NServiceBus.AmazonSQS.SubscriptionsCacheTTL", testCase.SubscriptionsCacheTTL);
+                        settings.Set("NServiceBus.AmazonSQS.NotFoundTopicsCacheTTL", testCase.NotFoundTopicsCacheTTL);
                     });
 
                     b.When(c => c.SubscribedMessageDrivenToMyEvent && c.SubscribedMessageDrivenToMySecondEvent && c.SubscribedNative, session =>

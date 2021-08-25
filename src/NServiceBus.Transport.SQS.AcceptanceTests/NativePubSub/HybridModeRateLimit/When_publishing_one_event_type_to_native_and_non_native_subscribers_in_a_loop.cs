@@ -1,30 +1,35 @@
 ﻿namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
     using AcceptanceTesting;
     using EndpointTemplates;
     using NServiceBus.Configuration.AdvancedExtensibility;
     using NServiceBus.Features;
     using NServiceBus.Routing.MessageDrivenSubscriptions;
     using NUnit.Framework;
-    using System;
-    using System.Collections.Generic;
-    using System.Threading;
-    using System.Threading.Tasks;
     using Conventions = AcceptanceTesting.Customization.Conventions;
 
     public class When_publishing_one_event_type_to_native_and_non_native_subscribers_in_a_loop : NServiceBusAcceptanceTest
     {
         static TestCase[] TestCases = new TestCase[]
         {
-            new TestCase{ NumberOfEvents = 1 },
-            new TestCase{ NumberOfEvents = 100 },
-            new TestCase{ NumberOfEvents = 300 },
-            new TestCase{ NumberOfEvents = 1000, TestExecutionTimeout = TimeSpan.FromMinutes(4) },
+            new TestCase(1){ NumberOfEvents = 1 },
+            new TestCase(2){ NumberOfEvents = 100 },
+            new TestCase(3){ NumberOfEvents = 300 },
+            new TestCase(4){ NumberOfEvents = 1000, TestExecutionTimeout = TimeSpan.FromMinutes(3) },
         };
 
         [Test, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
+            if (testCase.Sequence.HasValue)
+            {
+                SetupFixture.AppendSequenceToCustomNamePrefix(testCase.Sequence.Value);
+            }
+
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<Publisher>(b =>
                 {
@@ -32,11 +37,11 @@
                     {
                         var settings = config.GetSettings();
                         settings.Set("NServiceBus.AmazonSQS.SubscriptionsCacheTTL", testCase.SubscriptionsCacheTTL);
+                        settings.Set("NServiceBus.AmazonSQS.NotFoundTopicsCacheTTL", testCase.NotFoundTopicsCacheTTL);
                     });
 
                     b.When(c =>
                     {
-                        TestContext.WriteLine("bool condition");
                         return c.SubscribedMessageDriven && c.SubscribedNative;
                     }, session =>
                     {
@@ -52,7 +57,6 @@
                 {
                     b.When((_, ctx) =>
                     {
-                        TestContext.WriteLine("ctx.SubscribedNative = true;");
                         ctx.SubscribedNative = true;
                         return Task.FromResult(0);
                     });
@@ -103,7 +107,6 @@
                     {
                         if (s.SubscriberEndpoint.Contains(Conventions.EndpointNamingConvention(typeof(MessageDrivenPubSubSubscriber))))
                         {
-                            TestContext.WriteLine("context.SubscribedMessageDriven = true;");
                             context.SubscribedMessageDriven = true;
                         }
                     });
