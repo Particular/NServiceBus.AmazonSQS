@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
+namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
 {
     using System;
     using System.Collections.Generic;
@@ -41,10 +41,7 @@
                         settings.Set("NServiceBus.AmazonSQS.NotFoundTopicsCacheTTL", testCase.NotFoundTopicsCacheTTL);
                     });
 
-                    b.When(c =>
-                    {
-                        return c.SubscribedMessageDriven && c.SubscribedNative;
-                    }, session =>
+                    b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, (session, ctx) =>
                     {
                         var sw = Stopwatch.StartNew();
                         var tasks = new List<Task>();
