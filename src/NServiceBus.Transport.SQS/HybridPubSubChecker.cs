@@ -22,6 +22,30 @@
             cacheTTL = configuration.SubscriptionsCacheTTL;
         }
 
+        bool TryGetFromCache(string cacheKey, out SubscritionCacheItem item)
+        {
+            item = null;
+            if (subscriptionsCache.TryGetValue(cacheKey, out var cacheItem))
+            {
+                Logger.Debug($"Subscription found in cache, key: '{cacheKey}'.");
+                if (cacheItem.Age.Add(cacheTTL) < DateTime.Now)
+                {
+                    Logger.Debug($"Removing subscription '{cacheKey}' from cache: TTL expired.");
+                    subscriptionsCache.TryRemove(cacheKey, out _);
+                }
+                else
+                {
+                    item = cacheItem;
+                }
+            }
+            else
+            {
+                Logger.Debug($"Subscription not found in cache, key: '{cacheKey}'.");
+            }
+
+            return item != null;
+        }
+
         public async Task<bool> PublishUsingMessageDrivenPubSub(UnicastTransportOperation unicastTransportOperation, HashSet<string> messageIdsOfMulticastedEvents, TopicCache topicCache, QueueCache queueCache, IAmazonSimpleNotificationService snsClient)
         {
             // The following check is required by the message-driven pub/sub hybrid mode in Core
@@ -44,83 +68,49 @@
                     return true;
                 }
 
-                var removedFromCache = false;
+                //var removedFromCache = false;
+                //var cacheKey = existingTopic.TopicArn + unicastTransportOperation.Destination;
+                //if (subscriptionsCache.TryGetValue(cacheKey, out var cacheItem))
+                //{
+                //    Logger.Debug($"Subscription found in cache, key: '{cacheKey}'.");
+                //    if (cacheItem.Age.Add(cacheTTL) < DateTime.Now)
+                //    {
+                //        Logger.Debug($"Removing subscription '{cacheKey}' from cache: TTL expired.");
+                //        removedFromCache = subscriptionsCache.TryRemove(cacheKey, out _);
+                //    }
+                //}
+                //else
+                //{
+                //    Logger.Debug($"Subscription not found in cache, key: '{cacheKey}'.");
+                //}
+
                 var cacheKey = existingTopic.TopicArn + unicastTransportOperation.Destination;
-                if (subscriptionsCache.TryGetValue(cacheKey, out var cacheItem))
+                Logger.Debug($"Performing firt subscription cache lookup for '{cacheKey}'.");
+                if (!TryGetFromCache(cacheKey, out var cacheItem))
                 {
-                    Logger.Debug($"Subscription found in cache, key: '{cacheKey}'.");
-                    if (cacheItem.Age.Add(cacheTTL) < DateTime.Now)
+                    cacheItem = await configuration.SnsListSubscriptionsByTopicRateLimiter.Execute(async () =>
                     {
-                        Logger.Debug($"Removing subscription '{cacheKey}' from cache: TTL expired.");
-                        removedFromCache = subscriptionsCache.TryRemove(cacheKey, out _);
-                    }
-                }
-                else
-                {
-                    Logger.Debug($"Subscription not found in cache, key: '{cacheKey}'.");
-                }
+                        Logger.Debug($"Performing second subscription cache lookup for '{cacheKey}'.");
+                        if (TryGetFromCache(cacheKey, out var secondAttemptItem))
+                        {
+                            return secondAttemptItem;
+                        }
 
-                if (removedFromCache || cacheItem == null)
-                {
-                    Logger.Debug($"Finding matching subscription for key '{cacheKey}'.");
+                        Logger.Debug($"Finding matching subscription for key '{cacheKey}' using SNS API.");
+                        var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination)
+                            .ConfigureAwait(false);
 
-                    var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination, configuration.SnsListSubscriptionsByTopicRateLimiter)
-                        .ConfigureAwait(false);
+                        return new SubscritionCacheItem { IsThereAnSnsSubscription = matchingSubscriptionArn != null };
+                    }).ConfigureAwait(false);
 
-                    if (matchingSubscriptionArn != null)
-                    {
-                        cacheItem = new SubscritionCacheItem { IsThereAnSnsSubscription = true };
-                        Logger.Debug($"Adding subscription as found, key: '{cacheKey}'.");
-                        _ = subscriptionsCache.TryAdd(cacheKey, cacheItem);
-                    }
-                    else
-                    {
-                        cacheItem = new SubscritionCacheItem { IsThereAnSnsSubscription = false };
-                        Logger.Debug($"Adding subscription as not found, key: '{cacheKey}'.");
-                        _ = subscriptionsCache.TryAdd(cacheKey, cacheItem);
-                    }
+                    Logger.Debug($"Adding subscription to cache as '{(cacheItem.IsThereAnSnsSubscription ? "found" : "not found")}', key: '{cacheKey}'.");
+                    _ = subscriptionsCache.TryAdd(cacheKey, cacheItem);
                 }
 
                 if (cacheItem.IsThereAnSnsSubscription)
                 {
                     return false;
                 }
-
-                //if (subscriptionsCache.ContainsKey(cacheKey))
-                //{
-                //    Logger.Debug($"Subscription with key '{cacheKey}' found in cache.");
-                //    var cacheItem = subscriptionsCache[cacheKey];
-                //    if (cacheItem.Age.Add(cacheTTL) < DateTime.Now)
-                //    {
-                //        Logger.Debug($"Removing subscription '{cacheKey}' from cache: TTL expired.");
-                //        _ = subscriptionsCache.TryRemove(cacheKey, out _);
-                //    }
-                //}
-
-                //if (!subscriptionsCache.ContainsKey(cacheKey))
-                //{
-                //    Logger.Debug($"Subscription with key '{cacheKey}' not found in cache.");
-
-                //    var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination, configuration.SnsListSubscriptionsByTopicRateLimiter)
-                //        .ConfigureAwait(false);
-
-                //    if (matchingSubscriptionArn != null)
-                //    {
-                //        Logger.Debug($"Adding subscription with key '{cacheKey}' as found.");
-                //        _ = subscriptionsCache.TryAdd(cacheKey, new SubscritionCacheItem { IsThereAnSnsSubscription = true });
-                //    }
-                //    else
-                //    {
-                //        Logger.Debug($"Adding subscription with key '{cacheKey}' as not found.");
-                //        _ = subscriptionsCache.TryAdd(cacheKey, new SubscritionCacheItem { IsThereAnSnsSubscription = false });
-                //    }
-                //}
-
-                //var isThereAnSnsSubscription = subscriptionsCache[cacheKey].IsThereAnSnsSubscription;
-                //if (isThereAnSnsSubscription)
-                //{
-                //    return false;
-                //}
             }
 
             return true;
