@@ -1,4 +1,4 @@
-namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
+﻿namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
 {
     using System;
     using System.Collections.Generic;
@@ -52,7 +52,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
                         _ = Task.WhenAll(tasks).ContinueWith(t =>
                         {
                             sw.Stop();
-                            TestContext.WriteLine($"Publishing took {sw.Elapsed}");
+                            ctx.PublishTime = sw.Elapsed;
                         });
                         return Task.FromResult(0);
                     });
@@ -93,6 +93,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
             }
             public bool SubscribedMessageDriven { get; set; }
             public bool SubscribedNative { get; set; }
+            public TimeSpan PublishTime { get; set; }
         }
 
         public class Publisher : EndpointConfigurationBuilder

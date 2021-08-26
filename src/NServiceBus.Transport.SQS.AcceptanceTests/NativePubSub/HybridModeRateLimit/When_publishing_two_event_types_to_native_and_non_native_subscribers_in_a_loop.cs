@@ -53,7 +53,7 @@
                         settings.Set("NServiceBus.AmazonSQS.NotFoundTopicsCacheTTL", testCase.NotFoundTopicsCacheTTL);
                     });
 
-                    b.When(c => c.SubscribedMessageDrivenToMyEvent && c.SubscribedMessageDrivenToMySecondEvent && c.SubscribedNative, session =>
+                    b.When(c => c.SubscribedMessageDrivenToMyEvent && c.SubscribedMessageDrivenToMySecondEvent && c.SubscribedNative, (session, ctx) =>
                     {
                         var sw = Stopwatch.StartNew();
                         var tasks = new List<Task>();
@@ -65,7 +65,7 @@
                         _ = Task.WhenAll(tasks).ContinueWith(t =>
                         {
                             sw.Stop();
-                            TestContext.WriteLine($"Publishing took {sw.Elapsed}");
+                            ctx.PublishTime = sw.Elapsed;
                         });
                         return Task.FromResult(0);
                     });
@@ -121,6 +121,7 @@
             public bool SubscribedMessageDrivenToMyEvent { get; set; }
             public bool SubscribedMessageDrivenToMySecondEvent { get; set; }
             public bool SubscribedNative { get; set; }
+            public TimeSpan PublishTime { get; set; }
         }
 
         public class Publisher : EndpointConfigurationBuilder

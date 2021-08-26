@@ -8,6 +8,7 @@
     using NUnit.Framework;
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
     using Conventions = AcceptanceTesting.Customization.Conventions;
@@ -96,6 +97,7 @@
             }
             public bool SubscribedMessageDriven { get; set; }
             public bool SubscribedNative { get; set; }
+            public TimeSpan PublishTime { get; set; }
         }
 
         public class Publisher : EndpointConfigurationBuilder
@@ -122,14 +124,24 @@
 
             public class KickOffMessageHandler : IHandleMessages<KickOff>
             {
-                public Task Handle(KickOff message, IMessageHandlerContext context)
+                readonly Context testContext;
+
+                public KickOffMessageHandler(Context testContext)
                 {
+                    this.testContext = testContext;
+                }
+
+                public async Task Handle(KickOff message, IMessageHandlerContext context)
+                {
+                    var sw = Stopwatch.StartNew();
                     var tasks = new List<Task>();
                     for (int i = 0; i < message.NumberOfEvents; i++)
                     {
                         tasks.Add(context.Publish(new MyEvent()));
                     }
-                    return Task.WhenAll(tasks);
+                    await Task.WhenAll(tasks);
+                    sw.Stop();
+                    testContext.PublishTime = sw.Elapsed;
                 }
             }
         }
