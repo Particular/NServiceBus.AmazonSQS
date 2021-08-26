@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
@@ -32,6 +33,14 @@
 
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
         {
+            Stopwatch sw = null;
+            Guid correlation = default;
+            if (Logger.IsDebugEnabled)
+            {
+                correlation = Guid.NewGuid();
+                sw = Stopwatch.StartNew();
+                Logger.Debug($"Starting Dispatch request - {correlation}");
+            }
             var concurrentDispatchTasks = new List<Task>(3);
 
             // in order to not enumerate multi cast operations multiple times this code assumes the hashset is filled on the synchronous path of the async method!
@@ -62,6 +71,14 @@
             {
                 Logger.Error("Exception from Send.", e);
                 throw;
+            }
+            finally
+            {
+                if (Logger.IsDebugEnabled && sw != null)
+                {
+                    sw.Stop();
+                    Logger.Debug($"Dispatch request completed in {sw.Elapsed} - {correlation}");
+                }
             }
         }
 
