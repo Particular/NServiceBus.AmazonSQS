@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
     using AcceptanceTesting;
@@ -45,13 +46,17 @@
                         return c.SubscribedMessageDriven && c.SubscribedNative;
                     }, session =>
                     {
+                        var sw = Stopwatch.StartNew();
                         var tasks = new List<Task>();
                         for (int i = 0; i < testCase.NumberOfEvents; i++)
                         {
                             tasks.Add(session.Publish(new MyEvent()));
                         }
-
-                        _ = Task.WhenAll(tasks);
+                        _ = Task.WhenAll(tasks).ContinueWith(t =>
+                        {
+                            sw.Stop();
+                            TestContext.WriteLine($"Publishing took {sw.Elapsed}");
+                        });
                         return Task.FromResult(0);
                     });
                 })
