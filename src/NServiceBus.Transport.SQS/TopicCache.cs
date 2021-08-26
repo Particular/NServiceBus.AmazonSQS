@@ -94,7 +94,7 @@ namespace NServiceBus.Transport.SQS
             }).ConfigureAwait(false);
 
             //We cache also null/not found topics, they'll be wiped
-            //from the cache at lookup time based on the nullTopicCacheTTL
+            //from the cache at lookup time based on the configured TTL
             var added = topicCache.TryAdd(metadata.MessageType, new TopicCacheItem() { Topic = foundTopic });
             if (added)
             {
