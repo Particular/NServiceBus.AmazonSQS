@@ -50,7 +50,9 @@
                         {
                             tasks.Add(session.Publish(new MyEvent()));
                         }
-                        return Task.WhenAll(tasks);
+
+                        _ = Task.WhenAll(tasks);
+                        return Task.FromResult(0);
                     });
                 })
                 .WithEndpoint<NativePubSubSubscriber>(b =>
