@@ -29,7 +29,6 @@
             new TestCase(3)
             {
                 NumberOfEvents = 200,
-                TestExecutionTimeout = TimeSpan.FromMinutes(3),
                 SubscriptionsCacheTTL = TimeSpan.FromMinutes(3),
                 NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(3),
             }
