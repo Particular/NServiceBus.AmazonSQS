@@ -69,7 +69,7 @@ namespace NServiceBus.Transport.SQS
             return topicNameCache.GetOrAdd(metadata.MessageType, configuration.TopicNameGenerator(metadata));
         }
 
-        async Task<Topic> GetAndCacheTopicIfFound(MessageMetadata metadata)
+        bool TryGetTopicFromCache(MessageMetadata metadata, out Topic topic)
         {
             if (topicCache.TryGetValue(metadata.MessageType, out var topicCacheItem))
             {
@@ -81,16 +81,41 @@ namespace NServiceBus.Transport.SQS
                 else
                 {
                     Logger.Debug($"Returning topic for '{metadata.MessageType}' from cache. Topic '{topicCacheItem.Topic?.TopicArn ?? "<null>"}'.");
-                    return topicCacheItem.Topic;
+                    topic = topicCacheItem.Topic;
+                    return true;
                 }
+            }
+
+            topic = null;
+            return false;
+        }
+
+        async Task<Topic> GetAndCacheTopicIfFound(MessageMetadata metadata)
+        {
+            Logger.Debug($"Performing firt Topic cache lookup for '{metadata.MessageType}'.");
+            if (TryGetTopicFromCache(metadata, out var cachedTopic))
+            {
+                return cachedTopic;
             }
 
             Logger.Debug($"Topic for '{metadata.MessageType}' not found in cache.");
 
             var foundTopic = await configuration.SnsListTopicsRateLimiter.Execute(async () =>
             {
+                /*
+                 * Rate limiter serializes requests, only 1 thread is allowed per
+                 * rate limiter. Before trying to reach out to SNS we do another
+                 * cache lookup
+                 */
+                Logger.Debug($"Performing second Topic cache lookup for '{metadata.MessageType}'.");
+                if (TryGetTopicFromCache(metadata, out var cachedValue))
+                {
+                    return cachedValue;
+                }
+
                 var topicName = GetTopicName(metadata);
                 Logger.Debug($"Finding topic '{topicName}' using 'ListTopics' SNS API.");
+
                 return await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
             }).ConfigureAwait(false);
 
