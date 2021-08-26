@@ -30,7 +30,7 @@ namespace NServiceBus.Transport.SQS.Extensions
                 .ConfigureAwait(false);
         }
 
-        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, Topic topic, string queueName, SnsListSubscriptionsByTopicRateLimiter snsListSubscriptionsByTopicRateLimiter)
+        public static async Task<string> FindMatchingSubscription(this IAmazonSimpleNotificationService snsClient, QueueCache queueCache, Topic topic, string queueName, SnsListSubscriptionsByTopicRateLimiter snsListSubscriptionsByTopicRateLimiter = null)
         {
             var physicalQueueName = queueCache.GetPhysicalQueueName(queueName);
 
@@ -38,11 +38,19 @@ namespace NServiceBus.Transport.SQS.Extensions
 
             do
             {
-                upToAHundredSubscriptions = await snsListSubscriptionsByTopicRateLimiter.Execute(async () =>
+                if (snsListSubscriptionsByTopicRateLimiter != null)
                 {
-                    return await snsClient.ListSubscriptionsByTopicAsync(topic.TopicArn, upToAHundredSubscriptions?.NextToken)
-                        .ConfigureAwait(false);
-                }).ConfigureAwait(false);
+                    upToAHundredSubscriptions = await snsListSubscriptionsByTopicRateLimiter.Execute(async () =>
+                    {
+                        return await snsClient.ListSubscriptionsByTopicAsync(topic.TopicArn, upToAHundredSubscriptions?.NextToken)
+                            .ConfigureAwait(false);
+                    }).ConfigureAwait(false);
+                }
+                else
+                {
+                    upToAHundredSubscriptions = await snsClient.ListSubscriptionsByTopicAsync(topic.TopicArn, upToAHundredSubscriptions?.NextToken)
+                            .ConfigureAwait(false);
+                }
 
                 // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
                 foreach (var upToAHundredSubscription in upToAHundredSubscriptions.Subscriptions)
