@@ -90,6 +90,7 @@ namespace NServiceBus.Transport.SQS
             var foundTopic = await configuration.SnsListTopicsRateLimiter.Execute(async () =>
             {
                 var topicName = GetTopicName(metadata);
+                Logger.Debug($"Finding topic '{topicName}' using 'ListTopics' SNS API.");
                 return await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
             }).ConfigureAwait(false);
 
