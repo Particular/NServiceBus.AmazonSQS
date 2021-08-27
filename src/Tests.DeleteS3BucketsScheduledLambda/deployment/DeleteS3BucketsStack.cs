@@ -4,9 +4,9 @@ using Pulumi.Aws.Lambda;
 using Pulumi.Aws.CloudWatch;
 
 
-internal class DeleteS3BucketsStack : Stack
+class DeleteS3BucketsStack : Stack
 {
-    private const int LambdaMaxAllowedExecutionTimeInSeconds = 60;
+    const int LambdaMaxAllowedExecutionTimeInSeconds = 60;
     public DeleteS3BucketsStack()
     {
         var lambda = new Function("DeleteSQSTransportTestsExpiredAssets",
@@ -24,7 +24,7 @@ internal class DeleteS3BucketsStack : Stack
         CreateCloudWatchEventRule(lambda);
     }
 
-    private static Role CreateLambdaRole()
+    static Role CreateLambdaRole()
     {
         var lambdaRole = new Role("lambdaRole", new RoleArgs
         {
@@ -79,19 +79,19 @@ internal class DeleteS3BucketsStack : Stack
         return lambdaRole;
     }
 
-    private static void CreateCloudWatchEventRule(Function lambda)
+    static void CreateCloudWatchEventRule(Function lambda)
     {
-        var console = new EventRule("invoke-sqs-acceptance-tests-cleaner",
+        var scheduledRule = new EventRule("invoke-sqs-acceptance-tests-cleaner",
             new EventRuleArgs { ScheduleExpression = "rate(2 minutes)" });
 
-        new EventTarget("invokeLambda", new EventTargetArgs { Rule = console.Id, Arn = lambda.Arn, });
+        new EventTarget("invokeLambda", new EventTargetArgs { Rule = scheduledRule.Id, Arn = lambda.Arn, });
 
         new Permission("allowCloudwatch", new PermissionArgs
         {
             Action = "lambda:InvokeFunction",
             Function = lambda.Name,
             Principal = "events.amazonaws.com",
-            SourceArn = console.Arn,
+            SourceArn = scheduledRule.Arn,
         });
     }
 

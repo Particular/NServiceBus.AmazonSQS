@@ -15,9 +15,12 @@ namespace DeleteS3Buckets
 {
     public class Function
     {
-        private const string NamePrefix = "cli-";
+        const string NamePrefix = "cli-";
+        const int MaxTimeAcceptanceTestsAssetsAreAllowedToLiveInMinutes = 1;
 
+#pragma warning disable PS0018 // Amazon AWS handlers don't support CancellationToken at the moment.
         public async Task<string> FunctionHandler(JObject eventStr, ILambdaContext context)
+#pragma warning restore PS0018 //Amazon AWS handlers don't support CancellationToken at the moment.
         {
             try
             {
@@ -31,13 +34,15 @@ namespace DeleteS3Buckets
             return eventStr.ToString();
         }
 
-        public static async Task DeleteAllBucketsWithPrefix()
+#pragma warning disable PS0018 // Amazon AWS handlers don't support CancellationToken at the moment.
+        static async Task DeleteAllBucketsWithPrefix()
+#pragma warning restore PS0018 // Amazon AWS handlers don't support CancellationToken at the moment.
         {
             var s3Client = new AmazonS3Client(RegionEndpoint.USEast1);
 
             var listBucketsResponse = await s3Client.ListBucketsAsync(new ListBucketsRequest()).ConfigureAwait(false);
 
-            var deleteDateThreshold = DateTime.UtcNow.AddMinutes(-1);
+            var deleteDateThreshold = DateTime.UtcNow.AddMinutes(MaxTimeAcceptanceTestsAssetsAreAllowedToLiveInMinutes * -1);
 
             var queryResult = listBucketsResponse.Buckets.Where(x =>
                 x.BucketName.StartsWith(NamePrefix, StringComparison.OrdinalIgnoreCase) &&
@@ -46,7 +51,7 @@ namespace DeleteS3Buckets
             if (queryResult.Length == 0)
             {
                 LambdaLogger.Log(
-                    $"There are zero {NamePrefix} buckets older than {deleteDateThreshold.Minute} minutes found to be deleted'");
+                    $"There are zero {NamePrefix} buckets older than {MaxTimeAcceptanceTestsAssetsAreAllowedToLiveInMinutes} minutes found to be deleted'");
                 return;
             }
 
@@ -60,7 +65,7 @@ namespace DeleteS3Buckets
                             return;
                         }
 
-                        var response = await s3Client.GetBucketLocationAsync(bucketName);
+                        var response = await s3Client.GetBucketLocationAsync(bucketName).ConfigureAwait(false);
                         S3Region region;
                         switch (response.Location)
                         {
@@ -81,15 +86,16 @@ namespace DeleteS3Buckets
 
                         await s3Client.DeleteBucketAsync(new DeleteBucketRequest
                         {
-                            BucketName = bucketName, BucketRegion = region
-                        });
+                            BucketName = bucketName,
+                            BucketRegion = region
+                        }).ConfigureAwait(false);
                         LambdaLogger.Log($"'{bucketName} bucket deleted'");
                     }
                     catch (AmazonS3Exception)
                     {
                         LambdaLogger.Log($"Unable to delete bucket '{bucketName}'");
                     }
-                }));
+                })).ConfigureAwait(false);
         }
     }
 }

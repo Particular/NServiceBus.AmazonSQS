@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Pulumi;
 
-internal class Program
+class Program
 {
     public static Task<int> Main()
     {
