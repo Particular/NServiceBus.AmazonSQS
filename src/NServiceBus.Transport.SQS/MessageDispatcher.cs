@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -320,7 +319,7 @@
             }
 
             var key = $"{s3.KeyPrefix}/{messageId}";
-            using (var bodyStream = new MemoryStream(transportOperation.Message.Body))
+            using (var bodyStream = new ReadonlyStream(transportOperation.Message.Body))
             {
                 var putObjectRequest = new PutObjectRequest
                 {
