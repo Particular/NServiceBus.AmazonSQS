@@ -1,0 +1,4 @@
+name: sqs-transport-acceptance-testing
+runtime: dotnet
+description: Takes care of deploying AWS artifacts to aid with sqs transport acceptance
+  testing
