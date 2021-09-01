@@ -25,6 +25,5 @@
 
             StringAssert.Contains(nonExistingQueueName, exception.ToString());
         }
-
     }
 }
