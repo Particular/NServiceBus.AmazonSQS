@@ -15,7 +15,6 @@
                 },
                 (_, __) =>
                 {
-                    //onErrorCalled = true;
                     return Task.FromResult(ErrorHandleResult.Handled);
                 }, transactionMode);
 
