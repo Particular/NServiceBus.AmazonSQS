@@ -7,6 +7,9 @@
     public class Sending_to_non_existing_queues : NServiceBusTransportTest
     {
         [TestCase(TransportTransactionMode.None)]
+        [TestCase(TransportTransactionMode.ReceiveOnly)]
+        [TestCase(TransportTransactionMode.SendsAtomicWithReceive)]
+        [TestCase(TransportTransactionMode.TransactionScope)]
         public async Task Should_include_queue_name_in_exception_details(TransportTransactionMode transactionMode)
         {
             await StartPump((_, __) =>
