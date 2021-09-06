@@ -37,6 +37,14 @@ Where
  * `sanitized-guid` is a GUID converted to a base 64 string from which invalid characters are removed. For example, when 100 tests are executed in a single test run each queue will have the same `sanitized-guid`.
  * `pre-truncated-queue-name` is the name of the queue, "pre-truncated" (characters are removed from the beginning) so that the entire queue name is 80 characters or less. 
 
+_Note:_
+
+Some tests generate high load and require a fixed queue naming scheme to prevent policy propagation in the cluster to affect the test execution. The fixed resources prefix can be customized by using the `NServiceBus_AmazonSQS_AT_CustomFixedNamePrefix` environment variable. If not specificed the default value is `FixedAT`, which is the one used by GitHub Actions. For these tests the resources name schema is:
+
+    <name-prefix>-<optional-test-case-sequence>-<pre-truncated-queue-name>
+    
+Where `optional-test-case-sequence` is an optional integer value specified by tests using the NUnit test case feature to run the same test multiple times with different input values.
+
 This scheme accomplishes the following goals:
 
  * Test runs are idempotent - each test run uses its own set of queues
