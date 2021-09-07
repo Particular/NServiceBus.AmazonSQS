@@ -264,6 +264,45 @@ namespace NServiceBus.Transport.SQS.Tests
             }
         }
 
+        public static async Task PurgeAllQueuesWithPrefix(IAmazonSQS sqsClient, string queueNamePrefix)
+        {
+            var deletedQueueUrls = new HashSet<string>(StringComparer.Ordinal);
+            try
+            {
+                ListQueuesResponse upToAThousandQueues;
+                do
+                {
+                    upToAThousandQueues = await sqsClient.ListQueuesAsync(queueNamePrefix);
+                    // if everything returned here has already been deleted it is probably a good time to stop trying due to the eventual consistency
+                    if (upToAThousandQueues.QueueUrls.All(url => deletedQueueUrls.Contains(url)))
+                    {
+                        return;
+                    }
+
+                    var deletionTasks = new List<Task>(upToAThousandQueues.QueueUrls.Count);
+                    deletionTasks.AddRange(upToAThousandQueues.QueueUrls
+                        .Where(url => !deletedQueueUrls.Contains(url))
+                        .Select(async queueUrl =>
+                        {
+                            try
+                            {
+                                await sqsClient.PurgeQueueAsync(queueUrl);
+                                deletedQueueUrls.Add(queueUrl);
+                            }
+                            catch (Exception)
+                            {
+                                Console.WriteLine($"Unable to purge queue '{queueUrl}'");
+                            }
+                        }));
+                    await Task.WhenAll(deletionTasks).ConfigureAwait(false);
+                } while (upToAThousandQueues.QueueUrls.Count > 0);
+            }
+            catch (Exception)
+            {
+                Console.WriteLine($"Unable to purge queues with prefix '{queueNamePrefix}'");
+            }
+        }
+
         AmazonSQSClient sqsClient;
         AmazonSimpleNotificationServiceClient snsClient;
         AmazonS3Client s3Client;
