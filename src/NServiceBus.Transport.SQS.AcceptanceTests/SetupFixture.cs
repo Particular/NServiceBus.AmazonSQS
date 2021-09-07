@@ -18,7 +18,38 @@
         /// </summary>
         public static string NamePrefix { get; private set; }
 
-        public static void AppendSequenceToCustomNamePrefix(int sequence)
+        static bool purgeQueuesWithFixedNamePrefixOnTearDown;
+        static bool usingFixedNamePrefix;
+        static string namePrefixBackup;
+
+        static string GetFixedNamePrefix()
+        {
+            var customFixedNamePrefix = EnvironmentHelper.GetEnvironmentVariable("NServiceBus_AmazonSQS_AT_CustomFixedNamePrefix");
+            return customFixedNamePrefix ?? "FixedAT";
+        }
+
+        public static void UseFixedNamePrefix()
+        {
+            purgeQueuesWithFixedNamePrefixOnTearDown = true;
+            usingFixedNamePrefix = true;
+
+            namePrefixBackup = NamePrefix;
+            NamePrefix = GetFixedNamePrefix();
+
+            TestContext.WriteLine($"Using fixed name prefix: '{NamePrefix}'");
+        }
+
+        public static void RestoreNamePrefixToRandomlyGenerated()
+        {
+            if (usingFixedNamePrefix)
+            {
+                TestContext.WriteLine($"Restoring name prefix from '{NamePrefix}' to '{namePrefixBackup}'");
+                NamePrefix = namePrefixBackup;
+                usingFixedNamePrefix = false;
+            }
+        }
+
+        public static void AppendSequenceToNamePrefix(int sequence)
         {
             var idx = NamePrefix.LastIndexOf('-');
             if (idx >= 0)
@@ -26,6 +57,8 @@
                 NamePrefix = NamePrefix.Substring(0, idx);
             }
             NamePrefix += $"-{sequence}";
+
+            TestContext.WriteLine($"Sequence #{sequence} appended name prefix: '{NamePrefix}'");
         }
 
         [OneTimeSetUp]
@@ -37,18 +70,13 @@
             // us from deleting then creating a queue with the
             // same name in a 60 second period.
             NamePrefix = $"AT{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToUpperInvariant()}";
+
+            TestContext.WriteLine($"Generated name prefix: '{NamePrefix}'");
         }
 
         [OneTimeTearDown]
         public async Task OneTimeTearDown()
         {
-            var idx = NamePrefix.LastIndexOf('-');
-            if (idx >= 0)
-            {
-                //remove the sequence number before cleaning up
-                NamePrefix = NamePrefix.Substring(0, idx);
-            }
-
             var accessKeyId = EnvironmentHelper.GetEnvironmentVariable("CLEANUP_AWS_ACCESS_KEY_ID");
             var secretAccessKey = EnvironmentHelper.GetEnvironmentVariable("CLEANUP_AWS_SECRET_ACCESS_KEY");
 
@@ -59,7 +87,21 @@
             using (var s3Client = string.IsNullOrEmpty(accessKeyId) ? SqsTransportExtensions.CreateS3Client() :
                 new AmazonS3Client(accessKeyId, secretAccessKey))
             {
+                var idx = NamePrefix.LastIndexOf('-');
+                if (idx >= 0)
+                {
+                    //remove the sequence number before cleaning up
+                    NamePrefix = NamePrefix.Substring(0, idx);
+                }
+
                 await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, NamePrefix).ConfigureAwait(false);
+
+                if (purgeQueuesWithFixedNamePrefixOnTearDown)
+                {
+                    await Cleanup.PurgeAllQueuesWithPrefix(sqsClient, GetFixedNamePrefix());
+                    //purging is eventually consistent and can take up to 60 seconds.
+                    await Task.Delay(TimeSpan.FromMinutes(1));
+                }
             }
         }
     }
