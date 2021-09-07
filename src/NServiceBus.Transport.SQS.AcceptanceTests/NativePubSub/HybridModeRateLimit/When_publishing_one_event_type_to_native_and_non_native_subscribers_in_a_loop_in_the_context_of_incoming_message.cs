@@ -36,12 +36,12 @@
             },
         };
 
-        [Test, TestCaseSource(nameof(TestCases))]
+        [Test, UseFixedNamePrefix, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
             if (testCase.Sequence.HasValue)
             {
-                SetupFixture.AppendSequenceToCustomNamePrefix(testCase.Sequence.Value);
+                SetupFixture.AppendSequenceToNamePrefix(testCase.Sequence.Value);
             }
 
             var context = await Scenario.Define<Context>()
