@@ -19,20 +19,22 @@
         {
             new TestCase(1){ NumberOfEvents = 1 },
             new TestCase(2){ NumberOfEvents = 100 },
-            new TestCase(3){ NumberOfEvents = 200, MessageVisibilityTimeout = 45 },
-            new TestCase(4){ NumberOfEvents = 300, MessageVisibilityTimeout = 180 , TestExecutionTimeout = TimeSpan.FromMinutes(3) },
+            new TestCase(3){ NumberOfEvents = 200 },
+            new TestCase(4){ NumberOfEvents = 300 },
             new TestCase(5)
             {
                 NumberOfEvents = 1000,
-                MessageVisibilityTimeout = 300,
-                SubscriptionsCacheTTL = TimeSpan.FromMinutes(5)
+                MessageVisibilityTimeout = 60,
+                SubscriptionsCacheTTL = TimeSpan.FromMinutes(1),
+                NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(1),
             },
             new TestCase(6)
             {
                 NumberOfEvents = 3000,
-                MessageVisibilityTimeout = 360,
-                TestExecutionTimeout = TimeSpan.FromMinutes(10),
-                SubscriptionsCacheTTL = TimeSpan.FromMinutes(6)
+                MessageVisibilityTimeout = 180,
+                TestExecutionTimeout = TimeSpan.FromMinutes(3),
+                SubscriptionsCacheTTL = TimeSpan.FromMinutes(3),
+                NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(3),
             },
         };
 
