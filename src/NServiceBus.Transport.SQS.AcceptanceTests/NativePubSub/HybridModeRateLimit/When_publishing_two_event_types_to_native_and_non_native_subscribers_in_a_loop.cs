@@ -35,13 +35,13 @@
             }
         };
 
-        [Test, UseFixedNamePrefix, TestCaseSource(nameof(TestCases))]
+        [TearDown]
+        public Task TearDown() => SetupFixture.PurgeQueues();
+
+        [Test, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
-            if (testCase.Sequence.HasValue)
-            {
-                SetupFixture.AppendSequenceToNamePrefix(testCase.Sequence.Value);
-            }
+            SetupFixture.UsePermanentNamePrefix($"03-{testCase.Sequence}");
 
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<Publisher>(b =>
