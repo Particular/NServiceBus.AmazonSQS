@@ -24,8 +24,15 @@
 
         static string GetFixedNamePrefix()
         {
-            var customFixedNamePrefix = EnvironmentHelper.GetEnvironmentVariable("NServiceBus_AmazonSQS_AT_CustomFixedNamePrefix");
-            return customFixedNamePrefix ?? "FixedAT";
+            var fixedNamePrefixKeyName = "NServiceBus_AmazonSQS_AT_CustomFixedNamePrefix";
+            var customFixedNamePrefix = EnvironmentHelper.GetEnvironmentVariable(fixedNamePrefixKeyName);
+
+            if (customFixedNamePrefix == null)
+            {
+                throw new Exception($"Environment variable {fixedNamePrefixKeyName} not set. It's needed to setup tests using predefined name prefixes");
+            }
+
+            return customFixedNamePrefix;
         }
 
         public static void UseFixedNamePrefix()
