@@ -23,6 +23,9 @@
 
             ApplyMappingsToSupportMultipleInheritance(endpointName, transportConfig);
 
+            configuration.RegisterComponents(c => c.ConfigureComponent<TestIndependenceMutator>(DependencyLifecycle.SingleInstance));
+            configuration.Pipeline.Register("TestIndependenceBehavior", typeof(TestIndependenceSkipBehavior), "Skips messages not created during the current test.");
+
             if (settings.TestExecutionTimeout == null)
             {
                 //If it's not null it means it has been set to a custom
