@@ -18,7 +18,6 @@
         /// </summary>
         public static string NamePrefix { get; private set; }
 
-        static bool purgeQueuesWithFixedNamePrefixOnTearDown;
         static bool usingFixedNamePrefix;
         static string namePrefixBackup;
 
@@ -39,7 +38,6 @@
 
         public static void UseFixedNamePrefix()
         {
-            purgeQueuesWithFixedNamePrefixOnTearDown = true;
             usingFixedNamePrefix = true;
 
             namePrefixBackup = NamePrefix;
@@ -104,13 +102,6 @@
                 }
 
                 await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, NamePrefix).ConfigureAwait(false);
-
-                if (purgeQueuesWithFixedNamePrefixOnTearDown)
-                {
-                    await Cleanup.PurgeAllQueuesWithPrefix(sqsClient, GetFixedNamePrefix());
-                    //purging is eventually consistent and can take up to 60 seconds.
-                    await Task.Delay(TimeSpan.FromMinutes(1));
-                }
             }
         }
     }
