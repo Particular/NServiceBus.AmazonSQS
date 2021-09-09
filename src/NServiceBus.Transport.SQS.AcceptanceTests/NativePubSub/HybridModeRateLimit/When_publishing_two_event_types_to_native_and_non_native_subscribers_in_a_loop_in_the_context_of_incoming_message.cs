@@ -15,7 +15,7 @@
 
     public class When_publishing_two_event_types_to_native_and_non_native_subscribers_in_a_loop_in_the_context_of_incoming_message : NServiceBusAcceptanceTest
     {
-        static TestCase[] TestCases = new TestCase[]
+        static TestCase[] TestCases =
         {
             new TestCase(1){ NumberOfEvents = 1 },
             new TestCase(2){ NumberOfEvents = 100, MessageVisibilityTimeout = 60, },
@@ -44,13 +44,10 @@
             },
         };
 
-        [TearDown]
-        public Task TearDown() => SetupFixture.PurgeQueues();
-
-        [Test, TestCaseSource(nameof(TestCases))]
+        [Test, UseFixedNamePrefix, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
-            SetupFixture.UsePermanentNamePrefix($"04-{testCase.Sequence}");
+            SetupFixture.AppendSequenceToNamePrefix(testCase.Sequence);
 
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>

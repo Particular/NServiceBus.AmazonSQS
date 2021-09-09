@@ -18,7 +18,9 @@
         /// </summary>
         public static string NamePrefix { get; private set; }
 
-        static bool usingPermanentNamePrefix;
+        static bool purgeQueuesWithFixedNamePrefixOnTearDown;
+        static bool usingFixedNamePrefix;
+        static string namePrefixBackup;
 
         static string GetFixedNamePrefix()
         {
@@ -27,19 +29,45 @@
 
             if (customFixedNamePrefix == null)
             {
-                throw new Exception($"Environment variable {fixedNamePrefixKeyName} not set. It's needed to setup tests using predefined name prefixes");
+                throw new Exception($"Environment variable '{fixedNamePrefixKeyName}' not set. " +
+                    $"The variable is required by tests bound to a fixed infrastructure. " +
+                    $"Make sure the value doesn't contain any space or dash characher.");
             }
 
             return customFixedNamePrefix;
         }
 
-        public static void UsePermanentNamePrefix(string testCasePrefix)
+        public static void UseFixedNamePrefix()
         {
-            usingPermanentNamePrefix = true;
+            purgeQueuesWithFixedNamePrefixOnTearDown = true;
+            usingFixedNamePrefix = true;
 
-            NamePrefix = $"{GetFixedNamePrefix()}-{testCasePrefix}-";
+            namePrefixBackup = NamePrefix;
+            NamePrefix = GetFixedNamePrefix();
 
             TestContext.WriteLine($"Using fixed name prefix: '{NamePrefix}'");
+        }
+
+        public static void RestoreNamePrefixToRandomlyGenerated()
+        {
+            if (usingFixedNamePrefix)
+            {
+                TestContext.WriteLine($"Restoring name prefix from '{NamePrefix}' to '{namePrefixBackup}'");
+                NamePrefix = namePrefixBackup;
+                usingFixedNamePrefix = false;
+            }
+        }
+
+        public static void AppendSequenceToNamePrefix(int sequence)
+        {
+            var idx = NamePrefix.LastIndexOf('-');
+            if (idx >= 0)
+            {
+                NamePrefix = NamePrefix.Substring(0, idx);
+            }
+            NamePrefix += $"-{sequence}";
+
+            TestContext.WriteLine($"Sequence #{sequence} appended name prefix: '{NamePrefix}'");
         }
 
         [OneTimeSetUp]
@@ -55,36 +83,35 @@
             TestContext.WriteLine($"Generated name prefix: '{NamePrefix}'");
         }
 
-        public static async Task PurgeQueues()
-        {
-            if (usingPermanentNamePrefix)
-            {
-                var accessKeyId = EnvironmentHelper.GetEnvironmentVariable("CLEANUP_AWS_ACCESS_KEY_ID");
-                var secretAccessKey = EnvironmentHelper.GetEnvironmentVariable("CLEANUP_AWS_SECRET_ACCESS_KEY");
-
-                using (var sqsClient = string.IsNullOrEmpty(accessKeyId) ? SqsTransportExtensions.CreateSQSClient() : new AmazonSQSClient(accessKeyId, secretAccessKey))
-                {
-                    await Cleanup.PurgeAllQueuesWithPrefix(sqsClient, GetFixedNamePrefix());
-                }
-            }
-        }
-
         [OneTimeTearDown]
         public async Task OneTimeTearDown()
         {
-            if (usingPermanentNamePrefix == false)
-            {
-                var accessKeyId = EnvironmentHelper.GetEnvironmentVariable("CLEANUP_AWS_ACCESS_KEY_ID");
-                var secretAccessKey = EnvironmentHelper.GetEnvironmentVariable("CLEANUP_AWS_SECRET_ACCESS_KEY");
+            var accessKeyId = EnvironmentHelper.GetEnvironmentVariable("CLEANUP_AWS_ACCESS_KEY_ID");
+            var secretAccessKey = EnvironmentHelper.GetEnvironmentVariable("CLEANUP_AWS_SECRET_ACCESS_KEY");
 
-                using (var sqsClient = string.IsNullOrEmpty(accessKeyId) ? SqsTransportExtensions.CreateSQSClient() : new AmazonSQSClient(accessKeyId, secretAccessKey))
-                using (var snsClient = string.IsNullOrEmpty(accessKeyId) ? SqsTransportExtensions.CreateSnsClient() : new AmazonSimpleNotificationServiceClient(accessKeyId, secretAccessKey))
-                using (var s3Client = string.IsNullOrEmpty(accessKeyId) ? SqsTransportExtensions.CreateS3Client() : new AmazonS3Client(accessKeyId, secretAccessKey))
+            using (var sqsClient = string.IsNullOrEmpty(accessKeyId) ? SqsTransportExtensions.CreateSQSClient() :
+                new AmazonSQSClient(accessKeyId, secretAccessKey))
+            using (var snsClient = string.IsNullOrEmpty(accessKeyId) ? SqsTransportExtensions.CreateSnsClient() :
+                new AmazonSimpleNotificationServiceClient(accessKeyId, secretAccessKey))
+            using (var s3Client = string.IsNullOrEmpty(accessKeyId) ? SqsTransportExtensions.CreateS3Client() :
+                new AmazonS3Client(accessKeyId, secretAccessKey))
+            {
+                var idx = NamePrefix.LastIndexOf('-');
+                if (idx >= 0)
                 {
-                    await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, NamePrefix).ConfigureAwait(false);
+                    //remove the sequence number before cleaning up
+                    NamePrefix = NamePrefix.Substring(0, idx);
+                }
+
+                await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, NamePrefix).ConfigureAwait(false);
+
+                if (purgeQueuesWithFixedNamePrefixOnTearDown)
+                {
+                    await Cleanup.PurgeAllQueuesWithPrefix(sqsClient, GetFixedNamePrefix());
+                    //purging is eventually consistent and can take up to 60 seconds.
+                    await Task.Delay(TimeSpan.FromMinutes(1));
                 }
             }
-
         }
     }
 }

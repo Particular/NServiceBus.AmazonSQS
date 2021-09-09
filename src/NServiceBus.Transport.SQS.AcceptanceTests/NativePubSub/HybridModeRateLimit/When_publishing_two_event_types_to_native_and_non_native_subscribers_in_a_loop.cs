@@ -15,7 +15,7 @@
 
     public class When_publishing_two_event_types_to_native_and_non_native_subscribers_in_a_loop : NServiceBusAcceptanceTest
     {
-        static TestCase[] TestCases = new TestCase[]
+        static TestCase[] TestCases =
         {
             new TestCase(1)
             {
@@ -35,13 +35,10 @@
             }
         };
 
-        [TearDown]
-        public Task TearDown() => SetupFixture.PurgeQueues();
-
-        [Test, TestCaseSource(nameof(TestCases))]
+        [Test, UseFixedNamePrefix, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
-            SetupFixture.UsePermanentNamePrefix($"03-{testCase.Sequence}");
+            SetupFixture.AppendSequenceToNamePrefix(testCase.Sequence);
 
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<Publisher>(b =>

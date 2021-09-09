@@ -23,13 +23,10 @@
             new TestCase(4){ NumberOfEvents = 1000, TestExecutionTimeout = TimeSpan.FromMinutes(4), SubscriptionsCacheTTL = TimeSpan.FromMinutes(1), NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(1) },
         };
 
-        [TearDown]
-        public Task TearDown() => SetupFixture.PurgeQueues();
-
-        [Test, TestCaseSource(nameof(TestCases))]
+        [Test, UseFixedNamePrefix, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
-            SetupFixture.UsePermanentNamePrefix($"01-{testCase.Sequence}");
+            SetupFixture.AppendSequenceToNamePrefix(testCase.Sequence);
 
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<Publisher>(b =>
@@ -47,7 +44,7 @@
                         var tasks = new List<Task>();
                         for (int i = 0; i < testCase.NumberOfEvents; i++)
                         {
-                            tasks.Add(session.Publish(new MyEvent { TestRunId = ctx.TestRunId }));
+                            tasks.Add(session.Publish(new MyEvent()));
                         }
                         _ = Task.WhenAll(tasks).ContinueWith(t =>
                         {
@@ -81,21 +78,15 @@
         {
             int nativePubSubSubscriberReceivedEventsCount;
             public int NativePubSubSubscriberReceivedEventsCount => nativePubSubSubscriberReceivedEventsCount;
-            public void IncrementNativePubSubSubscriberReceivedEventsCount(Guid testRunId)
+            public void IncrementNativePubSubSubscriberReceivedEventsCount()
             {
-                if (testRunId == TestRunId)
-                {
-                    Interlocked.Increment(ref nativePubSubSubscriberReceivedEventsCount);
-                }
+                Interlocked.Increment(ref nativePubSubSubscriberReceivedEventsCount);
             }
             int messageDrivenPubSubSubscriberReceivedEventsCount;
             public int MessageDrivenPubSubSubscriberReceivedEventsCount => messageDrivenPubSubSubscriberReceivedEventsCount;
-            public void IncrementMessageDrivenPubSubSubscriberReceivedEventsCount(Guid testRunId)
+            public void IncrementMessageDrivenPubSubSubscriberReceivedEventsCount()
             {
-                if (testRunId == TestRunId)
-                {
-                    Interlocked.Increment(ref messageDrivenPubSubSubscriberReceivedEventsCount);
-                }
+                Interlocked.Increment(ref messageDrivenPubSubSubscriberReceivedEventsCount);
             }
             public bool SubscribedMessageDriven { get; set; }
             public bool SubscribedNative { get; set; }
@@ -143,7 +134,7 @@
 
                 public Task Handle(MyEvent @event, IMessageHandlerContext context)
                 {
-                    testContext.IncrementNativePubSubSubscriberReceivedEventsCount(@event.TestRunId);
+                    testContext.IncrementNativePubSubSubscriberReceivedEventsCount();
                     return Task.FromResult(0);
                 }
             }
@@ -176,7 +167,7 @@
 
                 public Task Handle(MyEvent @event, IMessageHandlerContext context)
                 {
-                    testContext.IncrementMessageDrivenPubSubSubscriberReceivedEventsCount(@event.TestRunId);
+                    testContext.IncrementMessageDrivenPubSubSubscriberReceivedEventsCount();
                     return Task.FromResult(0);
                 }
             }
@@ -184,7 +175,6 @@
 
         public class MyEvent : IEvent
         {
-            public Guid TestRunId { get; set; }
         }
     }
 }
