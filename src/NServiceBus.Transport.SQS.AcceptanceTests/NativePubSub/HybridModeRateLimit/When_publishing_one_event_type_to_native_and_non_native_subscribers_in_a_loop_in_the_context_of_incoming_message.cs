@@ -24,15 +24,16 @@
             new TestCase(5)
             {
                 NumberOfEvents = 1000,
-                MessageVisibilityTimeout = 60,
+                MessageVisibilityTimeout = 180,
+                TestExecutionTimeout = TimeSpan.FromMinutes(3),
                 SubscriptionsCacheTTL = TimeSpan.FromMinutes(1),
                 NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(1),
             },
             new TestCase(6)
             {
                 NumberOfEvents = 3000,
-                MessageVisibilityTimeout = 240,
-                TestExecutionTimeout = TimeSpan.FromMinutes(4),
+                MessageVisibilityTimeout = 300,
+                TestExecutionTimeout = TimeSpan.FromMinutes(5),
                 SubscriptionsCacheTTL = TimeSpan.FromMinutes(2),
                 NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(2),
             },
