@@ -1,0 +1,77 @@
+name: SQS Transport Cleanup
+on:
+  push:
+    branches:      
+      - tf-*      
+  schedule:
+    - cron: '0 0 * * *' # Runs daily at midnight UTC
+  workflow_dispatch:
+jobs:
+  cleanup:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2.3.4
+    - name: Run cleanup
+      env: 
+        LIMITED_DELETE_RIGHTS_ACCOUNT_KEY: ${{ secrets.TMP_CHRISTIAN_AWS_ACCESS_KEY_ID }}
+        LIMITED_DELETE_RIGHTS_ACCOUNT_SECRET_KEY: ${{ secrets.TMP_CHRISTIAN_AWS_SECRET_KEY_ID }}
+      shell: pwsh
+      run: |
+        $limitedDeleteRightsAccessKey = $env:LIMITED_DELETE_RIGHTS_ACCOUNT_KEY
+        $limitedDeleteRightsSecretKey = $env:LIMITED_DELETE_RIGHTS_ACCOUNT_SECRET_KEY
+
+        if (!(Get-Module AWSPowerShell.NetCore)) { 
+            Write-Host "Installing AWSPowerShell.NetCore..." 
+            Install-Module -name AWSPowerShell.NetCore -Scope CurrentUser -Force -AllowClobber
+        }
+
+        Write-Host "Importing module..."
+        Import-Module AWSPowerShell.NetCore -Force
+
+        Write-Host "The following version of AWSPowerShell.NetCore is being used"
+        Get-AWSPowerShellVersion
+
+        #$dateFilter = ([System.DateTime]::UtcNow).AddHours(-24)
+        $dateFilter = ([System.DateTime]::UtcNow).AddMinutes(-1)
+        $nameFilter = "cli-*"                
+
+        Write-Host "Current time"  ([System.DateTime]::UtcNow).ToString() UTC
+        Write-Host "Looking for test buckets older than" $dateFilter.ToString() UTC "with the the following name pattern" $nameFilter
+
+        $buckets = Get-S3Bucket -AccessKey $limitedDeleteRightsAccessKey -SecretKey $limitedDeleteRightsSecretKey 
+                    | Where-Object { 
+                        ($dateFilter -gt $_.CreationDate.ToUniversalTime()) -and ($_.BucketName -like $nameFilter) 
+                    }
+
+        if ($buckets.count -gt 0) {    
+            Write-Host "Attempting to delete the following buckets..."    
+            $buckets | ForEach-Object {
+                            'Name: {0} - CreatedUTC: {1}' -f $_.BucketName, $_.CreationDate.ToUniversalTime()
+                        }
+            try {
+                $buckets | ForEach-Object {
+                    Remove-S3Bucket -AccessKey $limitedDeleteRightsAccessKey -SecretKey $limitedDeleteRightsSecretKey $_.BucketName -Force 
+                }
+                Write-Host "Buckets deleted!"
+            }     
+            catch {
+                "The following error occurred while trying to delete the buckets:"        
+                throw $_
+            }        
+        }
+        else {
+            Write-Host "0 bucket(s) found to be deleted"
+        } 
+    - name: Notify Slack on failure
+      if: ${{ failure() }}
+      uses: 8398a7/action-slack@v3.9.3
+      with:
+        status: ${{ job.status }}
+        text: NServiceBus.AmazonSQS clean up has failed.
+        author_name: Amazon SQS Transport Test Cleanup
+        fields: message,author,action,eventName,ref,workflow
+        username: GitHub Actions
+        icon_emoji: ":github_actions:"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_AWS_CHANNEL_WEBHOOK }}
