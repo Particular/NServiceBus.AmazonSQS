@@ -39,7 +39,7 @@ namespace NServiceBus
         [System.ObsoleteAttribute("The compatibility mode will be deprecated in the next major version of the transp" +
             "ort. Switch to native publish/subscribe mode using SNS instead. Will be treated " +
             "as an error from version 6.0.0. Will be removed in version 7.0.0.", false)]
-        public static NServiceBus.SubscriptionMigrationModeSettings EnableMessageDrivenPubSubCompatibilityMode(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
+        public static NServiceBus.Transport.SQS.Configure.SqsSubscriptionMigrationModeSettings EnableMessageDrivenPubSubCompatibilityMode(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> EnableV1CompatibilityMode(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
         public static void MapEvent<TSubscribedEvent>(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string customTopicName) { }
         public static void MapEvent(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Type eventType, string customTopicName) { }
@@ -54,5 +54,17 @@ namespace NServiceBus
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> TopicNameGenerator(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Func<System.Type, string, string> topicNameGenerator) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> TopicNamePrefix(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string topicNamePrefix) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> UnrestrictedDurationDelayedDelivery(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
+    }
+}
+namespace NServiceBus.Transport.SQS.Configure
+{
+    [System.ObsoleteAttribute("The compatibility mode will be deprecated in the next major version of the transp" +
+        "ort. Switch to native publish/subscribe mode using SNS instead. Will be treated " +
+        "as an error from version 6.0.0. Will be removed in version 7.0.0.", false)]
+    public class SqsSubscriptionMigrationModeSettings : NServiceBus.SubscriptionMigrationModeSettings
+    {
+        public NServiceBus.SubscriptionMigrationModeSettings MessageVisibilityTimeout(int timeoutInSeconds) { }
+        public NServiceBus.SubscriptionMigrationModeSettings SubscriptionsCacheTTL(System.TimeSpan ttl) { }
+        public NServiceBus.Transport.SQS.Configure.SqsSubscriptionMigrationModeSettings TopicCacheTTL(System.TimeSpan ttl) { }
     }
 }

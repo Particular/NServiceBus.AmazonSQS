@@ -49,10 +49,12 @@
                 {
                     b.CustomConfig(config =>
                     {
-                        var settings = config.GetSettings();
-                        settings.Set("NServiceBus.AmazonSQS.MessageVisibilityTimeout", testCase.MessageVisibilityTimeout);
-                        settings.Set("NServiceBus.AmazonSQS.SubscriptionsCacheTTL", testCase.SubscriptionsCacheTTL);
-                        settings.Set("NServiceBus.AmazonSQS.NotFoundTopicsCacheTTL", testCase.NotFoundTopicsCacheTTL);
+#pragma warning disable CS0618
+                        var migrationMode = config.ConfigureSqsTransport().EnableMessageDrivenPubSubCompatibilityMode();
+                        migrationMode.SubscriptionsCacheTTL(testCase.SubscriptionsCacheTTL);
+                        migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);
+                        migrationMode.MessageVisibilityTimeout(testCase.MessageVisibilityTimeout);
+#pragma warning restore CS0618
                     });
 
                     b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, session =>
@@ -108,9 +110,6 @@
                 {
                     var subscriptionStorage = new TestingInMemorySubscriptionStorage();
                     c.UsePersistence<TestingInMemoryPersistence, StorageType.Subscriptions>().UseStorage(subscriptionStorage);
-#pragma warning disable CS0618
-                    c.ConfigureSqsTransport().EnableMessageDrivenPubSubCompatibilityMode();
-#pragma warning restore CS0618
 
                     c.OnEndpointSubscribed<Context>((s, context) =>
                     {
