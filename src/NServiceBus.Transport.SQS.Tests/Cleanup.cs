@@ -39,6 +39,7 @@ namespace NServiceBus.Transport.SQS.Tests
         {
             await DeleteAllQueuesWithPrefix(sqsClient, "AT");
             await DeleteAllQueuesWithPrefix(sqsClient, "TT");
+            await DeleteAllQueuesWithPrefix(sqsClient, "cli");
         }
 
         [Test]
@@ -47,6 +48,7 @@ namespace NServiceBus.Transport.SQS.Tests
         {
             await DeleteAllSubscriptionsWithPrefix(snsClient, "AT");
             await DeleteAllSubscriptionsWithPrefix(snsClient, "TT");
+            await DeleteAllSubscriptionsWithPrefix(snsClient, "cli");
         }
 
         [Test]
@@ -55,6 +57,7 @@ namespace NServiceBus.Transport.SQS.Tests
         {
             await DeleteAllTopicsWithPrefix(snsClient, "AT");
             await DeleteAllTopicsWithPrefix(snsClient, "TT");
+            await DeleteAllTopicsWithPrefix(snsClient, "cli");
         }
 
         [Test]
@@ -70,6 +73,7 @@ namespace NServiceBus.Transport.SQS.Tests
         {
             await DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, "AT");
             await DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, "TT");
+            await DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, "cli");
         }
 
         public static Task DeleteAllResourcesWithPrefix(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, IAmazonS3 s3Client, string namePrefix)
