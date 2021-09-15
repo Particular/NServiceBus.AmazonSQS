@@ -87,7 +87,7 @@ namespace NServiceBus.Transport.SQS
             foreach (var mappedTopicName in mappedTopicsNames)
             {
                 //we skip the topic name generation assuming the topic name is already good
-                var mappedTypeMatchingSubscription = await snsClient.FindMatchingSubscription(queueCache, mappedTopicName, queueName)
+                var mappedTypeMatchingSubscription = await snsClient.FindMatchingSubscription(queueCache, mappedTopicName, queueName, configuration.SnsListTopicsRateLimiter, configuration.SnsListSubscriptionsByTopicRateLimiter)
                     .ConfigureAwait(false);
                 if (mappedTypeMatchingSubscription != null)
                 {
@@ -107,7 +107,7 @@ namespace NServiceBus.Transport.SQS
                     continue;
                 }
 
-                var mappedTypeMatchingSubscription = await snsClient.FindMatchingSubscription(queueCache, topicCache, mappedTypeMetadata, queueName)
+                var mappedTypeMatchingSubscription = await snsClient.FindMatchingSubscription(queueCache, topicCache, mappedTypeMetadata, queueName, configuration.SnsListSubscriptionsByTopicRateLimiter)
                     .ConfigureAwait(false);
                 if (mappedTypeMatchingSubscription != null)
                 {
@@ -117,7 +117,7 @@ namespace NServiceBus.Transport.SQS
                 }
             }
 
-            var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, topicCache, metadata, queueName)
+            var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, topicCache, metadata, queueName, configuration.SnsListSubscriptionsByTopicRateLimiter)
                 .ConfigureAwait(false);
             if (matchingSubscriptionArn != null)
             {
