@@ -24,7 +24,7 @@
         public static SqsSubscriptionMigrationModeSettings EnableMessageDrivenPubSubCompatibilityMode(this TransportExtensions<SqsTransport> transportExtensions)
         {
             var settings = transportExtensions.GetSettings();
-            settings.Set("NServiceBus.Subscriptions.EnableMigrationMode", true);
+            settings.Set(SettingsKeys.EnableMigrationModeSettingKey, true);
             return new SqsSubscriptionMigrationModeSettings(settings);
         }
 

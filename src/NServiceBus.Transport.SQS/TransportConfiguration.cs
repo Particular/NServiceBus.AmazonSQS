@@ -342,6 +342,9 @@
             }
         }
 
+        public bool UsingDefaultMessageVisibilityTimeout => !settings.HasSetting(SettingsKeys.MessageVisibilityTimeout);
+        public bool UsingMessageDrivenPubSubCompatibilityMode => settings.HasSetting(SettingsKeys.MessageVisibilityTimeout) && settings.Get<bool>(SettingsKeys.EnableMigrationModeSettingKey);
+
         public TimeSpan SubscriptionsCacheTTL
         {
             get
