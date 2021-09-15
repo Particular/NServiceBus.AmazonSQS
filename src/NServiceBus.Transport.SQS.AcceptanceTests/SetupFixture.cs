@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.AcceptanceTests
+namespace NServiceBus.AcceptanceTests
 {
     using System;
     using System.Text.RegularExpressions;
@@ -18,6 +18,44 @@
         /// </summary>
         public static string NamePrefix { get; private set; }
 
+        static bool usingFixedNamePrefix;
+        static string namePrefixBackup;
+
+        static string GetFixedNamePrefix()
+        {
+            var fixedNamePrefixKeyName = "NServiceBus_AmazonSQS_AT_CustomFixedNamePrefix";
+            var customFixedNamePrefix = EnvironmentHelper.GetEnvironmentVariable(fixedNamePrefixKeyName);
+
+            if (customFixedNamePrefix == null)
+            {
+                throw new Exception($"Environment variable '{fixedNamePrefixKeyName}' not set. " +
+                    $"The variable is required by tests bound to a fixed infrastructure. " +
+                    $"Make sure the value doesn't contain any space or dash characher.");
+            }
+
+            return customFixedNamePrefix;
+        }
+
+        public static void UseFixedNamePrefix()
+        {
+            usingFixedNamePrefix = true;
+
+            namePrefixBackup = NamePrefix;
+            NamePrefix = GetFixedNamePrefix();
+
+            TestContext.WriteLine($"Using fixed name prefix: '{NamePrefix}'");
+        }
+
+        public static void RestoreNamePrefixToRandomlyGenerated()
+        {
+            if (usingFixedNamePrefix)
+            {
+                TestContext.WriteLine($"Restoring name prefix from '{NamePrefix}' to '{namePrefixBackup}'");
+                NamePrefix = namePrefixBackup;
+                usingFixedNamePrefix = false;
+            }
+        }
+
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
@@ -27,6 +65,7 @@
             // us from deleting then creating a queue with the
             // same name in a 60 second period.
             NamePrefix = $"AT{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToUpperInvariant()}";
+            TestContext.WriteLine($"Generated name prefix: '{NamePrefix}'");
         }
 
         [OneTimeTearDown]
