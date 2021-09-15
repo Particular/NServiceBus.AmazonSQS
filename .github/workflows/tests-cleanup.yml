@@ -28,8 +28,7 @@ jobs:
         Write-Host "The following version of AWSPowerShell.NetCore is being used"
         Get-AWSPowerShellVersion
 
-        #$dateFilter = ([System.DateTime]::UtcNow).AddHours(-24)
-        $dateFilter = ([System.DateTime]::UtcNow).AddMinutes(-1)
+        $dateFilter = ([System.DateTime]::UtcNow).AddHours(-24)
         $nameFilter = "cli-*"                
 
         Write-Host "Current time"  ([System.DateTime]::UtcNow).ToString() UTC
