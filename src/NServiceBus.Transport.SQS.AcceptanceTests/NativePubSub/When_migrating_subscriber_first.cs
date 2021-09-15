@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.AcceptanceTests.NativePubSub
+namespace NServiceBus.AcceptanceTests.NativePubSub
 {
     using System;
     using System.Collections.Generic;
@@ -177,7 +177,7 @@
                     metadata => metadata.RegisterPublisherFor<MyEvent>(typeof(Publisher)));
             }
 
-            public class MyHandler : IHandleMessages<MyEvent>
+            public class MyEventMessageHandler : IHandleMessages<MyEvent>
             {
                 public Context Context { get; set; }
 
