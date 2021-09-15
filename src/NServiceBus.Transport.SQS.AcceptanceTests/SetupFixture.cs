@@ -1,4 +1,4 @@
-namespace NServiceBus.AcceptanceTests
+﻿namespace NServiceBus.AcceptanceTests
 {
     using System;
     using System.Text.RegularExpressions;
@@ -56,6 +56,18 @@ namespace NServiceBus.AcceptanceTests
             }
         }
 
+        public static void AppendSequenceToNamePrefix(int sequence)
+        {
+            var idx = NamePrefix.LastIndexOf('-');
+            if (idx >= 0)
+            {
+                NamePrefix = NamePrefix.Substring(0, idx);
+            }
+            NamePrefix += $"-{sequence}";
+
+            TestContext.WriteLine($"Sequence #{sequence} appended name prefix: '{NamePrefix}'");
+        }
+
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
@@ -81,6 +93,13 @@ namespace NServiceBus.AcceptanceTests
             using (var s3Client = string.IsNullOrEmpty(accessKeyId) ? SqsTransportExtensions.CreateS3Client() :
                 new AmazonS3Client(accessKeyId, secretAccessKey))
             {
+                var idx = NamePrefix.LastIndexOf('-');
+                if (idx >= 0)
+                {
+                    //remove the sequence number before cleaning up
+                    NamePrefix = NamePrefix.Substring(0, idx);
+                }
+
                 await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, NamePrefix).ConfigureAwait(false);
             }
         }
