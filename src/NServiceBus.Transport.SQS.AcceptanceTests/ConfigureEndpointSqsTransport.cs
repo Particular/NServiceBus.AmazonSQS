@@ -1,4 +1,4 @@
-namespace NServiceBus.AcceptanceTests
+﻿namespace NServiceBus.AcceptanceTests
 {
     using System;
     using System.Threading.Tasks;
@@ -26,7 +26,12 @@ namespace NServiceBus.AcceptanceTests
             configuration.RegisterComponents(c => c.ConfigureComponent<TestIndependenceMutator>(DependencyLifecycle.SingleInstance));
             configuration.Pipeline.Register("TestIndependenceBehavior", typeof(TestIndependenceSkipBehavior), "Skips messages not created during the current test.");
 
-            settings.TestExecutionTimeout = TimeSpan.FromSeconds(120);
+            if (settings.TestExecutionTimeout == null)
+            {
+                //If it's not null it means it has been set to a custom
+                //value in the test. We don't want to overwrite that
+                settings.TestExecutionTimeout = TimeSpan.FromSeconds(120);
+            }
 
             return Task.FromResult(0);
         }
