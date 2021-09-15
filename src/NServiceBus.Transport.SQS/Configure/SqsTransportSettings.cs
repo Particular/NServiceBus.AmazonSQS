@@ -21,11 +21,11 @@
             Message = @"The compatibility mode will be deprecated in the next major version of the transport. Switch to native publish/subscribe mode using SNS instead.",
             TreatAsErrorFromVersion = "6.0",
             RemoveInVersion = "7.0")]
-        public static SubscriptionMigrationModeSettings EnableMessageDrivenPubSubCompatibilityMode(this TransportExtensions<SqsTransport> transportExtensions)
+        public static SqsSubscriptionMigrationModeSettings EnableMessageDrivenPubSubCompatibilityMode(this TransportExtensions<SqsTransport> transportExtensions)
         {
             var settings = transportExtensions.GetSettings();
             settings.Set("NServiceBus.Subscriptions.EnableMigrationMode", true);
-            return new SubscriptionMigrationModeSettings(settings);
+            return new SqsSubscriptionMigrationModeSettings(settings);
         }
 
         /// <summary>

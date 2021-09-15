@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.Transport.SQS
+namespace NServiceBus.Transport.SQS
 {
     using System;
     using System.Collections.Generic;
@@ -329,6 +329,45 @@
             }
         }
 
+        public int MessageVisibilityTimeout
+        {
+            get
+            {
+                if (!messageVisibilityTimeout.HasValue)
+                {
+                    messageVisibilityTimeout = settings.GetOrDefault<int?>(SettingsKeys.MessageVisibilityTimeout) ?? 30;
+                }
+
+                return messageVisibilityTimeout.Value;
+            }
+        }
+
+        public TimeSpan SubscriptionsCacheTTL
+        {
+            get
+            {
+                if (!subscriptionsCacheTTL.HasValue)
+                {
+                    subscriptionsCacheTTL = settings.GetOrDefault<TimeSpan?>(SettingsKeys.SubscriptionsCacheTTL) ?? TimeSpan.FromSeconds(5);
+                }
+
+                return subscriptionsCacheTTL.Value;
+            }
+        }
+
+        public TimeSpan NotFoundTopicsCacheTTL
+        {
+            get
+            {
+                if (!notFoundTopicsCacheTTL.HasValue)
+                {
+                    notFoundTopicsCacheTTL = settings.GetOrDefault<TimeSpan?>(SettingsKeys.NotFoundTopicsCacheTTL) ?? TimeSpan.FromSeconds(5);
+                }
+
+                return notFoundTopicsCacheTTL.Value;
+            }
+        }
+
         public EventToTopicsMappings CustomEventToTopicsMappings => settings.GetOrDefault<EventToTopicsMappings>();
         public EventToEventsMappings CustomEventToEventsMappings => settings.GetOrDefault<EventToEventsMappings>();
 
@@ -370,6 +409,9 @@
         bool? preTruncateTopicNames;
         bool? useV1CompatiblePayload;
         int? queueDelayTime;
+        int? messageVisibilityTimeout;
+        TimeSpan? subscriptionsCacheTTL;
+        TimeSpan? notFoundTopicsCacheTTL;
         Func<IAmazonS3> s3ClientFactory;
         Func<IAmazonSQS> sqsClientFactory;
         Func<IAmazonSimpleNotificationService> snsClientFactory;
