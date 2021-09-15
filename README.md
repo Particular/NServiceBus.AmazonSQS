@@ -44,5 +44,34 @@ This scheme accomplishes the following goals:
  * The discriminator and qualifier at the end of the queue name are not interfered with 
  * Queue names fit the 80 character limit imposed by SQS
 
-### Clean up scheduled task
-This repo has a [GitHub action](/actions/workflows/tests-cleanup.yml) that deletes stale AWS objects created when the tests run. It takes care of deleting S3 buckets older than 24 hours with the cli- prefix in the name. The same GitHub action code can be updated to delete any other AWS object created by the tests that fail to be deleted during the tests clean up phase.
+### Cleanup scheduled task
+This repo has a [GitHub action](/actions/workflows/tests-cleanup.yml) that deletes stale AWS objects created when the tests run. It takes care of deleting S3 buckets older than 24 hours with the cli- prefix in the name. The same GitHub action code can be updated to delete any other AWS object created by the tests that fail to be deleted during the tests cleanup phase.
+
+AWS requires this policy for the cleanup tests to run (tests or Github action):
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "sns:DeleteTopic",
+                "sqs:DeleteQueue",
+                "s3:GetBucketLocation"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "VisualEditor1",
+            "Effect": "Allow",
+            "Action": [
+                "s3:DeleteBucket"
+            ],
+            "Resource": "arn:aws:s3:::cli-*"
+        }
+    ]
+}
+```
+
