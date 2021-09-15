@@ -49,14 +49,14 @@ namespace NServiceBus.AcceptanceTests.NativePubSub
                     });
                 })
                 .Done(c => c.GotTheEvent)
-                .Run(TimeSpan.FromSeconds(30));
+                .Run(TimeSpan.FromSeconds(60));
 
             Assert.True(beforeMigration.GotTheEvent);
 
             //Subscriber migrated and in compatibility mode.
             var subscriberMigratedRunSettings = new RunSettings
             {
-                TestExecutionTimeout = TimeSpan.FromSeconds(30)
+                TestExecutionTimeout = TimeSpan.FromSeconds(60)
             };
             var subscriberMigrated = await Scenario.Define<Context>()
                 .WithEndpoint<Publisher>(b =>
@@ -93,7 +93,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub
             //Publisher migrated and in compatibility mode
             var publisherMigratedRunSettings = new RunSettings
             {
-                TestExecutionTimeout = TimeSpan.FromSeconds(30)
+                TestExecutionTimeout = TimeSpan.FromSeconds(60)
             };
             var publisherMigrated = await Scenario.Define<Context>()
                 .WithEndpoint<Publisher>(b =>
@@ -137,7 +137,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub
                 })
                 .WithEndpoint<Subscriber>()
                 .Done(c => c.GotTheEvent)
-                .Run(TimeSpan.FromSeconds(30));
+                .Run(TimeSpan.FromSeconds(60));
 
             Assert.True(compatModeDisabled.GotTheEvent);
         }
