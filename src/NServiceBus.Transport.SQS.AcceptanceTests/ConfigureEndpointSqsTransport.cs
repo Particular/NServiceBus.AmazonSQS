@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.AcceptanceTests
+namespace NServiceBus.AcceptanceTests
 {
     using System;
     using System.Threading.Tasks;
@@ -22,6 +22,9 @@
             transportConfig.ConfigureSqsTransport(SetupFixture.NamePrefix);
 
             ApplyMappingsToSupportMultipleInheritance(endpointName, transportConfig);
+
+            configuration.RegisterComponents(c => c.ConfigureComponent<TestIndependenceMutator>(DependencyLifecycle.SingleInstance));
+            configuration.Pipeline.Register("TestIndependenceBehavior", typeof(TestIndependenceSkipBehavior), "Skips messages not created during the current test.");
 
             settings.TestExecutionTimeout = TimeSpan.FromSeconds(120);
 
