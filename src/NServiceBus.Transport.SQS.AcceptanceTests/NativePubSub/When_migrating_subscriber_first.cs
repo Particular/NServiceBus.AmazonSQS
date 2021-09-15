@@ -16,7 +16,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub
     {
         static string PublisherEndpoint => Conventions.EndpointNamingConvention(typeof(Publisher));
 
-        [Test]
+        [Test, UseFixedNamePrefix]
         public async Task Should_not_lose_any_events()
         {
             var subscriptionStorage = new TestingInMemorySubscriptionStorage();
