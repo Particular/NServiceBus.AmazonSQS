@@ -10,7 +10,7 @@
 
     class HybridPubSubChecker
     {
-        class SubscritionCacheItem
+        class SubscriptionsCacheItem
         {
             public bool IsThereAnSnsSubscription { get; set; }
             public DateTime Age { get; } = DateTime.Now;
@@ -18,11 +18,11 @@
 
         public HybridPubSubChecker(TransportConfiguration configuration)
         {
-            this.configuration = configuration;
+            rateLimiter = configuration.SnsListSubscriptionsByTopicRateLimiter;
             cacheTTL = configuration.SubscriptionsCacheTTL;
         }
 
-        bool TryGetFromCache(string cacheKey, out SubscritionCacheItem item)
+        bool TryGetFromCache(string cacheKey, out SubscriptionsCacheItem item)
         {
             item = null;
             if (subscriptionsCache.TryGetValue(cacheKey, out var cacheItem))
@@ -69,10 +69,10 @@
                 }
 
                 var cacheKey = existingTopic.TopicArn + unicastTransportOperation.Destination;
-                Logger.Debug($"Performing firt subscription cache lookup for '{cacheKey}'.");
+                Logger.Debug($"Performing first subscription cache lookup for '{cacheKey}'.");
                 if (!TryGetFromCache(cacheKey, out var cacheItem))
                 {
-                    cacheItem = await configuration.SnsListSubscriptionsByTopicRateLimiter.Execute(async () =>
+                    cacheItem = await rateLimiter.Execute(async () =>
                     {
                         Logger.Debug($"Performing second subscription cache lookup for '{cacheKey}'.");
                         if (TryGetFromCache(cacheKey, out var secondAttemptItem))
@@ -84,7 +84,7 @@
                         var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination)
                             .ConfigureAwait(false);
 
-                        return new SubscritionCacheItem { IsThereAnSnsSubscription = matchingSubscriptionArn != null };
+                        return new SubscriptionsCacheItem { IsThereAnSnsSubscription = matchingSubscriptionArn != null };
                     }).ConfigureAwait(false);
 
                     Logger.Debug($"Adding subscription to cache as '{(cacheItem.IsThereAnSnsSubscription ? "found" : "not found")}', key: '{cacheKey}'.");
@@ -100,9 +100,9 @@
             return true;
         }
 
-        TransportConfiguration configuration;
+        SnsListSubscriptionsByTopicRateLimiter rateLimiter;
         readonly TimeSpan cacheTTL;
-        readonly ConcurrentDictionary<string, SubscritionCacheItem> subscriptionsCache = new ConcurrentDictionary<string, SubscritionCacheItem>();
+        readonly ConcurrentDictionary<string, SubscriptionsCacheItem> subscriptionsCache = new ConcurrentDictionary<string, SubscriptionsCacheItem>();
         static ILog Logger = LogManager.GetLogger(typeof(HybridPubSubChecker));
     }
 }
