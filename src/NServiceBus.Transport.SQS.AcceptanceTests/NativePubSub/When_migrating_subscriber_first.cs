@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.AcceptanceTests.NativePubSub
+namespace NServiceBus.AcceptanceTests.NativePubSub
 {
     using System;
     using System.Collections.Generic;
@@ -16,7 +16,7 @@
     {
         static string PublisherEndpoint => Conventions.EndpointNamingConvention(typeof(Publisher));
 
-        [Test]
+        [Test, UseFixedNamePrefix]
         public async Task Should_not_lose_any_events()
         {
             var subscriptionStorage = new TestingInMemorySubscriptionStorage();
@@ -49,14 +49,14 @@
                     });
                 })
                 .Done(c => c.GotTheEvent)
-                .Run(TimeSpan.FromSeconds(30));
+                .Run(TimeSpan.FromSeconds(60));
 
             Assert.True(beforeMigration.GotTheEvent);
 
             //Subscriber migrated and in compatibility mode.
             var subscriberMigratedRunSettings = new RunSettings
             {
-                TestExecutionTimeout = TimeSpan.FromSeconds(30)
+                TestExecutionTimeout = TimeSpan.FromSeconds(60)
             };
             var subscriberMigrated = await Scenario.Define<Context>()
                 .WithEndpoint<Publisher>(b =>
@@ -93,7 +93,7 @@
             //Publisher migrated and in compatibility mode
             var publisherMigratedRunSettings = new RunSettings
             {
-                TestExecutionTimeout = TimeSpan.FromSeconds(30)
+                TestExecutionTimeout = TimeSpan.FromSeconds(60)
             };
             var publisherMigrated = await Scenario.Define<Context>()
                 .WithEndpoint<Publisher>(b =>
@@ -137,7 +137,7 @@
                 })
                 .WithEndpoint<Subscriber>()
                 .Done(c => c.GotTheEvent)
-                .Run(TimeSpan.FromSeconds(30));
+                .Run(TimeSpan.FromSeconds(60));
 
             Assert.True(compatModeDisabled.GotTheEvent);
         }
@@ -177,7 +177,7 @@
                     metadata => metadata.RegisterPublisherFor<MyEvent>(typeof(Publisher)));
             }
 
-            public class MyHandler : IHandleMessages<MyEvent>
+            public class MyEventMessageHandler : IHandleMessages<MyEvent>
             {
                 public Context Context { get; set; }
 

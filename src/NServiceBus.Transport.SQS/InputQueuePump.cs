@@ -84,7 +84,8 @@ namespace NServiceBus.Transport.SQS
                 QueueUrl = inputQueueUrl,
                 WaitTimeSeconds = 20,
                 AttributeNames = new List<string> { "SentTimestamp" },
-                MessageAttributeNames = new List<string> { "*" }
+                MessageAttributeNames = new List<string> { "*" },
+                VisibilityTimeout = configuration.MessageVisibilityTimeout,
             };
 
             maxConcurrencySemaphore = new SemaphoreSlim(maxConcurrency);

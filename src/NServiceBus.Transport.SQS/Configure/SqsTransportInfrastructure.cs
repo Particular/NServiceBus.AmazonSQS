@@ -111,6 +111,13 @@
 
         public override TransportSendInfrastructure ConfigureSendInfrastructure()
         {
+            if (configuration.UsingMessageDrivenPubSubCompatibilityMode && configuration.UsingDefaultMessageVisibilityTimeout)
+            {
+                Logger.Warn("When using message driven pub/sub compatibility mode, " +
+                    "it's suggested to set a custom message visibility timeout. " +
+                    "Refer to the message driven pub/sub compatibility mode documentation for more information.");
+            }
+
             return new TransportSendInfrastructure(
                 CreateMessageDispatcher,
                 () => Task.FromResult(StartupCheckResult.Success));

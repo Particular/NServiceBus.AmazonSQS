@@ -12,7 +12,6 @@
     using Amazon.SQS.Model;
     using DelayedDelivery;
     using Extensibility;
-    using Extensions;
     using Logging;
     using SimpleJson;
     using Transport;
@@ -27,6 +26,7 @@
             this.s3Client = s3Client;
             this.sqsClient = sqsClient;
             this.queueCache = queueCache;
+            hybridPubSubChecker = new HybridPubSubChecker(configuration);
             serializerStrategy = configuration.UseV1CompatiblePayload ? SimpleJson.PocoJsonSerializerStrategy : ReducedPayloadSerializerStrategy.Instance;
         }
 
@@ -244,23 +244,9 @@
         {
             var unicastTransportOperation = transportOperation as UnicastTransportOperation;
 
-            // these conditions are carefully chosen to only execute the code if really necessary
-            if (unicastTransportOperation != null
-                && messageIdsOfMulticastedEvents.Contains(unicastTransportOperation.Message.MessageId)
-                && unicastTransportOperation.Message.GetMessageIntent() == MessageIntentEnum.Publish
-                && unicastTransportOperation.Message.Headers.ContainsKey(Headers.EnclosedMessageTypes))
+            if (!await hybridPubSubChecker.PublishUsingMessageDrivenPubSub(unicastTransportOperation, messageIdsOfMulticastedEvents, topicCache, queueCache, snsClient).ConfigureAwait(false))
             {
-                var mostConcreteEnclosedMessageType = unicastTransportOperation.Message.GetEnclosedMessageTypes()[0];
-                var existingTopic = await topicCache.GetTopicArn(mostConcreteEnclosedMessageType).ConfigureAwait(false);
-                if (existingTopic != null)
-                {
-                    var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination)
-                        .ConfigureAwait(false);
-                    if (matchingSubscriptionArn != null)
-                    {
-                        return null;
-                    }
-                }
+                return null;
             }
 
             var delayDeliveryWith = transportOperation.DeliveryConstraints.OfType<DelayDeliveryWith>().SingleOrDefault();
@@ -420,6 +406,7 @@
         IAmazonS3 s3Client;
         QueueCache queueCache;
         IJsonSerializerStrategy serializerStrategy;
+        readonly HybridPubSubChecker hybridPubSubChecker;
         static readonly HashSet<string> emptyHashset = new HashSet<string>();
 
         static ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));

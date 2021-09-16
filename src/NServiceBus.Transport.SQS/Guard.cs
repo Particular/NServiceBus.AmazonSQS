@@ -19,5 +19,13 @@
                 throw new ArgumentNullException(argumentName);
             }
         }
+
+        public static void AgainstNegativeAndZero(string argumentName, TimeSpan value)
+        {
+            if (value <= TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(argumentName);
+            }
+        }
     }
 }

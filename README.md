@@ -29,13 +29,21 @@ The transport can be configured using the following environment variables:
 
 The names of queues used by the acceptance tests take the following form:
 
-    AT<datetime>-<pre-truncated-queue-name>
+    AT<sanitized-guid>-<pre-truncated-queue-name>
 
 Where
 
  * `AT` stands for "Acceptance Test"
- * `datetime` is a date and time as yyyyMMddHHmmss that uniquely identifies a single test run. For example, when 100 tests are executed in a single test run each queue will have the same datetime timestamp.
+ * `sanitized-guid` is a GUID converted to a base 64 string from which invalid characters are removed. For example, when 100 tests are executed in a single test run each queue will have the same `sanitized-guid`.
  * `pre-truncated-queue-name` is the name of the queue, "pre-truncated" (characters are removed from the beginning) so that the entire queue name is 80 characters or less. 
+
+_Note:_
+
+Some tests generate high load and require a fixed queue naming scheme to prevent policy propagation in the cluster to affect the test execution. The fixed resources prefix can be customized by using the `NServiceBus_AmazonSQS_AT_CustomFixedNamePrefix` environment variable. If not specified an exception will be thrown. For these tests the resources name schema is:
+
+    <name-prefix>-<optional-test-case-sequence>-<pre-truncated-queue-name>
+    
+Where `optional-test-case-sequence` is an optional integer value specified by tests using the NUnit test case feature to run the same test multiple times with different input values.
 
 This scheme accomplishes the following goals:
 

@@ -329,6 +329,52 @@
             }
         }
 
+        public int MessageVisibilityTimeout
+        {
+            get
+            {
+                if (!messageVisibilityTimeout.HasValue)
+                {
+                    messageVisibilityTimeout = settings.GetOrDefault<int?>(SettingsKeys.MessageVisibilityTimeout) ?? 30;
+                }
+
+                return messageVisibilityTimeout.Value;
+            }
+        }
+
+        public bool UsingDefaultMessageVisibilityTimeout => !settings.HasSetting(SettingsKeys.MessageVisibilityTimeout);
+        public bool UsingMessageDrivenPubSubCompatibilityMode => settings.HasSetting(SettingsKeys.MessageVisibilityTimeout) && settings.Get<bool>(SettingsKeys.EnableMigrationModeSettingKey);
+
+        public TimeSpan SubscriptionsCacheTTL
+        {
+            get
+            {
+                if (!subscriptionsCacheTTL.HasValue)
+                {
+                    subscriptionsCacheTTL = settings.GetOrDefault<TimeSpan?>(SettingsKeys.SubscriptionsCacheTTL) ?? TimeSpan.FromSeconds(5);
+                }
+
+                return subscriptionsCacheTTL.Value;
+            }
+        }
+
+        public TimeSpan NotFoundTopicsCacheTTL
+        {
+            get
+            {
+                if (!notFoundTopicsCacheTTL.HasValue)
+                {
+                    notFoundTopicsCacheTTL = settings.GetOrDefault<TimeSpan?>(SettingsKeys.NotFoundTopicsCacheTTL) ?? TimeSpan.FromSeconds(5);
+                }
+
+                return notFoundTopicsCacheTTL.Value;
+            }
+        }
+
+        public SnsListTopicsRateLimiter SnsListTopicsRateLimiter { get; } = new SnsListTopicsRateLimiter();
+
+        public SnsListSubscriptionsByTopicRateLimiter SnsListSubscriptionsByTopicRateLimiter { get; } = new SnsListSubscriptionsByTopicRateLimiter();
+
         public EventToTopicsMappings CustomEventToTopicsMappings => settings.GetOrDefault<EventToTopicsMappings>();
         public EventToEventsMappings CustomEventToEventsMappings => settings.GetOrDefault<EventToEventsMappings>();
 
@@ -370,6 +416,9 @@
         bool? preTruncateTopicNames;
         bool? useV1CompatiblePayload;
         int? queueDelayTime;
+        int? messageVisibilityTimeout;
+        TimeSpan? subscriptionsCacheTTL;
+        TimeSpan? notFoundTopicsCacheTTL;
         Func<IAmazonS3> s3ClientFactory;
         Func<IAmazonSQS> sqsClientFactory;
         Func<IAmazonSimpleNotificationService> snsClientFactory;
