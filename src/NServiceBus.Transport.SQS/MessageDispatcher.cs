@@ -74,7 +74,7 @@
             foreach (var operation in multicastTransportOperations)
             {
                 messageIdsOfMulticastEvents.Add(operation.Message.MessageId);
-                tasks = tasks ?? new List<Task>(multicastTransportOperations.Count);
+                tasks ??= new List<Task>(multicastTransportOperations.Count);
                 tasks.Add(Dispatch(operation, EmptyHashset, transportTransaction, cancellationToken));
             }
 
@@ -86,7 +86,7 @@
             List<Task> tasks = null;
             foreach (var operation in isolatedTransportOperations)
             {
-                tasks = tasks ?? new List<Task>();
+                tasks ??= new List<Task>();
                 tasks.Add(Dispatch(operation, messageIdsOfMulticastEvents, transportTransaction, cancellationToken));
             }
 
@@ -138,7 +138,7 @@
                 List<Task> redispatchTasks = null;
                 foreach (var errorEntry in result.Failed)
                 {
-                    redispatchTasks = redispatchTasks ?? new List<Task>(result.Failed.Count);
+                    redispatchTasks ??= new List<Task>(result.Failed.Count);
                     var messageToRetry = batch.PreparedMessagesBydId[errorEntry.Id];
                     Logger.Info($"Retrying message with MessageId {messageToRetry.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
                     redispatchTasks.Add(SendMessageForBatch(messageToRetry, batchNumber, totalBatches, cancellationToken));

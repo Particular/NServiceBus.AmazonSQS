@@ -19,7 +19,7 @@ namespace NServiceBus.Transport.SQS
                 var payloadSize = 0L;
                 foreach (var message in group)
                 {
-                    firstMessage = firstMessage ?? message;
+                    firstMessage ??= message;
 
                     // Assumes the size was already calculated by the dispatcher
                     var size = message.Size;
