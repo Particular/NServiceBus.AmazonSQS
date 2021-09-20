@@ -12,6 +12,6 @@
         }
 
         static ReducedPayloadSerializerStrategy reducedPayloadSerializerStrategy;
-        public static ReducedPayloadSerializerStrategy Instance => reducedPayloadSerializerStrategy ?? (reducedPayloadSerializerStrategy = new ReducedPayloadSerializerStrategy());
+        public static ReducedPayloadSerializerStrategy Instance => reducedPayloadSerializerStrategy ??= new ReducedPayloadSerializerStrategy();
     }
 }

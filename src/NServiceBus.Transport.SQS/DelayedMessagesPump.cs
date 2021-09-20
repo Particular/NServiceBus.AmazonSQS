@@ -162,7 +162,7 @@ namespace NServiceBus.Transport.SQS
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                preparedMessages = preparedMessages ?? new List<SqsReceivedDelayedMessage>(receivedMessages.Messages.Count);
+                preparedMessages ??= new List<SqsReceivedDelayedMessage>(receivedMessages.Messages.Count);
                 long delaySeconds = 0;
 
                 if (receivedMessage.MessageAttributes.TryGetValue(DelaySeconds, out var delayAttribute))
@@ -266,7 +266,7 @@ namespace NServiceBus.Transport.SQS
             Task[] batchTasks = null;
             for (var i = 0; i < operationCount; i++)
             {
-                batchTasks = batchTasks ?? new Task[operationCount];
+                batchTasks ??= new Task[operationCount];
                 batchTasks[i] = SendDelayedMessagesInBatches(batchesToSend[i], i + 1, operationCount, cancellationToken);
             }
 
@@ -307,7 +307,7 @@ namespace NServiceBus.Transport.SQS
                 List<ChangeMessageVisibilityBatchRequestEntry> changeVisibilityBatchRequestEntries = null;
                 foreach (var failed in result.Failed)
                 {
-                    changeVisibilityBatchRequestEntries = changeVisibilityBatchRequestEntries ?? new List<ChangeMessageVisibilityBatchRequestEntry>(result.Failed.Count);
+                    changeVisibilityBatchRequestEntries ??= new List<ChangeMessageVisibilityBatchRequestEntry>(result.Failed.Count);
                     var preparedMessage = batch.PreparedMessagesBydId[failed.Id];
                     // need to reuse the previous batch entry ID so that we can map again in failure scenarios, this is fine given that IDs only need to be unique per request
                     changeVisibilityBatchRequestEntries.Add(new ChangeMessageVisibilityBatchRequestEntry(failed.Id, preparedMessage.ReceiptHandle)
@@ -364,7 +364,7 @@ namespace NServiceBus.Transport.SQS
             List<DeleteMessageBatchRequestEntry> deleteBatchRequestEntries = null;
             foreach (var successful in result.Successful)
             {
-                deleteBatchRequestEntries = deleteBatchRequestEntries ?? new List<DeleteMessageBatchRequestEntry>(result.Successful.Count);
+                deleteBatchRequestEntries ??= new List<DeleteMessageBatchRequestEntry>(result.Successful.Count);
                 var preparedMessage = batch.PreparedMessagesBydId[successful.Id];
                 // need to reuse the previous batch entry ID so that we can map again in failure scenarios, this is fine given that IDs only need to be unique per request
                 deleteBatchRequestEntries.Add(new DeleteMessageBatchRequestEntry(successful.Id, preparedMessage.ReceiptHandle));
@@ -392,7 +392,7 @@ namespace NServiceBus.Transport.SQS
                 List<Task> deleteTasks = null;
                 foreach (var errorEntry in deleteResult.Failed)
                 {
-                    deleteTasks = deleteTasks ?? new List<Task>(deleteResult.Failed.Count);
+                    deleteTasks ??= new List<Task>(deleteResult.Failed.Count);
                     var messageToDeleteWithAnotherAttempt = batch.PreparedMessagesBydId[errorEntry.Id];
                     Logger.Info($"Retrying message deletion with MessageId {messageToDeleteWithAnotherAttempt.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
                     deleteTasks.Add(DeleteMessage(messageToDeleteWithAnotherAttempt, cancellationToken));

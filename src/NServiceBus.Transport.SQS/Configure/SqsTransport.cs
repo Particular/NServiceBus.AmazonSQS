@@ -250,8 +250,8 @@
         }
 
         QueueCache QueueCache =>
-            queueCache ?? (queueCache = new QueueCache(SqsClient,
-                destination => queueNameGenerator(destination, QueueNamePrefix)));
+            queueCache ??= new QueueCache(SqsClient,
+                destination => queueNameGenerator(destination, QueueNamePrefix));
 
         /// <summary>
         /// Returns a list of all supported transaction modes of this transport.
