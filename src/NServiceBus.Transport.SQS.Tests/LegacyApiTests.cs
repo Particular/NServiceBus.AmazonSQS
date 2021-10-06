@@ -1,5 +1,4 @@
-﻿#pragma warning disable 618
-namespace NServiceBus.Transport.SQS.Tests
+﻿namespace NServiceBus.Transport.SQS.Tests
 {
     using System;
     using NUnit.Framework;
@@ -21,13 +20,12 @@ namespace NServiceBus.Transport.SQS.Tests
             transport.TopicNamePrefix("MyTopicPrefix");
             transport.TopicNameGenerator((type, name) => "42");
 
-            Assert.IsTrue(transport.SqsTransport.EnableV1CompatibilityMode);
-            Assert.AreEqual(TimeSpan.FromMinutes(42), transport.SqsTransport.MaxTimeToLive);
-            Assert.AreEqual("MyPrefix", transport.SqsTransport.QueueNamePrefix);
-            Assert.AreEqual("MyTopicPrefix", transport.SqsTransport.TopicNamePrefix);
-            Assert.AreEqual("42", transport.SqsTransport.TopicNameGenerator(null, null));
+            Assert.IsTrue(transport.Transport.EnableV1CompatibilityMode);
+            Assert.AreEqual(TimeSpan.FromMinutes(42), transport.Transport.MaxTimeToLive);
+            Assert.AreEqual("MyPrefix", transport.Transport.QueueNamePrefix);
+            Assert.AreEqual("MyTopicPrefix", transport.Transport.TopicNamePrefix);
+            Assert.AreEqual("42", transport.Transport.TopicNameGenerator(null, null));
 
         }
     }
 }
-#pragma warning restore 618

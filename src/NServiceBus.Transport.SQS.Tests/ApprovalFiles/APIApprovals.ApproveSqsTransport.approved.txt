@@ -1,4 +1,4 @@
-﻿[assembly: System.Runtime.CompilerServices.InternalsVisibleTo(@"NServiceBus.Transport.SQS.AcceptanceTests, PublicKey=00240000048000009400000006020000002400005253413100040000010001007f16e21368ff041183fab592d9e8ed37e7be355e93323147a1d29983d6e591b04282e4da0c9e18bd901e112c0033925eb7d7872c2f1706655891c5c9d57297994f707d16ee9a8f40d978f064ee1ffc73c0db3f4712691b23bf596f75130f4ec978cf78757ec034625a5f27e6bb50c618931ea49f6f628fd74271c32959efb1c5")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo(@"NServiceBus.Transport.SQS.AcceptanceTests, PublicKey=00240000048000009400000006020000002400005253413100040000010001007f16e21368ff041183fab592d9e8ed37e7be355e93323147a1d29983d6e591b04282e4da0c9e18bd901e112c0033925eb7d7872c2f1706655891c5c9d57297994f707d16ee9a8f40d978f064ee1ffc73c0db3f4712691b23bf596f75130f4ec978cf78757ec034625a5f27e6bb50c618931ea49f6f628fd74271c32959efb1c5")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo(@"NServiceBus.Transport.SQS.Tests, PublicKey=00240000048000009400000006020000002400005253413100040000010001007f16e21368ff041183fab592d9e8ed37e7be355e93323147a1d29983d6e591b04282e4da0c9e18bd901e112c0033925eb7d7872c2f1706655891c5c9d57297994f707d16ee9a8f40d978f064ee1ffc73c0db3f4712691b23bf596f75130f4ec978cf78757ec034625a5f27e6bb50c618931ea49f6f628fd74271c32959efb1c5")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo(@"NServiceBus.Transport.SQS.TransportTests, PublicKey=00240000048000009400000006020000002400005253413100040000010001007f16e21368ff041183fab592d9e8ed37e7be355e93323147a1d29983d6e591b04282e4da0c9e18bd901e112c0033925eb7d7872c2f1706655891c5c9d57297994f707d16ee9a8f40d978f064ee1ffc73c0db3f4712691b23bf596f75130f4ec978cf78757ec034625a5f27e6bb50c618931ea49f6f628fd74271c32959efb1c5")]
 namespace NServiceBus
@@ -87,153 +87,32 @@ namespace NServiceBus
         public void MapEvent<TSubscribedEvent, TPublishedEvent>() { }
         public override string ToTransportAddress(NServiceBus.Transport.QueueAddress address) { }
     }
-    public static class SqsTransportApiExtensions
-    {
-        [System.Obsolete("Use `EndpointConfiguration.UseTransport(TransportDefinition)` instead. Will be tr" +
-            "eated as an error from version 9.0.0. Will be removed in version 10.0.0.", false)]
-        public static NServiceBus.SqsTransportLegacySettings UseTransport<T>(this NServiceBus.EndpointConfiguration config)
-            where T : NServiceBus.SqsTransport { }
-    }
-    public class SqsTransportLegacySettings : NServiceBus.TransportSettings<NServiceBus.SqsTransport>
-    {
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport constru" +
-            "ctor` instead. Will be treated as an error from version 7.0.0. Will be removed i" +
-            "n version 8.0.0.", false)]
-        public NServiceBus.SqsTransportLegacySettings ClientFactory(System.Func<Amazon.SQS.IAmazonSQS> factory) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport constru" +
-            "ctor` instead. Will be treated as an error from version 7.0.0. Will be removed i" +
-            "n version 8.0.0.", false)]
-        public NServiceBus.SqsTransportLegacySettings ClientFactory(System.Func<Amazon.SimpleNotificationService.IAmazonSimpleNotificationService> factory) { }
-        [System.Obsolete("The compatibility mode is deprecated. Switch to native publish/subscribe mode usi" +
-            "ng SNS instead. The member currently throws a NotImplementedException. Will be r" +
-            "emoved in version 7.0.0.", true)]
-        public NServiceBus.SubscriptionMigrationModeSettings EnableMessageDrivenPubSubCompatibilityMode() { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.EnableV" +
-            "1CompatibilityMode` instead. Will be treated as an error from version 7.0.0. Wil" +
-            "l be removed in version 8.0.0.", false)]
-        public NServiceBus.SqsTransportLegacySettings EnableV1CompatibilityMode() { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.MapEven" +
-            "t` instead. Will be treated as an error from version 7.0.0. Will be removed in v" +
-            "ersion 8.0.0.", false)]
-        public void MapEvent(System.Type eventType, string customTopicName) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.MapEven" +
-            "t` instead. Will be treated as an error from version 7.0.0. Will be removed in v" +
-            "ersion 8.0.0.", false)]
-        public void MapEvent(System.Type subscribedEventType, System.Collections.Generic.IEnumerable<string> customTopicsNames) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.MapEven" +
-            "t` instead. Will be treated as an error from version 7.0.0. Will be removed in v" +
-            "ersion 8.0.0.", false)]
-        public void MapEvent(System.Type subscribedEventType, System.Type publishedEventType) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.MapEven" +
-            "t` instead. Will be treated as an error from version 7.0.0. Will be removed in v" +
-            "ersion 8.0.0.", false)]
-        public void MapEvent<TSubscribedEvent>(System.Collections.Generic.IEnumerable<string> customTopicsNames) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.MapEven" +
-            "t` instead. Will be treated as an error from version 7.0.0. Will be removed in v" +
-            "ersion 8.0.0.", false)]
-        public void MapEvent<TSubscribedEvent>(string customTopicName) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.MapEven" +
-            "t` instead. Will be treated as an error from version 7.0.0. Will be removed in v" +
-            "ersion 8.0.0.", false)]
-        public void MapEvent<TSubscribedEvent, TPublishedEvent>() { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.MaxTime" +
-            "ToLive` instead. Will be treated as an error from version 7.0.0. Will be removed" +
-            " in version 8.0.0.", false)]
-        public NServiceBus.SqsTransportLegacySettings MaxTimeToLive(System.TimeSpan maxTimeToLive) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.Policie" +
-            "s` instead. Will be treated as an error from version 7.0.0. Will be removed in v" +
-            "ersion 8.0.0.", false)]
-        public NServiceBus.PolicySettings Policies() { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.QueueNa" +
-            "mePrefix` instead. Will be treated as an error from version 7.0.0. Will be remov" +
-            "ed in version 8.0.0.", false)]
-        public NServiceBus.SqsTransportLegacySettings QueueNamePrefix(string queueNamePrefix) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.S3` ins" +
-            "tead. Will be treated as an error from version 7.0.0. Will be removed in version" +
-            " 8.0.0.", false)]
-        public NServiceBus.S3Settings S3(string bucketForLargeMessages, string keyPrefix) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.TopicNa" +
-            "meGenerator` instead. Will be treated as an error from version 7.0.0. Will be re" +
-            "moved in version 8.0.0.", false)]
-        public NServiceBus.SqsTransportLegacySettings TopicNameGenerator(System.Func<System.Type, string, string> topicNameGenerator) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.TopicNa" +
-            "mePrefix` instead. Will be treated as an error from version 7.0.0. Will be remov" +
-            "ed in version 8.0.0.", false)]
-        public NServiceBus.SqsTransportLegacySettings TopicNamePrefix(string topicNamePrefix) { }
-        [System.Obsolete("The native delayed delivery is always enabled in version 6. Use `SqsTransport.Que" +
-            "ueDelay` instead. The member currently throws a NotImplementedException. Will be" +
-            " removed in version 7.0.0.", true)]
-        public NServiceBus.SqsTransportLegacySettings UnrestrictedDurationDelayedDelivery() { }
-    }
     public static class SqsTransportSettings
     {
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport constru" +
-            "ctor` instead. The member currently throws a NotImplementedException. Will be re" +
-            "moved in version 7.0.0.", true)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> ClientFactory(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Func<Amazon.SQS.IAmazonSQS> factory) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport constru" +
-            "ctor` instead. The member currently throws a NotImplementedException. Will be re" +
-            "moved in version 7.0.0.", true)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> ClientFactory(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Func<Amazon.SimpleNotificationService.IAmazonSimpleNotificationService> factory) { }
         [System.Obsolete("The compatibility mode is deprecated. Switch to native publish/subscribe mode usi" +
             "ng SNS instead. The member currently throws a NotImplementedException. Will be r" +
             "emoved in version 7.0.0.", true)]
         public static NServiceBus.SubscriptionMigrationModeSettings EnableMessageDrivenPubSubCompatibilityMode(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.EnableV" +
-            "1CompatibilityMode` instead. The member currently throws a NotImplementedExcepti" +
-            "on. Will be removed in version 7.0.0.", true)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> EnableV1CompatibilityMode(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.MapEven" +
-            "t` instead. The member currently throws a NotImplementedException. Will be remov" +
-            "ed in version 7.0.0.", true)]
         public static void MapEvent(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Type eventType, string customTopicName) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.MapEven" +
-            "t` instead. The member currently throws a NotImplementedException. Will be remov" +
-            "ed in version 7.0.0.", true)]
         public static void MapEvent(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Type subscribedEventType, System.Collections.Generic.IEnumerable<string> customTopicsNames) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.MapEven" +
-            "t` instead. The member currently throws a NotImplementedException. Will be remov" +
-            "ed in version 7.0.0.", true)]
         public static void MapEvent(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Type subscribedEventType, System.Type publishedEventType) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.MapEven" +
-            "t` instead. The member currently throws a NotImplementedException. Will be remov" +
-            "ed in version 7.0.0.", true)]
         public static void MapEvent<TSubscribedEvent>(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Collections.Generic.IEnumerable<string> customTopicsNames) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.MapEven" +
-            "t` instead. The member currently throws a NotImplementedException. Will be remov" +
-            "ed in version 7.0.0.", true)]
         public static void MapEvent<TSubscribedEvent>(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string customTopicName) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.MapEven" +
-            "t` instead. The member currently throws a NotImplementedException. Will be remov" +
-            "ed in version 7.0.0.", true)]
         public static void MapEvent<TSubscribedEvent, TPublishedEvent>(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.MaxTime" +
-            "ToLive` instead. The member currently throws a NotImplementedException. Will be " +
-            "removed in version 7.0.0.", true)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> MaxTimeToLive(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.TimeSpan maxTimeToLive) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.Policie" +
-            "s` instead. The member currently throws a NotImplementedException. Will be remov" +
-            "ed in version 7.0.0.", true)]
         public static NServiceBus.PolicySettings Policies(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.QueueNa" +
-            "mePrefix` instead. The member currently throws a NotImplementedException. Will b" +
-            "e removed in version 7.0.0.", true)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> QueueNamePrefix(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string queueNamePrefix) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.S3` ins" +
-            "tead. The member currently throws a NotImplementedException. Will be removed in " +
-            "version 7.0.0.", true)]
         public static NServiceBus.S3Settings S3(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string bucketForLargeMessages, string keyPrefix) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.TopicNa" +
-            "meGenerator` instead. The member currently throws a NotImplementedException. Wil" +
-            "l be removed in version 7.0.0.", true)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> TopicNameGenerator(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Func<System.Type, string, string> topicNameGenerator) { }
-        [System.Obsolete("The configuration has been moved to SqsTransport class. Use `SqsTransport.TopicNa" +
-            "mePrefix` instead. The member currently throws a NotImplementedException. Will b" +
-            "e removed in version 7.0.0.", true)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> TopicNamePrefix(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string topicNamePrefix) { }
         [System.Obsolete("The native delayed delivery is always enabled in version 6. Use `SqsTransport.Que" +
             "ueDelay` instead. The member currently throws a NotImplementedException. Will be" +
             " removed in version 7.0.0.", true)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> UnrestrictedDurationDelayedDelivery(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
+        public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> UseTransport<T>(this NServiceBus.EndpointConfiguration config)
+            where T : NServiceBus.SqsTransport { }
     }
 }
