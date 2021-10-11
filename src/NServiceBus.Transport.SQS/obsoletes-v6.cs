@@ -4,6 +4,7 @@ namespace NServiceBus
 {
     using System;
     using Amazon.S3;
+    using NServiceBus.Pipeline;
 
     public static partial class SqsTransportSettings
     {
@@ -49,6 +50,21 @@ namespace NServiceBus
         {
             throw new NotImplementedException();
         }
+
+        [ObsoleteEx(
+            Message = "The native delayed delivery is always enabled in version 6.",
+            TreatAsErrorFromVersion = "6",
+            RemoveInVersion = "7")]
+        public static void SubscriptionAuthorizer(this TransportExtensions<SqsTransport> transportExtensions, Func<IIncomingPhysicalMessageContext, bool> authorizer)
+            => throw new NotImplementedException();
+
+        [ObsoleteEx(
+            Message = "The native delayed delivery is always enabled in version 6.",
+            TreatAsErrorFromVersion = "6",
+            RemoveInVersion = "7")]
+        public static void DisablePublishing(this TransportExtensions<SqsTransport> transportExtensions)
+            => throw new NotImplementedException();
+
     }
 
     public partial class S3Settings
