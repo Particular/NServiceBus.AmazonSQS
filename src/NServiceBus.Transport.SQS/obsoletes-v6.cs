@@ -25,6 +25,30 @@ namespace NServiceBus
         {
             throw new NotImplementedException();
         }
+
+        /// <summary>
+        /// Configures the transport to use the given func as the connection string.
+        /// </summary>
+        [ObsoleteEx(
+            Message = "The SQS transport does not support a connection string.",
+            TreatAsErrorFromVersion = "6",
+            RemoveInVersion = "7")]
+        public static TransportExtensions<SqsTransport> ConnectionString(this TransportExtensions<SqsTransport> transport, string connectionString)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Configures the transport to use the given func as the connection string.
+        /// </summary>
+        [ObsoleteEx(
+            Message = "The SQS transport does not support a connection string.",
+            TreatAsErrorFromVersion = "6",
+            RemoveInVersion = "7")]
+        public static TransportExtensions<SqsTransport> ConnectionString(this TransportExtensions<SqsTransport> transport, Func<string> connectionString)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public partial class S3Settings

@@ -91,6 +91,12 @@ namespace NServiceBus
     {
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> ClientFactory(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Func<Amazon.SQS.IAmazonSQS> factory) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> ClientFactory(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Func<Amazon.SimpleNotificationService.IAmazonSimpleNotificationService> factory) { }
+        [System.Obsolete("The SQS transport does not support a connection string. The member currently thro" +
+            "ws a NotImplementedException. Will be removed in version 7.0.0.", true)]
+        public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> ConnectionString(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transport, System.Func<string> connectionString) { }
+        [System.Obsolete("The SQS transport does not support a connection string. The member currently thro" +
+            "ws a NotImplementedException. Will be removed in version 7.0.0.", true)]
+        public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> ConnectionString(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transport, string connectionString) { }
         [System.Obsolete("The compatibility mode is deprecated. Switch to native publish/subscribe mode usi" +
             "ng SNS instead. The member currently throws a NotImplementedException. Will be r" +
             "emoved in version 7.0.0.", true)]
