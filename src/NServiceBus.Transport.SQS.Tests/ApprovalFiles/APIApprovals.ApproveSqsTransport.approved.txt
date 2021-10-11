@@ -97,6 +97,9 @@ namespace NServiceBus
         [System.Obsolete("The SQS transport does not support a connection string. The member currently thro" +
             "ws a NotImplementedException. Will be removed in version 7.0.0.", true)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> ConnectionString(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transport, string connectionString) { }
+        [System.Obsolete("The native delayed delivery is always enabled in version 6. The member currently " +
+            "throws a NotImplementedException. Will be removed in version 7.0.0.", true)]
+        public static void DisablePublishing(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
         [System.Obsolete("The compatibility mode is deprecated. Switch to native publish/subscribe mode usi" +
             "ng SNS instead. The member currently throws a NotImplementedException. Will be r" +
             "emoved in version 7.0.0.", true)]
@@ -112,6 +115,9 @@ namespace NServiceBus
         public static NServiceBus.PolicySettings Policies(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> QueueNamePrefix(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string queueNamePrefix) { }
         public static NServiceBus.S3Settings S3(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string bucketForLargeMessages, string keyPrefix) { }
+        [System.Obsolete("The native delayed delivery is always enabled in version 6. The member currently " +
+            "throws a NotImplementedException. Will be removed in version 7.0.0.", true)]
+        public static void SubscriptionAuthorizer(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Func<NServiceBus.Pipeline.IIncomingPhysicalMessageContext, bool> authorizer) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> TopicNameGenerator(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Func<System.Type, string, string> topicNameGenerator) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> TopicNamePrefix(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string topicNamePrefix) { }
         [System.Obsolete("The native delayed delivery is always enabled in version 6. Use `SqsTransport.Que" +
