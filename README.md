@@ -34,7 +34,7 @@ The names of queues used by the acceptance tests take the following form:
 Where
 
  * `AT` stands for "Acceptance Test"
- * `datetime` is a date and time as yyyyMMddHHmmss that uniquely identifies a single test run. For example, when 100 tests are executed in a single test run each queue will have the same datetime timestamp.
+ * `datetime` is a date and time as yyyyMMddHHmmss that uniquely identifies a single test run. For example, when 100 tests are executed in a single test run, each queue will have the same datetime timestamp.
  * `pre-truncated-queue-name` is the name of the queue, "pre-truncated" (characters are removed from the beginning) so that the entire queue name is 80 characters or less. 
 
 This scheme accomplishes the following goals:
