@@ -60,7 +60,7 @@ jobs:
         } 
     - name: Notify Slack on failure
       if: ${{ failure() }}
-      uses: 8398a7/action-slack@v3.10.0
+      uses: 8398a7/action-slack@v3.11.0
       with:
         status: ${{ job.status }}
         text: NServiceBus.AmazonSQS clean up has failed.
