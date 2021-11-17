@@ -1,16 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>   
-	 <TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>
-    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+	 <TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>   
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CommandLine\NServiceBus.Transports.SQS.CommandLine.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Label="Required to force the main project's transitive dependencies to be copied">
-    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,10 +16,6 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0" />
     <PackageReference Include="NUnit" Version="3.13.2" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.1.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="NServiceBus.Transports.SQS.CommandLine.runtimeconfig.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
