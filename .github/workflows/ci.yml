@@ -69,9 +69,5 @@ jobs:
           name: NuGet packages
           path: nugets/
           retention-days: 7
-      - name: Run Windows tests
-        if: matrix.name == 'Windows'
-        run: dotnet test src --configuration Release --no-build -m:1 --logger "GitHubActions;report-warnings=false"
-      - name: Run Linux tests
-        if: matrix.name == 'Linux'
-        run: dotnet test src --configuration Release --no-build -m:1 --framework netcoreapp3.1 --logger "GitHubActions;report-warnings=false"
+      - name: Run tests
+        uses: Particular/run-tests-action@v1.0.0
