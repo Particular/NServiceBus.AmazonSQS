@@ -1,25 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
-    <OutputType>Exe</OutputType>
-    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+	  <TargetFrameworks>netcoreapp2.1;net6.0</TargetFrameworks>
+	  <OutputType>Exe</OutputType>
+	  <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup>
-    <PackageId>NServiceBus.AmazonSQS.CommandLine</PackageId>
-    <Description>.NET Core global tool to manage SQS, S3 and SNS entities for NServiceBus endpoints</Description>
-    <ToolCommandName>sqs-transport</ToolCommandName>
-    <PackAsTool>True</PackAsTool>
+	<PackageId>NServiceBus.AmazonSQS.CommandLine</PackageId>
+	<Description>.NET Core global tool to manage SQS, S3 and SNS entities for NServiceBus endpoints</Description>
+	<ToolCommandName>sqs-transport</ToolCommandName>
+	<PackAsTool>True</PackAsTool>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.5.7.6" />
-    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.5.1.30" />
-    <PackageReference Include="AWSSDK.SQS" Version="3.5.1.8" />
-    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0" />
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.1.1" />
-    <PackageReference Include="Particular.Packaging" Version="1.2.1" PrivateAssets="All" />
+	<PackageReference Include="AWSSDK.S3" Version="3.5.7.6" />
+	<PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.5.1.30" />
+	<PackageReference Include="AWSSDK.SQS" Version="3.5.1.8" />
+	<PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0" />
+	<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.1.1" />
+	<PackageReference Include="Particular.Packaging" Version="1.2.1" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>

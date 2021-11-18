@@ -16,9 +16,14 @@ namespace NServiceBus.Transport.SQS.Tests
         {
             var settings = new SettingsHolder();
             settings.Set(SettingsKeys.TopicNamePrefix, "PREFIX");
+#pragma warning disable IDE0079 // Remove unnecessary suppression
+#pragma warning disable IDE0004 // Remove Unnecessary Cast
             settings.Set(SettingsKeys.TopicNameGenerator, (Func<Type, string, string>)TopicNameGenerator);
 
+#pragma warning restore IDE0004 // Remove Unnecessary Cast
+
             var configuration = new TransportConfiguration(settings);
+#pragma warning restore IDE0079 // Remove unnecessary suppression
             var snsClient = new MockSnsClient();
 
             var metadataRegistry = settings.SetupMessageMetadataRegistry();
@@ -49,9 +54,14 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var settings = new SettingsHolder();
             settings.Set(SettingsKeys.TopicNamePrefix, "PREFIX");
+#pragma warning disable IDE0079 // Remove unnecessary suppression
+#pragma warning disable IDE0004 // Remove Unnecessary Cast
             settings.Set(SettingsKeys.TopicNameGenerator, (Func<Type, string, string>)Generator);
+#pragma warning disable IDE0079 // Remove unnecessary suppression
+#pragma warning restore IDE0004 // Remove Unnecessary Cast
 
             var configuration = new TransportConfiguration(settings);
+#pragma warning restore IDE0079 // Remove unnecessary suppression
 
             var metadataRegistry = settings.SetupMessageMetadataRegistry();
             var metadata = metadataRegistry.GetMessageMetadata(typeof(Event));
