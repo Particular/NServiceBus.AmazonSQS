@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.7.3.19" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.4.9" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.2.57" />
     <PackageReference Include="AWSSDK.SQS" Version="3.7.1.31" />
     <PackageReference Include="GitHubActionsTestLogger" Version="1.2.0" />
