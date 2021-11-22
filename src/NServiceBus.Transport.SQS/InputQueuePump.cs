@@ -17,30 +17,39 @@ namespace NServiceBus.Transport.SQS
 
     class InputQueuePump : IMessageReceiver
     {
-        public InputQueuePump(ReceiveSettings settings, IAmazonSQS sqsClient, QueueCache queueCache,
-            S3Settings s3Settings, SubscriptionManager subscriptionManager,
+        public InputQueuePump(
+            string receiverId,
+            string receiveAddress,
+            string errorQueueAddress,
+            bool purgeOnStartup,
+            IAmazonSQS sqsClient,
+            QueueCache queueCache,
+            S3Settings s3Settings,
+            SubscriptionManager subscriptionManager,
             Action<string, Exception, CancellationToken> criticalErrorAction)
         {
-            this.settings = settings;
             this.sqsClient = sqsClient;
             this.queueCache = queueCache;
             this.s3Settings = s3Settings;
             this.criticalErrorAction = criticalErrorAction;
+            this.errorQueueAddress = errorQueueAddress;
+            this.purgeOnStartup = purgeOnStartup;
             awsEndpointUrl = sqsClient.Config.DetermineServiceURL();
-            Id = settings.Id;
+            Id = receiverId;
+            ReceiveAddress = receiveAddress;
             Subscriptions = subscriptionManager;
         }
 
         public async Task Initialize(PushRuntimeSettings limitations, OnMessage onMessage, OnError onError, CancellationToken cancellationToken = default)
         {
-            inputQueueUrl = await queueCache.GetQueueUrl(settings.ReceiveAddress, cancellationToken)
+            inputQueueUrl = await queueCache.GetQueueUrl(ReceiveAddress, cancellationToken)
                 .ConfigureAwait(false);
-            errorQueueUrl = await queueCache.GetQueueUrl(settings.ErrorQueue, cancellationToken)
+            errorQueueUrl = await queueCache.GetQueueUrl(errorQueueAddress, cancellationToken)
                 .ConfigureAwait(false);
 
             maxConcurrency = limitations.MaxConcurrency;
 
-            if (settings.PurgeOnStartup)
+            if (purgeOnStartup)
             {
                 // SQS only allows purging a queue once every 60 seconds or so.
                 // If you try to purge a queue twice in relatively quick succession,
@@ -142,6 +151,7 @@ namespace NServiceBus.Transport.SQS
 
         public ISubscriptionManager Subscriptions { get; }
         public string Id { get; }
+        public string ReceiveAddress { get; }
 
         async Task PumpMessagesAndSwallowExceptions(CancellationToken messagePumpCancellationToken)
         {
@@ -311,6 +321,7 @@ namespace NServiceBus.Transport.SQS
                         new Dictionary<string, string>(headers),
                         body,
                         transportTransaction,
+                        ReceiveAddress,
                         context);
 
                     await onMessage(messageContext, messageProcessingCancellationToken).ConfigureAwait(false);
@@ -330,6 +341,7 @@ namespace NServiceBus.Transport.SQS
                             body,
                             transportTransaction,
                             immediateProcessingAttempts,
+                            ReceiveAddress,
                             context), messageProcessingCancellationToken).ConfigureAwait(false);
                     }
                     catch (Exception onErrorEx) when (!onErrorEx.IsCausedBy(messageProcessingCancellationToken))
@@ -450,7 +462,8 @@ namespace NServiceBus.Transport.SQS
         string errorQueueUrl;
         int maxConcurrency;
 
-        readonly ReceiveSettings settings;
+        readonly string errorQueueAddress;
+        readonly bool purgeOnStartup;
         readonly IAmazonSQS sqsClient;
         readonly QueueCache queueCache;
         readonly S3Settings s3Settings;

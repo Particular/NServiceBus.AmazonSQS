@@ -217,12 +217,14 @@
         public override async Task<TransportInfrastructure> Initialize(HostSettings hostSettings, ReceiveSettings[] receivers, string[] sendingAddresses, CancellationToken cancellationToken = default)
         {
             var topicCache = new TopicCache(SnsClient, eventToTopicsMappings, eventToEventsMappings, topicNameGenerator, topicNamePrefix);
-            var infra = new SqsTransportInfrastructure(hostSettings, receivers, SqsClient, SnsClient, QueueCache, topicCache, S3, Policies, QueueDelayTime, topicNamePrefix, EnableV1CompatibilityMode);
+            var infra = new SqsTransportInfrastructure(this, hostSettings, receivers, SqsClient, SnsClient, QueueCache, topicCache, S3, Policies, QueueDelayTime, topicNamePrefix, EnableV1CompatibilityMode);
 
             var queueCreator = new QueueCreator(SqsClient, QueueCache, S3, maxTimeToLive, QueueDelayTime);
 
             var createQueueTasks = sendingAddresses.Select(x => queueCreator.CreateQueueIfNecessary(x, false))
-                .Concat(receivers.Select(x => queueCreator.CreateQueueIfNecessary(x.ReceiveAddress, true))).ToArray();
+#pragma warning disable CS0618 // Type or member is obsolete
+                .Concat(receivers.Select(x => queueCreator.CreateQueueIfNecessary(ToTransportAddress(x.ReceiveAddress), true))).ToArray();
+#pragma warning restore CS0618 // Type or member is obsolete
 
             await Task.WhenAll(createQueueTasks).ConfigureAwait(false);
 
@@ -232,6 +234,7 @@
         /// <summary>
         /// Translates a <see cref="T:NServiceBus.Transport.QueueAddress" /> object into a transport specific queue address-string.
         /// </summary>
+        [Obsolete]
         public override string ToTransportAddress(QueueAddress address)
         {
             var queueName = address.BaseAddress;

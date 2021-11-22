@@ -36,12 +36,12 @@ public class ConfigureSqsTransportInfrastructure : IConfigureTransportInfrastruc
         return transport;
     }
 
-    public Task<TransportInfrastructure> Configure(TransportDefinition transportDefinition, HostSettings hostSettings, string inputQueueName,
+    public Task<TransportInfrastructure> Configure(TransportDefinition transportDefinition, HostSettings hostSettings, QueueAddress inputQueueName,
         string errorQueueName, CancellationToken cancellationToken)
     {
         return transportDefinition.Initialize(hostSettings, new[]
         {
-            new ReceiveSettings(inputQueueName, inputQueueName, true, false, errorQueueName),
+            new ReceiveSettings(inputQueueName.ToString(), inputQueueName, true, false, errorQueueName),
         }, new[]
         {
             errorQueueName
