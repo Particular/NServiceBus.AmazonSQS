@@ -19,7 +19,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             mockSqsClient = new MockSqsClient();
 
-            pump = new InputQueuePump("queue", FakeInputQueueQueueUrl, "error", true, mockSqsClient,
+            pump = new InputQueuePump("queue", FakeInputQueueQueueUrl, "error", false, mockSqsClient,
                 new QueueCache(mockSqsClient, dest => QueueCache.GetSqsQueueName(dest, "")),
                 null, null,
                 (error, exception, ct) => { });
