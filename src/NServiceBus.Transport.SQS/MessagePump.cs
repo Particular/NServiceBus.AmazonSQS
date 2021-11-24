@@ -10,12 +10,20 @@ namespace NServiceBus.Transport.SQS
         readonly InputQueuePump inputQueuePump;
         readonly DelayedMessagesPump delayedMessagesPump;
 
-        public MessagePump(ReceiveSettings settings, IAmazonSQS sqsClient, QueueCache queueCache, S3Settings s3Settings,
-            SubscriptionManager subscriptionManager, int queueDelayTimeSeconds,
+        public MessagePump(
+            string receiverId,
+            string receiveAddress,
+            string errorQueueAddress,
+            bool purgeOnStartup,
+            IAmazonSQS sqsClient,
+            QueueCache queueCache,
+            S3Settings s3Settings,
+            SubscriptionManager subscriptionManager,
+            int queueDelayTimeSeconds,
             Action<string, Exception, CancellationToken> criticalErrorAction)
         {
-            inputQueuePump = new InputQueuePump(settings, sqsClient, queueCache, s3Settings, subscriptionManager, criticalErrorAction);
-            delayedMessagesPump = new DelayedMessagesPump(settings.ReceiveAddress, sqsClient, queueCache, queueDelayTimeSeconds);
+            inputQueuePump = new InputQueuePump(receiverId, receiveAddress, errorQueueAddress, purgeOnStartup, sqsClient, queueCache, s3Settings, subscriptionManager, criticalErrorAction);
+            delayedMessagesPump = new DelayedMessagesPump(receiveAddress, sqsClient, queueCache, queueDelayTimeSeconds);
         }
 
         public async Task Initialize(PushRuntimeSettings limitations, OnMessage onMessage, OnError onError, CancellationToken cancellationToken = default)
@@ -40,5 +48,6 @@ namespace NServiceBus.Transport.SQS
 
         public ISubscriptionManager Subscriptions => inputQueuePump.Subscriptions;
         public string Id => inputQueuePump.Id;
+        public string ReceiveAddress => inputQueuePump.ReceiveAddress;
     }
 }

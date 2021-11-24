@@ -217,12 +217,12 @@
         public override async Task<TransportInfrastructure> Initialize(HostSettings hostSettings, ReceiveSettings[] receivers, string[] sendingAddresses, CancellationToken cancellationToken = default)
         {
             var topicCache = new TopicCache(SnsClient, eventToTopicsMappings, eventToEventsMappings, topicNameGenerator, topicNamePrefix);
-            var infra = new SqsTransportInfrastructure(hostSettings, receivers, SqsClient, SnsClient, QueueCache, topicCache, S3, Policies, QueueDelayTime, topicNamePrefix, EnableV1CompatibilityMode);
+            var infra = new SqsTransportInfrastructure(this, hostSettings, receivers, SqsClient, SnsClient, QueueCache, topicCache, S3, Policies, QueueDelayTime, topicNamePrefix, EnableV1CompatibilityMode);
 
             var queueCreator = new QueueCreator(SqsClient, QueueCache, S3, maxTimeToLive, QueueDelayTime);
 
             var createQueueTasks = sendingAddresses.Select(x => queueCreator.CreateQueueIfNecessary(x, false))
-                .Concat(receivers.Select(x => queueCreator.CreateQueueIfNecessary(x.ReceiveAddress, true))).ToArray();
+                .Concat(infra.Receivers.Values.Select(x => queueCreator.CreateQueueIfNecessary(x.ReceiveAddress, true))).ToArray();
 
             await Task.WhenAll(createQueueTasks).ConfigureAwait(false);
 
@@ -232,7 +232,12 @@
         /// <summary>
         /// Translates a <see cref="T:NServiceBus.Transport.QueueAddress" /> object into a transport specific queue address-string.
         /// </summary>
+        [ObsoleteEx(Message = "Inject the ITransportAddressResolver type to access the address translation mechanism at runtime. See the NServiceBus version 8 upgrade guide for further details.",
+                    TreatAsErrorFromVersion = "7",
+                    RemoveInVersion = "8")]
+#pragma warning disable CS0672 // Member overrides obsolete member
         public override string ToTransportAddress(QueueAddress address)
+#pragma warning restore CS0672 // Member overrides obsolete member
         {
             var queueName = address.BaseAddress;
             var queue = new StringBuilder(queueName);
