@@ -85,8 +85,12 @@ namespace NServiceBus.Transport.SQS
                 WaitTimeSeconds = 20,
                 AttributeNames = new List<string> { "SentTimestamp" },
                 MessageAttributeNames = new List<string> { "*" },
-                VisibilityTimeout = configuration.MessageVisibilityTimeout,
             };
+
+            if (configuration.MessageVisibilityTimeout.HasValue)
+            {
+                receiveMessagesRequest.VisibilityTimeout = configuration.MessageVisibilityTimeout.Value;
+            }
 
             maxConcurrencySemaphore = new SemaphoreSlim(maxConcurrency);
             pumpTasks = new List<Task>(numberOfPumps);
