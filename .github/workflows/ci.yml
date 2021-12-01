@@ -32,8 +32,10 @@ jobs:
         include:
           - os: windows-2019
             name: Windows
+            name-prefix: CiWinATT
           - os: ubuntu-20.04
             name: Linux
+            name-prefix: CiNixATT
       fail-fast: false
     steps:
       - name: Check for secrets
@@ -70,4 +72,4 @@ jobs:
       - name: Run tests
         uses: Particular/run-tests-action@v1.0.0
         env:
-          NServiceBus_AmazonSQS_AT_CustomFixedNamePrefix: CiWinATT
+          NServiceBus_AmazonSQS_AT_CustomFixedNamePrefix: ${{ matrix.name-prefix }}
