@@ -188,8 +188,11 @@
             await dispatcher.Dispatch(transportOperations, transportTransaction);
 
             Assert.AreEqual(2, mockSnsClient.PublishedEvents.Count);
-            Assert.AreEqual("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-MessageDispatcherTests-Event", mockSnsClient.PublishedEvents.ElementAt(0).TopicArn);
-            Assert.AreEqual("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-MessageDispatcherTests-AnotherEvent", mockSnsClient.PublishedEvents.ElementAt(1).TopicArn);
+
+            var topics = mockSnsClient.PublishedEvents.Select(e => e.TopicArn).ToList();
+
+            Assert.Contains("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-MessageDispatcherTests-Event", topics);
+            Assert.Contains("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-MessageDispatcherTests-AnotherEvent", topics);
         }
 
         [Test]
