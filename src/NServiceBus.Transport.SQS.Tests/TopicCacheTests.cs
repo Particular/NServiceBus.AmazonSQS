@@ -16,7 +16,9 @@ namespace NServiceBus.Transport.SQS.Tests
         {
             var settings = new SettingsHolder();
             settings.Set(SettingsKeys.TopicNamePrefix, "PREFIX");
+#pragma warning disable IDE0004 // Remove Unnecessary Cast
             settings.Set(SettingsKeys.TopicNameGenerator, (Func<Type, string, string>)TopicNameGenerator);
+#pragma warning restore IDE0004 // Remove Unnecessary Cast
 
             var configuration = new TransportConfiguration(settings);
             var snsClient = new MockSnsClient();
@@ -49,7 +51,9 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var settings = new SettingsHolder();
             settings.Set(SettingsKeys.TopicNamePrefix, "PREFIX");
+#pragma warning disable IDE0004 // Remove Unnecessary Cast
             settings.Set(SettingsKeys.TopicNameGenerator, (Func<Type, string, string>)Generator);
+#pragma warning restore IDE0004 // Remove Unnecessary Cast
 
             var configuration = new TransportConfiguration(settings);
 
