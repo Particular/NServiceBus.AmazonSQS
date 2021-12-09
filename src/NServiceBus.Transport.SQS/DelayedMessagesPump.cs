@@ -38,12 +38,12 @@ namespace NServiceBus.Transport.SQS
 
             if (queueAttributes.DelaySeconds < queueDelayTimeSeconds)
             {
-                throw new Exception($"Delayed delivery queue '{delayedDeliveryQueueName}' should not have Delivery Delay less than '{TimeSpan.FromSeconds(queueDelayTimeSeconds)}'.");
+                throw new Exception($"Delayed delivery queue '{delayedDeliveryQueueName}' has a Delivery Delay of '{TimeSpan.FromSeconds(queueAttributes.DelaySeconds)}'. It should be less than '{TimeSpan.FromSeconds(queueDelayTimeSeconds)}'.");
             }
 
             if (queueAttributes.MessageRetentionPeriod < (int)TransportConstraints.DelayedDeliveryQueueMessageRetentionPeriod.TotalSeconds)
             {
-                throw new Exception($"Delayed delivery queue '{delayedDeliveryQueueName}' should not have Message Retention Period less than '{TransportConstraints.DelayedDeliveryQueueMessageRetentionPeriod}'.");
+                throw new Exception($"Delayed delivery queue '{delayedDeliveryQueueName}' has a Message Retention Period of '{TimeSpan.FromSeconds(queueAttributes.MessageRetentionPeriod)}'. It should be less than '{TransportConstraints.DelayedDeliveryQueueMessageRetentionPeriod}'.");
             }
 
             if (queueAttributes.Attributes.ContainsKey("RedrivePolicy"))
