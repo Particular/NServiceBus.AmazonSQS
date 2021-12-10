@@ -149,6 +149,13 @@ namespace NServiceBus.Transport.SQS
             messagePumpCancellationTokenSource = null;
         }
 
+        public async Task ChangeConcurrency(PushRuntimeSettings limitations, CancellationToken cancellationToken = default)
+        {
+            await StopReceive(cancellationToken).ConfigureAwait(false);
+            maxConcurrency = limitations.MaxConcurrency;
+            await StartReceive(cancellationToken).ConfigureAwait(false);
+        }
+
         public ISubscriptionManager Subscriptions { get; }
         public string Id { get; }
         public string ReceiveAddress { get; }

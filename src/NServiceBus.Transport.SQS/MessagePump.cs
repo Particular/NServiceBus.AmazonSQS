@@ -46,6 +46,11 @@ namespace NServiceBus.Transport.SQS
             return Task.WhenAll(stopDelayed, stopPump);
         }
 
+        public Task ChangeConcurrency(PushRuntimeSettings limitations, CancellationToken cancellationToken = default)
+        {
+            return inputQueuePump.ChangeConcurrency(limitations, cancellationToken);
+        }
+
         public ISubscriptionManager Subscriptions => inputQueuePump.Subscriptions;
         public string Id => inputQueuePump.Id;
         public string ReceiveAddress => inputQueuePump.ReceiveAddress;
