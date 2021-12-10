@@ -35,7 +35,7 @@ namespace NServiceBus.Transport.SQS.Tests
             };
 
             var exception = Assert.ThrowsAsync<Exception>(async () => { await pump.Initialize(); });
-            Assert.AreEqual("Delayed delivery queue 'queue-delay.fifo' should not have Delivery Delay less than '00:15:00'.", exception.Message);
+            Assert.AreEqual("Delayed delivery queue 'queue-delay.fifo' has a Delivery Delay of '00:00:01'. It should be less than '00:15:00'.", exception.Message);
         }
 
         [Test]
@@ -53,7 +53,7 @@ namespace NServiceBus.Transport.SQS.Tests
             };
 
             var exception = Assert.ThrowsAsync<Exception>(async () => { await pump.Initialize(); });
-            Assert.AreEqual("Delayed delivery queue 'queue-delay.fifo' should not have Message Retention Period less than '4.00:00:00'.", exception.Message);
+            Assert.AreEqual("Delayed delivery queue 'queue-delay.fifo' has a Message Retention Period of '00:00:10'. It should be less than '4.00:00:00'.", exception.Message);
         }
 
         [Test]
