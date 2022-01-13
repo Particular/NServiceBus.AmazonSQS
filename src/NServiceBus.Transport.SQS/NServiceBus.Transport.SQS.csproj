@@ -12,9 +12,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="[3.7, 3.8)" />
-    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="[3.7, 3.8)" />
-    <PackageReference Include="AWSSDK.SQS" Version="[3.7, 3.8)" />
+    <PackageReference Include="AWSSDK.S3" Version="[3.7.7.11, 3.8.0)" />
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="[3.7.3.14, 3.8.0)" />
+    <PackageReference Include="AWSSDK.SQS" Version="[3.7.2.11, 3.8.0)" />
     <PackageReference Include="Fody" Version="6.5.1" PrivateAssets="All" />
     <PackageReference Include="NServiceBus" Version="[7.2.4, 8.0.0)" />
     <PackageReference Include="Obsolete.Fody" Version="5.2.1" PrivateAssets="All" />
