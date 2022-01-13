@@ -1,3 +1,5 @@
+#pragma warning disable IDE0060 // Remove unused parameter
+
 namespace NServiceBus.Transport.SQS.Tests
 {
     using System;
@@ -651,3 +653,5 @@ namespace NServiceBus.Transport.SQS.Tests
         #endregion
     }
 }
+
+#pragma warning restore IDE0060 // Remove unused parameter
