@@ -475,9 +475,9 @@
                 {
                     return new SendMessageBatchResponse
                     {
-                        Failed = new List<BatchResultErrorEntry>
+                        Failed = new List<Amazon.SQS.Model.BatchResultErrorEntry>
                         {
-                            new BatchResultErrorEntry
+                            new Amazon.SQS.Model.BatchResultErrorEntry
                             {
                                 Id = firstMessageMatch.Id,
                                 Message = "You know why"
@@ -491,9 +491,9 @@
                 {
                     return new SendMessageBatchResponse
                     {
-                        Failed = new List<BatchResultErrorEntry>
+                        Failed = new List<Amazon.SQS.Model.BatchResultErrorEntry>
                         {
-                            new BatchResultErrorEntry
+                            new Amazon.SQS.Model.BatchResultErrorEntry
                             {
                                 Id = secondMessageMatch.Id,
                                 Message = "You know why"
