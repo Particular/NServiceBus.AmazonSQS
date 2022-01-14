@@ -90,7 +90,7 @@
                         }
                     case "EU":
                         {
-                            region = S3Region.EUW1;
+                            region = S3Region.EUWest1;
                             break;
                         }
                     default:
