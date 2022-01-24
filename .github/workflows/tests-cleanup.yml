@@ -9,7 +9,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2.4.0
     - name: Run cleanup
-      env: 
+      env:
         LIMITED_DELETE_RIGHTS_ACCOUNT_KEY: ${{ secrets.CLEANUP_AWS_ACCESS_KEY_ID }}
         LIMITED_DELETE_RIGHTS_ACCOUNT_SECRET_KEY: ${{ secrets.CLEANUP_AWS_SECRET_ACCESS_KEY }}
       shell: pwsh
@@ -17,8 +17,8 @@ jobs:
         $limitedDeleteRightsAccessKey = $env:LIMITED_DELETE_RIGHTS_ACCOUNT_KEY
         $limitedDeleteRightsSecretKey = $env:LIMITED_DELETE_RIGHTS_ACCOUNT_SECRET_KEY
 
-        if (!(Get-Module AWSPowerShell.NetCore)) { 
-            Write-Host "Installing AWSPowerShell.NetCore..." 
+        if (!(Get-Module AWSPowerShell.NetCore)) {
+            Write-Host "Installing AWSPowerShell.NetCore..."
             Install-Module -name AWSPowerShell.NetCore -Scope CurrentUser -Force -AllowClobber
         }
 
@@ -29,45 +29,50 @@ jobs:
         Get-AWSPowerShellVersion
 
         $dateFilter = ([System.DateTime]::UtcNow).AddHours(-24)
-        $nameFilter = "cli-*"                
+        $nameFilter = "cli-*"
 
         Write-Host "Current time"  ([System.DateTime]::UtcNow).ToString() UTC
         Write-Host "Looking for test buckets older than" $dateFilter.ToString() UTC "with the the following name pattern" $nameFilter
 
-        $buckets = Get-S3Bucket -AccessKey $limitedDeleteRightsAccessKey -SecretKey $limitedDeleteRightsSecretKey 
-                    | Where-Object { 
-                        ($dateFilter -gt $_.CreationDate.ToUniversalTime()) -and ($_.BucketName -like $nameFilter) 
+        $buckets = Get-S3Bucket -AccessKey $limitedDeleteRightsAccessKey -SecretKey $limitedDeleteRightsSecretKey
+                    | Where-Object {
+                        ($dateFilter -gt $_.CreationDate.ToUniversalTime()) -and ($_.BucketName -like $nameFilter)
                     }
 
-        if ($buckets.count -gt 0) {    
-            Write-Host "Attempting to delete the following buckets..."    
+        if ($buckets.count -gt 0) {
+            Write-Host "Attempting to delete the following buckets..."
             $buckets | ForEach-Object {
                             'Name: {0} - CreatedUTC: {1}' -f $_.BucketName, $_.CreationDate.ToUniversalTime()
                         }
             try {
                 $buckets | ForEach-Object {
-                    Remove-S3Bucket -AccessKey $limitedDeleteRightsAccessKey -SecretKey $limitedDeleteRightsSecretKey $_.BucketName -Force 
+                    Remove-S3Bucket -AccessKey $limitedDeleteRightsAccessKey -SecretKey $limitedDeleteRightsSecretKey $_.BucketName -Force
                 }
                 Write-Host "Buckets deleted!"
-            }     
+            }
             catch {
-                "The following error occurred while trying to delete the buckets:"        
+                "The following error occurred while trying to delete the buckets:"
                 throw $_
-            }        
+            }
         }
         else {
             Write-Host "0 bucket(s) found to be deleted"
-        } 
+        }
     - name: Notify Slack on failure
       if: ${{ failure() }}
-      uses: 8398a7/action-slack@v3.13.0
-      with:
-        status: ${{ job.status }}
-        text: NServiceBus.AmazonSQS clean up has failed.
-        author_name: Amazon SQS Transport Test Cleanup
-        fields: message,author,action,eventName,ref,workflow
-        username: GitHub Actions
-        icon_emoji: ":github_actions:"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_AWS_CHANNEL_WEBHOOK }}
+      shell: pwsh
+      run: |
+          $headers = @{
+              'Authorization' = "Bearer ${{ secrets.SLACK_TOKEN }}"
+          }
+          $body = @{
+            channel = 'aws'
+            text = "NServiceBus.AmazonSQS clean up has failed: https://github.com/Particular/NServiceBus.AmazonSQS/actions/workflows/tests-cleanup.yml"
+            username = 'Amazon SQS Transport Test Cleanup'
+            icon_emoji = 'github_actions'
+            unfurl_links = false
+            unfurl_media = false
+          } | ConvertTo-Json
+          $result = Invoke-RestMethod -Method POST -Uri https://slack.com/api/chat.postMessage -ContentType "application/json; charset=utf-8" -Headers $headers -Body $body
+          Write-Output $result
+          exit $(If ($result.ok) { 0 } Else { 1 })
