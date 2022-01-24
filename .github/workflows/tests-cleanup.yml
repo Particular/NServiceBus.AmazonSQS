@@ -63,7 +63,7 @@ jobs:
       shell: pwsh
       run: |
           $headers = @{
-              'Authorization' = "Bearer ${{ secrets.GITHUB_TOKEN }}"
+              'Authorization' = "Bearer ${{ secrets.SLACK_TOKEN }}"
           }
           $body = @{
             channel = 'aws'
