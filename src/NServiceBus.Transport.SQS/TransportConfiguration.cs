@@ -329,18 +329,7 @@
             }
         }
 
-        public int MessageVisibilityTimeout
-        {
-            get
-            {
-                if (!messageVisibilityTimeout.HasValue)
-                {
-                    messageVisibilityTimeout = settings.GetOrDefault<int?>(SettingsKeys.MessageVisibilityTimeout) ?? 30;
-                }
-
-                return messageVisibilityTimeout.Value;
-            }
-        }
+        public int? MessageVisibilityTimeout => settings.GetOrDefault<int?>(SettingsKeys.MessageVisibilityTimeout);
 
         public bool UsingDefaultMessageVisibilityTimeout => !settings.HasSetting(SettingsKeys.MessageVisibilityTimeout);
         public bool UsingMessageDrivenPubSubCompatibilityMode => settings.HasSetting(SettingsKeys.MessageVisibilityTimeout) && settings.Get<bool>(SettingsKeys.EnableMigrationModeSettingKey);
@@ -416,7 +405,6 @@
         bool? preTruncateTopicNames;
         bool? useV1CompatiblePayload;
         int? queueDelayTime;
-        int? messageVisibilityTimeout;
         TimeSpan? subscriptionsCacheTTL;
         TimeSpan? notFoundTopicsCacheTTL;
         Func<IAmazonS3> s3ClientFactory;
