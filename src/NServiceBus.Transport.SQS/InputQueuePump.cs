@@ -85,8 +85,13 @@ namespace NServiceBus.Transport.SQS
                 WaitTimeSeconds = 20,
                 AttributeNames = new List<string> { "SentTimestamp" },
                 MessageAttributeNames = new List<string> { "*" },
-                VisibilityTimeout = configuration.MessageVisibilityTimeout,
             };
+            //Set visibilitytimeout only when explicitly set by user configuration, else take the value in the queue
+            //users can define a custom visibility timeout only when using message driven pub/sub compatibility mode
+            if (configuration.MessageVisibilityTimeout.HasValue)
+            {
+                receiveMessagesRequest.VisibilityTimeout = configuration.MessageVisibilityTimeout.Value;
+            }
 
             maxConcurrencySemaphore = new SemaphoreSlim(maxConcurrency);
             pumpTasks = new List<Task>(numberOfPumps);

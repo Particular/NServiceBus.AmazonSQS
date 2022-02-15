@@ -46,7 +46,7 @@
         }
 
         /// <summary>
-        /// Overrides the default value of 30 seconds for SQS message visibility timeout.
+        /// Overrides the default value specified at the queue level for SQS message visibility timeout.
         /// </summary>
         /// <param name="timeoutInSeconds">Message visibility timeout.</param>
         public SubscriptionMigrationModeSettings MessageVisibilityTimeout(int timeoutInSeconds)
