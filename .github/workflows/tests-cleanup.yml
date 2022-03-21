@@ -5,59 +5,69 @@ on:
   workflow_dispatch:
 jobs:
   cleanup:
-    runs-on: windows-latest
+    runs-on: ubuntu-20.04
+    env:
+      # The CLEANUP secrets are a limited profile that can only delete certain things
+      AWS_ACCESS_KEY_ID: ${{ secrets.CLEANUP_AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.CLEANUP_AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
     steps:
-    - uses: actions/checkout@v3
-    - name: Run cleanup
-      env:
-        LIMITED_DELETE_RIGHTS_ACCOUNT_KEY: ${{ secrets.CLEANUP_AWS_ACCESS_KEY_ID }}
-        LIMITED_DELETE_RIGHTS_ACCOUNT_SECRET_KEY: ${{ secrets.CLEANUP_AWS_SECRET_ACCESS_KEY }}
+    - name: Output AWS CLI version
+      shell: pwsh
+      run: aws --version
+    - name: Clean up S3 Buckets
       shell: pwsh
       run: |
-        $limitedDeleteRightsAccessKey = $env:LIMITED_DELETE_RIGHTS_ACCOUNT_KEY
-        $limitedDeleteRightsSecretKey = $env:LIMITED_DELETE_RIGHTS_ACCOUNT_SECRET_KEY
-
-        if (!(Get-Module AWSPowerShell.NetCore)) {
-            Write-Host "Installing AWSPowerShell.NetCore..."
-            Install-Module -name AWSPowerShell.NetCore -Scope CurrentUser -Force -AllowClobber
-        }
-
-        Write-Host "Importing module..."
-        Import-Module AWSPowerShell.NetCore -Force
-
-        Write-Host "The following version of AWSPowerShell.NetCore is being used"
-        Get-AWSPowerShellVersion
-
         $dateFilter = ([System.DateTime]::UtcNow).AddHours(-24)
-        $nameFilter = "cli-*"
 
-        Write-Host "Current time"  ([System.DateTime]::UtcNow).ToString() UTC
-        Write-Host "Looking for test buckets older than" $dateFilter.ToString() UTC "with the the following name pattern" $nameFilter
+        Write-Host "Current time $(([System.DateTime]::UtcNow).ToString()) UTC"
+        Write-Host "Looking for test buckets older than $($dateFilter.ToString()) UTC starting with 'cli-'"
+        
+        $bucketList = aws s3api list-buckets | ConvertFrom-Json
+        $buckets = $bucketList.Buckets | Where-Object { $_.Name.StartsWith('cli-') } | Where-Object { $_.CreationDate -lt $dateFilter }
+        Write-Output "Found $($buckets.length) buckets"
+        
+        $buckets | ForEach-Object {
+          Write-Output "Deleting bucket '$($_.Name)'"
+          aws s3api delete-bucket --bucket $_.Name
+        }
+    - name: Clean up SQS queues
+      shell: pwsh
+      run: |
+        $epoch = Get-Date -Year 1970 -Month 1 -Day 1 -Hour 0 -Minute 0 -Second 0 -Millisecond 0
+        $cutoff = $(Get-Date).AddHours(-24)
+        
+        function DeleteQueues {
+            param ( $prefix )
 
-        $buckets = Get-S3Bucket -AccessKey $limitedDeleteRightsAccessKey -SecretKey $limitedDeleteRightsSecretKey
-                    | Where-Object {
-                        ($dateFilter -gt $_.CreationDate.ToUniversalTime()) -and ($_.BucketName -like $nameFilter)
-                    }
+            Write-Output "Deleting queues with prefix '$prefix' created before $cutoff"
 
-        if ($buckets.count -gt 0) {
-            Write-Host "Attempting to delete the following buckets..."
-            $buckets | ForEach-Object {
-                            'Name: {0} - CreatedUTC: {1}' -f $_.BucketName, $_.CreationDate.ToUniversalTime()
-                        }
-            try {
-                $buckets | ForEach-Object {
-                    Remove-S3Bucket -AccessKey $limitedDeleteRightsAccessKey -SecretKey $limitedDeleteRightsSecretKey $_.BucketName -Force
+            $queueList = aws sqs list-queues --queue-name-prefix $prefix | ConvertFrom-Json
+            Write-Output "$($queueList.QueueUrls.length) queues matching '$prefix'"
+
+            $queueList.QueueUrls | ForEach-Object {
+                $url = $_
+                $details = aws sqs get-queue-attributes --queue-url $url --attribute-names CreatedTimestamp | ConvertFrom-Json
+                $epochSeconds = $details.Attributes.CreatedTimestamp
+                $created = $epoch.AddSeconds($epochSeconds)
+
+                if ($created -lt $cutoff) {
+                    Write-Output "Deleting $url created $created"
+                    aws sqs delete-queue --queue-url $url
+                } else {
+                    Write-Output "Skipping $url created $created"
                 }
-                Write-Host "Buckets deleted!"
-            }
-            catch {
-                "The following error occurred while trying to delete the buckets:"
-                throw $_
             }
         }
-        else {
-            Write-Host "0 bucket(s) found to be deleted"
-        }
+        
+        # Prefix GHA-{github.run_id} used by ServiceControl
+        DeleteQueues 'GHA-'
+        
+        # Prefix AT used by SQS Transport acceptance tests
+        DeleteQueues 'AT'
+        
+        # Prefix TT used by SQS Transport transport tests
+        DeleteQueues 'TT'
     - name: Notify Slack on failure
       if: ${{ failure() }}
       shell: pwsh
