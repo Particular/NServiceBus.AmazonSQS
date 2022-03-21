@@ -44,21 +44,20 @@ jobs:
             Write-Output "Deleting queues with prefix '$prefix' created before $cutoff"
 
             $queueList = aws sqs list-queues --queue-name-prefix $prefix | ConvertFrom-Json
-            Write-Output "$($queueList.QueueUrls.length) queues matching 'GHA-*'"
+            Write-Output "$($queueList.QueueUrls.length) queues matching '$prefix'"
 
             $queueList.QueueUrls | ForEach-Object {
                 $url = $_
-                echo $url
-                # $details = aws sqs get-queue-attributes --queue-url $url --attribute-names CreatedTimestamp | ConvertFrom-Json
-                # $epochSeconds = $details.Attributes.CreatedTimestamp
-                # $created = $epoch.AddSeconds($epochSeconds)
+                $details = aws sqs get-queue-attributes --queue-url $url --attribute-names CreatedTimestamp | ConvertFrom-Json
+                $epochSeconds = $details.Attributes.CreatedTimestamp
+                $created = $epoch.AddSeconds($epochSeconds)
 
-                # if ($created -lt $cutoff) {
-                #     Write-Output "Deleting $url created $created"
-                #     aws sqs delete-queue --queue-url $url
-                # } else {
-                #     Write-Output "Skipping $url created $created"
-                # }
+                if ($created -lt $cutoff) {
+                    Write-Output "Deleting $url created $created"
+                    aws sqs delete-queue --queue-url $url
+                } else {
+                    Write-Output "Skipping $url created $created"
+                }
             }
         }
         
