@@ -47,15 +47,16 @@ jobs:
 
             $queueList.QueueUrls | ForEach-Object {
                 $url = $_
+                $queue = $url.Split('/')[4]
                 $details = aws sqs get-queue-attributes --queue-url $url --attribute-names CreatedTimestamp | ConvertFrom-Json
                 $epochSeconds = $details.Attributes.CreatedTimestamp
                 $created = $epoch.AddSeconds($epochSeconds)
 
                 if ($created -lt $cutoff) {
-                    Write-Output "Deleting $url created $created"
+                    Write-Output "Deleting $queue created $created"
                     aws sqs delete-queue --queue-url $url
                 } else {
-                    Write-Output "Skipping $url created $created"
+                    Write-Output "Skipping $queue created $created"
                 }
             }
         }
