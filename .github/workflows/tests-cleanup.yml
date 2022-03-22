@@ -34,7 +34,6 @@ jobs:
     - name: Clean up SQS queues
       shell: pwsh
       run: |
-        $epoch = Get-Date -Year 1970 -Month 1 -Day 1 -Hour 0 -Minute 0 -Second 0 -Millisecond 0
         $cutoff = $(Get-Date).AddHours(-24)
         
         function DeleteQueues {
@@ -50,7 +49,7 @@ jobs:
                 $queue = $url.Split('/')[4]
                 $details = aws sqs get-queue-attributes --queue-url $url --attribute-names CreatedTimestamp | ConvertFrom-Json
                 $epochSeconds = $details.Attributes.CreatedTimestamp
-                $created = $using:epoch.AddSeconds($epochSeconds)
+                $created = $(Get-Date -Year 1970 -Month 1 -Day 1 -Hour 0 -Minute 0 -Second 0 -Millisecond 0).AddSeconds($epochSeconds)
 
                 if ($created -lt $using:cutoff) {
                     Write-Output "Deleting $queue created $created"
