@@ -44,7 +44,7 @@ jobs:
             $queueList = aws sqs list-queues --queue-name-prefix $prefix | ConvertFrom-Json
             Write-Output "$($queueList.QueueUrls.length) queues matching '$prefix'"
 
-            $queueList.QueueUrls | ForEach-Object -Parallel {
+            $queueList.QueueUrls | ForEach-Object -ThrottleLimit 20 -Parallel {
                 $url = $_
                 $queue = $url.Split('/')[4]
                 $details = aws sqs get-queue-attributes --queue-url $url --attribute-names CreatedTimestamp | ConvertFrom-Json
