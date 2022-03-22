@@ -27,7 +27,7 @@ jobs:
         $buckets = $bucketList.Buckets | Where-Object { $_.Name.StartsWith('cli-') } | Where-Object { $_.CreationDate -lt $dateFilter }
         Write-Output "Found $($buckets.length) buckets"
         
-        $buckets | ForEach-Object {
+        $buckets | ForEach-Object -Parallel {
           Write-Output "Deleting bucket '$($_.Name)'"
           aws s3api delete-bucket --bucket $_.Name
         }
@@ -45,7 +45,7 @@ jobs:
             $queueList = aws sqs list-queues --queue-name-prefix $prefix | ConvertFrom-Json
             Write-Output "$($queueList.QueueUrls.length) queues matching '$prefix'"
 
-            $queueList.QueueUrls | ForEach-Object {
+            $queueList.QueueUrls | ForEach-Object -Parallel {
                 $url = $_
                 $queue = $url.Split('/')[4]
                 $details = aws sqs get-queue-attributes --queue-url $url --attribute-names CreatedTimestamp | ConvertFrom-Json
