@@ -4,5 +4,5 @@
     <MinVerMinimumMajorMinor>6.0</MinVerMinimumMajorMinor>
     <MinVerAutoIncrement>minor</MinVerAutoIncrement>
   </PropertyGroup>
-	
+
 </Project>
