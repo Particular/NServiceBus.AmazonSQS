@@ -16,7 +16,7 @@ public class Program
         var credentials = new BasicAWSCredentials(accessKeyId, secretAccessKey);
         sqsClient = new AmazonSQSClient(credentials, config);
 
-        // Known prefixes that can and should be cleand up are:
+        // Known prefixes that can and should be cleaned up are:
         // AT    => acceptance tests
         // TT    => transport tests
         // cli-  => Tests of the command line tool
