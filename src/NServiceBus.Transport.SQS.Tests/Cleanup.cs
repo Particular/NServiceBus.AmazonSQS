@@ -122,9 +122,9 @@ namespace NServiceBus.Transport.SQS.Tests
                             BucketRegion = region
                         });
                     }
-                    catch (AmazonS3Exception)
+                    catch (AmazonS3Exception exception)
                     {
-                        Console.WriteLine($"Unable to delete bucket '{bucketName}'");
+                        Console.WriteLine($"Unable to delete bucket '{bucketName}': {exception}");
                     }
                 }));
         }
