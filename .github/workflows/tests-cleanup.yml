@@ -8,47 +8,49 @@ jobs:
     runs-on: ubuntu-20.04
     env:
       # The CLEANUP secrets are a limited profile that can only delete certain things
-      AWS_ACCESS_KEY_ID: ${{ secrets.CLEANUP_AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.CLEANUP_AWS_SECRET_ACCESS_KEY }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
     steps:
-    - name: Output AWS CLI version
-      shell: pwsh
-      run: aws --version
-    - name: Clean up S3 Buckets
-      shell: pwsh
-      run: |
-        $dateFilter = ([System.DateTime]::UtcNow).AddHours(-24)
+      - name: Checkout
+        uses: actions/checkout@v3.0.0
+      - name: Output AWS CLI version
+        shell: pwsh
+        run: aws --version
+      - name: Clean up S3 Buckets
+        shell: pwsh
+        run: |
+          $dateFilter = ([System.DateTime]::UtcNow).AddHours(-24)
 
-        Write-Host "Current time $(([System.DateTime]::UtcNow).ToString()) UTC"
-        Write-Host "Looking for test buckets older than $($dateFilter.ToString()) UTC starting with 'cli-'"
+          Write-Host "Current time $(([System.DateTime]::UtcNow).ToString()) UTC"
+          Write-Host "Looking for test buckets older than $($dateFilter.ToString()) UTC starting with 'cli-'"
 
-        $bucketList = aws s3api list-buckets | ConvertFrom-Json
-        $buckets = $bucketList.Buckets | Where-Object { $_.Name.StartsWith('cli-') } | Where-Object { $_.CreationDate -lt $dateFilter }
-        Write-Output "Found $($buckets.length) buckets"
+          $bucketList = aws s3api list-buckets | ConvertFrom-Json
+          $buckets = $bucketList.Buckets | Where-Object { $_.Name.StartsWith('cli-') } | Where-Object { $_.CreationDate -lt $dateFilter }
+          Write-Output "Found $($buckets.length) buckets"
 
-        $buckets | ForEach-Object -Parallel {
-          Write-Output "Deleting bucket '$($_.Name)'"
-          aws s3api delete-bucket --bucket $_.Name
-        }
-    - name: Clean up SQS queues
-      shell: pwsh
-      run: dotnet run --project cleanup/Cleanup.csproj --configuration Release
-    - name: Notify Slack on failure
-      if: ${{ failure() }}
-      shell: pwsh
-      run: |
-          $headers = @{
-              'Authorization' = "Bearer ${{ secrets.SLACK_TOKEN }}"
+          $buckets | ForEach-Object -Parallel {
+            Write-Output "Deleting bucket '$($_.Name)'"
+            aws s3api delete-bucket --bucket $_.Name
           }
-          $body = @{
-            channel = 'aws'
-            text = "NServiceBus.AmazonSQS clean up has failed: https://github.com/Particular/NServiceBus.AmazonSQS/actions/workflows/tests-cleanup.yml"
-            username = 'Amazon SQS Transport Test Cleanup'
-            icon_emoji = 'github_actions'
-            unfurl_links = false
-            unfurl_media = false
-          } | ConvertTo-Json
-          $result = Invoke-RestMethod -Method POST -Uri https://slack.com/api/chat.postMessage -ContentType "application/json; charset=utf-8" -Headers $headers -Body $body
-          Write-Output $result
-          exit $(If ($result.ok) { 0 } Else { 1 })
+      - name: Clean up SQS queues
+        shell: pwsh
+        run: dotnet run --project cleanup/Cleanup.csproj --configuration Release
+      - name: Notify Slack on failure
+        if: ${{ failure() }}
+        shell: pwsh
+        run: |
+            $headers = @{
+                'Authorization' = "Bearer ${{ secrets.SLACK_TOKEN }}"
+            }
+            $body = @{
+              channel = 'aws'
+              text = "NServiceBus.AmazonSQS clean up has failed: https://github.com/Particular/NServiceBus.AmazonSQS/actions/workflows/tests-cleanup.yml"
+              username = 'Amazon SQS Transport Test Cleanup'
+              icon_emoji = 'github_actions'
+              unfurl_links = false
+              unfurl_media = false
+            } | ConvertTo-Json
+            $result = Invoke-RestMethod -Method POST -Uri https://slack.com/api/chat.postMessage -ContentType "application/json; charset=utf-8" -Headers $headers -Body $body
+            Write-Output $result
+            exit $(If ($result.ok) { 0 } Else { 1 })
