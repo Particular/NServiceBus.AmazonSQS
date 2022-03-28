@@ -8,8 +8,8 @@ public class Program
 {
     public static async Task Main()
     {
-        var accessKeyId = Environment.GetEnvironmentVariable("CLEANUP_AWS_ACCESS_KEY_ID");
-        var secretAccessKey = Environment.GetEnvironmentVariable("CLEANUP_AWS_SECRET_ACCESS_KEY");
+        var accessKeyId = Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
+        var secretAccessKey = Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
         var region = Environment.GetEnvironmentVariable("AWS_REGION");
 
         var config = new AmazonSQSConfig { ThrottleRetries = false, RegionEndpoint = RegionEndpoint.GetBySystemName(region) };

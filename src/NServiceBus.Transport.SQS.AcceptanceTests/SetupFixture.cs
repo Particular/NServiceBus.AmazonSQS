@@ -32,8 +32,8 @@
         [OneTimeTearDown]
         public async Task OneTimeTearDown()
         {
-            var accessKeyId = EnvironmentHelper.GetEnvironmentVariable("CLEANUP_AWS_ACCESS_KEY_ID");
-            var secretAccessKey = EnvironmentHelper.GetEnvironmentVariable("CLEANUP_AWS_SECRET_ACCESS_KEY");
+            var accessKeyId = EnvironmentHelper.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
+            var secretAccessKey = EnvironmentHelper.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
 
             using (var sqsClient = string.IsNullOrEmpty(accessKeyId) ? ConfigureEndpointSqsTransport.CreateSqsClient() :
                 new AmazonSQSClient(accessKeyId, secretAccessKey))

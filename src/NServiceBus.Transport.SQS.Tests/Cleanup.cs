@@ -122,9 +122,9 @@ namespace NServiceBus.Transport.SQS.Tests
                             BucketRegion = region
                         });
                     }
-                    catch (AmazonS3Exception)
+                    catch (AmazonS3Exception exception)
                     {
-                        Console.WriteLine($"Unable to delete bucket '{bucketName}'");
+                        Console.WriteLine($"Unable to delete bucket '{bucketName}': {exception}");
                     }
                 }));
         }
@@ -257,9 +257,9 @@ namespace NServiceBus.Transport.SQS.Tests
                 }
                 while (upToAThousandQueues.QueueUrls.Count > 0);
             }
-            catch (Exception)
+            catch (Exception exception)
             {
-                Console.WriteLine($"Unable to delete queues with prefix '{queueNamePrefix}'");
+                Console.WriteLine($"Unable to delete queues with prefix '{queueNamePrefix}': {exception}");
             }
         }
 
