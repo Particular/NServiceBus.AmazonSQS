@@ -892,8 +892,8 @@
 
         string prefix;
 
-        readonly string accessKeyId = Environment.GetEnvironmentVariable("CLEANUP_AWS_ACCESS_KEY_ID");
-        readonly string secretAccessKey = Environment.GetEnvironmentVariable("CLEANUP_AWS_SECRET_ACCESS_KEY");
+        readonly string accessKeyId = Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
+        readonly string secretAccessKey = Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
         readonly string region = Environment.GetEnvironmentVariable("AWS_REGION");
 
         IAmazonSQS sqs;
