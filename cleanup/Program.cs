@@ -53,7 +53,7 @@ public class Program
     {
         string queueName = url.Split('/')[4];
 
-        if (queueName.StartsWith("FixedAT"))
+        if (queueName.StartsWith("Fixed"))
         {
             return;
         }
