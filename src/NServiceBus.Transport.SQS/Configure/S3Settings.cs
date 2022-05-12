@@ -38,8 +38,7 @@ namespace NServiceBus
             // - Should not end with a dash
             // - Cannot contain two, adjacent periods
             // - Cannot contain dashes next to periods (e.g., "my-.bucket.com" and "my.-bucket" are invalid)
-            if (bucketForLargeMessages.Length < 3 ||
-                bucketForLargeMessages.Length > 63)
+            if (bucketForLargeMessages.Length is < 3 or > 63)
             {
                 throw new ArgumentException("S3 Bucket names must be between 3 and 63 characters in length.");
             }
