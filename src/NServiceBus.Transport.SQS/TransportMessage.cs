@@ -54,7 +54,7 @@
 
         public Address? ReplyToAddress
         {
-            get => Headers.ContainsKey(NServiceBus.Headers.ReplyToAddress) ? new Address { Queue = Headers[NServiceBus.Headers.ReplyToAddress] } : (Address?)null;
+            get => Headers.ContainsKey(NServiceBus.Headers.ReplyToAddress) ? new Address { Queue = Headers[NServiceBus.Headers.ReplyToAddress] } : null;
             set
             {
                 if (!string.IsNullOrWhiteSpace(value?.Queue))
