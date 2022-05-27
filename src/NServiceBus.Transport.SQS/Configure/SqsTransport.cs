@@ -208,6 +208,13 @@
             SnsClient = new AmazonSimpleNotificationServiceClient();
         }
 
+        internal SqsTransport(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, bool supportsPublishSubscribe)
+            : base(TransportTransactionMode.ReceiveOnly, true, supportsPublishSubscribe, true)
+        {
+            SqsClient = sqsClient;
+            SnsClient = snsClient;
+        }
+
         /// <summary>
         /// Initializes all the factories and supported features for the transport. This method is called right before all features
         /// are activated and the settings will be locked down. This means you can use the SettingsHolder both for providing

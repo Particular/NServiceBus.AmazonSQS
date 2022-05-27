@@ -1,9 +1,11 @@
-﻿namespace NServiceBus
+namespace NServiceBus
 {
     using System;
     using System.Collections.Generic;
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
+    using Configuration.AdvancedExtensibility;
+    using Transport.SQS.Configure;
 
     /// <summary>
     /// SQS transport configuration settings.
@@ -251,6 +253,39 @@
         public static void MapEvent(this TransportExtensions<SqsTransport> transportExtensions, Type subscribedEventType, Type publishedEventType)
         {
             transportExtensions.Transport.MapEvent(subscribedEventType, publishedEventType);
+        }
+    }
+
+    /// <summary>
+    /// Configuration extensions for Message-Driven Pub-Sub compatibility mode
+    /// </summary>
+    public static class MessageDrivenPubSubCompatibilityModeConfiguration
+    {
+        /// <summary>
+        /// Enables compatibility with endpoints running on message-driven pub-sub
+        /// </summary>
+        /// <param name="transportExtensions">The transport to enable pub-sub compatibility on</param>
+        [PreObsolete(Message = "Native publish/subscribe is always enabled in version 7. All endpoints must be updated to use native publish/subscribe before updating to this version.",
+            TreatAsErrorFromVersion = "7",
+            RemoveInVersion = "8")]
+        public static SqsSubscriptionMigrationModeSettings EnableMessageDrivenPubSubCompatibilityMode(this TransportExtensions<SqsTransport> transportExtensions)
+        {
+            var subscriptionMigrationModeSettings = transportExtensions.Routing().EnableMessageDrivenPubSubCompatibilityMode();
+
+            return subscriptionMigrationModeSettings;
+        }
+
+
+        /// <summary>
+        ///     Enables compatibility with endpoints running on message-driven pub-sub
+        /// </summary>
+        /// <param name="routingSettings">The transport to enable pub-sub compatibility on</param>
+        public static SqsSubscriptionMigrationModeSettings EnableMessageDrivenPubSubCompatibilityMode(
+            this RoutingSettings routingSettings)
+        {
+            var settings = routingSettings.GetSettings();
+            settings.Set("NServiceBus.Subscriptions.EnableMigrationMode", true);
+            return new SqsSubscriptionMigrationModeSettings(settings);
         }
     }
 }
