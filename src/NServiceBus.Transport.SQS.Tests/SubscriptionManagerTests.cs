@@ -30,12 +30,15 @@ namespace NServiceBus.Transport.SQS.Tests
 
         TestableSubscriptionManager CreateNonBatchingSubscriptionManager()
         {
+            var coreSettings = new Settings.SettingsHolder();
+            coreSettings.SetupMessageMetadataRegistry();
+
             return new TestableSubscriptionManager(
                 sqsClient,
                 snsClient,
                 queueName,
                 new QueueCache(sqsClient, dest => QueueCache.GetSqsQueueName(dest, "")),
-                new TopicCache(snsClient, new Settings.SettingsHolder(), customEventToTopicsMappings, customEventToEventsMappings,
+                new TopicCache(snsClient, coreSettings, customEventToTopicsMappings, customEventToEventsMappings,
                     TopicNameHelper.GetSnsTopicName, ""),
                 policySettings,
                 "");
