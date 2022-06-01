@@ -9,7 +9,6 @@ namespace NServiceBus.Transport.SQS
     using Configure;
     using Logging;
     using Settings;
-    using Unicast.Messages;
 
     class TopicCache
     {
@@ -29,40 +28,21 @@ namespace NServiceBus.Transport.SQS
             CustomEventToTopicsMappings = eventToTopicsMappings;
             CustomEventToEventsMappings = eventToEventsMappings;
 
-            messageMetadataRegistry = settings.Get<MessageMetadataRegistry>();
-            notFoundTopicsCacheTTL = settings.TryGet(SettingsKeys.NotFoundTopicsCacheTTL, out TimeSpan ttl) ? ttl : TimeSpan.FromSeconds(5);
+            notFoundTopicsCacheTTL = TimeSpan.FromSeconds(5);
+
+            if (settings != null && settings.TryGet(SettingsKeys.NotFoundTopicsCacheTTL, out TimeSpan ttl))
+            {
+                notFoundTopicsCacheTTL = ttl;
+            }
         }
 
         public EventToEventsMappings CustomEventToEventsMappings { get; }
 
         public EventToTopicsMappings CustomEventToTopicsMappings { get; }
 
-        public Task<string> GetTopicArn(MessageMetadata metadata, CancellationToken cancellationToken = default)
-        {
-            return GetAndCacheTopicIfFound(metadata, cancellationToken).ContinueWith(t => t.Result?.TopicArn);
-        }
-
-        public Task<Topic> GetTopic(MessageMetadata metadata, CancellationToken cancellationToken = default)
-        {
-            return GetAndCacheTopicIfFound(metadata, cancellationToken);
-        }
-
         public Task<string> GetTopicArn(Type eventType, CancellationToken cancellationToken = default)
         {
-            var metadata = messageMetadataRegistry.GetMessageMetadata(eventType);
-            return GetAndCacheTopicIfFound(metadata, cancellationToken).ContinueWith(t => t.Result?.TopicArn);
-        }
-
-        public Task<string> GetTopicArn(string messageTypeIdentifier, CancellationToken cancellationToken = default)
-        {
-            var metadata = messageMetadataRegistry.GetMessageMetadata(messageTypeIdentifier);
-            return GetAndCacheTopicIfFound(metadata, cancellationToken).ContinueWith(t => t.Result?.TopicArn);
-        }
-
-        public Task<Topic> GetTopic(string messageTypeIdentifier, CancellationToken cancellationToken = default)
-        {
-            var metadata = messageMetadataRegistry.GetMessageMetadata(messageTypeIdentifier);
-            return GetAndCacheTopicIfFound(metadata, cancellationToken);
+            return GetAndCacheTopicIfFound(eventType, cancellationToken).ContinueWith(t => t.Result?.TopicArn);
         }
 
         public string GetTopicName(Type messageType)
@@ -74,23 +54,23 @@ namespace NServiceBus.Transport.SQS
 
             return topicNameCache.GetOrAdd(messageType, topicNameGenerator(messageType, topicNamePrefix));
         }
-        public string GetTopicName(MessageMetadata metadata)
+        public Task<Topic> GetTopic(Type eventType, CancellationToken cancellationToken = default)
         {
-            return GetTopicName(metadata.MessageType);
+            return GetAndCacheTopicIfFound(eventType, cancellationToken);
         }
 
-        bool TryGetTopicFromCache(MessageMetadata metadata, out Topic topic)
+        bool TryGetTopicFromCache(Type messageType, out Topic topic)
         {
-            if (topicCache.TryGetValue(metadata.MessageType, out var topicCacheItem))
+            if (topicCache.TryGetValue(messageType, out var topicCacheItem))
             {
                 if (topicCacheItem.Topic == null && topicCacheItem.CreatedOn.Add(notFoundTopicsCacheTTL) < DateTime.UtcNow)
                 {
-                    Logger.Debug($"Removing topic '<null>' with key '{metadata.MessageType}' from cache: TTL expired.");
-                    _ = topicCache.TryRemove(metadata.MessageType, out _);
+                    Logger.Debug($"Removing topic '<null>' with key '{messageType}' from cache: TTL expired.");
+                    _ = topicCache.TryRemove(messageType, out _);
                 }
                 else
                 {
-                    Logger.Debug($"Returning topic for '{metadata.MessageType}' from cache. Topic '{topicCacheItem.Topic?.TopicArn ?? "<null>"}'.");
+                    Logger.Debug($"Returning topic for '{messageType}' from cache. Topic '{topicCacheItem.Topic?.TopicArn ?? "<null>"}'.");
                     topic = topicCacheItem.Topic;
                     return true;
                 }
@@ -101,16 +81,16 @@ namespace NServiceBus.Transport.SQS
         }
 
 #pragma warning disable PS0004 // A parameter of type CancellationToken on a private delegate or method should be required
-        async Task<Topic> GetAndCacheTopicIfFound(MessageMetadata metadata, CancellationToken cancellationToken = default)
+        async Task<Topic> GetAndCacheTopicIfFound(Type messageType, CancellationToken cancellationToken = default)
 #pragma warning restore PS0004 // A parameter of type CancellationToken on a private delegate or method should be required
         {
-            Logger.Debug($"Performing first Topic cache lookup for '{metadata.MessageType}'.");
-            if (TryGetTopicFromCache(metadata, out var cachedTopic))
+            Logger.Debug($"Performing first Topic cache lookup for '{messageType}'.");
+            if (TryGetTopicFromCache(messageType, out var cachedTopic))
             {
                 return cachedTopic;
             }
 
-            Logger.Debug($"Topic for '{metadata.MessageType}' not found in cache.");
+            Logger.Debug($"Topic for '{messageType}' not found in cache.");
 
             var foundTopic = await snsListTopicsRateLimiter.Execute(async () =>
             {
@@ -119,13 +99,13 @@ namespace NServiceBus.Transport.SQS
                  * rate limiter. Before trying to reach out to SNS we do another
                  * cache lookup
                  */
-                Logger.Debug($"Performing second Topic cache lookup for '{metadata.MessageType}'.");
-                if (TryGetTopicFromCache(metadata, out var cachedValue))
+                Logger.Debug($"Performing second Topic cache lookup for '{messageType}'.");
+                if (TryGetTopicFromCache(messageType, out var cachedValue))
                 {
                     return cachedValue;
                 }
 
-                var topicName = GetTopicName(metadata);
+                var topicName = GetTopicName(messageType);
                 Logger.Debug($"Finding topic '{topicName}' using 'ListTopics' SNS API.");
 
                 return await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
@@ -133,7 +113,7 @@ namespace NServiceBus.Transport.SQS
 
             //We cache also null/not found topics, they'll be wiped
             //from the cache at lookup time based on the configured TTL
-            var added = topicCache.TryAdd(metadata.MessageType, new TopicCacheItem() { Topic = foundTopic });
+            var added = topicCache.TryAdd(messageType, new TopicCacheItem { Topic = foundTopic });
             if (added)
             {
                 Logger.Debug($"Added topic '{foundTopic?.TopicArn ?? "<null>"}' to cache. Cache items count: {topicCache.Count}.");
@@ -147,7 +127,6 @@ namespace NServiceBus.Transport.SQS
         }
 
         IAmazonSimpleNotificationService snsClient;
-        MessageMetadataRegistry messageMetadataRegistry;
         ConcurrentDictionary<Type, TopicCacheItem> topicCache = new ConcurrentDictionary<Type, TopicCacheItem>();
         ConcurrentDictionary<Type, string> topicNameCache = new ConcurrentDictionary<Type, string>();
         static ILog Logger = LogManager.GetLogger(typeof(TopicCache));

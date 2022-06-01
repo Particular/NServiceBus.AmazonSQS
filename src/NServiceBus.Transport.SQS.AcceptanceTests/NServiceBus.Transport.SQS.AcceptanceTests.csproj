@@ -24,7 +24,6 @@
 
   <ItemGroup>
     <Compile Include="..\NServiceBus.Transport.SQS.Tests\Cleanup.cs" />
-    <Compile Include="..\NServiceBus.Transport.SQS.Tests\SettingsHolderExtensions.cs" Link="SettingsHolderExtensions.cs" />
   </ItemGroup>
 
   <ItemGroup>

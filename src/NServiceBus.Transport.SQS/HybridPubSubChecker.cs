@@ -22,7 +22,12 @@
         {
             rateLimiter = new SnsListSubscriptionsByTopicRateLimiter();
 
-            this.cacheTTL = settings.TryGet(SettingsKeys.SubscriptionsCacheTTL, out TimeSpan cacheTTL) ? cacheTTL : TimeSpan.FromSeconds(5);
+            this.cacheTTL = TimeSpan.FromSeconds(5);
+
+            if (settings != null && settings.TryGet(SettingsKeys.SubscriptionsCacheTTL, out TimeSpan cacheTTL))
+            {
+                this.cacheTTL = cacheTTL;
+            }
         }
 
         bool TryGetFromCache(string cacheKey, out SubscriptionsCacheItem item)
@@ -50,7 +55,7 @@
         }
 
 #pragma warning disable PS0018 // A task-returning method should have a CancellationToken parameter unless it has a parameter implementing ICancellableContext
-        public async Task<bool> PublishUsingMessageDrivenPubSub(UnicastTransportOperation unicastTransportOperation, HashSet<string> messageIdsOfMulticastedEvents, TopicCache topicCache, QueueCache queueCache, IAmazonSimpleNotificationService snsClient)
+        public async Task<bool> PublishUsingMessageDrivenPubSub(UnicastTransportOperation unicastTransportOperation, Dictionary<string, Type> multicastEventsMessageIdsToType, TopicCache topicCache, QueueCache queueCache, IAmazonSimpleNotificationService snsClient)
 #pragma warning restore PS0018 // A task-returning method should have a CancellationToken parameter unless it has a parameter implementing ICancellableContext
         {
             // The following check is required by the message-driven pub/sub hybrid mode in Core
@@ -62,12 +67,11 @@
             // We need to think abut what happens in case the destination endpoint unsubscribes from the event.
             // these conditions are carefully chosen to only execute the code if really necessary
             if (unicastTransportOperation != null
-                && messageIdsOfMulticastedEvents.Contains(unicastTransportOperation.Message.MessageId)
-                && unicastTransportOperation.Message.GetMessageIntent() == MessageIntent.Publish
-                && unicastTransportOperation.Message.Headers.ContainsKey(Headers.EnclosedMessageTypes))
+                && multicastEventsMessageIdsToType.ContainsKey(unicastTransportOperation.Message.MessageId)
+                && unicastTransportOperation.Message.GetMessageIntent() == MessageIntent.Publish)
             {
-                var mostConcreteEnclosedMessageType = unicastTransportOperation.Message.GetEnclosedMessageTypes()[0];
-                var existingTopic = await topicCache.GetTopic(mostConcreteEnclosedMessageType).ConfigureAwait(false);
+                var eventType = multicastEventsMessageIdsToType[unicastTransportOperation.Message.MessageId];
+                var existingTopic = await topicCache.GetTopic(eventType).ConfigureAwait(false);
                 if (existingTopic == null)
                 {
                     return true;

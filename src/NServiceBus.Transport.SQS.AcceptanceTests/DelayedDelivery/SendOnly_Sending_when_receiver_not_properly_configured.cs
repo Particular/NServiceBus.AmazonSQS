@@ -9,7 +9,6 @@
     using NUnit.Framework;
     using Settings;
     using Transport;
-    using Transport.SQS.Tests;
 
     public class SendOnly_Sending_when_receiver_not_properly_configured : NServiceBusAcceptanceTest
     {
@@ -53,10 +52,8 @@
                         //Create a queue that does not have an associated .fifo queue, simulating a legacy endpoint
                         var destinationQueueName = TestNameHelper.GetSqsQueueName("LegacyEndpoint", SetupFixture.NamePrefix);
                         var transport = ConfigureEndpointSqsTransport.PrepareSqsTransport();
-                        var coreSettings = new SettingsHolder();
-                        coreSettings.SetupMessageMetadataRegistry();
                         await transport.Initialize(new HostSettings("Host", "Host", new StartupDiagnosticEntries(),
-                            (error, exception, ct) => { }, true, coreSettings), new ReceiveSettings[0], new[] { destinationQueueName });
+                            (error, exception, ct) => { }, true, new SettingsHolder()), new ReceiveSettings[0], new[] { destinationQueueName });
 
                         var sendOptions = new SendOptions();
                         sendOptions.DelayDeliveryWith(delay);

@@ -9,9 +9,11 @@ namespace NServiceBus.Transport.SQS
     using Amazon.Runtime;
     using Amazon.SQS;
     using Amazon.SQS.Model;
+    using Configure;
     using Extensibility;
     using Extensions;
     using Logging;
+    using Settings;
     using SimpleJson;
     using static TransportHeaders;
 
@@ -26,7 +28,8 @@ namespace NServiceBus.Transport.SQS
             QueueCache queueCache,
             S3Settings s3Settings,
             SubscriptionManager subscriptionManager,
-            Action<string, Exception, CancellationToken> criticalErrorAction)
+            Action<string, Exception, CancellationToken> criticalErrorAction,
+            IReadOnlySettings coreSettings)
         {
             this.sqsClient = sqsClient;
             this.queueCache = queueCache;
@@ -38,6 +41,8 @@ namespace NServiceBus.Transport.SQS
             Id = receiverId;
             ReceiveAddress = receiveAddress;
             Subscriptions = subscriptionManager;
+
+            this.coreSettings = coreSettings;
         }
 
         public async Task Initialize(PushRuntimeSettings limitations, OnMessage onMessage, OnError onError, CancellationToken cancellationToken = default)
@@ -105,6 +110,11 @@ namespace NServiceBus.Transport.SQS
                 AttributeNames = new List<string> { "SentTimestamp" },
                 MessageAttributeNames = new List<string> { "*" }
             };
+
+            if (coreSettings != null && coreSettings.TryGet<int>(SettingsKeys.MessageVisibilityTimeout, out var visibilityTimeout))
+            {
+                receiveMessagesRequest.VisibilityTimeout = visibilityTimeout;
+            }
 
             maxConcurrencySemaphore = new SemaphoreSlim(maxConcurrency);
             pumpTasks = new List<Task>(numberOfPumps);
@@ -476,6 +486,7 @@ namespace NServiceBus.Transport.SQS
         readonly S3Settings s3Settings;
         readonly Action<string, Exception, CancellationToken> criticalErrorAction;
         readonly string awsEndpointUrl;
+        readonly IReadOnlySettings coreSettings;
 
         int numberOfMessagesToFetch;
         ReceiveMessageRequest receiveMessagesRequest;

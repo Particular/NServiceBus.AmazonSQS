@@ -5,6 +5,7 @@ namespace NServiceBus.Transport.SQS.Tests
     using System.Threading.Tasks;
     using Configure;
     using NUnit.Framework;
+    using Settings;
     using SQS;
 
     [TestFixture]
@@ -15,10 +16,7 @@ namespace NServiceBus.Transport.SQS.Tests
         {
             var snsClient = new MockSnsClient();
 
-            var coreSettings = new Settings.SettingsHolder();
-            coreSettings.SetupMessageMetadataRegistry();
-
-            var cache = new TopicCache(snsClient, coreSettings, null, new EventToEventsMappings(), TopicNameGenerator, "PREFIX");
+            var cache = new TopicCache(snsClient, new SettingsHolder(), null, new EventToEventsMappings(), TopicNameGenerator, "PREFIX");
 
             await cache.GetTopicArn(typeof(Event));
 
@@ -42,10 +40,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 return $"{prefix}{eventType.Name}";
             }
 
-            var coreSettings = new Settings.SettingsHolder();
-            coreSettings.SetupMessageMetadataRegistry();
-
-            var cache = new TopicCache(null, coreSettings, null, new EventToEventsMappings(), Generator, "PREFIX");
+            var cache = new TopicCache(null, new SettingsHolder(), null, new EventToEventsMappings(), Generator, "PREFIX");
 
             cache.GetTopicName(typeof(Event));
             cache.GetTopicName(typeof(Event));

@@ -7,6 +7,7 @@
     using Amazon.S3;
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
+    using Settings;
     using Transport;
 
     class SqsTransportInfrastructure : TransportInfrastructure
@@ -22,7 +23,8 @@
                 .Select(receiverSetting => CreateMessagePump(receiverSetting, sqsClient, snsClient, queueCache, topicCache, s3Settings, policySettings, queueDelayTimeSeconds, topicNamePrefix, hostSettings.CriticalErrorAction))
                 .ToDictionary(x => x.Id, x => x);
 
-            var hybridPubSubChecker = new HybridPubSubChecker(hostSettings.CoreSettings);
+            coreSettings = hostSettings.CoreSettings;
+
             Dispatcher = new MessageDispatcher(hostSettings.CoreSettings, sqsClient, snsClient, queueCache, topicCache, s3Settings,
                 queueDelayTimeSeconds, v1Compatibility);
         }
@@ -35,7 +37,7 @@
             var receiveAddress = ToTransportAddress(receiveSettings.ReceiveAddress);
             var subManager = new SubscriptionManager(sqsClient, snsClient, receiveAddress, queueCache, topicCache, policySettings, topicNamePrefix);
 
-            return new MessagePump(receiveSettings.Id, receiveAddress, receiveSettings.ErrorQueue, receiveSettings.PurgeOnStartup, sqsClient, queueCache, s3Settings, subManager, queueDelayTimeSeconds, criticalErrorAction);
+            return new MessagePump(receiveSettings.Id, receiveAddress, receiveSettings.ErrorQueue, receiveSettings.PurgeOnStartup, sqsClient, queueCache, s3Settings, subManager, queueDelayTimeSeconds, criticalErrorAction, coreSettings);
         }
 
         public override Task Shutdown(CancellationToken cancellationToken = default)
@@ -55,5 +57,6 @@
         readonly IAmazonSQS sqsClient;
         readonly IAmazonSimpleNotificationService snsClient;
         readonly IAmazonS3 s3Client;
+        readonly IReadOnlySettings coreSettings;
     }
 }
