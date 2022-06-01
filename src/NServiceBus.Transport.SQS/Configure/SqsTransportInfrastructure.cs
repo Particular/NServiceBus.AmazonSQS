@@ -22,7 +22,8 @@
                 .Select(receiverSetting => CreateMessagePump(receiverSetting, sqsClient, snsClient, queueCache, topicCache, s3Settings, policySettings, queueDelayTimeSeconds, topicNamePrefix, hostSettings.CriticalErrorAction))
                 .ToDictionary(x => x.Id, x => x);
 
-            Dispatcher = new MessageDispatcher(sqsClient, snsClient, queueCache, topicCache, s3Settings,
+            var hybridPubSubChecker = new HybridPubSubChecker(hostSettings.CoreSettings);
+            Dispatcher = new MessageDispatcher(hostSettings.CoreSettings, sqsClient, snsClient, queueCache, topicCache, s3Settings,
                 queueDelayTimeSeconds, v1Compatibility);
         }
 

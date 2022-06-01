@@ -9,14 +9,14 @@
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
     using Amazon.SQS.Model;
-    using Extensions;
     using Logging;
+    using Settings;
     using SimpleJson;
     using Transport;
 
     class MessageDispatcher : IMessageDispatcher
     {
-        public MessageDispatcher(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient,
+        public MessageDispatcher(IReadOnlySettings settings, IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient,
             QueueCache queueCache,
             TopicCache topicCache,
             S3Settings s3,
@@ -31,6 +31,8 @@
             this.sqsClient = sqsClient;
             this.queueCache = queueCache;
             serializerStrategy = v1Compatibility ? SimpleJson.PocoJsonSerializerStrategy : ReducedPayloadSerializerStrategy.Instance;
+
+            hybridPubSubChecker = new HybridPubSubChecker(settings);
         }
 
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, CancellationToken cancellationToken = default)
@@ -244,33 +246,9 @@
         {
             var unicastTransportOperation = transportOperation as UnicastTransportOperation;
 
-            // The following check is required by the message-driven pub/sub hybrid mode in Core
-            // to allow endpoints to migrate from message-driven pub/sub to native pub/sub
-            // If the message we're trying to dispatch is a unicast message with a `Publish` intent
-            // but the subscriber is also subscribed via SNS we don't want to dispatch the message twice
-            // the subscriber will receive it via SNS and not via a unicast send.
-            // We can improve the situation a bit by caching the information and thus reduce the amount of times we hit the SNS API.
-            // We need to think abut what happens in case the destination endpoint unsubscribes from the event.
-            // these conditions are carefully chosen to only execute the code if really necessary
-            if (unicastTransportOperation != null
-                && messageIdsOfMulticastedEvents.Contains(unicastTransportOperation.Message.MessageId)
-                && unicastTransportOperation.Message.GetMessageIntent() == MessageIntent.Publish
-                && unicastTransportOperation.Message.Headers.ContainsKey(Headers.EnclosedMessageTypes))
+            if (!await hybridPubSubChecker.PublishUsingMessageDrivenPubSub(unicastTransportOperation, messageIdsOfMulticastedEvents, topicCache, queueCache, snsClient).ConfigureAwait(false))
             {
-                //The first type in the enclosed message types is the most concrete type associated with the message. The name is assembly-qualified and the type is guaranteed to be loaded.
-                var mostConcreteEnclosedMessageTypeName = unicastTransportOperation.Message.GetEnclosedMessageTypes()[0];
-                var mostConcreteEnclosedMessageType = Type.GetType(mostConcreteEnclosedMessageTypeName, true);
-
-                var existingTopic = await topicCache.GetTopicArn(mostConcreteEnclosedMessageType, cancellationToken).ConfigureAwait(false);
-                if (existingTopic != null)
-                {
-                    var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination, cancellationToken: cancellationToken)
-                        .ConfigureAwait(false);
-                    if (matchingSubscriptionArn != null)
-                    {
-                        return null;
-                    }
-                }
+                return null;
             }
 
             var delayDeliveryWith = transportOperation.Properties.DelayDeliveryWith;
@@ -405,6 +383,7 @@
         readonly TopicCache topicCache;
         readonly S3Settings s3;
         readonly int queueDelaySeconds;
+        readonly HybridPubSubChecker hybridPubSubChecker;
         IAmazonSQS sqsClient;
         QueueCache queueCache;
         IJsonSerializerStrategy serializerStrategy;

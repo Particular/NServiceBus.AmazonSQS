@@ -15,7 +15,7 @@ namespace NServiceBus.Transport.SQS.Tests
         {
             var snsClient = new MockSnsClient();
 
-            var cache = new TopicCache(snsClient, null, new EventToEventsMappings(), TopicNameGenerator, "PREFIX");
+            var cache = new TopicCache(snsClient, new Settings.SettingsHolder(), null, new EventToEventsMappings(), TopicNameGenerator, "PREFIX");
 
             await cache.GetTopicArn(typeof(Event));
 
@@ -39,7 +39,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 return $"{prefix}{eventType.Name}";
             }
 
-            var cache = new TopicCache(null, null, new EventToEventsMappings(), Generator, "PREFIX");
+            var cache = new TopicCache(null, new Settings.SettingsHolder(), null, new EventToEventsMappings(), Generator, "PREFIX");
 
             cache.GetTopicName(typeof(Event));
             cache.GetTopicName(typeof(Event));
