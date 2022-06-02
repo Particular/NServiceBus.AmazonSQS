@@ -23,7 +23,7 @@
             new TestCase(4){ NumberOfEvents = 1000, TestExecutionTimeout = TimeSpan.FromMinutes(4), SubscriptionsCacheTTL = TimeSpan.FromMinutes(1), NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(1) },
         };
 
-        [Test, TestCaseSource(nameof(TestCases)), Ignore("To see if all other tests pass on the build agent")]
+        [Test, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
             var context = await Scenario.Define<Context>()

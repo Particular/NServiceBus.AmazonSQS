@@ -39,7 +39,7 @@
             },
         };
 
-        [Test, TestCaseSource(nameof(TestCases)), Ignore("To see if all other tests pass on the build agent")]
+        [Test, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
             var context = await Scenario.Define<Context>()
