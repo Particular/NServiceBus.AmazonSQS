@@ -329,22 +329,28 @@
         [Test]
         public async Task Should_upload_large_multicast_operations_request_to_s3()
         {
+            string keyPrefix = "somePrefix";
+
             var mockS3Client = new MockS3Client();
             var mockSnsClient = new MockSnsClient();
 
             var dispatcher = new MessageDispatcher(new SettingsHolder(), null, mockSnsClient, new QueueCache(null,
                     dest => QueueCache.GetSqsQueueName(dest, "")),
                 new TopicCache(mockSnsClient, new SettingsHolder(), new EventToTopicsMappings(), new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""),
-                new S3Settings("someBucket", "somePrefix", mockS3Client), 15 * 60, true);
+                new S3Settings("someBucket", keyPrefix, mockS3Client), 15 * 60, true);
+
+            var longBodyMessageId = Guid.NewGuid().ToString();
+            /* Crazy long message id will cause the message to go over limits because attributes count as well */
+            var crazyLongMessageId = new string('x', 256 * 1024);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes(new string('x', 256 * 1024))),
+                    new OutgoingMessage(longBodyMessageId, new Dictionary<string, string>(), Encoding.Default.GetBytes(new string('x', 256 * 1024))),
                     new MulticastAddressTag(typeof(Event)),
                     new DispatchProperties(),
                     DispatchConsistency.Isolated),
                 new TransportOperation( /* Crazy long message id will cause the message to go over limits because attributes count as well */
-                    new OutgoingMessage(new string('x', 256 * 1024), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(crazyLongMessageId, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
                     new MulticastAddressTag(typeof(AnotherEvent)),
                     new DispatchProperties(),
                     DispatchConsistency.Isolated));
@@ -356,13 +362,13 @@
             Assert.AreEqual(2, mockSnsClient.PublishedEvents.Count);
             Assert.AreEqual(2, mockS3Client.PutObjectRequestsSent.Count);
 
-            var firstUpload = mockS3Client.PutObjectRequestsSent.ElementAt(0);
-            var secondUpload = mockS3Client.PutObjectRequestsSent.ElementAt(1);
+            var longBodyMessageUpload = mockS3Client.PutObjectRequestsSent.Single(por => por.Key == $"{keyPrefix}/{longBodyMessageId}");
+            var crazyLongMessageUpload = mockS3Client.PutObjectRequestsSent.Single(por => por.Key == $"{keyPrefix}/{crazyLongMessageId}");
 
-            Assert.AreEqual("someBucket", firstUpload.BucketName);
-            Assert.AreEqual("someBucket", secondUpload.BucketName);
-            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{firstUpload.Key}", mockSnsClient.PublishedEvents.ElementAt(0).Message);
-            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{secondUpload.Key}", mockSnsClient.PublishedEvents.ElementAt(1).Message);
+            Assert.AreEqual("someBucket", longBodyMessageUpload.BucketName);
+            Assert.AreEqual("someBucket", crazyLongMessageUpload.BucketName);
+            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{longBodyMessageUpload.Key}", mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == longBodyMessageId).Message);
+            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{crazyLongMessageUpload.Key}", mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == crazyLongMessageId).Message);
         }
 
         [Test]
