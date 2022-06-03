@@ -35,7 +35,12 @@
             var transport = PrepareSqsTransport(supportsPublishSubscribe);
             configuration.UseTransport(transport);
 
-            settings.TestExecutionTimeout = TimeSpan.FromSeconds(120);
+            //We set the default test execution timeout only when not explicitly set by the test
+            if (settings.TestExecutionTimeout == null)
+            {
+                settings.TestExecutionTimeout = TimeSpan.FromSeconds(120);
+            }
+
             ApplyMappingsToSupportMultipleInheritance(endpointName, transport);
 
 
