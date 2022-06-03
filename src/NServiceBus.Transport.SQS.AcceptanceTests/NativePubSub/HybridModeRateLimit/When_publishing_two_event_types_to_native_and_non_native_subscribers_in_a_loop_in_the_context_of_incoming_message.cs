@@ -47,6 +47,8 @@
         [Test, UseFixedNamePrefix, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
+            SetupFixture.AppendSequenceToNamePrefix(testCase.Sequence);
+
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
                 {
