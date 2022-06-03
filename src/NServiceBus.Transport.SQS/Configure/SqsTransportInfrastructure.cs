@@ -18,12 +18,11 @@
             this.transportDefinition = transportDefinition;
             this.sqsClient = sqsClient;
             this.snsClient = snsClient;
+            coreSettings = hostSettings.CoreSettings;
             s3Client = s3Settings?.S3Client;
             Receivers = receiverSettings
                 .Select(receiverSetting => CreateMessagePump(receiverSetting, sqsClient, snsClient, queueCache, topicCache, s3Settings, policySettings, queueDelayTimeSeconds, topicNamePrefix, hostSettings.CriticalErrorAction))
                 .ToDictionary(x => x.Id, x => x);
-
-            coreSettings = hostSettings.CoreSettings;
 
             Dispatcher = new MessageDispatcher(hostSettings.CoreSettings, sqsClient, snsClient, queueCache, topicCache, s3Settings,
                 queueDelayTimeSeconds, v1Compatibility);
