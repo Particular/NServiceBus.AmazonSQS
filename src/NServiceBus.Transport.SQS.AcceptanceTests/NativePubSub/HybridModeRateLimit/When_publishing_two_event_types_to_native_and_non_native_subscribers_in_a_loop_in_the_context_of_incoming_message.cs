@@ -44,7 +44,7 @@
             },
         };
 
-        [Test, TestCaseSource(nameof(TestCases))]
+        [Test, UseFixedNamePrefix, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
             var context = await Scenario.Define<Context>()
