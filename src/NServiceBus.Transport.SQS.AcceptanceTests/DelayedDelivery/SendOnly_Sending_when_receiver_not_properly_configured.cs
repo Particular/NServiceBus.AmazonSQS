@@ -7,6 +7,7 @@
     using Amazon.SQS.Model;
     using EndpointTemplates;
     using NUnit.Framework;
+    using Settings;
     using Transport;
 
     public class SendOnly_Sending_when_receiver_not_properly_configured : NServiceBusAcceptanceTest
@@ -52,7 +53,7 @@
                         var destinationQueueName = TestNameHelper.GetSqsQueueName("LegacyEndpoint", SetupFixture.NamePrefix);
                         var transport = ConfigureEndpointSqsTransport.PrepareSqsTransport();
                         await transport.Initialize(new HostSettings("Host", "Host", new StartupDiagnosticEntries(),
-                            (error, exception, ct) => { }, true), new ReceiveSettings[0], new[] { destinationQueueName });
+                            (error, exception, ct) => { }, true, new SettingsHolder()), new ReceiveSettings[0], new[] { destinationQueueName });
 
                         var sendOptions = new SendOptions();
                         sendOptions.DelayDeliveryWith(delay);

@@ -9,14 +9,14 @@
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
     using Amazon.SQS.Model;
-    using Extensions;
     using Logging;
+    using Settings;
     using SimpleJson;
     using Transport;
 
     class MessageDispatcher : IMessageDispatcher
     {
-        public MessageDispatcher(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient,
+        public MessageDispatcher(IReadOnlySettings settings, IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient,
             QueueCache queueCache,
             TopicCache topicCache,
             S3Settings s3,
@@ -31,6 +31,8 @@
             this.sqsClient = sqsClient;
             this.queueCache = queueCache;
             serializerStrategy = v1Compatibility ? SimpleJson.PocoJsonSerializerStrategy : ReducedPayloadSerializerStrategy.Instance;
+
+            hybridPubSubChecker = new HybridPubSubChecker(settings);
         }
 
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, CancellationToken cancellationToken = default)
@@ -38,8 +40,8 @@
             var concurrentDispatchTasks = new List<Task>(3);
 
             // in order to not enumerate multi cast operations multiple times this code assumes the hashset is filled on the synchronous path of the async method!
-            var messageIdsOfMulticastEvents = new HashSet<string>();
-            concurrentDispatchTasks.Add(DispatchMulticast(outgoingMessages.MulticastTransportOperations, messageIdsOfMulticastEvents, transaction, cancellationToken));
+            var multicastEventsMessageIdsToType = new Dictionary<string, Type>();
+            concurrentDispatchTasks.Add(DispatchMulticast(outgoingMessages.MulticastTransportOperations, multicastEventsMessageIdsToType, transaction, cancellationToken));
 
             foreach (var dispatchConsistencyGroup in outgoingMessages.UnicastTransportOperations
                 .GroupBy(o => o.RequiredDispatchConsistency))
@@ -47,10 +49,10 @@
                 switch (dispatchConsistencyGroup.Key)
                 {
                     case DispatchConsistency.Isolated:
-                        concurrentDispatchTasks.Add(DispatchIsolated(dispatchConsistencyGroup, messageIdsOfMulticastEvents, transaction, cancellationToken));
+                        concurrentDispatchTasks.Add(DispatchIsolated(dispatchConsistencyGroup, multicastEventsMessageIdsToType, transaction, cancellationToken));
                         break;
                     case DispatchConsistency.Default:
-                        concurrentDispatchTasks.Add(DispatchBatched(dispatchConsistencyGroup, messageIdsOfMulticastEvents, transaction, cancellationToken));
+                        concurrentDispatchTasks.Add(DispatchBatched(dispatchConsistencyGroup, multicastEventsMessageIdsToType, transaction, cancellationToken));
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -68,37 +70,37 @@
             }
         }
 
-        Task DispatchMulticast(List<MulticastTransportOperation> multicastTransportOperations, HashSet<string> messageIdsOfMulticastEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken)
+        Task DispatchMulticast(List<MulticastTransportOperation> multicastTransportOperations, Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction, CancellationToken cancellationToken)
         {
             List<Task> tasks = null;
             foreach (var operation in multicastTransportOperations)
             {
-                messageIdsOfMulticastEvents.Add(operation.Message.MessageId);
+                multicastEventsMessageIdsToType.Add(operation.Message.MessageId, operation.MessageType);
                 tasks ??= new List<Task>(multicastTransportOperations.Count);
-                tasks.Add(Dispatch(operation, EmptyHashset, transportTransaction, cancellationToken));
+                tasks.Add(Dispatch(operation, EmptyDictionary, transportTransaction, cancellationToken));
             }
 
             return tasks != null ? Task.WhenAll(tasks) : Task.CompletedTask;
         }
 
-        Task DispatchIsolated(IEnumerable<UnicastTransportOperation> isolatedTransportOperations, HashSet<string> messageIdsOfMulticastEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken)
+        Task DispatchIsolated(IEnumerable<UnicastTransportOperation> isolatedTransportOperations, Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction, CancellationToken cancellationToken)
         {
             List<Task> tasks = null;
             foreach (var operation in isolatedTransportOperations)
             {
                 tasks ??= new List<Task>();
-                tasks.Add(Dispatch(operation, messageIdsOfMulticastEvents, transportTransaction, cancellationToken));
+                tasks.Add(Dispatch(operation, multicastEventsMessageIdsToType, transportTransaction, cancellationToken));
             }
 
             return tasks != null ? Task.WhenAll(tasks) : Task.CompletedTask;
         }
 
-        async Task DispatchBatched(IEnumerable<UnicastTransportOperation> toBeBatchedTransportOperations, HashSet<string> messageIdsOfMulticastEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken)
+        async Task DispatchBatched(IEnumerable<UnicastTransportOperation> toBeBatchedTransportOperations, Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction, CancellationToken cancellationToken)
         {
             var tasks = new List<Task<SqsPreparedMessage>>();
             foreach (var operation in toBeBatchedTransportOperations)
             {
-                tasks.Add(PrepareMessage<SqsPreparedMessage>(operation, messageIdsOfMulticastEvents, transportTransaction, cancellationToken));
+                tasks.Add(PrepareMessage<SqsPreparedMessage>(operation, multicastEventsMessageIdsToType, transportTransaction, cancellationToken));
             }
 
             await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -170,9 +172,9 @@
             }
         }
 
-        async Task Dispatch(MulticastTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken)
+        async Task Dispatch(MulticastTransportOperation transportOperation, Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction, CancellationToken cancellationToken)
         {
-            var message = await PrepareMessage<SnsPreparedMessage>(transportOperation, messageIdsOfMulticastedEvents, transportTransaction, cancellationToken)
+            var message = await PrepareMessage<SnsPreparedMessage>(transportOperation, multicastEventsMessageIdsToType, transportTransaction, cancellationToken)
                 .ConfigureAwait(false);
 
             if (message == null)
@@ -201,9 +203,9 @@
             }
         }
 
-        async Task Dispatch(UnicastTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken)
+        async Task Dispatch(UnicastTransportOperation transportOperation, Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction, CancellationToken cancellationToken)
         {
-            var message = await PrepareMessage<SqsPreparedMessage>(transportOperation, messageIdsOfMulticastedEvents, transportTransaction, cancellationToken)
+            var message = await PrepareMessage<SqsPreparedMessage>(transportOperation, multicastEventsMessageIdsToType, transportTransaction, cancellationToken)
                 .ConfigureAwait(false);
 
             if (message == null)
@@ -239,38 +241,14 @@
             }
         }
 
-        async Task<TMessage> PrepareMessage<TMessage>(IOutgoingTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction, CancellationToken cancellationToken)
+        async Task<TMessage> PrepareMessage<TMessage>(IOutgoingTransportOperation transportOperation, Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction, CancellationToken cancellationToken)
             where TMessage : PreparedMessage, new()
         {
             var unicastTransportOperation = transportOperation as UnicastTransportOperation;
 
-            // The following check is required by the message-driven pub/sub hybrid mode in Core
-            // to allow endpoints to migrate from message-driven pub/sub to native pub/sub
-            // If the message we're trying to dispatch is a unicast message with a `Publish` intent
-            // but the subscriber is also subscribed via SNS we don't want to dispatch the message twice
-            // the subscriber will receive it via SNS and not via a unicast send.
-            // We can improve the situation a bit by caching the information and thus reduce the amount of times we hit the SNS API.
-            // We need to think abut what happens in case the destination endpoint unsubscribes from the event.
-            // these conditions are carefully chosen to only execute the code if really necessary
-            if (unicastTransportOperation != null
-                && messageIdsOfMulticastedEvents.Contains(unicastTransportOperation.Message.MessageId)
-                && unicastTransportOperation.Message.GetMessageIntent() == MessageIntent.Publish
-                && unicastTransportOperation.Message.Headers.ContainsKey(Headers.EnclosedMessageTypes))
+            if (!await hybridPubSubChecker.PublishUsingMessageDrivenPubSub(unicastTransportOperation, multicastEventsMessageIdsToType, topicCache, queueCache, snsClient).ConfigureAwait(false))
             {
-                //The first type in the enclosed message types is the most concrete type associated with the message. The name is assembly-qualified and the type is guaranteed to be loaded.
-                var mostConcreteEnclosedMessageTypeName = unicastTransportOperation.Message.GetEnclosedMessageTypes()[0];
-                var mostConcreteEnclosedMessageType = Type.GetType(mostConcreteEnclosedMessageTypeName, true);
-
-                var existingTopic = await topicCache.GetTopicArn(mostConcreteEnclosedMessageType, cancellationToken).ConfigureAwait(false);
-                if (existingTopic != null)
-                {
-                    var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination, cancellationToken: cancellationToken)
-                        .ConfigureAwait(false);
-                    if (matchingSubscriptionArn != null)
-                    {
-                        return null;
-                    }
-                }
+                return null;
             }
 
             var delayDeliveryWith = transportOperation.Properties.DelayDeliveryWith;
@@ -405,10 +383,11 @@
         readonly TopicCache topicCache;
         readonly S3Settings s3;
         readonly int queueDelaySeconds;
+        readonly HybridPubSubChecker hybridPubSubChecker;
         IAmazonSQS sqsClient;
         QueueCache queueCache;
         IJsonSerializerStrategy serializerStrategy;
-        static readonly HashSet<string> EmptyHashset = new HashSet<string>();
+        static readonly Dictionary<string, Type> EmptyDictionary = new Dictionary<string, Type>();
 
         static readonly ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
     }

@@ -21,25 +21,35 @@
         const string S3BucketEnvironmentVariableName = "NSERVICEBUS_AMAZONSQS_S3BUCKET";
         public const string S3Prefix = "test";
         public static string S3BucketName;
+        readonly bool supportsPublishSubscribe;
 
+        public ConfigureEndpointSqsTransport(bool supportsPublishSubscribe = true)
+        {
+            this.supportsPublishSubscribe = supportsPublishSubscribe;
+        }
 
         public Task Configure(string endpointName, EndpointConfiguration configuration, RunSettings settings, PublisherMetadata publisherMetadata)
         {
             PreventInconclusiveTestsFromRunning(endpointName);
 
-            var transport = PrepareSqsTransport();
+            var transport = PrepareSqsTransport(supportsPublishSubscribe);
             configuration.UseTransport(transport);
 
-            settings.TestExecutionTimeout = TimeSpan.FromSeconds(120);
+            //We set the default test execution timeout only when not explicitly set by the test
+            if (settings.TestExecutionTimeout == null || settings.TestExecutionTimeout.Value <= TimeSpan.FromSeconds(120))
+            {
+                settings.TestExecutionTimeout = TimeSpan.FromSeconds(120);
+            }
+
             ApplyMappingsToSupportMultipleInheritance(endpointName, transport);
 
 
             return Task.FromResult(0);
         }
 
-        public static SqsTransport PrepareSqsTransport()
+        public static SqsTransport PrepareSqsTransport(bool supportsPublishSubscribe = true)
         {
-            var transport = new SqsTransport(CreateSqsClient(), CreateSnsClient())
+            var transport = new SqsTransport(CreateSqsClient(), CreateSnsClient(), supportsPublishSubscribe)
             {
                 QueueNamePrefix = SetupFixture.NamePrefix,
                 TopicNamePrefix = SetupFixture.NamePrefix,

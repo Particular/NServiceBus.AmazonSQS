@@ -31,5 +31,9 @@
         public const string V1CompatibilityMode = Prefix + nameof(V1CompatibilityMode);
         public const string DisableNativePubSub = Prefix + nameof(DisableNativePubSub);
         public const string DisableSubscribeBatchingOnStart = Prefix + nameof(DisableSubscribeBatchingOnStart);
+
+        public const string MessageVisibilityTimeout = Prefix + nameof(MessageVisibilityTimeout);
+        public const string SubscriptionsCacheTTL = Prefix + nameof(SubscriptionsCacheTTL);
+        public const string NotFoundTopicsCacheTTL = Prefix + nameof(NotFoundTopicsCacheTTL);
     }
 }

@@ -4,6 +4,7 @@ namespace NServiceBus.Transport.SQS
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.SQS;
+    using Settings;
 
     class MessagePump : IMessageReceiver
     {
@@ -20,9 +21,10 @@ namespace NServiceBus.Transport.SQS
             S3Settings s3Settings,
             SubscriptionManager subscriptionManager,
             int queueDelayTimeSeconds,
-            Action<string, Exception, CancellationToken> criticalErrorAction)
+            Action<string, Exception, CancellationToken> criticalErrorAction,
+            IReadOnlySettings coreSettings)
         {
-            inputQueuePump = new InputQueuePump(receiverId, receiveAddress, errorQueueAddress, purgeOnStartup, sqsClient, queueCache, s3Settings, subscriptionManager, criticalErrorAction);
+            inputQueuePump = new InputQueuePump(receiverId, receiveAddress, errorQueueAddress, purgeOnStartup, sqsClient, queueCache, s3Settings, subscriptionManager, criticalErrorAction, coreSettings);
             delayedMessagesPump = new DelayedMessagesPump(receiveAddress, sqsClient, queueCache, queueDelayTimeSeconds);
         }
 

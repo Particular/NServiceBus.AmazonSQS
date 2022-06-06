@@ -208,6 +208,13 @@
             SnsClient = new AmazonSimpleNotificationServiceClient();
         }
 
+        internal SqsTransport(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, bool supportsPublishSubscribe)
+            : base(TransportTransactionMode.ReceiveOnly, true, supportsPublishSubscribe, true)
+        {
+            SqsClient = sqsClient;
+            SnsClient = snsClient;
+        }
+
         /// <summary>
         /// Initializes all the factories and supported features for the transport. This method is called right before all features
         /// are activated and the settings will be locked down. This means you can use the SettingsHolder both for providing
@@ -216,7 +223,7 @@
         /// </summary>
         public override async Task<TransportInfrastructure> Initialize(HostSettings hostSettings, ReceiveSettings[] receivers, string[] sendingAddresses, CancellationToken cancellationToken = default)
         {
-            var topicCache = new TopicCache(SnsClient, eventToTopicsMappings, eventToEventsMappings, topicNameGenerator, topicNamePrefix);
+            var topicCache = new TopicCache(SnsClient, hostSettings.CoreSettings, eventToTopicsMappings, eventToEventsMappings, topicNameGenerator, topicNamePrefix);
             var infra = new SqsTransportInfrastructure(this, hostSettings, receivers, SqsClient, SnsClient, QueueCache, topicCache, S3, Policies, QueueDelayTime, topicNamePrefix, EnableV1CompatibilityMode);
 
             var queueCreator = new QueueCreator(SqsClient, QueueCache, S3, maxTimeToLive, QueueDelayTime);

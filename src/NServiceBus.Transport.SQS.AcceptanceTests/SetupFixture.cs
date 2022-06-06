@@ -18,6 +18,56 @@
         /// </summary>
         public static string NamePrefix { get; private set; }
 
+        static bool usingFixedNamePrefix;
+        static string namePrefixBackup;
+
+        static string GetFixedNamePrefix()
+        {
+            var fixedNamePrefixKeyName = "NServiceBus_AmazonSQS_AT_CustomFixedNamePrefix";
+            var customFixedNamePrefix = EnvironmentHelper.GetEnvironmentVariable(fixedNamePrefixKeyName);
+
+            if (customFixedNamePrefix == null)
+            {
+                throw new Exception($"Environment variable '{fixedNamePrefixKeyName}' not set. " +
+                    $"The variable is required by tests bound to a fixed infrastructure. " +
+                    $"Make sure the value doesn't contain any space or dash characher.");
+            }
+
+            return customFixedNamePrefix;
+        }
+
+        public static void UseFixedNamePrefix()
+        {
+            usingFixedNamePrefix = true;
+
+            namePrefixBackup = NamePrefix;
+            NamePrefix = GetFixedNamePrefix();
+
+            TestContext.WriteLine($"Using fixed name prefix: '{NamePrefix}'");
+        }
+
+        public static void RestoreNamePrefixToRandomlyGenerated()
+        {
+            if (usingFixedNamePrefix)
+            {
+                TestContext.WriteLine($"Restoring name prefix from '{NamePrefix}' to '{namePrefixBackup}'");
+                NamePrefix = namePrefixBackup;
+                usingFixedNamePrefix = false;
+            }
+        }
+
+        public static void AppendSequenceToNamePrefix(int sequence)
+        {
+            var idx = NamePrefix.LastIndexOf('-');
+            if (idx >= 0)
+            {
+                NamePrefix = NamePrefix.Substring(0, idx);
+            }
+            NamePrefix += $"-{sequence}";
+
+            TestContext.WriteLine($"Sequence #{sequence} appended name prefix: '{NamePrefix}'");
+        }
+
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
@@ -27,6 +77,7 @@
             // us from deleting then creating a queue with the
             // same name in a 60 second period.
             NamePrefix = $"AT{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToUpperInvariant()}";
+            TestContext.WriteLine($"Generated name prefix: '{NamePrefix}'");
         }
 
         [OneTimeTearDown]
@@ -35,13 +86,20 @@
             var accessKeyId = EnvironmentHelper.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
             var secretAccessKey = EnvironmentHelper.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
 
-            using (var sqsClient = string.IsNullOrEmpty(accessKeyId) ? ConfigureEndpointSqsTransport.CreateSqsClient() :
+            using (var sqsClient = string.IsNullOrEmpty(accessKeyId) ? SqsTransportExtensions.CreateSQSClient() :
                 new AmazonSQSClient(accessKeyId, secretAccessKey))
-            using (var snsClient = string.IsNullOrEmpty(accessKeyId) ? ConfigureEndpointSqsTransport.CreateSnsClient() :
+            using (var snsClient = string.IsNullOrEmpty(accessKeyId) ? SqsTransportExtensions.CreateSnsClient() :
                 new AmazonSimpleNotificationServiceClient(accessKeyId, secretAccessKey))
-            using (var s3Client = string.IsNullOrEmpty(accessKeyId) ? ConfigureEndpointSqsTransport.CreateS3Client() :
+            using (var s3Client = string.IsNullOrEmpty(accessKeyId) ? SqsTransportExtensions.CreateS3Client() :
                 new AmazonS3Client(accessKeyId, secretAccessKey))
             {
+                var idx = NamePrefix.LastIndexOf('-');
+                if (idx >= 0)
+                {
+                    //remove the sequence number before cleaning up
+                    NamePrefix = NamePrefix.Substring(0, idx);
+                }
+
                 await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, NamePrefix).ConfigureAwait(false);
             }
         }

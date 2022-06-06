@@ -7,6 +7,7 @@ namespace NServiceBus.Transport.SQS.Tests
     using System.Threading.Tasks;
     using Amazon.SQS.Model;
     using NUnit.Framework;
+    using Settings;
     using SimpleJson;
 
     [TestFixture]
@@ -22,7 +23,8 @@ namespace NServiceBus.Transport.SQS.Tests
             pump = new InputQueuePump("queue", FakeInputQueueQueueUrl, "error", false, mockSqsClient,
                 new QueueCache(mockSqsClient, dest => QueueCache.GetSqsQueueName(dest, "")),
                 null, null,
-                (error, exception, ct) => { });
+                (error, exception, ct) => { },
+                new SettingsHolder());
         }
 
         async Task SetupInitializedPump(OnMessage onMessage = null)
