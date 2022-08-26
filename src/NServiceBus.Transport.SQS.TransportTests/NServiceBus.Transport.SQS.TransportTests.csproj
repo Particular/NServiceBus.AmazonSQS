@@ -17,7 +17,7 @@
     <PackageReference Include="AWSSDK.SQS" Version="3.7.2.29" />
     <PackageReference Include="GitHubActionsTestLogger" Version="1.4.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
-    <PackageReference Include="NServiceBus.TransportTests.Sources" Version="8.0.0-rc1" GeneratePathProperty="true" />
+    <PackageReference Include="NServiceBus.TransportTests.Sources" Version="8.0.0-rc.1" GeneratePathProperty="true" />
     <PackageReference Include="NUnit" Version="3.13.3" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
   </ItemGroup>
