@@ -63,10 +63,10 @@
                     createCommand.Description = "Creates infrastructure required for an endpoint.";
                     var nameArgument = createCommand.Argument("name", "Name of the endpoint (required)").IsRequired();
 
-                    createCommand.Options.Add(accessKeyOption);
-                    createCommand.Options.Add(regionOption);
-                    createCommand.Options.Add(secretOption);
-                    createCommand.Options.Add(prefixOption);
+                    createCommand.AddOption(accessKeyOption);
+                    createCommand.AddOption(regionOption);
+                    createCommand.AddOption(secretOption);
+                    createCommand.AddOption(prefixOption);
 
                     var retentionPeriodInSecondsCommand = createCommand.Option("-t|--retention",
                         $"Retention Period in seconds (defaults to {DefaultConfigurationValues.RetentionPeriod.TotalSeconds} ) ", CommandOptionType.SingleValue);
@@ -86,10 +86,10 @@
                     deleteCommand.Description = "Deletes infrastructure required for an endpoint.";
                     var nameArgument = deleteCommand.Argument("name", "Name of the endpoint (required)").IsRequired();
 
-                    deleteCommand.Options.Add(accessKeyOption);
-                    deleteCommand.Options.Add(regionOption);
-                    deleteCommand.Options.Add(secretOption);
-                    deleteCommand.Options.Add(prefixOption);
+                    deleteCommand.AddOption(accessKeyOption);
+                    deleteCommand.AddOption(regionOption);
+                    deleteCommand.AddOption(secretOption);
+                    deleteCommand.AddOption(prefixOption);
 
                     deleteCommand.OnExecuteAsync(async ct =>
                     {
@@ -109,9 +109,9 @@
                         largeMessageSupportCommand.Description = "Adds large message support infrastructure to an endpoint.";
                         var bucketArgument = largeMessageSupportCommand.Argument("bucket-name", "Name of the bucket (required).").IsRequired();
 
-                        largeMessageSupportCommand.Options.Add(accessKeyOption);
-                        largeMessageSupportCommand.Options.Add(regionOption);
-                        largeMessageSupportCommand.Options.Add(secretOption);
+                        largeMessageSupportCommand.AddOption(accessKeyOption);
+                        largeMessageSupportCommand.AddOption(regionOption);
+                        largeMessageSupportCommand.AddOption(secretOption);
 
                         var keyPrefixCommand = largeMessageSupportCommand.Option("-k|--key-prefix", "S3 Key prefix.", CommandOptionType.SingleValue);
                         var expirationInDaysCommand = largeMessageSupportCommand.Option("-e|--expiration",
@@ -132,10 +132,10 @@
                     {
                         delayDeliverySupportCommand.Description = "Adds delay delivery support infrastructure to an endpoint.";
 
-                        delayDeliverySupportCommand.Options.Add(accessKeyOption);
-                        delayDeliverySupportCommand.Options.Add(regionOption);
-                        delayDeliverySupportCommand.Options.Add(secretOption);
-                        delayDeliverySupportCommand.Options.Add(prefixOption);
+                        delayDeliverySupportCommand.AddOption(accessKeyOption);
+                        delayDeliverySupportCommand.AddOption(regionOption);
+                        delayDeliverySupportCommand.AddOption(secretOption);
+                        delayDeliverySupportCommand.AddOption(prefixOption);
 
                         var retentionPeriodInSecondsCommand = delayDeliverySupportCommand.Option("-t|--retention", "Retention period in seconds (defaults to " + DefaultConfigurationValues.RetentionPeriod.TotalSeconds + " ).", CommandOptionType.SingleValue);
 
@@ -162,9 +162,9 @@
                         largeMessageSupportCommand.Description = "Removes large message support infrastructure.";
                         var bucketArgument = largeMessageSupportCommand.Argument("bucket-name", "Name of the bucket (required)").IsRequired();
 
-                        largeMessageSupportCommand.Options.Add(accessKeyOption);
-                        largeMessageSupportCommand.Options.Add(regionOption);
-                        largeMessageSupportCommand.Options.Add(secretOption);
+                        largeMessageSupportCommand.AddOption(accessKeyOption);
+                        largeMessageSupportCommand.AddOption(regionOption);
+                        largeMessageSupportCommand.AddOption(secretOption);
                         var removeSharedResourcesCommand = largeMessageSupportCommand.Option("-f|--remove-shared-resources", "Remove shared resources (S3 Bucket).", CommandOptionType.NoValue);
 
                         largeMessageSupportCommand.OnExecuteAsync(async ct =>
@@ -181,10 +181,10 @@
                     {
                         delayDeliverySupportCommand.Description = "Removes delay delivery support infrastructure to an endpoint.";
 
-                        delayDeliverySupportCommand.Options.Add(accessKeyOption);
-                        delayDeliverySupportCommand.Options.Add(regionOption);
-                        delayDeliverySupportCommand.Options.Add(secretOption);
-                        delayDeliverySupportCommand.Options.Add(prefixOption);
+                        delayDeliverySupportCommand.AddOption(accessKeyOption);
+                        delayDeliverySupportCommand.AddOption(regionOption);
+                        delayDeliverySupportCommand.AddOption(secretOption);
+                        delayDeliverySupportCommand.AddOption(prefixOption);
 
                         delayDeliverySupportCommand.OnExecuteAsync(async ct =>
                         {
@@ -203,10 +203,10 @@
                     var nameArgument = subscribeCommand.Argument("name", "Name of the endpoint (required)").IsRequired();
                     var eventTypeArgument = subscribeCommand.Argument("event-type", "Full name of the event to subscribe to (e.g. MyNamespace.MyMessage) (required)").IsRequired();
 
-                    subscribeCommand.Options.Add(accessKeyOption);
-                    subscribeCommand.Options.Add(regionOption);
-                    subscribeCommand.Options.Add(secretOption);
-                    subscribeCommand.Options.Add(prefixOption);
+                    subscribeCommand.AddOption(accessKeyOption);
+                    subscribeCommand.AddOption(regionOption);
+                    subscribeCommand.AddOption(secretOption);
+                    subscribeCommand.AddOption(prefixOption);
 
                     subscribeCommand.OnExecuteAsync(async ct =>
                     {
@@ -224,10 +224,10 @@
                     var nameArgument = unsubscribeCommand.Argument("name", "Name of the endpoint (required)").IsRequired();
                     var eventTypeArgument = unsubscribeCommand.Argument("event-type", "Full name of the event to unsubscribe from (e.g. MyNamespace.MyMessage) (required)").IsRequired();
 
-                    unsubscribeCommand.Options.Add(accessKeyOption);
-                    unsubscribeCommand.Options.Add(regionOption);
-                    unsubscribeCommand.Options.Add(secretOption);
-                    unsubscribeCommand.Options.Add(prefixOption);
+                    unsubscribeCommand.AddOption(accessKeyOption);
+                    unsubscribeCommand.AddOption(regionOption);
+                    unsubscribeCommand.AddOption(secretOption);
+                    unsubscribeCommand.AddOption(prefixOption);
                     var removeSharedResourcesCommand = unsubscribeCommand.Option("-f|--remove-shared-resources", "Remove shared resources (Topic being unsubscribed from).", CommandOptionType.NoValue);
 
                     unsubscribeCommand.OnExecuteAsync(async ct =>
@@ -257,16 +257,16 @@
 
                     policyCommand.Command("events", policyBasedOnEventsCommand =>
                     {
-                        policyBasedOnEventsCommand.Options.Add(accessKeyOption);
-                        policyBasedOnEventsCommand.Options.Add(regionOption);
-                        policyBasedOnEventsCommand.Options.Add(secretOption);
-                        policyBasedOnEventsCommand.Options.Add(prefixOption);
+                        policyBasedOnEventsCommand.AddOption(accessKeyOption);
+                        policyBasedOnEventsCommand.AddOption(regionOption);
+                        policyBasedOnEventsCommand.AddOption(secretOption);
+                        policyBasedOnEventsCommand.AddOption(prefixOption);
 
                         var eventTypeOption = new CommandOption("-evt|--event-type", CommandOptionType.MultipleValue)
                         {
                             Description = "Allow subscription to topic for specific event type."
                         };
-                        policyBasedOnEventsCommand.Options.Add(eventTypeOption);
+                        policyBasedOnEventsCommand.AddOption(eventTypeOption);
 
                         policyBasedOnEventsCommand.OnExecuteAsync(async ct =>
                         {
@@ -280,34 +280,34 @@
 
                     policyCommand.Command("wildcard", policyBasedOnWildcardsCommand =>
                     {
-                        policyBasedOnWildcardsCommand.Options.Add(accessKeyOption);
-                        policyBasedOnWildcardsCommand.Options.Add(regionOption);
-                        policyBasedOnWildcardsCommand.Options.Add(secretOption);
-                        policyBasedOnWildcardsCommand.Options.Add(prefixOption);
+                        policyBasedOnWildcardsCommand.AddOption(accessKeyOption);
+                        policyBasedOnWildcardsCommand.AddOption(regionOption);
+                        policyBasedOnWildcardsCommand.AddOption(secretOption);
+                        policyBasedOnWildcardsCommand.AddOption(prefixOption);
 
                         var accountWildcardOption = new CommandOption("-ac|--account-condition", CommandOptionType.NoValue)
                         {
                             Description = "Allow subscription to all topics in an account."
                         };
-                        policyBasedOnWildcardsCommand.Options.Add(accountWildcardOption);
+                        policyBasedOnWildcardsCommand.AddOption(accountWildcardOption);
 
                         var prefixWildcardOption = new CommandOption("-pc|--prefix-condition", CommandOptionType.NoValue)
                         {
                             Description = "Allow subscription to topics with a specific wildcard."
                         };
-                        policyBasedOnWildcardsCommand.Options.Add(prefixWildcardOption);
+                        policyBasedOnWildcardsCommand.AddOption(prefixWildcardOption);
 
                         var namespaceWildcardOption = new CommandOption("-nc|--namespace-condition", CommandOptionType.MultipleValue)
                         {
                             Description = "Allow subscription to topics for events in a specific namespace."
                         };
-                        policyBasedOnWildcardsCommand.Options.Add(namespaceWildcardOption);
+                        policyBasedOnWildcardsCommand.AddOption(namespaceWildcardOption);
 
                         var removeEventTypeOption = new CommandOption("-revt|--remove-event-type", CommandOptionType.MultipleValue)
                         {
                             Description = "Remove topic for specific event type."
                         };
-                        policyBasedOnWildcardsCommand.Options.Add(removeEventTypeOption);
+                        policyBasedOnWildcardsCommand.AddOption(removeEventTypeOption);
 
                         policyBasedOnWildcardsCommand.OnExecuteAsync(async ct =>
                         {
@@ -328,10 +328,10 @@
                     listPolicyCommand.Description = "Sets the IAM policy for an endpoint.";
                     var nameArgument = listPolicyCommand.Argument("name", "Name of the endpoint (required)").IsRequired();
 
-                    listPolicyCommand.Options.Add(accessKeyOption);
-                    listPolicyCommand.Options.Add(regionOption);
-                    listPolicyCommand.Options.Add(secretOption);
-                    listPolicyCommand.Options.Add(prefixOption);
+                    listPolicyCommand.AddOption(accessKeyOption);
+                    listPolicyCommand.AddOption(regionOption);
+                    listPolicyCommand.AddOption(secretOption);
+                    listPolicyCommand.AddOption(prefixOption);
 
                     listPolicyCommand.OnExecuteAsync(async ct =>
                     {
