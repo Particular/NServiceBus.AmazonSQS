@@ -51,3 +51,4 @@ This scheme accomplishes the following goals:
  * Queues for a given test run are easily searchable by prefix in the SQS portal
  * The discriminator and qualifier at the end of the queue name are not interfered with 
  * Queue names fit the 80 character limit imposed by SQS
+
