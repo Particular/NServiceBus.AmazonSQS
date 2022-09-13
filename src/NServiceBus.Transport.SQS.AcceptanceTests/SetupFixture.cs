@@ -30,7 +30,7 @@
             {
                 throw new Exception($"Environment variable '{fixedNamePrefixKeyName}' not set. " +
                     $"The variable is required by tests bound to a fixed infrastructure. " +
-                    $"Make sure the value doesn't contain any space or dash characher.");
+                    $"Make sure the value doesn't contain any space or dash character.");
             }
 
             return customFixedNamePrefix;
