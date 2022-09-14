@@ -30,7 +30,13 @@
             {
                 throw new Exception($"Environment variable '{fixedNamePrefixKeyName}' not set. " +
                     $"The variable is required by tests bound to a fixed infrastructure. " +
-                    $"Make sure the value doesn't contain any space or dash characher.");
+                    $"Make sure the value doesn't contain any space or dash character.");
+            }
+            else if (customFixedNamePrefix.Contains(".") || customFixedNamePrefix.Contains("-"))
+            {
+                throw new Exception($"Environment variable '{fixedNamePrefixKeyName}' contains " +
+                                    $"invalid characters. Current value is: '{customFixedNamePrefix}'" +
+                                    $"Make sure the value doesn't contain any space or dash character.");
             }
 
             return customFixedNamePrefix;
