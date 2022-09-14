@@ -57,7 +57,7 @@ jobs:
           $os = '${{ matrix.os.name }}'
           $framework = '${{ matrix.framework }}'
           # Value like 'Fixed-Win-net6-0'
-          echo "NServiceBus_AmazonSQS_AT_CustomFixedNamePrefix=Fixed-$($os.substring(0,3))-$($framework.replace('.','-'))" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+          echo "NServiceBus_AmazonSQS_AT_CustomFixedNamePrefix=Fixed_$($os.substring(0,3))_$($framework.replace('.','_'))" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
       - name: Run tests
         uses: Particular/run-tests-action@v1.3.0
         with:
