@@ -59,7 +59,7 @@
 
             S3BucketName = EnvironmentHelper.GetEnvironmentVariable(S3BucketEnvironmentVariableName);
 
-            if (!string.IsNullOrEmpty(S3BucketName))
+            if (!string.IsNullOrWhiteSpace(S3BucketName))
             {
                 transport.S3 = new S3Settings(S3BucketName, S3Prefix, CreateS3Client());
             }
