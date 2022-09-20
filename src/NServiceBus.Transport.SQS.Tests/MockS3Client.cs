@@ -1500,6 +1500,8 @@
         public PutBucketIntelligentTieringConfigurationResponse PutBucketIntelligentTieringConfiguration(PutBucketIntelligentTieringConfigurationRequest request) => throw new NotImplementedException();
 
         public Task<PutBucketIntelligentTieringConfigurationResponse> PutBucketIntelligentTieringConfigurationAsync(PutBucketIntelligentTieringConfigurationRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public GetObjectAttributesResponse GetObjectAttributes(GetObjectAttributesRequest request) => throw new NotImplementedException();
+        public Task<GetObjectAttributesResponse> GetObjectAttributesAsync(GetObjectAttributesRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
         public IS3PaginatorFactory Paginators { get; }
 
