@@ -649,6 +649,10 @@ namespace NServiceBus.Transport.SQS.Tests
         public Task<VerifySMSSandboxPhoneNumberResponse> VerifySMSSandboxPhoneNumberAsync(VerifySMSSandboxPhoneNumberRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public PublishBatchResponse PublishBatch(PublishBatchRequest request) => throw new NotImplementedException();
         public Task<PublishBatchResponse> PublishBatchAsync(PublishBatchRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public GetDataProtectionPolicyResponse GetDataProtectionPolicy(GetDataProtectionPolicyRequest request) => throw new NotImplementedException();
+        public Task<GetDataProtectionPolicyResponse> GetDataProtectionPolicyAsync(GetDataProtectionPolicyRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public PutDataProtectionPolicyResponse PutDataProtectionPolicy(PutDataProtectionPolicyRequest request) => throw new NotImplementedException();
+        public Task<PutDataProtectionPolicyResponse> PutDataProtectionPolicyAsync(PutDataProtectionPolicyRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
         #endregion
     }
