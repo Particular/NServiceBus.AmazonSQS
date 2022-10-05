@@ -27,7 +27,7 @@ Additional environment variables required for AWS:
 
 In addition to the [permissions required to run the transport](https://docs.particular.net/transports/sqs/#prerequisites), running the tests also requires:
 
-* *sns:ListSubscriptionsByTopic
+* sns:ListSubscriptionsByTopic
 * sns:CreateTopic
 * sns:Subscribe
 * sns:Publish
@@ -55,6 +55,10 @@ This scheme accomplishes the following goals:
  * Queues for a given test run are easily searchable by prefix in the SQS portal
  * The discriminator and qualifier at the end of the queue name are not interfered with
  * Queue names fit the 80 character limit imposed by SQS
+ 
+### Stable infrastructure requirement
+
+Some tests require a stable infrastructure. Those tests depend on a `NServiceBus_AmazonSQS_AT_CustomFixedNamePrefix` environment variable specifying a custom prefix to use to identify the stable infrastructure. The value can be anything unique, it's importsant is doesn't contain any space or dash character. If the required stable infrastructure doesn't exist, it'll be created at the first test run.
 
 ## Cleanup scheduled task
 
