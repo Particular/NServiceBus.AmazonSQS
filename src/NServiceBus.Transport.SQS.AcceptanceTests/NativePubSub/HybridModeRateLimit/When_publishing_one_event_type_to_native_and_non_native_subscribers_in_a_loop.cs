@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
+namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
 {
     using System;
     using System.Collections.Generic;
@@ -28,11 +28,24 @@
         {
             SetupFixture.AppendSequenceToNamePrefix(testCase.Sequence);
 
+            // this is needed to make sure the infrastructure is deployed
+            _ = await Scenario.Define<Context>()
+                .WithEndpoint<Publisher>()
+                .WithEndpoint<NativePubSubSubscriber>()
+                .WithEndpoint<MessageDrivenPubSubSubscriber>()
+                .Done(c => true)
+                .Run();
+
+            // wait for policies propagation (up to 60 seconds)
+            await Task.Delay(60000);
+
+            // run the real test scenario
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<Publisher>(b =>
                 {
                     b.CustomConfig(config =>
                     {
+                        config.ConfigureSqsTransport().DeployInfrastructure = false;
                         var migrationMode = config.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
                         migrationMode.SubscriptionsCacheTTL(testCase.SubscriptionsCacheTTL);
                         migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);
@@ -56,6 +69,11 @@
                 })
                 .WithEndpoint<NativePubSubSubscriber>(b =>
                 {
+                    b.CustomConfig((config, ctx) =>
+                    {
+                        config.ConfigureSqsTransport().DeployInfrastructure = false;
+                    });
+
                     b.When((_, ctx) =>
                     {
                         ctx.SubscribedNative = true;
@@ -64,10 +82,15 @@
                 })
                 .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
                 {
+                    b.CustomConfig((config, ctx) =>
+                    {
+                        config.ConfigureSqsTransport().DeployInfrastructure = false;
+                    });
+
                     b.When((session, ctx) => session.Subscribe<MyEvent>());
                 })
                 .Done(c => c.NativePubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents
-                    && c.MessageDrivenPubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents)
+                           && c.MessageDrivenPubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents)
                 .Run(testCase.TestExecutionTimeout);
 
             Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedEventsCount);
