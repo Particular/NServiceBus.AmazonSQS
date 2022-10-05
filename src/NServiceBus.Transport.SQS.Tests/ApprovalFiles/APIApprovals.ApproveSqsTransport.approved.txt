@@ -72,6 +72,7 @@ namespace NServiceBus
     {
         public SqsTransport() { }
         public SqsTransport(Amazon.SQS.IAmazonSQS sqsClient, Amazon.SimpleNotificationService.IAmazonSimpleNotificationService snsClient) { }
+        public bool DeployInfrastructure { get; set; }
         public bool EnableV1CompatibilityMode { get; set; }
         public System.TimeSpan MaxTimeToLive { get; set; }
         public NServiceBus.PolicySettings Policies { get; }
