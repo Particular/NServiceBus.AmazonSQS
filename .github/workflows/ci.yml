@@ -50,7 +50,7 @@ jobs:
           name: NuGet packages
           path: nugets/
           retention-days: 7
-      - name: Set fixed test prefix
+      - name: Set fixed test prefix (3)
         shell: pwsh
         run: |
           $os = '${{ matrix.os.name }}'
