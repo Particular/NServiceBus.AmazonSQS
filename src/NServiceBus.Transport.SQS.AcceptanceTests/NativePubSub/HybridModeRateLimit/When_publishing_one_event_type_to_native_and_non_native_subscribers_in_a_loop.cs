@@ -23,10 +23,13 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
             new TestCase(4){ NumberOfEvents = 1000, TestExecutionTimeout = TimeSpan.FromMinutes(4), SubscriptionsCacheTTL = TimeSpan.FromMinutes(1), NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(1) },
         };
 
-        [Test, UseFixedNamePrefix, TestCaseSource(nameof(TestCases))]
-        public async Task Should_not_rate_exceed(TestCase testCase)
+        [OneTimeSetUp]
+        public async Task DeployInfrastructure()
         {
-            SetupFixture.AppendSequenceToNamePrefix(testCase.Sequence);
+            SetupFixture.UseFixedNamePrefix();
+
+            var backup = Conventions.EndpointNamingConvention;
+            Conventions.EndpointNamingConvention = type => ""; //replace
 
             // this is needed to make sure the infrastructure is deployed
             _ = await Scenario.Define<Context>()
@@ -38,14 +41,29 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
 
             // wait for policies propagation (up to 60 seconds)
             await Task.Delay(60000);
+        }
 
-            // run the real test scenario
+        [OneTimeTearDown]
+        public void Teardown()
+        {
+            // Conventions.EndpointNamingConvention = restore from the above backup
+            SetupFixture.RestoreNamePrefixToRandomlyGenerated();
+        }
+
+        [Test, TestCaseSource(nameof(TestCases))]
+        public async Task Should_not_rate_exceed(TestCase testCase)
+        {
+            //SetupFixture.AppendSequenceToNamePrefix(testCase.Sequence);
+
+            // + 1 - We need an outgoing mutator to store the TestRunId
+            // + 2 - Incoming pipeline behavior to discard messages not matching the test run id
+            // 3 - alter CI to append the PR number  (or something short and unique) to the "fixed prefix"
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<Publisher>(b =>
                 {
                     b.CustomConfig(config =>
                     {
-                        config.ConfigureSqsTransport().DeployInfrastructure = false;
+                        //config.ConfigureSqsTransport().DeployInfrastructure = false;
                         var migrationMode = config.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
                         migrationMode.SubscriptionsCacheTTL(testCase.SubscriptionsCacheTTL);
                         migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);
@@ -71,7 +89,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
                 {
                     b.CustomConfig((config, ctx) =>
                     {
-                        config.ConfigureSqsTransport().DeployInfrastructure = false;
+                        //config.ConfigureSqsTransport().DeployInfrastructure = false;
                     });
 
                     b.When((_, ctx) =>
@@ -84,7 +102,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
                 {
                     b.CustomConfig((config, ctx) =>
                     {
-                        config.ConfigureSqsTransport().DeployInfrastructure = false;
+                        //config.ConfigureSqsTransport().DeployInfrastructure = false;
                     });
 
                     b.When((session, ctx) => session.Subscribe<MyEvent>());
