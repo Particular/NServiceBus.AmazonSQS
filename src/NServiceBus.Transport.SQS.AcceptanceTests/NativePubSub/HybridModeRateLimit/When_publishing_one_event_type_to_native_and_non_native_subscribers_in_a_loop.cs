@@ -55,9 +55,9 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
         {
             //SetupFixture.AppendSequenceToNamePrefix(testCase.Sequence);
 
-            // + 1 - We need an outgoing mutator to store the TestRunId
-            // + 2 - Incoming pipeline behavior to discard messages not matching the test run id
-            // 3 - alter CI to append the PR number  (or something short and unique) to the "fixed prefix"
+            // done: 1 - We need an outgoing mutator to store the TestRunId
+            // done: 2 - Incoming pipeline behavior to discard messages not matching the test run id
+            // TODO: 3 - alter CI to append the PR number  (or something short and unique) to the "fixed prefix"
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<Publisher>(b =>
                 {
