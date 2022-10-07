@@ -44,7 +44,33 @@
             },
         };
 
-        [Test, UseFixedNamePrefix, TestCaseSource(nameof(TestCases))]
+        [OneTimeSetUp]
+        public async Task DeployInfrastructure()
+        {
+            SetupFixture.UseFixedNamePrefix();
+            //var backup = Conventions.EndpointNamingConvention;
+            //Conventions.EndpointNamingConvention = type => ""; //replace
+
+            // this is needed to make sure the infrastructure is deployed
+            _ = await Scenario.Define<Context>()
+                .WithEndpoint<MessageDrivenPubSubSubscriber>()
+                .WithEndpoint<NativePubSubSubscriber>()
+                .WithEndpoint<Publisher>()
+                .Done(c => true)
+                .Run();
+
+            // wait for policies propagation (up to 60 seconds)
+            await Task.Delay(60000);
+        }
+
+        [OneTimeTearDown]
+        public void Teardown()
+        {
+            // Conventions.EndpointNamingConvention = restore from the above backup
+            SetupFixture.RestoreNamePrefixToRandomlyGenerated();
+        }
+
+        [Test, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
             SetupFixture.AppendSequenceToNamePrefix(testCase.Sequence);

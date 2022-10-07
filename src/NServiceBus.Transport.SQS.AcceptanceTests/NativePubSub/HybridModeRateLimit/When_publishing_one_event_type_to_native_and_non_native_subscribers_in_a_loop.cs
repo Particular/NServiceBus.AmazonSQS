@@ -27,9 +27,8 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
         public async Task DeployInfrastructure()
         {
             SetupFixture.UseFixedNamePrefix();
-
-            var backup = Conventions.EndpointNamingConvention;
-            Conventions.EndpointNamingConvention = type => ""; //replace
+            //var backup = Conventions.EndpointNamingConvention;
+            //Conventions.EndpointNamingConvention = type => ""; //replace
 
             // this is needed to make sure the infrastructure is deployed
             _ = await Scenario.Define<Context>()
