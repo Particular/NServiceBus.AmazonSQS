@@ -13,14 +13,17 @@
     [SetUpFixture]
     public class SetupFixture
     {
+        //TODO: This could go away entirely
         /// <summary>
         /// The name prefix for the current run of the test suite.
         /// </summary>
         public static string NamePrefix { get; private set; }
 
+        //TODO: This could go away entirely
         static bool usingFixedNamePrefix;
         static string namePrefixBackup;
 
+        //TODO: This could go away entirely
         static string GetFixedNamePrefix()
         {
             var fixedNamePrefixKeyName = "NServiceBus_AmazonSQS_AT_CustomFixedNamePrefix";
@@ -42,6 +45,7 @@
             return customFixedNamePrefix;
         }
 
+        //TODO: This could go away entirely
         public static void UseFixedNamePrefix()
         {
             usingFixedNamePrefix = true;
@@ -52,6 +56,7 @@
             TestContext.WriteLine($"Using fixed name prefix: '{NamePrefix}'");
         }
 
+        //TODO: This could go away entirely
         public static void RestoreNamePrefixToRandomlyGenerated()
         {
             if (usingFixedNamePrefix)
@@ -62,6 +67,7 @@
             }
         }
 
+        //TODO: This could go away entirely
         public static void AppendSequenceToNamePrefix(int sequence)
         {
             var idx = NamePrefix.LastIndexOf('-');

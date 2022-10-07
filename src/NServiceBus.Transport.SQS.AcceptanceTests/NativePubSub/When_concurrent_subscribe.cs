@@ -15,6 +15,7 @@
                 .WithEndpoint<Publisher>(b => b.When(c => c.Subscribed, (session, ctx) => Task.WhenAll(session.Publish(new MyEvent()), session.Publish(new MyOtherEvent()))))
                 .WithEndpoint<Subscriber>(b => b.When(async (session, ctx) =>
                 {
+                    // TODO: this part is the culprit
                     await Task.WhenAll(session.Subscribe<MyEvent>(), session.Subscribe<MyOtherEvent>());
                     ctx.Subscribed = true;
                 }))
