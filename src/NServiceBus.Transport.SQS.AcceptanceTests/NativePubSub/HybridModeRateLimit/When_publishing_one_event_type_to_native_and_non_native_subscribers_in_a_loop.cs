@@ -3,6 +3,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using AcceptanceTesting;
@@ -23,12 +24,22 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
             new TestCase(4){ NumberOfEvents = 1000, TestExecutionTimeout = TimeSpan.FromMinutes(4), SubscriptionsCacheTTL = TimeSpan.FromMinutes(1), NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(1) },
         };
 
+        static readonly Func<Type, string> customConvention = t =>
+        {
+            var classAndEndpoint = t.FullName.Split('.').Last();
+            var endpointBuilder = classAndEndpoint.Split('+').Last();
+            var customName = "hm_l_nat_non_nat" + "." + endpointBuilder;
+            TestContext.WriteLine($"Generated custom endpoint name: '{customName}'");
+            return customName;
+        };
+
         [OneTimeSetUp]
         public async Task DeployInfrastructure()
         {
-            SetupFixture.UseFixedNamePrefix();
-            //var backup = Conventions.EndpointNamingConvention;
-            //Conventions.EndpointNamingConvention = type => ""; //replace
+            //TODO: This could go away entirely
+            //SetupFixture.UseFixedNamePrefix();
+
+            Conventions.EndpointNamingConvention = customConvention;
 
             // this is needed to make sure the infrastructure is deployed
             _ = await Scenario.Define<Context>()
@@ -42,27 +53,28 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
             await Task.Delay(60000);
         }
 
-        [OneTimeTearDown]
-        public void Teardown()
-        {
-            // Conventions.EndpointNamingConvention = restore from the above backup
-            SetupFixture.RestoreNamePrefixToRandomlyGenerated();
-        }
+        //TODO: This could go away entirely
+        // [OneTimeTearDown]
+        // public void Teardown()
+        // {
+        //     Conventions.EndpointNamingConvention = endpointNamingConventionBackup;
+        //     //SetupFixture.RestoreNamePrefixToRandomlyGenerated();
+        // }
 
         [Test, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
             //SetupFixture.AppendSequenceToNamePrefix(testCase.Sequence);
-
+            Conventions.EndpointNamingConvention = customConvention;
             // done: 1 - We need an outgoing mutator to store the TestRunId
             // done: 2 - Incoming pipeline behavior to discard messages not matching the test run id
-            // TODO: 3 - alter CI to append the PR number  (or something short and unique) to the "fixed prefix"
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<Publisher>(b =>
                 {
                     b.CustomConfig(config =>
                     {
-                        //config.ConfigureSqsTransport().DeployInfrastructure = false;
+                        //TODO: copy this to the other tests
+                        config.ConfigureSqsTransport().DeployInfrastructure = false;
                         var migrationMode = config.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
                         migrationMode.SubscriptionsCacheTTL(testCase.SubscriptionsCacheTTL);
                         migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);
@@ -88,7 +100,8 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
                 {
                     b.CustomConfig((config, ctx) =>
                     {
-                        //config.ConfigureSqsTransport().DeployInfrastructure = false;
+                        //TODO: copy this to the other tests
+                        config.ConfigureSqsTransport().DeployInfrastructure = false;
                     });
 
                     b.When((_, ctx) =>
@@ -101,7 +114,8 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
                 {
                     b.CustomConfig((config, ctx) =>
                     {
-                        //config.ConfigureSqsTransport().DeployInfrastructure = false;
+                        //TODO: copy this to the other tests
+                        config.ConfigureSqsTransport().DeployInfrastructure = false;
                     });
 
                     b.When((session, ctx) => session.Subscribe<MyEvent>());
