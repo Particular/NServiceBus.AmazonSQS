@@ -9,6 +9,7 @@
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Conventions = AcceptanceTesting.Customization.Conventions;
@@ -35,16 +36,44 @@
             }
         };
 
-        [Test, UseFixedNamePrefix, TestCaseSource(nameof(TestCases))]
+        static readonly Func<Type, string> customConvention = t =>
+        {
+            var classAndEndpoint = t.FullName.Split('.').Last();
+            var endpointBuilder = classAndEndpoint.Split('+').Last();
+            var customName = "hm_4_nat_non_nat" + "." + endpointBuilder;
+            TestContext.WriteLine($"Generated custom endpoint name: '{customName}'");
+            return customName;
+        };
+
+        [OneTimeSetUp]
+        public async Task DeployInfrastructure()
+        {
+            Conventions.EndpointNamingConvention = customConvention;
+
+            // this is needed to make sure the infrastructure is deployed
+            _ = await Scenario.Define<Context>()
+                .WithEndpoint<Publisher>()
+                .WithEndpoint<NativePubSubSubscriber>()
+                .WithEndpoint<MessageDrivenPubSubSubscriber>()
+                .Done(c => true)
+                .Run();
+
+            // wait for policies propagation (up to 60 seconds)
+            await Task.Delay(60000);
+        }
+
+        [Test, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
-            SetupFixture.AppendSequenceToNamePrefix(testCase.Sequence);
+            //SetupFixture.AppendSequenceToNamePrefix(testCase.Sequence);
+            Conventions.EndpointNamingConvention = customConvention;
 
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<Publisher>(b =>
                 {
                     b.CustomConfig(config =>
                     {
+                        config.ConfigureSqsTransport().DeployInfrastructure = false;
                         var migrationMode = config.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
                         migrationMode.SubscriptionsCacheTTL(testCase.SubscriptionsCacheTTL);
                         migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);
@@ -69,6 +98,11 @@
                 })
                 .WithEndpoint<NativePubSubSubscriber>(b =>
                 {
+                    b.CustomConfig((config, ctx) =>
+                    {
+                        config.ConfigureSqsTransport().DeployInfrastructure = false;
+                    });
+
                     b.When((_, ctx) =>
                     {
                         ctx.SubscribedNative = true;
@@ -77,6 +111,11 @@
                 })
                 .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
                 {
+                    b.CustomConfig((config, ctx) =>
+                    {
+                        config.ConfigureSqsTransport().DeployInfrastructure = false;
+                    });
+
                     b.When(async (session, ctx) =>
                     {
                         await session.Subscribe<MyEvent>();

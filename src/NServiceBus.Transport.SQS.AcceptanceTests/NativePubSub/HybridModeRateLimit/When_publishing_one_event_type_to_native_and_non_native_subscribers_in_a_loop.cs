@@ -28,7 +28,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
         {
             var classAndEndpoint = t.FullName.Split('.').Last();
             var endpointBuilder = classAndEndpoint.Split('+').Last();
-            var customName = "hm_l_nat_non_nat" + "." + endpointBuilder;
+            var customName = "hm_1_nat_non_nat" + "." + endpointBuilder;
             TestContext.WriteLine($"Generated custom endpoint name: '{customName}'");
             return customName;
         };
