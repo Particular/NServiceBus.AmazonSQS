@@ -13,72 +13,71 @@
     [SetUpFixture]
     public class SetupFixture
     {
-        //TODO: This could go away entirely
         /// <summary>
         /// The name prefix for the current run of the test suite.
         /// </summary>
         public static string NamePrefix { get; private set; }
 
         //TODO: This could go away entirely
-        static bool usingFixedNamePrefix;
-        static string namePrefixBackup;
+        //static bool usingFixedNamePrefix;
+        //static string namePrefixBackup;
 
         //TODO: This could go away entirely
-        static string GetFixedNamePrefix()
-        {
-            var fixedNamePrefixKeyName = "NServiceBus_AmazonSQS_AT_CustomFixedNamePrefix";
-            var customFixedNamePrefix = EnvironmentHelper.GetEnvironmentVariable(fixedNamePrefixKeyName);
+        //static string GetFixedNamePrefix()
+        //{
+        //    var fixedNamePrefixKeyName = "NServiceBus_AmazonSQS_AT_CustomFixedNamePrefix";
+        //    var customFixedNamePrefix = EnvironmentHelper.GetEnvironmentVariable(fixedNamePrefixKeyName);
 
-            if (customFixedNamePrefix == null)
-            {
-                throw new Exception($"Environment variable '{fixedNamePrefixKeyName}' not set. " +
-                    $"The variable is required by tests bound to a fixed infrastructure. " +
-                    $"Make sure the value doesn't contain any space or dash character.");
-            }
-            else if (customFixedNamePrefix.Contains(".") || customFixedNamePrefix.Contains("-"))
-            {
-                throw new Exception($"Environment variable '{fixedNamePrefixKeyName}' contains " +
-                                    $"invalid characters. Current value is: '{customFixedNamePrefix}'" +
-                                    $"Make sure the value doesn't contain any space or dash character.");
-            }
+        //    if (customFixedNamePrefix == null)
+        //    {
+        //        throw new Exception($"Environment variable '{fixedNamePrefixKeyName}' not set. " +
+        //            $"The variable is required by tests bound to a fixed infrastructure. " +
+        //            $"Make sure the value doesn't contain any space or dash character.");
+        //    }
+        //    else if (customFixedNamePrefix.Contains(".") || customFixedNamePrefix.Contains("-"))
+        //    {
+        //        throw new Exception($"Environment variable '{fixedNamePrefixKeyName}' contains " +
+        //                            $"invalid characters. Current value is: '{customFixedNamePrefix}'" +
+        //                            $"Make sure the value doesn't contain any space or dash character.");
+        //    }
 
-            return customFixedNamePrefix;
-        }
-
-        //TODO: This could go away entirely
-        public static void UseFixedNamePrefix()
-        {
-            usingFixedNamePrefix = true;
-
-            namePrefixBackup = NamePrefix;
-            NamePrefix = GetFixedNamePrefix();
-
-            TestContext.WriteLine($"Using fixed name prefix: '{NamePrefix}'");
-        }
+        //    return customFixedNamePrefix;
+        //}
 
         //TODO: This could go away entirely
-        public static void RestoreNamePrefixToRandomlyGenerated()
-        {
-            if (usingFixedNamePrefix)
-            {
-                TestContext.WriteLine($"Restoring name prefix from '{NamePrefix}' to '{namePrefixBackup}'");
-                NamePrefix = namePrefixBackup;
-                usingFixedNamePrefix = false;
-            }
-        }
+        //public static void UseFixedNamePrefix()
+        //{
+        //    usingFixedNamePrefix = true;
+
+        //    namePrefixBackup = NamePrefix;
+        //    NamePrefix = GetFixedNamePrefix();
+
+        //    TestContext.WriteLine($"Using fixed name prefix: '{NamePrefix}'");
+        //}
 
         //TODO: This could go away entirely
-        public static void AppendSequenceToNamePrefix(int sequence)
-        {
-            var idx = NamePrefix.LastIndexOf('-');
-            if (idx >= 0)
-            {
-                NamePrefix = NamePrefix.Substring(0, idx);
-            }
-            NamePrefix += $"-{sequence}";
+        //public static void RestoreNamePrefixToRandomlyGenerated()
+        //{
+        //    if (usingFixedNamePrefix)
+        //    {
+        //        TestContext.WriteLine($"Restoring name prefix from '{NamePrefix}' to '{namePrefixBackup}'");
+        //        NamePrefix = namePrefixBackup;
+        //        usingFixedNamePrefix = false;
+        //    }
+        //}
 
-            TestContext.WriteLine($"Sequence #{sequence} appended name prefix: '{NamePrefix}'");
-        }
+        //TODO: This could go away entirely
+        //public static void AppendSequenceToNamePrefix(int sequence)
+        //{
+        //    var idx = NamePrefix.LastIndexOf('-');
+        //    if (idx >= 0)
+        //    {
+        //        NamePrefix = NamePrefix.Substring(0, idx);
+        //    }
+        //    NamePrefix += $"-{sequence}";
+
+        //    TestContext.WriteLine($"Sequence #{sequence} appended name prefix: '{NamePrefix}'");
+        //}
 
         [OneTimeSetUp]
         public void OneTimeSetUp()
