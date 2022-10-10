@@ -5,9 +5,15 @@ VisualStudioVersion = 17.1.32210.238
 MinimumVisualStudioVersion = 15.0.26430.12
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NServiceBus.Transport.SQS", "NServiceBus.Transport.SQS\NServiceBus.Transport.SQS.csproj", "{A40EBAE3-ADF8-4CD8-87DA-025BCA6BA1C2}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NServiceBus.Transport.SQS.Tests", "NServiceBus.Transport.SQS.Tests\NServiceBus.Transport.SQS.Tests.csproj", "{7E15376E-8902-49AA-8AB9-3916A012D588}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NServiceBus.Transport.SQS.AcceptanceTests", "NServiceBus.Transport.SQS.AcceptanceTests\NServiceBus.Transport.SQS.AcceptanceTests.csproj", "{E87BA318-68A7-4EEE-8817-DFC91296299B}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NServiceBus.Transport.SQS.TransportTests", "NServiceBus.Transport.SQS.TransportTests\NServiceBus.Transport.SQS.TransportTests.csproj", "{E1E492D1-F5B2-480F-86D4-3D94E49A162D}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NServiceBus.Transports.SQS.CommandLine", "CommandLine\NServiceBus.Transports.SQS.CommandLine.csproj", "{3B6C59AB-FF43-46A2-9A84-F87BB9820815}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NServiceBus.Transports.SQS.CommandLine.Tests", "CommandLineTests\NServiceBus.Transports.SQS.CommandLine.Tests.csproj", "{391B5B20-BCB5-4CF1-A71B-EB91B0CB90D3}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C1C8A6A2-0462-42F0-9FC4-5401EA3DE9AF}"
 	ProjectSection(SolutionItems) = preProject
@@ -24,14 +30,26 @@ Global
 		{A40EBAE3-ADF8-4CD8-87DA-025BCA6BA1C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A40EBAE3-ADF8-4CD8-87DA-025BCA6BA1C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A40EBAE3-ADF8-4CD8-87DA-025BCA6BA1C2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7E15376E-8902-49AA-8AB9-3916A012D588}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7E15376E-8902-49AA-8AB9-3916A012D588}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7E15376E-8902-49AA-8AB9-3916A012D588}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7E15376E-8902-49AA-8AB9-3916A012D588}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E87BA318-68A7-4EEE-8817-DFC91296299B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E87BA318-68A7-4EEE-8817-DFC91296299B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E87BA318-68A7-4EEE-8817-DFC91296299B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E87BA318-68A7-4EEE-8817-DFC91296299B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E1E492D1-F5B2-480F-86D4-3D94E49A162D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E1E492D1-F5B2-480F-86D4-3D94E49A162D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E1E492D1-F5B2-480F-86D4-3D94E49A162D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E1E492D1-F5B2-480F-86D4-3D94E49A162D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3B6C59AB-FF43-46A2-9A84-F87BB9820815}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3B6C59AB-FF43-46A2-9A84-F87BB9820815}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3B6C59AB-FF43-46A2-9A84-F87BB9820815}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3B6C59AB-FF43-46A2-9A84-F87BB9820815}.Release|Any CPU.Build.0 = Release|Any CPU
+		{391B5B20-BCB5-4CF1-A71B-EB91B0CB90D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{391B5B20-BCB5-4CF1-A71B-EB91B0CB90D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{391B5B20-BCB5-4CF1-A71B-EB91B0CB90D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{391B5B20-BCB5-4CF1-A71B-EB91B0CB90D3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

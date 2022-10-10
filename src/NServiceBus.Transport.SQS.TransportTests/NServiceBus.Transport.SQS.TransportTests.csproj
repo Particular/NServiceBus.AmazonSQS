@@ -4,7 +4,7 @@
     <TargetFrameworks>net472;net6.0</TargetFrameworks>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>$(SolutionDir)Test.snk</AssemblyOriginatorKeyFile>
-    <RootNamespace>NServiceBus.AcceptanceTests</RootNamespace>
+    <RootNamespace>TransportTests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,22 +12,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.7.9.67" />
-    <PackageReference Include="AWSSDK.SQS" Version="3.7.2.117" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.9.54" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.4.20" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.2.104" />
     <PackageReference Include="GitHubActionsTestLogger" Version="2.0.1" />
-    <PackageReference Include="NServiceBus.AcceptanceTests.Sources" Version="8.0.0-rc.3" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.2" />
+    <PackageReference Include="NServiceBus.TransportTests.Sources" Version="8.0.0-rc.3" GeneratePathProperty="true" />
     <PackageReference Include="NUnit" Version="3.13.3" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="..\NServiceBus.Transport.SQS.Tests\Cleanup.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="$(PkgNServiceBus_AcceptanceTests_Sources)\**\Routing\When_publishing_an_event_implementing_two_unrelated_interfaces.cs" />
+    <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\ExceptionExtensions.cs" />
   </ItemGroup>
 
 </Project>
