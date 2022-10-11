@@ -10,8 +10,11 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
     using EndpointTemplates;
     using Configuration.AdvancedExtensibility;
     using Features;
+    using Logging;
     using NServiceBus.Routing.MessageDrivenSubscriptions;
     using NUnit.Framework;
+    using NUnit.Framework.Internal;
+    using Pipeline;
     using Conventions = AcceptanceTesting.Customization.Conventions;
 
     public class When_publishing_one_event_type_to_native_and_non_native_subscribers_in_a_loop : NServiceBusAcceptanceTest
@@ -50,6 +53,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
                 .Run();
 
             // wait for policies propagation (up to 60 seconds)
+            //
             await Task.Delay(60000);
         }
 
@@ -122,7 +126,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
                 })
                 .Done(c => c.NativePubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents
                            && c.MessageDrivenPubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents)
-                .Run(testCase.TestExecutionTimeout);
+                .Run(TimeSpan.FromSeconds(40));
 
             Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedEventsCount);
             Assert.AreEqual(testCase.NumberOfEvents, context.NativePubSubSubscriberReceivedEventsCount);
@@ -226,6 +230,18 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
 
         public class MyEvent : IEvent
         {
+        }
+    }
+
+    public class IncomingLoggingBehavior : Behavior<IIncomingPhysicalMessageContext>
+    {
+        static ILog log = LogManager.GetLogger<IncomingLoggingBehavior>();
+
+        public override async Task Invoke(IIncomingPhysicalMessageContext context, Func<Task> next)
+        {
+            log.Debug($"-----> {context.Message.MessageId}");
+
+            await next();
         }
     }
 }

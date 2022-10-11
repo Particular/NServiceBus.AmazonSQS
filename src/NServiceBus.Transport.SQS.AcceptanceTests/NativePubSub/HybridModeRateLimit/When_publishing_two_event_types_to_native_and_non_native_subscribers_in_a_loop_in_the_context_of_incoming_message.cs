@@ -54,7 +54,7 @@
             return customName;
         };
 
-        [OneTimeSetUp]
+        //[OneTimeSetUp]
         public async Task DeployInfrastructure()
         {
             Conventions.EndpointNamingConvention = customConvention;
@@ -123,10 +123,15 @@
                         return session.SendLocal(new KickOff { NumberOfEvents = testCase.NumberOfEvents });
                     });
                 })
-                .Done(c => c.NativePubSubSubscriberReceivedMyEventCount == testCase.NumberOfEvents
-                    && c.MessageDrivenPubSubSubscriberReceivedMyEventCount == testCase.NumberOfEvents
-                    && c.MessageDrivenPubSubSubscriberReceivedMySecondEventCount == testCase.NumberOfEvents)
+                .Done(c => OriginalDone(c) ? throw new Exception("This will force the logs to be dumped") : false)
                 .Run(testCase.TestExecutionTimeout);
+
+            bool OriginalDone(Context c)
+            {
+                return c.NativePubSubSubscriberReceivedMyEventCount == testCase.NumberOfEvents
+                            && c.MessageDrivenPubSubSubscriberReceivedMyEventCount == testCase.NumberOfEvents
+                            && c.MessageDrivenPubSubSubscriberReceivedMySecondEventCount == testCase.NumberOfEvents;
+            }
 
             Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedMyEventCount);
             Assert.AreEqual(testCase.NumberOfEvents, context.NativePubSubSubscriberReceivedMyEventCount);
@@ -170,6 +175,8 @@
                 {
                     var subscriptionStorage = new TestingInMemorySubscriptionStorage();
                     c.UsePersistence<TestingInMemoryPersistence, StorageType.Subscriptions>().UseStorage(subscriptionStorage);
+
+                    c.Pipeline.Register(new IncomingLoggingBehavior(), "Logging incoming messages");
 
                     c.OnEndpointSubscribed<Context>((s, context) =>
                     {

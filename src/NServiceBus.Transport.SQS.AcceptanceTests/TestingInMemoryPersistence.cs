@@ -50,6 +50,7 @@
     {
         public Task Subscribe(Subscriber subscriber, MessageType messageType, ContextBag context, CancellationToken cancellationToken)
         {
+            Console.WriteLine("HERE HELLO!");
             var dict = storage.GetOrAdd(messageType, type => new ConcurrentDictionary<string, Subscriber>(StringComparer.OrdinalIgnoreCase));
 
             dict.AddOrUpdate(BuildKey(subscriber), _ => subscriber, (_, __) => subscriber);

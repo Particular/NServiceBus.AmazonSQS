@@ -87,7 +87,7 @@
             // This is to work around an SQS limitation that prevents
             // us from deleting then creating a queue with the
             // same name in a 60 second period.
-            NamePrefix = $"AT{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToUpperInvariant()}";
+            NamePrefix = "TomekAndTravis";// $"AT{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToUpperInvariant()}";
             TestContext.WriteLine($"Generated name prefix: '{NamePrefix}'");
         }
 
