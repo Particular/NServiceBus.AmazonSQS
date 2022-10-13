@@ -26,6 +26,7 @@
             {
                 System.Diagnostics.Debug.WriteLine($"Creating receiver client");
                 IAmazonSQS receiveSqsclient = ConfigureEndpointSqsTransport.CreateSqsClient();
+
                 await receiveSqsclient.CreateQueueAsync("travis_recieve_client");
                 receiveSqsQueueUrl = await sendSqsClient.GetQueueUrlAsync("travis_recieve_client");
                 System.Diagnostics.Debug.WriteLine($"Queue created: {receiveSqsQueueUrl.QueueUrl}");
@@ -37,13 +38,20 @@
                     await receiveSqsclient.PurgeQueueAsync(receiveSqsQueueUrl.QueueUrl);
                 }
 
-                System.Diagnostics.Debug.WriteLine($"Getting message from receiver queue");
-                var response = await receiveSqsclient.ReceiveMessageAsync(receiveSqsQueueUrl.QueueUrl);
+                var messageRequest = new ReceiveMessageRequest
+                {
+                    QueueUrl = receiveSqsQueueUrl.QueueUrl,
+                    VisibilityTimeout = 300
+                };
+
+                System.Diagnostics.Debug.WriteLine($"Getting messages from receiver queue");
+                var response = await receiveSqsclient.ReceiveMessageAsync(messageRequest);
 
                 if (response.Messages.Count > 0)
                 {
-                    System.Diagnostics.Debug.WriteLine("I found some");
+                    System.Diagnostics.Debug.WriteLine("I found some messages");
                 }
+
                 //foreach (var message in response.Messages)
                 //{
                 //    var delRequest = new DeleteMessageRequest
@@ -56,17 +64,13 @@
                 //}
 
                 receiveSqsclient.Dispose();
-                //System.Diagnostics.Debug.WriteLine("Receiver client disposed... waiting 61 seconds");
-                //await Task.Delay(61000);
-                //System.Diagnostics.Debug.WriteLine($"Sending messages to: {receiveSqsQueueUrl.QueueUrl}");
-                //await sendSqsClient.SendMessageAsync(new SendMessageRequest(receiveSqsQueueUrl.QueueUrl, "Hello World"));
-                //System.Diagnostics.Debug.WriteLine($"Message sent");
+                System.Diagnostics.Debug.WriteLine("Receiver client disposed");
             }
-            System.Diagnostics.Debug.WriteLine("Receiver client disposed... waiting 61 seconds");
-            await Task.Delay(61000);
             System.Diagnostics.Debug.WriteLine($"Sending messages to: {receiveSqsQueueUrl.QueueUrl}");
             await sendSqsClient.SendMessageAsync(new SendMessageRequest(receiveSqsQueueUrl.QueueUrl, "Hello World"));
             System.Diagnostics.Debug.WriteLine($"Message sent");
+            System.Diagnostics.Debug.WriteLine("Waiting 61 seconds");
+            await Task.Delay(61000);
         }
     }
 }
