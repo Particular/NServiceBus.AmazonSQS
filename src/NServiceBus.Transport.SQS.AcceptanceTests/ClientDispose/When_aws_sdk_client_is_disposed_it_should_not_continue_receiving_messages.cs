@@ -31,7 +31,7 @@
                 receiveSqsQueueUrl = await sendSqsClient.GetQueueUrlAsync("travis_recieve_client");
                 System.Diagnostics.Debug.WriteLine($"Queue created: {receiveSqsQueueUrl.QueueUrl}");
 
-                // Clean the queue on the first creation since this operation can only be run once every 60 seconds
+                //Clean the queue on the first creation since this operation can only be run once every 60 seconds
                 if (i == 0)
                 {
                     System.Diagnostics.Debug.WriteLine($"Purging receiver queue");
