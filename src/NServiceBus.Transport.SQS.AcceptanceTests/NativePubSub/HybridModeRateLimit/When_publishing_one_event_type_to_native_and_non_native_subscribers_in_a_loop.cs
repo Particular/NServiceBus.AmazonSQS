@@ -232,16 +232,4 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
         {
         }
     }
-
-    public class IncomingLoggingBehavior : Behavior<IIncomingPhysicalMessageContext>
-    {
-        static ILog log = LogManager.GetLogger<IncomingLoggingBehavior>();
-
-        public override async Task Invoke(IIncomingPhysicalMessageContext context, Func<Task> next)
-        {
-            log.Debug($"-----> {context.Message.MessageId}");
-
-            await next();
-        }
-    }
 }

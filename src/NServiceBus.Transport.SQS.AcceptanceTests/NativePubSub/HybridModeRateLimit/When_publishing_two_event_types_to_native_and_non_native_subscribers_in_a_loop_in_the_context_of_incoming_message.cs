@@ -4,6 +4,8 @@
     using EndpointTemplates;
     using NServiceBus.Configuration.AdvancedExtensibility;
     using NServiceBus.Features;
+    using NServiceBus.Logging;
+    using NServiceBus.Pipeline;
     using NServiceBus.Routing.MessageDrivenSubscriptions;
     using NUnit.Framework;
     using System;
@@ -54,7 +56,7 @@
             return customName;
         };
 
-        //[OneTimeSetUp]
+        [OneTimeSetUp]
         public async Task DeployInfrastructure()
         {
             Conventions.EndpointNamingConvention = customConvention;
@@ -314,6 +316,18 @@
 
         public class MySecondEvent : IEvent
         {
+        }
+
+        public class IncomingLoggingBehavior : Behavior<IIncomingPhysicalMessageContext>
+        {
+            static ILog log = LogManager.GetLogger<IncomingLoggingBehavior>();
+
+            public override async Task Invoke(IIncomingPhysicalMessageContext context, Func<Task> next)
+            {
+                log.Debug($"-----> {context.Message.MessageId}");
+
+                await next();
+            }
         }
     }
 }
