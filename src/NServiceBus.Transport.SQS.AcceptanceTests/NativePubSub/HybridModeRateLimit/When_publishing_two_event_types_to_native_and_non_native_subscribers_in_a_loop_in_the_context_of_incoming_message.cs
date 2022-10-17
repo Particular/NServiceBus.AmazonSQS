@@ -20,15 +20,9 @@
     {
         static TestCase[] TestCases =
         {
-            new TestCase(1){ NumberOfEvents = 1 },
-            new TestCase(2){ NumberOfEvents = 100, MessageVisibilityTimeout = 60, },
-            new TestCase(3)
-            {
-                NumberOfEvents = 200,
-                MessageVisibilityTimeout = 120,
-                SubscriptionsCacheTTL = TimeSpan.FromMinutes(2),
-                NotFoundTopicsCacheTTL = TimeSpan.FromSeconds(120)
-            },
+            new TestCase(1) { NumberOfEvents = 1 },
+            new TestCase(2) { NumberOfEvents = 100, MessageVisibilityTimeout = 60, },
+            new TestCase(3) { NumberOfEvents = 200, MessageVisibilityTimeout = 120, SubscriptionsCacheTTL = TimeSpan.FromMinutes(2), NotFoundTopicsCacheTTL = TimeSpan.FromSeconds(120) },
             new TestCase(4)
             {
                 NumberOfEvents = 300,
@@ -73,8 +67,39 @@
             await Task.Delay(60000);
         }
 
-        [Test, TestCaseSource(nameof(TestCases))]
-        public async Task Should_not_rate_exceed(TestCase testCase)
+        [Test]
+        public async Task Should_not_rate_exceed_0()
+        {
+            var testCase = TestCases[0];
+            await Execute(testCase);
+        }
+        [Test]
+        public async Task Should_not_rate_exceed_1()
+        {
+            var testCase = TestCases[1];
+            await Execute(testCase);
+        }
+        [Test]
+        public async Task Should_not_rate_exceed_2()
+        {
+            var testCase = TestCases[2];
+            await Execute(testCase);
+        }
+        [Test]
+        public async Task Should_not_rate_exceed_3()
+        {
+            var testCase = TestCases[3];
+            await Execute(testCase);
+        }
+        [Test]
+        public async Task Should_not_rate_exceed_4()
+        {
+            var testCase = TestCases[4];
+            await Execute(testCase);
+        }
+
+        //, TestCaseSource(nameof(TestCases))]
+        async Task Execute(TestCase testCase)
         {
             Conventions.EndpointNamingConvention = customConvention;
 
@@ -125,15 +150,10 @@
                         return session.SendLocal(new KickOff { NumberOfEvents = testCase.NumberOfEvents });
                     });
                 })
-                .Done(c => OriginalDone(c) ? throw new Exception("This will force the logs to be dumped") : false)
+                .Done(c => c.NativePubSubSubscriberReceivedMyEventCount == testCase.NumberOfEvents
+                           && c.MessageDrivenPubSubSubscriberReceivedMyEventCount == testCase.NumberOfEvents
+                           && c.MessageDrivenPubSubSubscriberReceivedMySecondEventCount == testCase.NumberOfEvents)
                 .Run(testCase.TestExecutionTimeout);
-
-            bool OriginalDone(Context c)
-            {
-                return c.NativePubSubSubscriberReceivedMyEventCount == testCase.NumberOfEvents
-                            && c.MessageDrivenPubSubSubscriberReceivedMyEventCount == testCase.NumberOfEvents
-                            && c.MessageDrivenPubSubSubscriberReceivedMySecondEventCount == testCase.NumberOfEvents;
-            }
 
             Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedMyEventCount);
             Assert.AreEqual(testCase.NumberOfEvents, context.NativePubSubSubscriberReceivedMyEventCount);
@@ -143,24 +163,30 @@
         public class Context : ScenarioContext
         {
             int nativePubSubSubscriberReceivedMyEventCount;
+
             internal void IncrementNativePubSubSubscriberReceivedMyEventCount()
             {
                 Interlocked.Increment(ref nativePubSubSubscriberReceivedMyEventCount);
             }
+
             public int NativePubSubSubscriberReceivedMyEventCount => nativePubSubSubscriberReceivedMyEventCount;
 
             int messageDrivenPubSubSubscriberReceivedMyEventCount;
+
             internal void IncrementMessageDrivenPubSubSubscriberReceivedMyEventCount()
             {
                 Interlocked.Increment(ref messageDrivenPubSubSubscriberReceivedMyEventCount);
             }
+
             public int MessageDrivenPubSubSubscriberReceivedMyEventCount => messageDrivenPubSubSubscriberReceivedMyEventCount;
 
             int messageDrivenPubSubSubscriberReceivedMySecondEventCount;
+
             internal void IncrementMessageDrivenPubSubSubscriberReceivedMySecondEventCount()
             {
                 Interlocked.Increment(ref messageDrivenPubSubSubscriberReceivedMySecondEventCount);
             }
+
             public int MessageDrivenPubSubSubscriberReceivedMySecondEventCount => messageDrivenPubSubSubscriberReceivedMySecondEventCount;
 
             public bool SubscribedMessageDrivenToMyEvent { get; set; }
@@ -197,6 +223,7 @@
                         {
                             context.SubscribedMessageDrivenToMySecondEvent = true;
                         }
+
                         TestContext.WriteLine($"Subscription message processed.");
                     });
                 }).IncludeType<TestingInMemorySubscriptionPersistence>();
@@ -220,6 +247,7 @@
                         tasks.Add(context.Publish(new MyEvent()));
                         tasks.Add(context.Publish(new MySecondEvent()));
                     }
+
                     await Task.WhenAll(tasks);
                     sw.Stop();
                     testContext.PublishTime = sw.Elapsed;
@@ -256,20 +284,21 @@
             public MessageDrivenPubSubSubscriber()
             {
                 EndpointSetup(new CustomizedServer(false), (c, sd) =>
-                {
-                    c.DisableFeature<AutoSubscribe>();
-                    c.GetSettings().Set("NServiceBus.AmazonSQS.DisableNativePubSub", true);
-                    c.GetSettings().GetOrCreate<Publishers>().AddOrReplacePublishers("LegacyConfig", new List<PublisherTableEntry>
                     {
-                        new PublisherTableEntry(typeof(MyEvent), PublisherAddress.CreateFromEndpointName(Conventions.EndpointNamingConvention(typeof(Publisher)))),
-                        new PublisherTableEntry(typeof(MySecondEvent), PublisherAddress.CreateFromEndpointName(Conventions.EndpointNamingConvention(typeof(Publisher))))
+                        c.DisableFeature<AutoSubscribe>();
+                        c.GetSettings().Set("NServiceBus.AmazonSQS.DisableNativePubSub", true);
+                        c.GetSettings().GetOrCreate<Publishers>().AddOrReplacePublishers("LegacyConfig",
+                            new List<PublisherTableEntry>
+                            {
+                                new PublisherTableEntry(typeof(MyEvent), PublisherAddress.CreateFromEndpointName(Conventions.EndpointNamingConvention(typeof(Publisher)))),
+                                new PublisherTableEntry(typeof(MySecondEvent), PublisherAddress.CreateFromEndpointName(Conventions.EndpointNamingConvention(typeof(Publisher))))
+                            });
+                    },
+                    metadata =>
+                    {
+                        metadata.RegisterPublisherFor<MyEvent>(typeof(Publisher));
+                        metadata.RegisterPublisherFor<MySecondEvent>(typeof(Publisher));
                     });
-                },
-                metadata =>
-                {
-                    metadata.RegisterPublisherFor<MyEvent>(typeof(Publisher));
-                    metadata.RegisterPublisherFor<MySecondEvent>(typeof(Publisher));
-                });
             }
 
             public class MyEventMessageHandler : IHandleMessages<MyEvent>
