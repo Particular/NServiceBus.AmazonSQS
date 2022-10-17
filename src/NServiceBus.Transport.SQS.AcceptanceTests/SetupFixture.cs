@@ -104,12 +104,13 @@
             using (var s3Client = string.IsNullOrEmpty(accessKeyId) ? SqsTransportExtensions.CreateS3Client() :
                 new AmazonS3Client(accessKeyId, secretAccessKey))
             {
-                var idx = NamePrefix.LastIndexOf('-');
-                if (idx >= 0)
-                {
-                    //remove the sequence number before cleaning up
-                    NamePrefix = NamePrefix.Substring(0, idx);
-                }
+                //TODO: This could go away entirely
+                // var idx = NamePrefix.LastIndexOf('-');
+                // if (idx >= 0)
+                // {
+                //     //remove the sequence number before cleaning up
+                //     NamePrefix = NamePrefix.Substring(0, idx);
+                // }
 
                 await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, NamePrefix).ConfigureAwait(false);
             }
