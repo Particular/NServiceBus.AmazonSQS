@@ -16,7 +16,7 @@
         /// <summary>
         /// The name prefix for the current run of the test suite.
         /// </summary>
-        public static string NamePrefix { get; private set; }
+        public static string NamePrefix { get; set; }
 
         //TODO: This could go away entirely
         //static bool usingFixedNamePrefix;
