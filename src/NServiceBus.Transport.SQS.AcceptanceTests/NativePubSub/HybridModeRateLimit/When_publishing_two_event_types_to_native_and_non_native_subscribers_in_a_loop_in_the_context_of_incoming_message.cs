@@ -73,7 +73,7 @@
                     {
                         b.CustomConfig((config, ctx) =>
                         {
-                            config.ConfigureSqsTransport().DeployInfrastructure = false;
+                            config.ConfigureSqsTransport().DeployInfrastructure = !testCase.PreDeployInfrastructure;
                         });
 
                         b.When(async (session, ctx) =>
@@ -90,7 +90,7 @@
                     {
                         b.CustomConfig((config, ctx) =>
                         {
-                            config.ConfigureSqsTransport().DeployInfrastructure = false;
+                            config.ConfigureSqsTransport().DeployInfrastructure = !testCase.PreDeployInfrastructure;
                         });
 
                         b.When((_, ctx) =>
@@ -103,7 +103,7 @@
                     {
                         b.CustomConfig(config =>
                         {
-                            config.ConfigureSqsTransport().DeployInfrastructure = false;
+                            config.ConfigureSqsTransport().DeployInfrastructure = !testCase.PreDeployInfrastructure;
                             var migrationMode = config.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
                             migrationMode.SubscriptionsCacheTTL(testCase.SubscriptionsCacheTTL);
                             migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);
