@@ -9,7 +9,6 @@
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Conventions = AcceptanceTesting.Customization.Conventions;
@@ -70,55 +69,54 @@
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
             //Conventions.EndpointNamingConvention = customConvention;
-            SetupFixture.NamePrefix += testCase.Sequence.ToString();
-
-            //SetupFixture.AppendSequenceToNamePrefix(testCase.Sequence);
-
-            var context = await Scenario.Define<Context>()
-                .WithEndpoint<Publisher>(b =>
-                {
-                    b.CustomConfig(config =>
+            using (var handler = NamePrefixHandler.AppendSequenceToNamePrefix(testCase.Sequence))
+            {
+                var context = await Scenario.Define<Context>()
+                    .WithEndpoint<Publisher>(b =>
                     {
-                        //config.ConfigureSqsTransport().DeployInfrastructure = false;
-                        var migrationMode = config.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
-                        migrationMode.SubscriptionsCacheTTL(testCase.SubscriptionsCacheTTL);
-                        migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);
-                        migrationMode.MessageVisibilityTimeout(testCase.MessageVisibilityTimeout);
-                    });
+                        b.CustomConfig(config =>
+                        {
+                            //config.ConfigureSqsTransport().DeployInfrastructure = false;
+                            var migrationMode = config.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
+                            migrationMode.SubscriptionsCacheTTL(testCase.SubscriptionsCacheTTL);
+                            migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);
+                            migrationMode.MessageVisibilityTimeout(testCase.MessageVisibilityTimeout);
+                        });
 
-                    b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, session =>
+                        b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, session =>
+                        {
+                            return session.SendLocal(new KickOff { NumberOfEvents = testCase.NumberOfEvents });
+                        });
+                    })
+                    .WithEndpoint<NativePubSubSubscriber>(b =>
                     {
-                        return session.SendLocal(new KickOff { NumberOfEvents = testCase.NumberOfEvents });
-                    });
-                })
-                .WithEndpoint<NativePubSubSubscriber>(b =>
-                {
-                    b.CustomConfig((config, ctx) =>
-                    {
-                        //config.ConfigureSqsTransport().DeployInfrastructure = false;
-                    });
+                        b.CustomConfig((config, ctx) =>
+                        {
+                            //config.ConfigureSqsTransport().DeployInfrastructure = false;
+                        });
 
-                    b.When((_, ctx) =>
+                        b.When((_, ctx) =>
+                        {
+                            ctx.SubscribedNative = true;
+                            return Task.FromResult(0);
+                        });
+                    })
+                    .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
                     {
-                        ctx.SubscribedNative = true;
-                        return Task.FromResult(0);
-                    });
-                })
-                .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
-                {
-                    b.CustomConfig((config, ctx) =>
-                    {
-                        //config.ConfigureSqsTransport().DeployInfrastructure = false;
-                    });
+                        b.CustomConfig((config, ctx) =>
+                        {
+                            //config.ConfigureSqsTransport().DeployInfrastructure = false;
+                        });
 
-                    b.When((session, ctx) => session.Subscribe<MyEvent>());
-                })
-                .Done(c => c.NativePubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents
-                && c.MessageDrivenPubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents)
-                .Run(testCase.TestExecutionTimeout);
+                        b.When((session, ctx) => session.Subscribe<MyEvent>());
+                    })
+                    .Done(c => c.NativePubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents
+                    && c.MessageDrivenPubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents)
+                    .Run(testCase.TestExecutionTimeout);
 
-            Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedEventsCount);
-            Assert.AreEqual(testCase.NumberOfEvents, context.NativePubSubSubscriberReceivedEventsCount);
+                Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedEventsCount);
+                Assert.AreEqual(testCase.NumberOfEvents, context.NativePubSubSubscriberReceivedEventsCount);
+            }
         }
 
         public class Context : ScenarioContext

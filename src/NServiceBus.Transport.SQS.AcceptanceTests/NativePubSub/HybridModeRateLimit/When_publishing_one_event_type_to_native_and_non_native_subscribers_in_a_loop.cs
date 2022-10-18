@@ -68,69 +68,68 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
         [Test, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
-            //SetupFixture.AppendSequenceToNamePrefix(testCase.Sequence);
-            //Conventions.EndpointNamingConvention = customConvention;
-            SetupFixture.NamePrefix += testCase.Sequence.ToString();
-            // done: 1 - We need an outgoing mutator to store the TestRunId
-            // done: 2 - Incoming pipeline behavior to discard messages not matching the test run id
-            var context = await Scenario.Define<Context>()
-                .WithEndpoint<Publisher>(b =>
-                {
-                    b.CustomConfig(config =>
+            using (var handler = NamePrefixHandler.AppendSequenceToNamePrefix(testCase.Sequence))
+            {
+                var context = await Scenario.Define<Context>()
+                    .WithEndpoint<Publisher>(b =>
                     {
-                        //TODO: copy this to the other tests
-                        //config.ConfigureSqsTransport().DeployInfrastructure = false;
-                        var migrationMode = config.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
-                        migrationMode.SubscriptionsCacheTTL(testCase.SubscriptionsCacheTTL);
-                        migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);
-                    });
-
-                    b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, (session, ctx) =>
-                    {
-                        var sw = Stopwatch.StartNew();
-                        var tasks = new List<Task>();
-                        for (int i = 0; i < testCase.NumberOfEvents; i++)
+                        b.CustomConfig(config =>
                         {
-                            tasks.Add(session.Publish(new MyEvent()));
-                        }
-                        _ = Task.WhenAll(tasks).ContinueWith(t =>
-                        {
-                            sw.Stop();
-                            ctx.PublishTime = sw.Elapsed;
+                            //TODO: copy this to the other tests
+                            //config.ConfigureSqsTransport().DeployInfrastructure = false;
+                            var migrationMode = config.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
+                            migrationMode.SubscriptionsCacheTTL(testCase.SubscriptionsCacheTTL);
+                            migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);
                         });
-                        return Task.FromResult(0);
-                    });
-                })
-                .WithEndpoint<NativePubSubSubscriber>(b =>
-                {
-                    b.CustomConfig((config, ctx) =>
-                    {
-                        //TODO: copy this to the other tests
-                        //config.ConfigureSqsTransport().DeployInfrastructure = false;
-                    });
 
-                    b.When((_, ctx) =>
-                    {
-                        ctx.SubscribedNative = true;
-                        return Task.FromResult(0);
-                    });
-                })
-                .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
-                {
-                    b.CustomConfig((config, ctx) =>
-                    {
-                        //TODO: copy this to the other tests
-                        //config.ConfigureSqsTransport().DeployInfrastructure = false;
-                    });
+                        b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, (session, ctx) =>
+                        {
+                            var sw = Stopwatch.StartNew();
+                            var tasks = new List<Task>();
+                            for (int i = 0; i < testCase.NumberOfEvents; i++)
+                            {
+                                tasks.Add(session.Publish(new MyEvent()));
+                            }
 
-                    b.When((session, ctx) => session.Subscribe<MyEvent>());
-                })
-                .Done(c => c.NativePubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents
-                           && c.MessageDrivenPubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents)
-                .Run(TimeSpan.FromSeconds(40));
+                            _ = Task.WhenAll(tasks).ContinueWith(t =>
+                            {
+                                sw.Stop();
+                                ctx.PublishTime = sw.Elapsed;
+                            });
+                            return Task.FromResult(0);
+                        });
+                    })
+                    .WithEndpoint<NativePubSubSubscriber>(b =>
+                    {
+                        b.CustomConfig((config, ctx) =>
+                        {
+                            //TODO: copy this to the other tests
+                            //config.ConfigureSqsTransport().DeployInfrastructure = false;
+                        });
 
-            Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedEventsCount);
-            Assert.AreEqual(testCase.NumberOfEvents, context.NativePubSubSubscriberReceivedEventsCount);
+                        b.When((_, ctx) =>
+                        {
+                            ctx.SubscribedNative = true;
+                            return Task.FromResult(0);
+                        });
+                    })
+                    .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
+                    {
+                        b.CustomConfig((config, ctx) =>
+                        {
+                            //TODO: copy this to the other tests
+                            //config.ConfigureSqsTransport().DeployInfrastructure = false;
+                        });
+
+                        b.When((session, ctx) => session.Subscribe<MyEvent>());
+                    })
+                    .Done(c => c.NativePubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents
+                               && c.MessageDrivenPubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents)
+                    .Run(TimeSpan.FromSeconds(40));
+
+                Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedEventsCount);
+                Assert.AreEqual(testCase.NumberOfEvents, context.NativePubSubSubscriberReceivedEventsCount);
+            }
         }
 
         public class Context : ScenarioContext

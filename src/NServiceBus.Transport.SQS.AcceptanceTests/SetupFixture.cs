@@ -16,7 +16,17 @@
         /// <summary>
         /// The name prefix for the current run of the test suite.
         /// </summary>
-        public static string NamePrefix { get; set; }
+        public static string NamePrefix { get; private set; }
+
+        public static void AppendSequenceToNamePrefix(int sequence) => NamePrefix += sequence.ToString();
+
+        public static void RestoreNamePrefix(string namePrefixBackup)
+        {
+            if (!string.IsNullOrWhiteSpace(namePrefixBackup))
+            {
+                NamePrefix = namePrefixBackup;
+            }
+        }
 
         //TODO: This could go away entirely
         //static bool usingFixedNamePrefix;
