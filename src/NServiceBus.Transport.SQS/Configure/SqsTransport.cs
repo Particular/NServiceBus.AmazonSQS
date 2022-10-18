@@ -273,7 +273,7 @@
         /// required resources (queues, topics, subscriptions, etc.).
         /// The default value is <c>true</c>.
         /// </summary>
-        public bool DeployInfrastructure { get; set; } = true;
+        internal bool DeployInfrastructure { get; set; } = true;
 
         /// <summary>
         /// Returns a list of all supported transaction modes of this transport.
