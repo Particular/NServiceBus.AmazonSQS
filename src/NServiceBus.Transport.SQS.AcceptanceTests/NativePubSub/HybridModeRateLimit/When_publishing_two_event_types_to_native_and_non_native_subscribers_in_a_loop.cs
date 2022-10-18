@@ -33,7 +33,14 @@
                  NumberOfEvents = 200,
                  SubscriptionsCacheTTL = TimeSpan.FromMinutes(3),
                  NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(3),
-             }
+             },
+             new TestCase(4)
+             {
+                 NumberOfEvents = 1000,
+                 TestExecutionTimeout = TimeSpan.FromMinutes(4),
+                 SubscriptionsCacheTTL = TimeSpan.FromMinutes(1),
+                 NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(1)
+             },
          };
 
         //static readonly Func<Type, string> customConvention = t =>
