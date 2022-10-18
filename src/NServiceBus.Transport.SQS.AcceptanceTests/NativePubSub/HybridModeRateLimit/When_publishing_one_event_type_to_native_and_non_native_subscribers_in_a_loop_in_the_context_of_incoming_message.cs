@@ -17,7 +17,7 @@
     {
         static TestCase[] TestCases =
         {
-             new TestCase(1){ NumberOfEvents = 1 },
+             new TestCase(1){ NumberOfEvents = 1, PreDeployInfrastructure = false },
              new TestCase(2){ NumberOfEvents = 100 },
              new TestCase(3){ NumberOfEvents = 200 },
              new TestCase(4){ NumberOfEvents = 300 },
