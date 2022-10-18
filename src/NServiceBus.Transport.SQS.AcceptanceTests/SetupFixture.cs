@@ -28,67 +28,6 @@
             }
         }
 
-        //TODO: This could go away entirely
-        //static bool usingFixedNamePrefix;
-        //static string namePrefixBackup;
-
-        //TODO: This could go away entirely
-        //static string GetFixedNamePrefix()
-        //{
-        //    var fixedNamePrefixKeyName = "NServiceBus_AmazonSQS_AT_CustomFixedNamePrefix";
-        //    var customFixedNamePrefix = EnvironmentHelper.GetEnvironmentVariable(fixedNamePrefixKeyName);
-
-        //    if (customFixedNamePrefix == null)
-        //    {
-        //        throw new Exception($"Environment variable '{fixedNamePrefixKeyName}' not set. " +
-        //            $"The variable is required by tests bound to a fixed infrastructure. " +
-        //            $"Make sure the value doesn't contain any space or dash character.");
-        //    }
-        //    else if (customFixedNamePrefix.Contains(".") || customFixedNamePrefix.Contains("-"))
-        //    {
-        //        throw new Exception($"Environment variable '{fixedNamePrefixKeyName}' contains " +
-        //                            $"invalid characters. Current value is: '{customFixedNamePrefix}'" +
-        //                            $"Make sure the value doesn't contain any space or dash character.");
-        //    }
-
-        //    return customFixedNamePrefix;
-        //}
-
-        //TODO: This could go away entirely
-        //public static void UseFixedNamePrefix()
-        //{
-        //    usingFixedNamePrefix = true;
-
-        //    namePrefixBackup = NamePrefix;
-        //    NamePrefix = GetFixedNamePrefix();
-
-        //    TestContext.WriteLine($"Using fixed name prefix: '{NamePrefix}'");
-        //}
-
-        //TODO: This could go away entirely
-        //public static void RestoreNamePrefixToRandomlyGenerated()
-        //{
-        //    if (usingFixedNamePrefix)
-        //    {
-        //        TestContext.WriteLine($"Restoring name prefix from '{NamePrefix}' to '{namePrefixBackup}'");
-        //        NamePrefix = namePrefixBackup;
-        //        usingFixedNamePrefix = false;
-        //    }
-        //}
-
-        //TODO: This could go away entirely
-        //public static void AppendSequenceToNamePrefix(int sequence)
-        //{
-        //    var idx = NamePrefix.LastIndexOf('-');
-        //    if (idx >= 0)
-        //    {
-        //        NamePrefix = NamePrefix.Substring(0, idx);
-        //    }
-        //    NamePrefix += $"-{sequence}";
-
-        //    TestContext.WriteLine($"Sequence #{sequence} appended name prefix: '{NamePrefix}'");
-        //}
-
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
@@ -114,14 +53,6 @@
             using (var s3Client = string.IsNullOrEmpty(accessKeyId) ? SqsTransportExtensions.CreateS3Client() :
                 new AmazonS3Client(accessKeyId, secretAccessKey))
             {
-                //TODO: This could go away entirely
-                // var idx = NamePrefix.LastIndexOf('-');
-                // if (idx >= 0)
-                // {
-                //     //remove the sequence number before cleaning up
-                //     NamePrefix = NamePrefix.Substring(0, idx);
-                // }
-
                 await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, NamePrefix).ConfigureAwait(false);
             }
         }

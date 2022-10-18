@@ -3,18 +3,14 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using AcceptanceTesting;
     using EndpointTemplates;
     using Configuration.AdvancedExtensibility;
     using Features;
-    using Logging;
     using NServiceBus.Routing.MessageDrivenSubscriptions;
     using NUnit.Framework;
-    using NUnit.Framework.Internal;
-    using Pipeline;
     using Conventions = AcceptanceTesting.Customization.Conventions;
 
     public class When_publishing_one_event_type_to_native_and_non_native_subscribers_in_a_loop : NServiceBusAcceptanceTest
