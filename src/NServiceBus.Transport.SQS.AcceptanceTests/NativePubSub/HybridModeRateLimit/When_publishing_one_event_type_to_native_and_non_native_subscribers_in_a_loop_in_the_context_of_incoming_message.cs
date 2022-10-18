@@ -39,31 +39,25 @@
              },
          };
 
-        //static readonly Func<Type, string> customConvention = t =>
-        //{
-        //    var classAndEndpoint = t.FullName.Split('.').Last();
-        //    var endpointBuilder = classAndEndpoint.Split('+').Last();
-        //    var customName = "hm_2_nat_non_nat" + "." + endpointBuilder;
-        //    TestContext.WriteLine($"Generated custom endpoint name: '{customName}'");
-        //    return customName;
-        //};
+        async Task DeployInfrastructure(TestCase testCase)
+        {
+            if (testCase.PreDeployInfrastructure)
+            {
+                // this is needed to make sure the infrastructure is deployed
+                _ = await Scenario.Define<Context>()
+                    .WithEndpoint<Publisher>()
+                    .WithEndpoint<NativePubSubSubscriber>()
+                    .WithEndpoint<MessageDrivenPubSubSubscriber>()
+                    .Done(c => true)
+                    .Run();
 
-        //[OneTimeSetUp]
-        //public async Task DeployInfrastructure()
-        //{
-        //    Conventions.EndpointNamingConvention = customConvention;
-
-        //    // this is needed to make sure the infrastructure is deployed
-        //    _ = await Scenario.Define<Context>()
-        //        .WithEndpoint<Publisher>()
-        //        .WithEndpoint<NativePubSubSubscriber>()
-        //        .WithEndpoint<MessageDrivenPubSubSubscriber>()
-        //        .Done(c => true)
-        //        .Run();
-
-        //    // wait for policies propagation (up to 60 seconds)
-        //    await Task.Delay(60000);
-        //}
+                if (testCase.DeployInfrastructureDelay > 0)
+                {
+                    // wait for policies propagation (up to 60 seconds)
+                    await Task.Delay(testCase.DeployInfrastructureDelay);
+                }
+            }
+        }
 
         [Test, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
@@ -71,12 +65,14 @@
             //Conventions.EndpointNamingConvention = customConvention;
             using (var handler = NamePrefixHandler.AppendSequenceToNamePrefix(testCase.Sequence))
             {
+                await DeployInfrastructure(testCase);
+
                 var context = await Scenario.Define<Context>()
                     .WithEndpoint<Publisher>(b =>
                     {
                         b.CustomConfig(config =>
                         {
-                            //config.ConfigureSqsTransport().DeployInfrastructure = false;
+                            config.ConfigureSqsTransport().DeployInfrastructure = false;
                             var migrationMode = config.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
                             migrationMode.SubscriptionsCacheTTL(testCase.SubscriptionsCacheTTL);
                             migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);
@@ -92,7 +88,7 @@
                     {
                         b.CustomConfig((config, ctx) =>
                         {
-                            //config.ConfigureSqsTransport().DeployInfrastructure = false;
+                            config.ConfigureSqsTransport().DeployInfrastructure = false;
                         });
 
                         b.When((_, ctx) =>
@@ -105,7 +101,7 @@
                     {
                         b.CustomConfig((config, ctx) =>
                         {
-                            //config.ConfigureSqsTransport().DeployInfrastructure = false;
+                            config.ConfigureSqsTransport().DeployInfrastructure = false;
                         });
 
                         b.When((session, ctx) => session.Subscribe<MyEvent>());

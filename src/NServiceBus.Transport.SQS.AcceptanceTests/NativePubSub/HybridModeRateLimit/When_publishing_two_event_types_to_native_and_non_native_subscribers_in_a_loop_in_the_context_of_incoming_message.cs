@@ -50,37 +50,39 @@
         //    return customName;
         //};
 
-        //public Task DeployInfrastructure(int testCaseNumber)
-        //{
-        //    Conventions.EndpointNamingConvention = customConvention;
+        async Task DeployInfrastructure(TestCase testCase)
+        {
+            if (testCase.PreDeployInfrastructure)
+            {
+                // this is needed to make sure the infrastructure is deployed
+                _ = await Scenario.Define<Context>()
+                    .WithEndpoint<MessageDrivenPubSubSubscriber>()
+                    .WithEndpoint<NativePubSubSubscriber>()
+                    .WithEndpoint<Publisher>()
+                    .Done(c => true)
+                    .Run();
 
-        //    SetupFixture.NamePrefix += testCaseNumber.ToString();
-        //    // this is needed to make sure the infrastructure is deployed
-        //    //_ = await Scenario.Define<Context>()
-        //    //    .WithEndpoint<MessageDrivenPubSubSubscriber>()
-        //    //    .WithEndpoint<NativePubSubSubscriber>()
-        //    //    .WithEndpoint<Publisher>()
-        //    //    .Done(c => true)
-        //    //    .Run();
-
-        //    // wait for policies propagation (up to 60 seconds)
-        //    //await Task.Delay(60000);
-
-        //    return Task.CompletedTask;
-        //}
+                if (testCase.DeployInfrastructureDelay > 0)
+                {
+                    // wait for policies propagation (up to 60 seconds)
+                    await Task.Delay(testCase.DeployInfrastructureDelay);
+                }
+            }
+        }
 
         [Test, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
-            //Conventions.EndpointNamingConvention = customConvention;
             using (var handler = NamePrefixHandler.AppendSequenceToNamePrefix(testCase.Sequence))
             {
+                await DeployInfrastructure(testCase);
+
                 var context = await Scenario.Define<Context>()
                     .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
                     {
                         b.CustomConfig((config, ctx) =>
                         {
-                            //config.ConfigureSqsTransport().DeployInfrastructure = false;
+                            config.ConfigureSqsTransport().DeployInfrastructure = false;
                         });
 
                         b.When(async (session, ctx) =>
@@ -97,7 +99,7 @@
                     {
                         b.CustomConfig((config, ctx) =>
                         {
-                            //config.ConfigureSqsTransport().DeployInfrastructure = false;
+                            config.ConfigureSqsTransport().DeployInfrastructure = false;
                         });
 
                         b.When((_, ctx) =>
@@ -110,7 +112,7 @@
                     {
                         b.CustomConfig(config =>
                         {
-                            //config.ConfigureSqsTransport().DeployInfrastructure = false;
+                            config.ConfigureSqsTransport().DeployInfrastructure = false;
                             var migrationMode = config.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
                             migrationMode.SubscriptionsCacheTTL(testCase.SubscriptionsCacheTTL);
                             migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);

@@ -20,7 +20,8 @@
         {
              new TestCase(1)
              {
-                 NumberOfEvents = 1
+                 NumberOfEvents = 1,
+                 PreDeployInfrastructure = false
              },
              new TestCase(2)
              {
@@ -52,34 +53,39 @@
         //    return customName;
         //};
 
-        //[OneTimeSetUp]
-        //public async Task DeployInfrastructure()
-        //{
-        //    Conventions.EndpointNamingConvention = customConvention;
+        async Task DeployInfrastructure(TestCase testCase)
+        {
+            if (testCase.PreDeployInfrastructure)
+            {
+                // this is needed to make sure the infrastructure is deployed
+                _ = await Scenario.Define<Context>()
+                    .WithEndpoint<Publisher>()
+                    .WithEndpoint<NativePubSubSubscriber>()
+                    .WithEndpoint<MessageDrivenPubSubSubscriber>()
+                    .Done(c => true)
+                    .Run();
 
-        //    // this is needed to make sure the infrastructure is deployed
-        //    _ = await Scenario.Define<Context>()
-        //        .WithEndpoint<Publisher>()
-        //        .WithEndpoint<NativePubSubSubscriber>()
-        //        .WithEndpoint<MessageDrivenPubSubSubscriber>()
-        //        .Done(c => true)
-        //        .Run();
-
-        //    // wait for policies propagation (up to 60 seconds)
-        //    await Task.Delay(60000);
-        //}
+                if (testCase.DeployInfrastructureDelay > 0)
+                {
+                    // wait for policies propagation (up to 60 seconds)
+                    await Task.Delay(testCase.DeployInfrastructureDelay);
+                }
+            }
+        }
 
         [Test, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
             using (var handler = NamePrefixHandler.AppendSequenceToNamePrefix(testCase.Sequence))
             {
+                await DeployInfrastructure(testCase);
+
                 var context = await Scenario.Define<Context>()
                     .WithEndpoint<Publisher>(b =>
                     {
                         b.CustomConfig(config =>
                         {
-                            //config.ConfigureSqsTransport().DeployInfrastructure = false;
+                            config.ConfigureSqsTransport().DeployInfrastructure = false;
                             var migrationMode = config.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
                             migrationMode.SubscriptionsCacheTTL(testCase.SubscriptionsCacheTTL);
                             migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);
@@ -107,7 +113,7 @@
                     {
                         b.CustomConfig((config, ctx) =>
                         {
-                            //config.ConfigureSqsTransport().DeployInfrastructure = false;
+                            config.ConfigureSqsTransport().DeployInfrastructure = false;
                         });
 
                         b.When((_, ctx) =>
@@ -120,7 +126,7 @@
                     {
                         b.CustomConfig((config, ctx) =>
                         {
-                            //config.ConfigureSqsTransport().DeployInfrastructure = false;
+                            config.ConfigureSqsTransport().DeployInfrastructure = false;
                         });
 
                         b.When(async (session, ctx) =>
