@@ -41,15 +41,6 @@
             },
         };
 
-        //static readonly Func<Type, string> customConvention = t =>
-        //{
-        //    var classAndEndpoint = t.FullName.Split('.').Last();
-        //    var endpointBuilder = classAndEndpoint.Split('+').Last();
-        //    var customName = "hm_3_nat_non_nat" + "." + endpointBuilder;
-        //    TestContext.WriteLine($"Generated custom endpoint name: '{customName}'");
-        //    return customName;
-        //};
-
         async Task DeployInfrastructure(TestCase testCase)
         {
             if (testCase.PreDeployInfrastructure)

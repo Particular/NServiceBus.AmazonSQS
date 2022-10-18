@@ -9,7 +9,6 @@
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Conventions = AcceptanceTesting.Customization.Conventions;
@@ -43,15 +42,6 @@
                  NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(1)
              },
          };
-
-        //static readonly Func<Type, string> customConvention = t =>
-        //{
-        //    var classAndEndpoint = t.FullName.Split('.').Last();
-        //    var endpointBuilder = classAndEndpoint.Split('+').Last();
-        //    var customName = "hm_4_nat_non_nat" + "." + endpointBuilder;
-        //    TestContext.WriteLine($"Generated custom endpoint name: '{customName}'");
-        //    return customName;
-        //};
 
         async Task DeployInfrastructure(TestCase testCase)
         {
