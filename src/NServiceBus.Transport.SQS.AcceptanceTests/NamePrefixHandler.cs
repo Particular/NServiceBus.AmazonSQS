@@ -1,6 +1,7 @@
 namespace NServiceBus.AcceptanceTests
 {
     using System;
+    using NUnit.Framework;
 
     class NamePrefixHandler : IDisposable
     {
@@ -15,6 +16,9 @@ namespace NServiceBus.AcceptanceTests
         {
             var namePrefixBackup = SetupFixture.NamePrefix;
             SetupFixture.AppendSequenceToNamePrefix(sequence);
+
+            TestContext.WriteLine($"Customized name prefix: '{SetupFixture.NamePrefix}'");
+
             return new NamePrefixHandler(namePrefixBackup);
         }
 
