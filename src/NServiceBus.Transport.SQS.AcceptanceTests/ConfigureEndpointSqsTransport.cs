@@ -45,9 +45,6 @@
 
             ApplyMappingsToSupportMultipleInheritance(endpointName, transport);
 
-            configuration.RegisterComponents(c => c.AddSingleton<IMutateOutgoingTransportMessages, TestIndependenceMutator>());
-            configuration.Pipeline.Register("TestIndependenceBehavior", typeof(TestIndependenceSkipBehavior), "Skips messages not created during the current test.");
-
             return Task.FromResult(0);
         }
 
