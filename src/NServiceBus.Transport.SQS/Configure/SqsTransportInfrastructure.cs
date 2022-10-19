@@ -13,12 +13,14 @@
     class SqsTransportInfrastructure : TransportInfrastructure
     {
         public SqsTransportInfrastructure(SqsTransport transportDefinition, HostSettings hostSettings, ReceiveSettings[] receiverSettings, IAmazonSQS sqsClient,
-            IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, S3Settings s3Settings, PolicySettings policySettings, int queueDelayTimeSeconds, string topicNamePrefix, bool v1Compatibility)
+            IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, S3Settings s3Settings, PolicySettings policySettings,
+            int queueDelayTimeSeconds, string topicNamePrefix, bool v1Compatibility, bool deployInfrastructure)
         {
             this.transportDefinition = transportDefinition;
             this.sqsClient = sqsClient;
             this.snsClient = snsClient;
             coreSettings = hostSettings.CoreSettings;
+            this.deployInfrastructure = deployInfrastructure;
             s3Client = s3Settings?.S3Client;
             Receivers = receiverSettings
                 .Select(receiverSetting => CreateMessagePump(receiverSetting, sqsClient, snsClient, queueCache, topicCache, s3Settings, policySettings, queueDelayTimeSeconds, topicNamePrefix, hostSettings.CriticalErrorAction))
@@ -34,7 +36,7 @@
             string topicNamePrefix, Action<string, Exception, CancellationToken> criticalErrorAction)
         {
             var receiveAddress = ToTransportAddress(receiveSettings.ReceiveAddress);
-            var subManager = new SubscriptionManager(sqsClient, snsClient, receiveAddress, queueCache, topicCache, policySettings, topicNamePrefix);
+            var subManager = new SubscriptionManager(sqsClient, snsClient, receiveAddress, queueCache, topicCache, policySettings, topicNamePrefix, deployInfrastructure);
 
             return new MessagePump(receiveSettings.Id, receiveAddress, receiveSettings.ErrorQueue, receiveSettings.PurgeOnStartup, sqsClient, queueCache, s3Settings, subManager, queueDelayTimeSeconds, criticalErrorAction, coreSettings);
         }
@@ -57,5 +59,6 @@
         readonly IAmazonSimpleNotificationService snsClient;
         readonly IAmazonS3 s3Client;
         readonly IReadOnlySettings coreSettings;
+        readonly bool deployInfrastructure;
     }
 }

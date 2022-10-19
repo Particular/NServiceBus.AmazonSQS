@@ -8,6 +8,7 @@ namespace NServiceBus.Transport.SQS
 
     class MessagePump : IMessageReceiver
     {
+        readonly SubscriptionManager subscriptionManager;
         readonly InputQueuePump inputQueuePump;
         readonly DelayedMessagesPump delayedMessagesPump;
 
@@ -24,6 +25,7 @@ namespace NServiceBus.Transport.SQS
             Action<string, Exception, CancellationToken> criticalErrorAction,
             IReadOnlySettings coreSettings)
         {
+            this.subscriptionManager = subscriptionManager;
             inputQueuePump = new InputQueuePump(receiverId, receiveAddress, errorQueueAddress, purgeOnStartup, sqsClient, queueCache, s3Settings, subscriptionManager, criticalErrorAction, coreSettings);
             delayedMessagesPump = new DelayedMessagesPump(receiveAddress, sqsClient, queueCache, queueDelayTimeSeconds);
         }
@@ -38,6 +40,7 @@ namespace NServiceBus.Transport.SQS
         {
             await inputQueuePump.StartReceive(cancellationToken).ConfigureAwait(false);
             delayedMessagesPump.Start(cancellationToken);
+            subscriptionManager.PumpStarted = true;
         }
 
         public Task StopReceive(CancellationToken cancellationToken = default)

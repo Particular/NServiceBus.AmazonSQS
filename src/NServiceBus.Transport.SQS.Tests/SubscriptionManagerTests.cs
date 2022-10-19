@@ -455,7 +455,7 @@ namespace NServiceBus.Transport.SQS.Tests
         class TestableSubscriptionManager : SubscriptionManager
         {
             public TestableSubscriptionManager(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, TopicCache topicCache, PolicySettings policySettings, string topicNamePrefix)
-                : base(sqsClient, snsClient, queueName, queueCache, topicCache, policySettings, topicNamePrefix)
+                : base(sqsClient, snsClient, queueName, queueCache, topicCache, policySettings, topicNamePrefix, true)
             {
             }
 

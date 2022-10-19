@@ -15,19 +15,32 @@ namespace NServiceBus.Transport.SQS
 
     class SubscriptionManager : ISubscriptionManager
     {
-        public SubscriptionManager(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, TopicCache topicCache, PolicySettings policySettings, string topicNamePrefix)
+        public SubscriptionManager(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, TopicCache topicCache, PolicySettings policySettings, string topicNamePrefix, bool deployInfrastructure)
         {
             this.topicCache = topicCache;
             this.policySettings = policySettings;
             this.topicNamePrefix = topicNamePrefix;
+            this.deployInfrastructure = deployInfrastructure;
             this.queueCache = queueCache;
             this.sqsClient = sqsClient;
             this.snsClient = snsClient;
             this.queueName = queueName;
         }
 
+        internal bool PumpStarted { get; set; }
+
         public async Task SubscribeAll(MessageMetadata[] eventTypes, ContextBag context, CancellationToken cancellationToken = default)
         {
+            if (!PumpStarted && !deployInfrastructure)
+            {
+                // When the pump is not yet started the only that can call
+                // SubscribeAll is the AutoSubscribe feature in Core.
+                // So when the pump is not started and setupInfrastructure
+                // is false, we skip subscribing to honor the EnableInstaller
+                // true/false endpoint configuration setting  
+                return;
+            }
+
             var queueUrl = await queueCache.GetQueueUrl(queueName, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -273,6 +286,7 @@ namespace NServiceBus.Transport.SQS
         readonly TopicCache topicCache;
         readonly PolicySettings policySettings;
         readonly string topicNamePrefix;
+        readonly bool deployInfrastructure;
         readonly SemaphoreSlim subscribeQueueLimiter = new SemaphoreSlim(1);
 
         static readonly ILog Logger = LogManager.GetLogger(typeof(SubscriptionManager));
