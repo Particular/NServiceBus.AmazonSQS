@@ -65,6 +65,8 @@
             //Conventions.EndpointNamingConvention = customConvention;
             using (var handler = NamePrefixHandler.AppendSequenceToNamePrefix(testCase.Sequence))
             {
+                Conventions.EndpointNamingConvention = testCase.customConvention;
+
                 await DeployInfrastructure(testCase);
 
                 var context = await Scenario.Define<Context>()
