@@ -1,6 +1,9 @@
 namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
 {
     using System;
+    using System.Linq;
+    using System.Text.RegularExpressions;
+    using System.Threading;
 
     public class TestCase
     {
@@ -25,6 +28,18 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
         static TimeSpan DefaultSubscriptionCacheTTL = TimeSpan.FromSeconds(5);
         static TimeSpan DefaultTopicCacheTTL = TimeSpan.FromSeconds(5);
         static int DefaultMessageVisibilityTimeout = 30;
+
+        public readonly Func<Type, string> customConvention = t =>
+        {
+            var classAndEndpoint = t.FullName.Split('.').Last();
+            var testName = classAndEndpoint.Split('+').First();
+            testName = testName.Replace("When_", "");
+            var endpointBuilder = classAndEndpoint.Split('+').Last();
+            testName = Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(testName);
+            testName = testName.Replace("_", "");
+            var instanceGuid = Regex.Replace(Convert.ToBase64String(t.GUID.ToByteArray()), "[/+=]", "").ToUpperInvariant();
+            return testName + "." + instanceGuid + "." + endpointBuilder;
+        };
 
     }
 }

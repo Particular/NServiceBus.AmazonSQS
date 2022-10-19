@@ -11,7 +11,6 @@
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Conventions = AcceptanceTesting.Customization.Conventions;
@@ -66,6 +65,8 @@
         {
             using (var handler = NamePrefixHandler.AppendSequenceToNamePrefix(testCase.Sequence))
             {
+                Conventions.EndpointNamingConvention = testCase.customConvention;
+
                 await DeployInfrastructure(testCase);
 
                 var context = await Scenario.Define<Context>()
