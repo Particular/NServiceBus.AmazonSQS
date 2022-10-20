@@ -34,12 +34,12 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
                     .WithEndpoint<MessageDrivenPubSubSubscriber>()
                     .Done(c => true)
                     .Run();
-            }
 
-            if (testCase.DeployInfrastructureDelay > 0)
-            {
-                // wait for policies propagation (up to 60 seconds)
-                await Task.Delay(testCase.DeployInfrastructureDelay);
+                if (testCase.DeployInfrastructureDelay > 0)
+                {
+                    // wait for policies propagation (up to 60 seconds)
+                    await Task.Delay(testCase.DeployInfrastructureDelay);
+                }
             }
         }
 
