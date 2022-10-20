@@ -4,6 +4,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
     using System.Linq;
     using System.Text.RegularExpressions;
     using System.Threading;
+    using NUnit.Framework;
 
     public class TestCase
     {
@@ -38,6 +39,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
             testName = Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(testName);
             testName = testName.Replace("_", "");
             var instanceGuid = Regex.Replace(Convert.ToBase64String(t.GUID.ToByteArray()), "[/+=]", "").ToUpperInvariant();
+            TestContext.WriteLine($"Generated custom endpoint naming convention: '{testName + "." + instanceGuid + "." + endpointBuilder}'");
             return testName + "." + instanceGuid + "." + endpointBuilder;
         };
 
