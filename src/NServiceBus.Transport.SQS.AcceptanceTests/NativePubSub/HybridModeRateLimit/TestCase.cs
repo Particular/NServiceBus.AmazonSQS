@@ -15,8 +15,8 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
         public int MessageVisibilityTimeout { get; internal set; } = DefaultMessageVisibilityTimeout;
         public TimeSpan SubscriptionsCacheTTL { get; internal set; } = DefaultSubscriptionCacheTTL;
         public TimeSpan NotFoundTopicsCacheTTL { get; internal set; } = DefaultTopicCacheTTL;
-        public bool PreDeployInfrastructure { get; internal set; } = true;
-        public int DeployInfrastructureDelay { get; internal set; } = 60000;
+        public bool PreDeployInfrastructure { get; internal set; } = DefaultPreDeployInfrastructure;
+        public int DeployInfrastructureDelay { get; internal set; } = DefaultDeployInfrastructureDelay;
         public int Sequence { get; }
 
         public override string ToString() => $"#{Sequence}, " +
@@ -29,19 +29,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
         static TimeSpan DefaultSubscriptionCacheTTL = TimeSpan.FromSeconds(5);
         static TimeSpan DefaultTopicCacheTTL = TimeSpan.FromSeconds(5);
         static int DefaultMessageVisibilityTimeout = 30;
-
-        public readonly Func<Type, string> customConvention = t =>
-        {
-            var classAndEndpoint = t.FullName.Split('.').Last();
-            var testName = classAndEndpoint.Split('+').First();
-            testName = testName.Replace("When_", "");
-            var endpointBuilder = classAndEndpoint.Split('+').Last();
-            testName = Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(testName);
-            testName = testName.Replace("_", "");
-            var instanceGuid = Regex.Replace(Convert.ToBase64String(t.GUID.ToByteArray()), "[/+=]", "").ToUpperInvariant();
-            TestContext.WriteLine($"Generated custom endpoint naming convention: '{testName + "." + instanceGuid + "." + endpointBuilder}'");
-            return testName + "." + instanceGuid + "." + endpointBuilder;
-        };
-
+        static int DefaultDeployInfrastructureDelay = 60000;
+        static bool DefaultPreDeployInfrastructure = true;
     }
 }
