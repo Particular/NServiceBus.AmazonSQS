@@ -20,7 +20,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
         static TestCase[] TestCases =
         {
              new TestCase(1){ NumberOfEvents = 1, PreDeployInfrastructure = false},
-             new TestCase(2){ NumberOfEvents = 100, PreDeployInfrastructure = false },
+             new TestCase(2){ NumberOfEvents = 100 },
              new TestCase(3){ NumberOfEvents = 300, SubscriptionsCacheTTL = TimeSpan.FromMinutes(1) },
              new TestCase(4){ NumberOfEvents = 1000, TestExecutionTimeout = TimeSpan.FromMinutes(4), SubscriptionsCacheTTL = TimeSpan.FromMinutes(1), NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(1) },
          };

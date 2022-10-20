@@ -20,7 +20,7 @@
         static TestCase[] TestCases =
         {
             new TestCase(1) { NumberOfEvents = 1, PreDeployInfrastructure = false },
-            new TestCase(2) { NumberOfEvents = 100, MessageVisibilityTimeout = 60, PreDeployInfrastructure = false },
+            new TestCase(2) { NumberOfEvents = 100, MessageVisibilityTimeout = 60, },
             new TestCase(3) { NumberOfEvents = 200, MessageVisibilityTimeout = 120, SubscriptionsCacheTTL = TimeSpan.FromMinutes(2), NotFoundTopicsCacheTTL = TimeSpan.FromSeconds(120) },
             new TestCase(4)
             {
