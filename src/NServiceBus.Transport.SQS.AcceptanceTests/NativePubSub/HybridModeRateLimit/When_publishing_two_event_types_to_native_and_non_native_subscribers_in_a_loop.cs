@@ -25,6 +25,7 @@
              new TestCase(2)
              {
                  NumberOfEvents = 100,
+                 PreDeployInfrastructure = false,
                  SubscriptionsCacheTTL = TimeSpan.FromMinutes(1),
                  NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(1),
              },
