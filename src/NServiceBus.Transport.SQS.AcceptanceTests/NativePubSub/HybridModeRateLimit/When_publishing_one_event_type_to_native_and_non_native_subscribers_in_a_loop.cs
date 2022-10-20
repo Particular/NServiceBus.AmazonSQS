@@ -57,7 +57,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
                     {
                         b.CustomConfig(config =>
                         {
-                            config.ConfigureSqsTransport().DeployInfrastructure = !testCase.PreDeployInfrastructure;
+                            // config.ConfigureSqsTransport().DeployInfrastructure = !testCase.PreDeployInfrastructure;
                             var migrationMode = config.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
                             migrationMode.SubscriptionsCacheTTL(testCase.SubscriptionsCacheTTL);
                             migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);
@@ -84,7 +84,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
                     {
                         b.CustomConfig((config, ctx) =>
                         {
-                            config.ConfigureSqsTransport().DeployInfrastructure = !testCase.PreDeployInfrastructure;
+                            // config.ConfigureSqsTransport().DeployInfrastructure = !testCase.PreDeployInfrastructure;
                         });
 
                         b.When((_, ctx) =>
@@ -97,7 +97,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
                     {
                         b.CustomConfig((config, ctx) =>
                         {
-                            config.ConfigureSqsTransport().DeployInfrastructure = !testCase.PreDeployInfrastructure;
+                            // config.ConfigureSqsTransport().DeployInfrastructure = !testCase.PreDeployInfrastructure;
                         });
 
                         b.When((session, ctx) => session.Subscribe<MyEvent>());
