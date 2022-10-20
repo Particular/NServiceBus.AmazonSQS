@@ -12,10 +12,10 @@ namespace NServiceBus.AcceptanceTests
             this.namePrefixBackup = namePrefixBackup;
         }
 
-        public static IDisposable AppendSequenceToNamePrefix(int sequence)
+        public static IDisposable RunTestWithNamePrefixCustomization(string customization)
         {
             var namePrefixBackup = SetupFixture.NamePrefix;
-            SetupFixture.AppendSequenceToNamePrefix(sequence);
+            SetupFixture.AppendToNamePrefix(customization);
 
             TestContext.WriteLine($"Customized name prefix: '{SetupFixture.NamePrefix}'");
 

@@ -18,7 +18,7 @@
         /// </summary>
         public static string NamePrefix { get; private set; }
 
-        public static void AppendSequenceToNamePrefix(int sequence) => NamePrefix += sequence.ToString();
+        public static void AppendToNamePrefix(string customization) => NamePrefix += customization;
 
         public static void RestoreNamePrefix(string namePrefixBackup)
         {

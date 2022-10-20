@@ -62,10 +62,8 @@
         [Test, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
-            using (var handler = NamePrefixHandler.AppendSequenceToNamePrefix(testCase.Sequence))
+            using (var handler = NamePrefixHandler.RunTestWithNamePrefixCustomization("OneEvtMsgCtx" + testCase.Sequence))
             {
-                Conventions.EndpointNamingConvention = testCase.customConvention;
-
                 await DeployInfrastructure(testCase);
 
                 var context = await Scenario.Define<Context>()

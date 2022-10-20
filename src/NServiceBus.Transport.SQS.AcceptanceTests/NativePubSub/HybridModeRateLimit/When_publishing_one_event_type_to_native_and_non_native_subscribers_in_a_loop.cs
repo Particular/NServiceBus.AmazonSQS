@@ -25,19 +25,6 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
              new TestCase(4){ NumberOfEvents = 1000, TestExecutionTimeout = TimeSpan.FromMinutes(4), SubscriptionsCacheTTL = TimeSpan.FromMinutes(1), NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(1) },
         };
 
-        readonly Func<Type, string> customConvention = t =>
-        {
-            var classAndEndpoint = t.FullName.Split('.').Last();
-            var testName = classAndEndpoint.Split('+').First();
-            testName = testName.Replace("When_", "");
-            var endpointBuilder = classAndEndpoint.Split('+').Last();
-            testName = Thread.CurrentThread.CurrentCulture.TextInfo.ToTitleCase(testName);
-            testName = testName.Replace("_", "");
-            var instanceGuid = Regex.Replace(Convert.ToBase64String(t.GUID.ToByteArray()), "[/+=]", "").ToUpperInvariant();
-            TestContext.WriteLine($"Generated custom endpoint naming convention: '{testName + "." + instanceGuid + "." + endpointBuilder}'");
-            return testName + "." + instanceGuid + "." + endpointBuilder;
-        };
-
         async Task DeployInfrastructure(TestCase testCase)
         {
             if (testCase.PreDeployInfrastructure)
@@ -61,10 +48,8 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
         [Test, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
-            using (var handler = NamePrefixHandler.AppendSequenceToNamePrefix(testCase.Sequence))
+            using (var handler = NamePrefixHandler.RunTestWithNamePrefixCustomization("OneEvt" + testCase.Sequence))
             {
-                Conventions.EndpointNamingConvention = customConvention;
-
                 await DeployInfrastructure(testCase);
 
                 var context = await Scenario.Define<Context>()
