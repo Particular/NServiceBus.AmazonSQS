@@ -62,7 +62,6 @@
         [Test, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
-            //Conventions.EndpointNamingConvention = customConvention;
             using (var handler = NamePrefixHandler.AppendSequenceToNamePrefix(testCase.Sequence))
             {
                 Conventions.EndpointNamingConvention = testCase.customConvention;

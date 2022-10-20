@@ -23,21 +23,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
              new TestCase(2){ NumberOfEvents = 100 },
              new TestCase(3){ NumberOfEvents = 300, SubscriptionsCacheTTL = TimeSpan.FromMinutes(1) },
              new TestCase(4){ NumberOfEvents = 1000, TestExecutionTimeout = TimeSpan.FromMinutes(4), SubscriptionsCacheTTL = TimeSpan.FromMinutes(1), NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(1) },
-         };
-
-        Func<Type, string> EndpointNamingConventionBackup { get; set; }
-
-        [OneTimeSetUp]
-        public void Setup()
-        {
-            EndpointNamingConventionBackup = Conventions.EndpointNamingConvention;
-        }
-
-        [OneTimeTearDown]
-        public void Teardown()
-        {
-            Conventions.EndpointNamingConvention = EndpointNamingConventionBackup;
-        }
+        };
 
         readonly Func<Type, string> customConvention = t =>
         {
@@ -77,9 +63,6 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
         {
             using (var handler = NamePrefixHandler.AppendSequenceToNamePrefix(testCase.Sequence))
             {
-                //Conventions.EndpointNamingConvention = testCase.customConvention;
-                //EndpointNamingConventionBackup = Conventions.EndpointNamingConvention;
-
                 Conventions.EndpointNamingConvention = customConvention;
 
                 await DeployInfrastructure(testCase);
