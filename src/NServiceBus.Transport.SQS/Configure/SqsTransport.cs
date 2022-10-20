@@ -243,7 +243,7 @@
         /// <summary>
         /// Prevents the transport to deploy queues, topics, and subscriptions
         /// </summary>
-        public bool DeployInfrastructure { get; set; } = true;
+        internal bool DeployInfrastructure { get; set; } = true;
 
         /// <summary>
         /// Translates a <see cref="T:NServiceBus.Transport.QueueAddress" /> object into a transport specific queue address-string.
