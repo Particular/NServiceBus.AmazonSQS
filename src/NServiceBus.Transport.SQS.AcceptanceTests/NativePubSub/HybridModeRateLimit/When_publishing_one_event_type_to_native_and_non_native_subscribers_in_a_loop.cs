@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
+namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
 {
     using System;
     using System.Collections.Generic;
@@ -17,61 +17,86 @@
     {
         static TestCase[] TestCases =
         {
-            new TestCase(1){ NumberOfEvents = 1 },
-            new TestCase(2){ NumberOfEvents = 100 },
-            new TestCase(3){ NumberOfEvents = 300, SubscriptionsCacheTTL = TimeSpan.FromMinutes(1) },
-            new TestCase(4){ NumberOfEvents = 1000, TestExecutionTimeout = TimeSpan.FromMinutes(4), SubscriptionsCacheTTL = TimeSpan.FromMinutes(1), NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(1) },
+            //HINT: See https://github.com/Particular/NServiceBus.AmazonSQS/pull/1643 details on the test cases
+            //new TestCase(2){ NumberOfEvents = 100 },
+            //new TestCase(3){ NumberOfEvents = 300, SubscriptionsCacheTTL = TimeSpan.FromMinutes(1) },
+             new TestCase(1){ NumberOfEvents = 1, PreDeployInfrastructure = false},
+             new TestCase(4){ NumberOfEvents = 1000, TestExecutionTimeout = TimeSpan.FromMinutes(4), SubscriptionsCacheTTL = TimeSpan.FromMinutes(1), NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(1) },
         };
 
-        [Test, UseFixedNamePrefix, TestCaseSource(nameof(TestCases))]
+        async Task DeployInfrastructure(TestCase testCase)
+        {
+            if (testCase.PreDeployInfrastructure)
+            {
+                // this is needed to make sure the infrastructure is deployed
+                _ = await Scenario.Define<Context>()
+                    .WithEndpoint<Publisher>()
+                    .WithEndpoint<NativePubSubSubscriber>()
+                    .WithEndpoint<MessageDrivenPubSubSubscriber>()
+                    .Done(c => true)
+                    .Run();
+
+                if (testCase.DeployInfrastructureDelay > 0)
+                {
+                    // wait for policies propagation (up to 60 seconds)
+                    await Task.Delay(testCase.DeployInfrastructureDelay);
+                }
+            }
+        }
+
+        [Test, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
-            SetupFixture.AppendSequenceToNamePrefix(testCase.Sequence);
+            using (var handler = NamePrefixHandler.RunTestWithNamePrefixCustomization("OneEvt" + testCase.Sequence))
+            {
+                await DeployInfrastructure(testCase);
 
-            var context = await Scenario.Define<Context>()
-                .WithEndpoint<Publisher>(b =>
-                {
-                    b.CustomConfig(config =>
+                var context = await Scenario.Define<Context>()
+                    .WithEndpoint<Publisher>(b =>
                     {
-                        var migrationMode = config.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
-                        migrationMode.SubscriptionsCacheTTL(testCase.SubscriptionsCacheTTL);
-                        migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);
-                    });
-
-                    b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, (session, ctx) =>
-                    {
-                        var sw = Stopwatch.StartNew();
-                        var tasks = new List<Task>();
-                        for (int i = 0; i < testCase.NumberOfEvents; i++)
+                        b.CustomConfig(config =>
                         {
-                            tasks.Add(session.Publish(new MyEvent()));
-                        }
-                        _ = Task.WhenAll(tasks).ContinueWith(t =>
-                        {
-                            sw.Stop();
-                            ctx.PublishTime = sw.Elapsed;
+                            var migrationMode = config.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
+                            migrationMode.SubscriptionsCacheTTL(testCase.SubscriptionsCacheTTL);
+                            migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);
                         });
-                        return Task.FromResult(0);
-                    });
-                })
-                .WithEndpoint<NativePubSubSubscriber>(b =>
-                {
-                    b.When((_, ctx) =>
-                    {
-                        ctx.SubscribedNative = true;
-                        return Task.FromResult(0);
-                    });
-                })
-                .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
-                {
-                    b.When((session, ctx) => session.Subscribe<MyEvent>());
-                })
-                .Done(c => c.NativePubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents
-                    && c.MessageDrivenPubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents)
-                .Run(testCase.TestExecutionTimeout);
 
-            Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedEventsCount);
-            Assert.AreEqual(testCase.NumberOfEvents, context.NativePubSubSubscriberReceivedEventsCount);
+                        b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, (session, ctx) =>
+                        {
+                            var sw = Stopwatch.StartNew();
+                            var tasks = new List<Task>();
+                            for (int i = 0; i < testCase.NumberOfEvents; i++)
+                            {
+                                tasks.Add(session.Publish(new MyEvent()));
+                            }
+
+                            _ = Task.WhenAll(tasks).ContinueWith(t =>
+                            {
+                                sw.Stop();
+                                ctx.PublishTime = sw.Elapsed;
+                            });
+                            return Task.FromResult(0);
+                        });
+                    })
+                    .WithEndpoint<NativePubSubSubscriber>(b =>
+                    {
+                        b.When((_, ctx) =>
+                        {
+                            ctx.SubscribedNative = true;
+                            return Task.FromResult(0);
+                        });
+                    })
+                    .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
+                    {
+                        b.When((session, ctx) => session.Subscribe<MyEvent>());
+                    })
+                    .Done(c => c.NativePubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents
+                                   && c.MessageDrivenPubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents)
+                    .Run(TimeSpan.FromSeconds(40));
+
+                Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedEventsCount);
+                Assert.AreEqual(testCase.NumberOfEvents, context.NativePubSubSubscriberReceivedEventsCount);
+            }
         }
 
         public class Context : ScenarioContext
@@ -147,7 +172,7 @@
                     c.GetSettings().Set("NServiceBus.AmazonSQS.DisableNativePubSub", true);
                     c.GetSettings().GetOrCreate<Publishers>().AddOrReplacePublishers("LegacyConfig", new List<PublisherTableEntry>
                     {
-                        new PublisherTableEntry(typeof(MyEvent), PublisherAddress.CreateFromEndpointName(Conventions.EndpointNamingConvention(typeof(Publisher))))
+                         new PublisherTableEntry(typeof(MyEvent), PublisherAddress.CreateFromEndpointName(Conventions.EndpointNamingConvention(typeof(Publisher))))
                     });
                 },
                 metadata => metadata.RegisterPublisherFor<MyEvent>(typeof(Publisher)));

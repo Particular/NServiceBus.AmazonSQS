@@ -11,6 +11,8 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
         public int MessageVisibilityTimeout { get; internal set; } = DefaultMessageVisibilityTimeout;
         public TimeSpan SubscriptionsCacheTTL { get; internal set; } = DefaultSubscriptionCacheTTL;
         public TimeSpan NotFoundTopicsCacheTTL { get; internal set; } = DefaultTopicCacheTTL;
+        public bool PreDeployInfrastructure { get; internal set; } = DefaultPreDeployInfrastructure;
+        public int DeployInfrastructureDelay { get; internal set; } = DefaultDeployInfrastructureDelay;
         public int Sequence { get; }
 
         public override string ToString() => $"#{Sequence}, " +
@@ -23,6 +25,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
         static TimeSpan DefaultSubscriptionCacheTTL = TimeSpan.FromSeconds(5);
         static TimeSpan DefaultTopicCacheTTL = TimeSpan.FromSeconds(5);
         static int DefaultMessageVisibilityTimeout = 30;
-
+        static int DefaultDeployInfrastructureDelay = 60000;
+        static bool DefaultPreDeployInfrastructure = true;
     }
 }
