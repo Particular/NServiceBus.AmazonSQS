@@ -2,8 +2,8 @@
 {
     using AcceptanceTesting;
     using EndpointTemplates;
-    using NServiceBus.Configuration.AdvancedExtensibility;
-    using NServiceBus.Features;
+    using Configuration.AdvancedExtensibility;
+    using Features;
     using NServiceBus.Routing.MessageDrivenSubscriptions;
     using NUnit.Framework;
     using System;
@@ -17,69 +17,93 @@
     {
         static TestCase[] TestCases =
         {
-            new TestCase(1){ NumberOfEvents = 1 },
-            new TestCase(2){ NumberOfEvents = 100 },
-            new TestCase(3){ NumberOfEvents = 200 },
-            new TestCase(4){ NumberOfEvents = 300 },
-            new TestCase(5)
-            {
-                NumberOfEvents = 1000,
-                MessageVisibilityTimeout = 180,
-                TestExecutionTimeout = TimeSpan.FromMinutes(3),
-                SubscriptionsCacheTTL = TimeSpan.FromMinutes(1),
-                NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(1),
-            },
-            new TestCase(6)
-            {
-                NumberOfEvents = 3000,
-                MessageVisibilityTimeout = 300,
-                TestExecutionTimeout = TimeSpan.FromMinutes(7),
-                SubscriptionsCacheTTL = TimeSpan.FromMinutes(2),
-                NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(2),
-            },
-        };
+             //HINT: See https://github.com/Particular/NServiceBus.AmazonSQS/pull/1643 details on the test cases
+             //new TestCase(2){ NumberOfEvents = 100 },
+             //new TestCase(3){ NumberOfEvents = 200 },
+             //new TestCase(4){ NumberOfEvents = 300 },
+             new TestCase(1){ NumberOfEvents = 1, PreDeployInfrastructure = false },
+             new TestCase(5)
+             {
+                 NumberOfEvents = 1000,
+                 MessageVisibilityTimeout = 180,
+                 TestExecutionTimeout = TimeSpan.FromMinutes(3),
+                 SubscriptionsCacheTTL = TimeSpan.FromMinutes(1),
+                 NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(1),
+             },
+             new TestCase(6)
+             {
+                 NumberOfEvents = 3000,
+                 MessageVisibilityTimeout = 300,
+                 TestExecutionTimeout = TimeSpan.FromMinutes(7),
+                 SubscriptionsCacheTTL = TimeSpan.FromMinutes(2),
+                 NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(2),
+             },
+         };
 
-        [Test, UseFixedNamePrefix, TestCaseSource(nameof(TestCases))]
+        async Task DeployInfrastructure(TestCase testCase)
+        {
+            if (testCase.PreDeployInfrastructure)
+            {
+                // this is needed to make sure the infrastructure is deployed
+                _ = await Scenario.Define<Context>()
+                    .WithEndpoint<Publisher>()
+                    .WithEndpoint<NativePubSubSubscriber>()
+                    .WithEndpoint<MessageDrivenPubSubSubscriber>()
+                    .Done(c => true)
+                    .Run();
+
+                if (testCase.DeployInfrastructureDelay > 0)
+                {
+                    // wait for policies propagation (up to 60 seconds)
+                    await Task.Delay(testCase.DeployInfrastructureDelay);
+                }
+            }
+        }
+
+        [Test, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
-            SetupFixture.AppendSequenceToNamePrefix(testCase.Sequence);
+            using (var handler = NamePrefixHandler.RunTestWithNamePrefixCustomization("OneEvtMsgCtx" + testCase.Sequence))
+            {
+                await DeployInfrastructure(testCase);
 
-            var context = await Scenario.Define<Context>()
-                .WithEndpoint<Publisher>(b =>
-                {
-                    b.CustomConfig(config =>
+                var context = await Scenario.Define<Context>()
+                    .WithEndpoint<Publisher>(b =>
                     {
+                        b.CustomConfig(config =>
+                        {
 #pragma warning disable CS0618
-                        var migrationMode = config.ConfigureSqsTransport().EnableMessageDrivenPubSubCompatibilityMode();
-                        migrationMode.SubscriptionsCacheTTL(testCase.SubscriptionsCacheTTL);
-                        migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);
-                        migrationMode.MessageVisibilityTimeout(testCase.MessageVisibilityTimeout);
+                            var migrationMode = config.ConfigureSqsTransport().EnableMessageDrivenPubSubCompatibilityMode();
+                            migrationMode.SubscriptionsCacheTTL(testCase.SubscriptionsCacheTTL);
+                            migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);
+                            migrationMode.MessageVisibilityTimeout(testCase.MessageVisibilityTimeout);
 #pragma warning restore CS0618
-                    });
+                        });
 
-                    b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, session =>
+                        b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, session =>
+                        {
+                            return session.SendLocal(new KickOff { NumberOfEvents = testCase.NumberOfEvents });
+                        });
+                    })
+                    .WithEndpoint<NativePubSubSubscriber>(b =>
                     {
-                        return session.SendLocal(new KickOff { NumberOfEvents = testCase.NumberOfEvents });
-                    });
-                })
-                .WithEndpoint<NativePubSubSubscriber>(b =>
-                {
-                    b.When((_, ctx) =>
+                        b.When((_, ctx) =>
+                        {
+                            ctx.SubscribedNative = true;
+                            return Task.FromResult(0);
+                        });
+                    })
+                    .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
                     {
-                        ctx.SubscribedNative = true;
-                        return Task.FromResult(0);
-                    });
-                })
-                .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
-                {
-                    b.When((session, ctx) => session.Subscribe<MyEvent>());
-                })
-                .Done(c => c.NativePubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents
-                && c.MessageDrivenPubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents)
-                .Run(testCase.TestExecutionTimeout);
+                        b.When((session, ctx) => session.Subscribe<MyEvent>());
+                    })
+                    .Done(c => c.NativePubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents
+                                   && c.MessageDrivenPubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents)
+                    .Run(testCase.TestExecutionTimeout);
 
-            Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedEventsCount);
-            Assert.AreEqual(testCase.NumberOfEvents, context.NativePubSubSubscriberReceivedEventsCount);
+                Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedEventsCount);
+                Assert.AreEqual(testCase.NumberOfEvents, context.NativePubSubSubscriberReceivedEventsCount);
+            }
         }
 
         public class Context : ScenarioContext
@@ -179,7 +203,7 @@
                     c.GetSettings().Set("NServiceBus.AmazonSQS.DisableNativePubSub", true);
                     c.GetSettings().GetOrCreate<Publishers>().AddOrReplacePublishers("LegacyConfig", new List<PublisherTableEntry>
                     {
-                        new PublisherTableEntry(typeof(MyEvent), PublisherAddress.CreateFromEndpointName(Conventions.EndpointNamingConvention(typeof(Publisher))))
+                         new PublisherTableEntry(typeof(MyEvent), PublisherAddress.CreateFromEndpointName(Conventions.EndpointNamingConvention(typeof(Publisher))))
                     });
                 },
                 metadata => metadata.RegisterPublisherFor<MyEvent>(typeof(Publisher)));
