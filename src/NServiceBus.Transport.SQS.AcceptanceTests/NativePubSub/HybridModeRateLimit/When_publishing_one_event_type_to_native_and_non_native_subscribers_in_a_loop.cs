@@ -94,7 +94,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
                     })
                     .Done(c => c.NativePubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents
                                    && c.MessageDrivenPubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents)
-                    .Run(TimeSpan.FromSeconds(40));
+                    .Run(testCase.TestExecutionTimeout);
 
                 Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedEventsCount);
                 Assert.AreEqual(testCase.NumberOfEvents, context.NativePubSubSubscriberReceivedEventsCount);
