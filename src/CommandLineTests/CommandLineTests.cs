@@ -906,6 +906,6 @@
         const string EventType = "MyNamespace.MyMessage1";
         const string EventType2 = "MyNamespace.MyMessage2";
         const int VerificationBackoffInterval = 200;
-        const int MaximumBackoffInterval = 20000; // totals up to 77000
+        const int MaximumBackoffInterval = 60000;
     }
 }
