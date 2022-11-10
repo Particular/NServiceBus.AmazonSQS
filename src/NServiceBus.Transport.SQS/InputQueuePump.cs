@@ -37,7 +37,9 @@ namespace NServiceBus.Transport.SQS
             this.criticalErrorAction = criticalErrorAction;
             this.errorQueueAddress = errorQueueAddress;
             this.purgeOnStartup = purgeOnStartup;
+#pragma warning disable CS0618
             awsEndpointUrl = sqsClient.Config.DetermineServiceURL();
+#pragma warning restore CS0618
             Id = receiverId;
             ReceiveAddress = receiveAddress;
             Subscriptions = subscriptionManager;
