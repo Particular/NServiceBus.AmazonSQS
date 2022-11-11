@@ -21,7 +21,9 @@ namespace NServiceBus.Transport.SQS
             this.queueCache = queueCache;
             this.queueDelayTimeSeconds = queueDelayTimeSeconds;
             this.sqsClient = sqsClient;
+#pragma warning disable CS0618
             awsEndpointUrl = sqsClient.Config.DetermineServiceURL();
+#pragma warning restore CS0618
         }
 
         public async Task Initialize(CancellationToken cancellationToken = default)
