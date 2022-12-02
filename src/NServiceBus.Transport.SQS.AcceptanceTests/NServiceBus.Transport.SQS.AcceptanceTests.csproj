@@ -16,7 +16,7 @@
     <PackageReference Include="AWSSDK.SQS" Version="3.7.100.27" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.100.26" />
     <PackageReference Include="GitHubActionsTestLogger" Version="2.0.1" />
-    <PackageReference Include="NServiceBus.AcceptanceTests.Sources" Version="8.0.0" GeneratePathProperty="true" />
+    <PackageReference Include="NServiceBus.AcceptanceTests.Sources" Version="8.0.1" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.4.0" />
     <PackageReference Include="NUnit" Version="3.13.3" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.3.1" />
