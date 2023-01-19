@@ -12,6 +12,7 @@
     <PackageReference Include="AWSSDK.S3" Version="3.7.7.25" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.3.32" />
     <PackageReference Include="AWSSDK.SQS" Version="3.7.2.29" />
+    <PackageReference Include="BitFaster.Caching" Version="2.1.1" />
     <PackageReference Include="GitHubActionsTestLogger" Version="1.4.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.1" />
     <PackageReference Include="NUnit" Version="3.13.3" />
