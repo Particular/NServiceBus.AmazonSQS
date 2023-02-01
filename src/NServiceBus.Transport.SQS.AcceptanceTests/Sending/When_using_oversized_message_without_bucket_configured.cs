@@ -5,7 +5,7 @@
     using EndpointTemplates;
     using NUnit.Framework;
 
-    public class Sending_oversized_message_without_bucket_configured : NServiceBusAcceptanceTest
+    public class When_using_oversized_message_without_bucket_configured : NServiceBusAcceptanceTest
     {
         [Test]
         public void Should_fail()
@@ -33,13 +33,11 @@
 
         public class Endpoint : EndpointConfigurationBuilder
         {
-            public Endpoint()
-            {
+            public Endpoint() =>
                 EndpointSetup<DefaultServer>(c =>
                 {
                     c.ConfigureSqsTransport().S3 = null; //Disable S3
                 });
-            }
         }
 
         public class MyMessageWithLargePayload : ICommand

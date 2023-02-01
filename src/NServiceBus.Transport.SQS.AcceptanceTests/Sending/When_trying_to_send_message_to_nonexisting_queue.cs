@@ -6,7 +6,7 @@
     using EndpointTemplates;
     using NUnit.Framework;
 
-    public class Sending_message_to_nonexisting_queue : NServiceBusAcceptanceTest
+    public class When_trying_to_send_message_to_nonexisting_queue : NServiceBusAcceptanceTest
     {
         [Test]
         public void Should_throw_exception_with_queue_name()
@@ -15,13 +15,13 @@
             var messageId = Guid.NewGuid();
             var exception = Assert.ThrowsAsync<QueueDoesNotExistException>(async () =>
             {
-                var result = await Scenario.Define<Context>(c =>
-                {
-                    c.MessageId = messageId;
-                })
+                await Scenario.Define<Context>(c =>
+                    {
+                        c.MessageId = messageId;
+                    })
                     .WithEndpoint<Endpoint>(b => b
                         .When(session => session.Send(destination, new MyMessage())))
-                        .Done(context => true)
+                    .Done(context => true)
                     .Run();
             });
 
@@ -35,13 +35,8 @@
 
         public class Endpoint : EndpointConfigurationBuilder
         {
-            public Endpoint()
-            {
-                EndpointSetup<DefaultServer>(c =>
-                {
-                    c.ConfigureSqsTransport().S3 = null; //Disable S3                    
-                });
-            }
+            public Endpoint() =>
+                EndpointSetup<DefaultServer>();
         }
 
         public class MyMessage : ICommand

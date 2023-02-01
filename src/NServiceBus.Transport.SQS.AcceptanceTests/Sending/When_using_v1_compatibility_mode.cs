@@ -6,17 +6,15 @@
     using EndpointTemplates;
     using NUnit.Framework;
 
-    public class Sending_in_compatibility_mode : NServiceBusAcceptanceTest
+    public class When_using_v1_compatibility_mode : NServiceBusAcceptanceTest
     {
         [Test]
-        public async Task Should_receive_message()
-        {
+        public async Task Should_receive_message() =>
             await Scenario.Define<Context>()
                 .WithEndpoint<Sender>(b => b.When(session => session.Send(new Message())))
                 .WithEndpoint<Receiver>()
                 .Done(c => c.Received)
                 .Run();
-        }
 
         public class Context : ScenarioContext
         {
@@ -34,8 +32,6 @@
 
             public class Handler : IHandleMessages<Reply>
             {
-                readonly Context testContext;
-
                 public Handler(Context testContext)
                     => this.testContext = testContext;
 
@@ -45,6 +41,8 @@
 
                     return Task.CompletedTask;
                 }
+
+                readonly Context testContext;
             }
         }
 
