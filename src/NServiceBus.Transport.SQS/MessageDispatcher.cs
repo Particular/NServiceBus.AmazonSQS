@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.Transport.SQS
+namespace NServiceBus.Transport.SQS
 {
     using System;
     using System.Collections.Generic;
@@ -367,7 +367,7 @@
                 try
                 {
                     sqsPreparedMessage.QueueUrl = await queueCache.GetQueueUrl(sqsPreparedMessage.Destination)
-                    .ConfigureAwait(false);
+                        .ConfigureAwait(false);
                 }
                 catch (QueueDoesNotExistException ex)
                 {
