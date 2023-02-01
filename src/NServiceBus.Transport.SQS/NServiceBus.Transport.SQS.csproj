@@ -23,4 +23,8 @@
     <PackageReference Include="Particular.Packaging" Version="2.3.0" PrivateAssets="All" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+    <PackageReference Include="System.Text.Json" Version="7.0.1" />
+  </ItemGroup>
+
 </Project>
