@@ -5,16 +5,18 @@
     using System.Text.Json;
     using System.Text.Json.Serialization;
 
-    class ReducedPayloadSerializerConverter : JsonConverter<TransportMessage>
+    sealed class ReducedPayloadSerializerConverter : JsonConverter<TransportMessage>
     {
-        static readonly JsonConverter<TransportMessage> DefaultConverter =
-            (JsonConverter<TransportMessage>)JsonSerializerOptions.Default.GetConverter(typeof(TransportMessage));
+        static readonly JsonSerializerOptions TransportMessageSerializerOptions = new()
+        {
+            TypeInfoResolver = TransportMessageSerializerContext.Default
+        };
 
         static readonly JsonConverter<Dictionary<string, string>> DefaultDictionaryConverter =
             (JsonConverter<Dictionary<string, string>>)JsonSerializerOptions.Default.GetConverter(typeof(Dictionary<string, string>));
         public override TransportMessage Read(ref Utf8JsonReader reader, Type typeToConvert,
             JsonSerializerOptions options) =>
-            DefaultConverter.Read(ref reader, typeToConvert, options);
+            JsonSerializer.Deserialize<TransportMessage>(ref reader, TransportMessageSerializerOptions);
 
         public override void Write(Utf8JsonWriter writer, TransportMessage value, JsonSerializerOptions options)
         {
