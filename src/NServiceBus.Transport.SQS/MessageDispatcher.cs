@@ -363,8 +363,16 @@
             else
             {
                 sqsPreparedMessage.Destination = transportOperation.Destination;
-                sqsPreparedMessage.QueueUrl = await queueCache.GetQueueUrl(sqsPreparedMessage.Destination)
+
+                try
+                {
+                    sqsPreparedMessage.QueueUrl = await queueCache.GetQueueUrl(sqsPreparedMessage.Destination)
                     .ConfigureAwait(false);
+                }
+                catch (QueueDoesNotExistException ex)
+                {
+                    throw new QueueDoesNotExistException($"Queue `{sqsPreparedMessage.Destination}` doesn't exist", ex);
+                }
 
                 if (delaySeconds > 0)
                 {
