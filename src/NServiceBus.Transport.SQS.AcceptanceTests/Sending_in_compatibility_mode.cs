@@ -25,46 +25,37 @@
 
         public class Sender : EndpointConfigurationBuilder
         {
-            public Sender()
-            {
+            public Sender() =>
                 EndpointSetup<DefaultServer>(builder =>
                 {
                     builder.ConfigureRouting().RouteToEndpoint(typeof(Message), typeof(Receiver));
-                    builder.ConfigureSqsTransport();
+                    builder.ConfigureSqsTransport().EnableV1CompatibilityMode = true;
                 });
-            }
 
             public class Handler : IHandleMessages<Reply>
             {
-                Context testContext;
+                readonly Context testContext;
 
                 public Handler(Context testContext)
-                {
-                    this.testContext = testContext;
-                }
+                    => this.testContext = testContext;
 
                 public Task Handle(Reply message, IMessageHandlerContext context)
                 {
                     testContext.Received = true;
 
-                    return Task.FromResult(0);
+                    return Task.CompletedTask;
                 }
             }
         }
 
         public class Receiver : EndpointConfigurationBuilder
         {
-            public Receiver()
-            {
-                EndpointSetup<DefaultServer>();
-            }
+            public Receiver() => EndpointSetup<DefaultServer>();
 
             public class MyMessageHandler : IHandleMessages<Message>
             {
                 public Task Handle(Message message, IMessageHandlerContext context)
-                {
-                    return context.Reply(new Reply());
-                }
+                    => context.Reply(new Reply());
             }
 
         }
