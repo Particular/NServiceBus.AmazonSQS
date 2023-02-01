@@ -5,6 +5,12 @@
     using System.Text.Json;
     using System.Text.Json.Serialization;
 
+    /// <summary>
+    /// This serializer is only used to make sure we are not double storing TimeToBeReceived and ReplyAddress both in
+    /// the headers and on the transport message wrapper to save space on the SQS message body.
+    /// The read method is implemented but never used because only the dispatcher uses it to serialize the transport
+    /// message.
+    /// </summary>
     sealed class ReducedPayloadSerializerConverter : JsonConverter<TransportMessage>
     {
         static readonly JsonSerializerOptions TransportMessageSerializerOptions = new()
