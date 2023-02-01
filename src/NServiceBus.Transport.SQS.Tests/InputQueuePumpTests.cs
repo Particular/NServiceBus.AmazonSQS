@@ -3,6 +3,7 @@ namespace NServiceBus.Transport.SQS.Tests
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.SQS.Model;
@@ -108,7 +109,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 return Task.FromResult(0);
             });
 
-            var json = SimpleJson.SerializeObject(new TransportMessage
+            var json = JsonSerializer.Serialize(new TransportMessage
             {
                 Headers = new Dictionary<string, string>
                 {
@@ -154,7 +155,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 return Task.FromResult(0);
             });
 
-            var json = SimpleJson.SerializeObject(new TransportMessage
+            var json = JsonSerializer.Serialize(new TransportMessage
             {
                 Headers = new Dictionary<string, string>
                 {

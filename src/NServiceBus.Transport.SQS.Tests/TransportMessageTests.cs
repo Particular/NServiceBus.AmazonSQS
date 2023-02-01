@@ -2,10 +2,10 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Text.Json;
     using NServiceBus;
     using NUnit.Framework;
     using Performance.TimeToBeReceived;
-    using SimpleJson;
     using SQS;
     using Transport;
 
@@ -80,7 +80,7 @@
             var outgoingMessage = new OutgoingMessage(string.Empty, new Dictionary<string, string>
             {
                 {Headers.ReplyToAddress, ExpectedReplyToAddress}
-            }, new byte[0]);
+            }, Array.Empty<byte>());
 
             var transportMessage = new TransportMessage(outgoingMessage, new DispatchProperties());
 
@@ -125,14 +125,14 @@
         [Test]
         public void Can_be_built_from_serialized_v1_message()
         {
-            var json = SimpleJson.SerializeObject(new TransportMessage
+            var json = JsonSerializer.Serialize(new
             {
                 Headers = new Dictionary<string, string>
                 {
                     {Headers.MessageId, Guid.Empty.ToString()}
                 },
                 Body = "empty message",
-                S3BodyKey = null,
+                S3BodyKey = (string)null,
                 TimeToBeReceived = ExpectedTtbr.ToString(),
                 ReplyToAddress = new TransportMessage.Address
                 {
@@ -141,7 +141,7 @@
                 }
             });
 
-            var transportMessage = SimpleJson.DeserializeObject<TransportMessage>(json);
+            var transportMessage = JsonSerializer.Deserialize<TransportMessage>(json);
 
             Assert.IsTrue(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), "TimeToBeReceived header is missing");
             Assert.AreEqual(ExpectedTtbr.ToString(), transportMessage.Headers[TransportHeaders.TimeToBeReceived], "TimeToBeReceived header does not match expected value.");
@@ -152,7 +152,7 @@
         [Test]
         public void Can_be_built_from_serialized_message()
         {
-            var json = SimpleJson.SerializeObject(new
+            var json = JsonSerializer.Serialize(new
             {
                 Headers = new Dictionary<string, string>
                 {
@@ -162,7 +162,7 @@
                 S3BodyKey = (string)null
             });
 
-            var transportMessage = SimpleJson.DeserializeObject<TransportMessage>(json);
+            var transportMessage = JsonSerializer.Deserialize<TransportMessage>(json);
 
             Assert.IsFalse(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), "TimeToBeReceived header was found");
             Assert.AreEqual(TimeSpan.MaxValue.ToString(), transportMessage.TimeToBeReceived, "TimeToBeReceived does not match expected value.");
