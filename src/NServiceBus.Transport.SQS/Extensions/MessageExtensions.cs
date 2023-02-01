@@ -15,7 +15,14 @@
         {
             if (string.IsNullOrEmpty(transportMessage.S3BodyKey))
             {
-                return Convert.FromBase64String(transportMessage.Body);
+                if (transportMessage.Body == TransportMessage.EmptyMessage)
+                {
+                    return System.Text.Encoding.Default.GetBytes("");
+                }
+                else
+                {
+                    return Convert.FromBase64String(transportMessage.Body);
+                }
             }
 
             if (s3Settings == null)
