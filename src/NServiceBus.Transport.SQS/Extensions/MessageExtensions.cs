@@ -1,6 +1,9 @@
-﻿namespace NServiceBus.Transport.SQS.Extensions
+﻿#nullable enable
+
+namespace NServiceBus.Transport.SQS.Extensions
 {
     using System;
+    using System.Buffers;
     using System.Globalization;
     using System.IO;
     using System.Text;
@@ -11,12 +14,12 @@
 
     static class MessageExtensions
     {
-        public static async Task<byte[]> RetrieveBody(this TransportMessage transportMessage, string messageId, S3Settings s3Settings,
+        public static async Task<(ReadOnlyMemory<byte> MessageBody, byte[]? MessageBodyBuffer)> RetrieveBody(this TransportMessage transportMessage, string messageId, S3Settings s3Settings, ArrayPool<byte> arrayPool,
             CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(transportMessage.S3BodyKey))
             {
-                return ConvertBody(transportMessage.Body);
+                return ConvertBody(transportMessage.Body, arrayPool);
             }
 
             if (s3Settings == null)
@@ -35,35 +38,38 @@
             var s3GetResponse = await s3Settings.S3Client.GetObjectAsync(getObjectRequest, cancellationToken)
                 .ConfigureAwait(false);
 
-            using (var memoryStream = new MemoryStream())
-            {
-                await s3GetResponse.ResponseStream.CopyToAsync(memoryStream, 81920, cancellationToken).ConfigureAwait(false);
-                return memoryStream.ToArray();
-            }
+            int contentLength = (int)s3GetResponse.ContentLength;
+            var buffer = arrayPool.Rent(contentLength);
+            using var memoryStream = new MemoryStream(buffer);
+            await s3GetResponse.ResponseStream.CopyToAsync(memoryStream, 81920, cancellationToken).ConfigureAwait(false);
+            return (buffer.AsMemory(0, contentLength), buffer);
         }
 
-        public static byte[] ConvertBody(string body)
+        static (ReadOnlyMemory<byte> MessageBody, byte[]? MessageBodyBuffer) ConvertBody(string body, ArrayPool<byte> arrayPool)
         {
-
+            var encoding = Encoding.Unicode;
 #if NETFRAMEWORK
             try
             {
-                return Convert.FromBase64String(body);
+                return (Convert.FromBase64String(body), null);
             }
             catch (FormatException)
             {
-                return Encoding.Default.GetBytes(body);
+                var length = encoding.GetMaxByteCount(body.Length);
+                var buffer = arrayPool.Rent(length);
+                var writtenBytes = encoding.GetBytes(body, 0, body.Length, buffer, 0);
+                return (buffer.AsMemory(0, writtenBytes), buffer);
             }
 #else
-            var convertedBody = new Span<byte>(new byte[1000]);
-            if (Convert.TryFromBase64String(body, convertedBody, out var writtenBytes))
+            var length = encoding.GetMaxByteCount(body.Length);
+            var buffer = arrayPool.Rent(length);
+            if (Convert.TryFromBase64String(body, buffer, out var writtenBytes))
             {
-                return convertedBody.Slice(0, writtenBytes).ToArray();
+                return (buffer.AsMemory(0, writtenBytes), buffer);
             }
-            else
-            {
-                return Encoding.Default.GetBytes(body);
-            }
+
+            writtenBytes = encoding.GetBytes(body, buffer);
+            return (buffer.AsMemory(0, writtenBytes), buffer);
 #endif
         }
         public static DateTimeOffset GetAdjustedDateTimeFromServerSetAttributes(this Message message, string attributeName, TimeSpan clockOffset)
