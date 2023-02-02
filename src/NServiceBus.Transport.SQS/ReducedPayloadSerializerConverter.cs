@@ -13,16 +13,11 @@
     /// </summary>
     sealed class ReducedPayloadSerializerConverter : JsonConverter<TransportMessage>
     {
-        static readonly JsonSerializerOptions TransportMessageSerializerOptions = new()
-        {
-            TypeInfoResolver = TransportMessageSerializerContext.Default
-        };
-
         static readonly JsonConverter<Dictionary<string, string>> DefaultDictionaryConverter =
             (JsonConverter<Dictionary<string, string>>)JsonSerializerOptions.Default.GetConverter(typeof(Dictionary<string, string>));
         public override TransportMessage Read(ref Utf8JsonReader reader, Type typeToConvert,
             JsonSerializerOptions options) =>
-            JsonSerializer.Deserialize<TransportMessage>(ref reader, TransportMessageSerializerOptions);
+            throw new NotImplementedException("The converter should only be used to serialize outgoing transport messages but never to read incoming transport messages.");
 
         public override void Write(Utf8JsonWriter writer, TransportMessage value, JsonSerializerOptions options)
         {
