@@ -3,6 +3,7 @@
     using System;
     using System.Globalization;
     using System.IO;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.S3.Model;
@@ -15,7 +16,7 @@
         {
             if (string.IsNullOrEmpty(transportMessage.S3BodyKey))
             {
-                return Convert.FromBase64String(transportMessage.Body);
+                return ConvertBody(transportMessage.Body);
             }
 
             if (s3Settings == null)
@@ -41,6 +42,30 @@
             }
         }
 
+        public static byte[] ConvertBody(string body)
+        {
+
+#if NETFRAMEWORK
+            try
+            {
+                return Convert.FromBase64String(body);
+            }
+            catch (FormatException)
+            {
+                return Encoding.Default.GetBytes(body);
+            }
+#else
+            var convertedBody = new Span<byte>(new byte[1000]);
+            if (Convert.TryFromBase64String(body, convertedBody, out var writtenBytes))
+            {
+                return convertedBody.Slice(0, writtenBytes).ToArray();
+            }
+            else
+            {
+                return Encoding.Default.GetBytes(body);
+            }
+#endif
+        }
         public static DateTimeOffset GetAdjustedDateTimeFromServerSetAttributes(this Message message, string attributeName, TimeSpan clockOffset)
         {
             var result = UnixEpoch.AddMilliseconds(long.Parse(message.Attributes[attributeName], NumberFormatInfo.InvariantInfo));
