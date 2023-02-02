@@ -10,7 +10,7 @@
     using EndpointTemplates;
     using NUnit.Framework;
 
-    public class When_receiving_a_native_message_thats_not_encoded : NServiceBusAcceptanceTest
+    public class When_receiving_a_native_message_without_encoding : NServiceBusAcceptanceTest
     {
         static readonly string MessageToSend = new XDocument(new XElement("Message", new XElement("ThisIsTheMessage", "Hello!"))).ToString();
 
@@ -20,10 +20,17 @@
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<Receiver>(c => c.When(async _ =>
                 {
-                    await NativeEndpoint.SendTo<Receiver>(new Dictionary<string, MessageAttributeValue>
-                    {
-                        {"MessageTypeFullName", new MessageAttributeValue {DataType = "String", StringValue = typeof(Message).FullName}}
-                    }, MessageToSend, false);
+                    await NativeEndpoint.SendTo<Receiver>(
+                        new Dictionary<string, MessageAttributeValue>
+                        {
+                            {
+                                "MessageTypeFullName",
+                                new MessageAttributeValue
+                                {
+                                    DataType = "String", StringValue = typeof(Message).FullName
+                                }
+                            }
+                        }, MessageToSend, false);
                 }))
                 .Done(c => c.MessageReceived != null)
                 .Run();
@@ -39,11 +46,18 @@
                 {
                     var key = Guid.NewGuid().ToString();
                     await UploadMessageBodyToS3(key);
-                    await NativeEndpoint.SendTo<Receiver>(new Dictionary<string, MessageAttributeValue>
-                    {
-                        {"MessageTypeFullName", new MessageAttributeValue {DataType = "String", StringValue = typeof(Message).FullName}},
-                        {"S3BodyKey", new MessageAttributeValue {DataType = "String", StringValue = key}},
-                    }, MessageToSend, false);
+                    await NativeEndpoint.SendTo<Receiver>(
+                        new Dictionary<string, MessageAttributeValue>
+                        {
+                            {
+                                "MessageTypeFullName",
+                                new MessageAttributeValue
+                                {
+                                    DataType = "String", StringValue = typeof(Message).FullName
+                                }
+                            },
+                            { "S3BodyKey", new MessageAttributeValue { DataType = "String", StringValue = key } },
+                        }, MessageToSend, false);
                 }))
                 .Done(c => c.MessageReceived != null)
                 .Run();
@@ -66,20 +80,11 @@
 
         public class Receiver : EndpointConfigurationBuilder
         {
-            public Receiver()
-            {
-                EndpointSetup<DefaultServer>(c =>
-                {
-                    c.ConfigureSqsTransport().S3 = new S3Settings(ConfigureEndpointSqsTransport.S3BucketName, ConfigureEndpointSqsTransport.S3Prefix, ConfigureEndpointSqsTransport.CreateS3Client());
-                });
-            }
+            public Receiver() => EndpointSetup<DefaultServer>();
 
             class MyHandler : IHandleMessages<Message>
             {
-                public MyHandler(Context testContext)
-                {
-                    this.testContext = testContext;
-                }
+                public MyHandler(Context testContext) => this.testContext = testContext;
 
                 public Task Handle(Message message, IMessageHandlerContext context)
                 {
@@ -88,7 +93,7 @@
                     return Task.CompletedTask;
                 }
 
-                Context testContext;
+                readonly Context testContext;
             }
         }
 
@@ -99,9 +104,7 @@
 
         class Context : ScenarioContext
         {
-            public string ErrorQueueAddress { get; set; }
             public string MessageReceived { get; set; }
-            public bool MessageMovedToPoisonQueue { get; set; }
         }
     }
 }

@@ -12,7 +12,7 @@
     using EndpointTemplates;
     using NUnit.Framework;
 
-    public class When_receiving_a_native_message : NServiceBusAcceptanceTest
+    public class When_receiving_a_native_message_with_encoding : NServiceBusAcceptanceTest
     {
         static readonly string MessageToSend = new XDocument(new XElement("Message", new XElement("ThisIsTheMessage", "Hello!"))).ToString();
 
@@ -22,10 +22,17 @@
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<Receiver>(c => c.When(async _ =>
                 {
-                    await NativeEndpoint.SendTo<Receiver>(new Dictionary<string, MessageAttributeValue>
-                    {
-                        {"MessageTypeFullName", new MessageAttributeValue {DataType = "String", StringValue = typeof(Message).FullName}}
-                    }, MessageToSend);
+                    await NativeEndpoint.SendTo<Receiver>(
+                        new Dictionary<string, MessageAttributeValue>
+                        {
+                            {
+                                "MessageTypeFullName",
+                                new MessageAttributeValue
+                                {
+                                    DataType = "String", StringValue = typeof(Message).FullName
+                                }
+                            }
+                        }, MessageToSend);
                 }))
                 .Done(c => c.MessageReceived != null)
                 .Run();
@@ -52,7 +59,11 @@
                             {
                                 // unfortunately only the message id attribute is preserved when moving to the poison queue
                                 {
-                                    Headers.MessageId, new MessageAttributeValue {DataType = "String", StringValue = ctx.TestRunId.ToString()}
+                                    Headers.MessageId,
+                                    new MessageAttributeValue
+                                    {
+                                        DataType = "String", StringValue = ctx.TestRunId.ToString()
+                                    }
                                 }
                             }, MessageToSend);
                             _ = NativeEndpoint.ConsumePoisonQueue(ctx.TestRunId, ctx.ErrorQueueAddress, _ =>
@@ -78,11 +89,18 @@
                 {
                     var key = Guid.NewGuid().ToString();
                     await UploadMessageBodyToS3(key);
-                    await NativeEndpoint.SendTo<Receiver>(new Dictionary<string, MessageAttributeValue>
-                    {
-                        {"MessageTypeFullName", new MessageAttributeValue {DataType = "String", StringValue = typeof(Message).FullName}},
-                        {"S3BodyKey", new MessageAttributeValue {DataType = "String", StringValue = key}},
-                    }, MessageToSend);
+                    await NativeEndpoint.SendTo<Receiver>(
+                        new Dictionary<string, MessageAttributeValue>
+                        {
+                            {
+                                "MessageTypeFullName",
+                                new MessageAttributeValue
+                                {
+                                    DataType = "String", StringValue = typeof(Message).FullName
+                                }
+                            },
+                            { "S3BodyKey", new MessageAttributeValue { DataType = "String", StringValue = key } },
+                        }, MessageToSend);
                 }))
                 .Done(c => c.MessageReceived != null)
                 .Run();
@@ -105,20 +123,11 @@
 
         public class Receiver : EndpointConfigurationBuilder
         {
-            public Receiver()
-            {
-                EndpointSetup<DefaultServer>(c =>
-                {
-                    c.ConfigureSqsTransport().S3 = new S3Settings(ConfigureEndpointSqsTransport.S3BucketName, ConfigureEndpointSqsTransport.S3Prefix, ConfigureEndpointSqsTransport.CreateS3Client());
-                });
-            }
+            public Receiver() => EndpointSetup<DefaultServer>();
 
             class MyHandler : IHandleMessages<Message>
             {
-                public MyHandler(Context testContext)
-                {
-                    this.testContext = testContext;
-                }
+                public MyHandler(Context testContext) => this.testContext = testContext;
 
                 public Task Handle(Message message, IMessageHandlerContext context)
                 {
@@ -127,7 +136,7 @@
                     return Task.CompletedTask;
                 }
 
-                Context testContext;
+                readonly Context testContext;
             }
         }
 
