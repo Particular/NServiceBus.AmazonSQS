@@ -34,11 +34,15 @@ namespace NServiceBus.Transport.SQS
             // currently we are not doing fanout but better safe than sorry later
             var policyStatementsToBeSettled = new ConcurrentBag<PolicyStatement>();
 
+            // The number of elements is a best guess assuming that most endpoints don't have complex event type mappings
+            // if they have the list will need to grow but that's probably OK.
+            var setupSubscriptionTasks = new List<Task>(eventTypes.Length);
             foreach (var eventType in eventTypes)
             {
-                //TODO: Can we do this concurrently?
-                await SetupTypeSubscriptions(eventType, queueUrl, policyStatementsToBeSettled, cancellationToken).ConfigureAwait(false);
+                SetupTypeSubscriptions(eventType, queueUrl, policyStatementsToBeSettled, setupSubscriptionTasks, cancellationToken);
             }
+            await Task.WhenAll(setupSubscriptionTasks).ConfigureAwait(false);
+
             await SettlePolicy(queueUrl, policyStatementsToBeSettled, cancellationToken).ConfigureAwait(false);
         }
 
@@ -88,43 +92,55 @@ namespace NServiceBus.Transport.SQS
             MarkTypeNotConfigured(metadata.MessageType);
         }
 
-        async Task SetupTypeSubscriptions(MessageMetadata metadata, string queueUrl, ConcurrentBag<PolicyStatement> policyStatementsToBeSettled, CancellationToken cancellationToken)
+        void SetupTypeSubscriptions(MessageMetadata metadata, string queueUrl,
+            ConcurrentBag<PolicyStatement> policyStatementsToBeSettled, List<Task> subscriptionTasks,
+            CancellationToken cancellationToken)
         {
             var mappedTopicsNames = topicCache.CustomEventToTopicsMappings.GetMappedTopicsNames(metadata.MessageType);
             foreach (var mappedTopicName in mappedTopicsNames)
             {
                 //we skip the topic name generation assuming the topic name is already good
-                Logger.Debug($"Creating topic/subscription to '{mappedTopicName}' for queue '{queueName}'");
-                await CreateTopicAndSubscribe(mappedTopicName, queueUrl, policyStatementsToBeSettled, cancellationToken).ConfigureAwait(false);
-                Logger.Debug($"Created topic/subscription to '{mappedTopicName}' for queue '{queueName}'");
+                subscriptionTasks.Add(CreateTopicAndSubscribe(mappedTopicName, queueUrl, policyStatementsToBeSettled, cancellationToken));
             }
 
             var mappedTypes = topicCache.CustomEventToEventsMappings.GetMappedTypes(metadata.MessageType);
             foreach (var mappedType in mappedTypes)
             {
                 // doesn't need to be cached since we never publish to it
-                Logger.Debug($"Creating topic/subscription for '{mappedType.FullName}' for queue '{queueName}'");
-                await CreateTopicAndSubscribe(mappedType, queueUrl, policyStatementsToBeSettled, cancellationToken).ConfigureAwait(false);
-                Logger.Debug($"Created topic/subscription for '{mappedType.FullName}' for queue '{queueName}'");
+                subscriptionTasks.Add(CreateTopicAndSubscribe(mappedType, queueUrl, policyStatementsToBeSettled, cancellationToken));
             }
 
-            if (IsTypeTopologyKnownConfigured(metadata.MessageType))
+            async Task CreateTopicAndSubscriptionForTheHandledMessageType()
             {
-                Logger.Debug($"Skipped subscription for '{metadata.MessageType.FullName}' for queue '{queueName}' because it is already configured");
-                return;
+                if (IsTypeTopologyKnownConfigured(metadata.MessageType))
+                {
+                    if (Logger.IsDebugEnabled)
+                    {
+                        Logger.Debug($"Skipped subscription for '{metadata.MessageType.FullName}' for queue '{queueName}' because it is already configured");
+                    }
+
+                    return;
+                }
+
+                await CreateTopicAndSubscribe(metadata.MessageType, queueUrl, policyStatementsToBeSettled, cancellationToken).ConfigureAwait(false);
+                MarkTypeConfigured(metadata.MessageType);
             }
 
-            Logger.Debug($"Creating topic/subscription for '{metadata.MessageType.FullName}' for queue '{queueName}'");
-            await CreateTopicAndSubscribe(metadata.MessageType, queueUrl, policyStatementsToBeSettled, cancellationToken).ConfigureAwait(false);
-            Logger.Debug($"Created topic/subscription for '{metadata.MessageType.FullName}' for queue '{queueName}'");
-            MarkTypeConfigured(metadata.MessageType);
+            subscriptionTasks.Add(CreateTopicAndSubscriptionForTheHandledMessageType());
         }
 
         async Task CreateTopicAndSubscribe(string topicName, string queueUrl, ConcurrentBag<PolicyStatement> policyStatementsToBeSettled, CancellationToken cancellationToken)
         {
-            Logger.Debug($"Getting or creating topic '{topicName}' for queue '{queueName}");
+            if (Logger.IsDebugEnabled)
+            {
+                Logger.Debug($"Getting or creating topic '{topicName}' for queue '{queueName}");
+            }
             var createTopicResponse = await snsClient.CreateTopicAsync(topicName, cancellationToken).ConfigureAwait(false);
-            Logger.Debug($"Got or created topic '{topicName}' with arn '{createTopicResponse.TopicArn}' for queue '{queueName}");
+
+            if (Logger.IsDebugEnabled)
+            {
+                Logger.Debug($"Got or created topic '{topicName}' with arn '{createTopicResponse.TopicArn}' for queue '{queueName}");
+            }
 
             await SubscribeTo(createTopicResponse.TopicArn, topicName, queueUrl, policyStatementsToBeSettled, cancellationToken).ConfigureAwait(false);
         }
@@ -132,9 +148,17 @@ namespace NServiceBus.Transport.SQS
         async Task CreateTopicAndSubscribe(Type eventType, string queueUrl, ConcurrentBag<PolicyStatement> policyStatementsToBeSettled, CancellationToken cancellationToken)
         {
             var topicName = topicCache.GetTopicName(eventType);
-            Logger.Debug($"Getting or creating topic '{topicName}' for queue '{queueName}");
+
+            if (Logger.IsDebugEnabled)
+            {
+                Logger.Debug($"Getting or creating topic '{topicName}' for queue '{queueName}");
+            }
             var createTopicResponse = await snsClient.CreateTopicAsync(topicName, cancellationToken).ConfigureAwait(false);
-            Logger.Debug($"Got or created topic '{topicName}' with arn '{createTopicResponse.TopicArn}' for queue '{queueName}");
+
+            if (Logger.IsDebugEnabled)
+            {
+                Logger.Debug($"Got or created topic '{topicName}' with arn '{createTopicResponse.TopicArn}' for queue '{queueName}");
+            }
 
             await SubscribeTo(createTopicResponse.TopicArn, topicName, queueUrl, policyStatementsToBeSettled, cancellationToken).ConfigureAwait(false);
         }
@@ -253,15 +277,9 @@ namespace NServiceBus.Transport.SQS
             return Task.Delay(millisecondsDelay, cancellationToken);
         }
 
-        void MarkTypeConfigured(Type eventType)
-        {
-            typeTopologyConfiguredSet[eventType] = null;
-        }
+        void MarkTypeConfigured(Type eventType) => typeTopologyConfiguredSet.AddOrUpdate(eventType, static _ => null, static (_,_) => null);
 
-        void MarkTypeNotConfigured(Type eventType)
-        {
-            typeTopologyConfiguredSet.TryRemove(eventType, out _);
-        }
+        void MarkTypeNotConfigured(Type eventType) => typeTopologyConfiguredSet.TryRemove(eventType, out _);
 
         bool IsTypeTopologyKnownConfigured(Type eventType) => typeTopologyConfiguredSet.ContainsKey(eventType);
 
