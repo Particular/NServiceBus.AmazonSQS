@@ -52,13 +52,6 @@ jobs:
           name: NuGet packages
           path: nugets/
           retention-days: 7
-      - name: Set fixed test prefix
-        shell: pwsh
-        run: |
-          $os = '${{ matrix.os.name }}'
-          $framework = '${{ matrix.framework }}'
-          # Value like 'Fixed-Win-net6-0'
-          echo "NServiceBus_AmazonSQS_AT_CustomFixedNamePrefix=Fixed_$($os.substring(0,3))_$($framework.replace('.','_'))" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
       - name: Run tests
         uses: Particular/run-tests-action@v1.4.0
         with:
