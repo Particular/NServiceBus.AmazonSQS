@@ -15,9 +15,9 @@
         {
             if (string.IsNullOrEmpty(transportMessage.S3BodyKey))
             {
-                if (transportMessage.Body == TransportMessage.EmptyMessage)
+                if (string.IsNullOrEmpty(transportMessage.Body))
                 {
-                    return System.Text.Encoding.Default.GetBytes("");
+                    return Array.Empty<byte>();
                 }
                 else
                 {

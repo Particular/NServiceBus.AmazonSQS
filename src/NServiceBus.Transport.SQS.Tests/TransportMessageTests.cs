@@ -133,7 +133,7 @@
                 {
                     {Headers.MessageId, Guid.Empty.ToString()}
                 },
-                Body = TransportMessage.EmptyMessage,
+                Body = null,
                 S3BodyKey = (string)null,
                 TimeToBeReceived = ExpectedTtbr.ToString(),
                 ReplyToAddress = new TransportMessage.Address
@@ -160,7 +160,7 @@
                 {
                     {Headers.MessageId, Guid.Empty.ToString()}
                 },
-                Body = TransportMessage.EmptyMessage,
+                Body = (string)null,
                 S3BodyKey = (string)null
             });
 
@@ -173,7 +173,7 @@
         }
 
         [Test]
-        public async Task Empty_body_is_received_as_empty()
+        public async Task Empty_body_is_received_ok()
         {
             var messageId = Guid.NewGuid().ToString();
             var body = Array.Empty<byte>();
@@ -184,8 +184,21 @@
             var receivedBodyArray = await transportMessage.RetrieveBody(messageId, null);
             var receivedBody = System.Text.Encoding.UTF8.GetString(receivedBodyArray);
 
-            Assert.AreEqual(TransportMessage.EmptyMessage, transportMessage.Body);
             Assert.AreEqual(body, receivedBodyArray);
+            Assert.IsTrue(string.IsNullOrEmpty(receivedBody));
+        }
+
+        [Test]
+        public async Task Null_body_is_received_ok()
+        {
+            var messageId = Guid.NewGuid().ToString();
+            var outgoingMessage = new OutgoingMessage(messageId, new Dictionary<string, string>(), null);
+
+            var transportMessage = new TransportMessage(outgoingMessage, new DispatchProperties());
+
+            var receivedBodyArray = await transportMessage.RetrieveBody(messageId, null);
+            var receivedBody = System.Text.Encoding.UTF8.GetString(receivedBodyArray);
+
             Assert.IsTrue(string.IsNullOrEmpty(receivedBody));
         }
 

@@ -6,7 +6,6 @@
 
     class TransportMessage
     {
-        public const string EmptyMessage = "empty message";
         // Empty constructor required for deserialization.
         public TransportMessage()
         {
@@ -29,9 +28,9 @@
             }
 
 #if NETFRAMEWORK
-            Body = outgoingMessage.Body.Length != 0 ? Convert.ToBase64String(outgoingMessage.Body.ToArray()) : EmptyMessage;
+            Body = outgoingMessage.Body.Length != 0 ? Convert.ToBase64String(outgoingMessage.Body.ToArray()) : null;
 #else
-            Body = outgoingMessage.Body.Length != 0 ? Convert.ToBase64String(outgoingMessage.Body.Span) : EmptyMessage;
+            Body = outgoingMessage.Body.Length != 0 ? Convert.ToBase64String(outgoingMessage.Body.Span) : null;
 #endif
         }
 
