@@ -46,10 +46,8 @@ namespace NServiceBus.Transport.SQS
             await SettlePolicy(queueUrl, policyStatementsToBeSettled, cancellationToken).ConfigureAwait(false);
         }
 
-        public async Task Unsubscribe(MessageMetadata message, ContextBag context, CancellationToken cancellationToken = default)
-        {
-            await DeleteSubscription(message, cancellationToken).ConfigureAwait(false);
-        }
+        public Task Unsubscribe(MessageMetadata message, ContextBag context, CancellationToken cancellationToken = default)
+            => DeleteSubscription(message, cancellationToken);
 
         async Task DeleteSubscription(MessageMetadata metadata, CancellationToken cancellationToken)
         {
@@ -93,21 +91,21 @@ namespace NServiceBus.Transport.SQS
         }
 
         void SetupTypeSubscriptions(MessageMetadata metadata, string queueUrl,
-            ConcurrentBag<PolicyStatement> policyStatementsToBeSettled, List<Task> subscriptionTasks,
+            ConcurrentBag<PolicyStatement> policyStatementsToBeSettled, List<Task> setupSubscriptionTasks,
             CancellationToken cancellationToken)
         {
             var mappedTopicsNames = topicCache.CustomEventToTopicsMappings.GetMappedTopicsNames(metadata.MessageType);
             foreach (var mappedTopicName in mappedTopicsNames)
             {
                 //we skip the topic name generation assuming the topic name is already good
-                subscriptionTasks.Add(CreateTopicAndSubscribe(mappedTopicName, queueUrl, policyStatementsToBeSettled, cancellationToken));
+                setupSubscriptionTasks.Add(CreateTopicAndSubscribe(mappedTopicName, queueUrl, policyStatementsToBeSettled, cancellationToken));
             }
 
             var mappedTypes = topicCache.CustomEventToEventsMappings.GetMappedTypes(metadata.MessageType);
             foreach (var mappedType in mappedTypes)
             {
                 // doesn't need to be cached since we never publish to it
-                subscriptionTasks.Add(CreateTopicAndSubscribe(mappedType, queueUrl, policyStatementsToBeSettled, cancellationToken));
+                setupSubscriptionTasks.Add(CreateTopicAndSubscribe(mappedType, queueUrl, policyStatementsToBeSettled, cancellationToken));
             }
 
             async Task CreateTopicAndSubscriptionForTheHandledMessageType()
@@ -126,7 +124,7 @@ namespace NServiceBus.Transport.SQS
                 MarkTypeConfigured(metadata.MessageType);
             }
 
-            subscriptionTasks.Add(CreateTopicAndSubscriptionForTheHandledMessageType());
+            setupSubscriptionTasks.Add(CreateTopicAndSubscriptionForTheHandledMessageType());
         }
 
         async Task CreateTopicAndSubscribe(string topicName, string queueUrl, ConcurrentBag<PolicyStatement> policyStatementsToBeSettled, CancellationToken cancellationToken)
@@ -273,17 +271,16 @@ namespace NServiceBus.Transport.SQS
 
         // only for testing
         protected virtual Task Delay(int millisecondsDelay, CancellationToken cancellationToken = default)
-        {
-            return Task.Delay(millisecondsDelay, cancellationToken);
-        }
+            => Task.Delay(millisecondsDelay, cancellationToken);
 
-        void MarkTypeConfigured(Type eventType) => typeTopologyConfiguredSet.AddOrUpdate(eventType, static _ => null, static (_,_) => null);
+        void MarkTypeConfigured(Type eventType)
+            => typeTopologyConfiguredSet.AddOrUpdate(eventType, static _ => null, static (_, _) => null);
 
         void MarkTypeNotConfigured(Type eventType) => typeTopologyConfiguredSet.TryRemove(eventType, out _);
 
         bool IsTypeTopologyKnownConfigured(Type eventType) => typeTopologyConfiguredSet.ContainsKey(eventType);
 
-        readonly ConcurrentDictionary<Type, string> typeTopologyConfiguredSet = new ConcurrentDictionary<Type, string>();
+        readonly ConcurrentDictionary<Type, string> typeTopologyConfiguredSet = new();
         readonly QueueCache queueCache;
         readonly IAmazonSQS sqsClient;
         readonly IAmazonSimpleNotificationService snsClient;
@@ -291,7 +288,7 @@ namespace NServiceBus.Transport.SQS
         readonly TopicCache topicCache;
         readonly PolicySettings policySettings;
         readonly string topicNamePrefix;
-        readonly SemaphoreSlim subscribeQueueLimiter = new SemaphoreSlim(1);
+        readonly SemaphoreSlim subscribeQueueLimiter = new(1);
 
         static readonly ILog Logger = LogManager.GetLogger(typeof(SubscriptionManager));
     }
