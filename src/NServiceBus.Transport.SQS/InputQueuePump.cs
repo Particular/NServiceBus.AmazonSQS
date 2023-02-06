@@ -1,9 +1,9 @@
-
 namespace NServiceBus.Transport.SQS
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.Runtime;
@@ -15,7 +15,6 @@ namespace NServiceBus.Transport.SQS
     using Extensions;
     using Logging;
     using Settings;
-    using SimpleJson;
     using static TransportHeaders;
 
     class InputQueuePump : IMessageReceiver
@@ -296,7 +295,7 @@ namespace NServiceBus.Transport.SQS
                 }
                 else
                 {
-                    transportMessage = SimpleJson.DeserializeObject<TransportMessage>(receivedMessage.Body);
+                    transportMessage = JsonSerializer.Deserialize<TransportMessage>(receivedMessage.Body, transportMessageSerializerOptions);
                 }
 
                 messageBody = await transportMessage.RetrieveBody(messageId, s3Settings, messageProcessingCancellationToken).ConfigureAwait(false);
@@ -564,6 +563,10 @@ namespace NServiceBus.Transport.SQS
         readonly Action<string, Exception, CancellationToken> criticalErrorAction;
         readonly string awsEndpointUrl;
         readonly IReadOnlySettings coreSettings;
+        readonly JsonSerializerOptions transportMessageSerializerOptions = new()
+        {
+            TypeInfoResolver = TransportMessageSerializerContext.Default
+        };
 
         int numberOfMessagesToFetch;
         ReceiveMessageRequest receiveMessagesRequest;

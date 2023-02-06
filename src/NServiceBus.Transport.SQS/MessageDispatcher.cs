@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.S3.Model;
@@ -11,18 +12,18 @@
     using Amazon.SQS.Model;
     using Logging;
     using Settings;
-    using SimpleJson;
     using Transport;
 
     class MessageDispatcher : IMessageDispatcher
     {
-        public MessageDispatcher(IReadOnlySettings settings, IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient,
+        public MessageDispatcher(IReadOnlySettings settings, IAmazonSQS sqsClient,
+            IAmazonSimpleNotificationService snsClient,
             QueueCache queueCache,
             TopicCache topicCache,
             S3Settings s3,
             int queueDelaySeconds,
             bool v1Compatibility
-            )
+        )
         {
             this.topicCache = topicCache;
             this.s3 = s3;
@@ -30,7 +31,14 @@
             this.snsClient = snsClient;
             this.sqsClient = sqsClient;
             this.queueCache = queueCache;
-            serializerStrategy = v1Compatibility ? SimpleJson.PocoJsonSerializerStrategy : ReducedPayloadSerializerStrategy.Instance;
+
+            transportMessageSerializerOptions = v1Compatibility
+                ? new JsonSerializerOptions { TypeInfoResolver = TransportMessageSerializerContext.Default }
+                : new JsonSerializerOptions
+                {
+                    Converters = { new ReducedPayloadSerializerConverter() },
+                    TypeInfoResolver = TransportMessageSerializerContext.Default
+                };
 
             hybridPubSubChecker = new HybridPubSubChecker(settings);
         }
@@ -282,7 +290,7 @@
             await ApplyUnicastOperationMappingIfNecessary(unicastTransportOperation, preparedMessage as SqsPreparedMessage, delaySeconds, messageId, nativeMessageAttributes, cancellationToken).ConfigureAwait(false);
             await ApplyMulticastOperationMappingIfNecessary(transportOperation as MulticastTransportOperation, preparedMessage as SnsPreparedMessage, cancellationToken).ConfigureAwait(false);
 
-            preparedMessage.Body = SimpleJson.SerializeObject(sqsTransportMessage, serializerStrategy);
+            preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
             preparedMessage.MessageId = messageId;
 
             preparedMessage.CalculateSize();
@@ -313,7 +321,7 @@
 
             sqsTransportMessage.S3BodyKey = key;
             sqsTransportMessage.Body = string.Empty;
-            preparedMessage.Body = SimpleJson.SerializeObject(sqsTransportMessage, serializerStrategy);
+            preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
             preparedMessage.CalculateSize();
 
             return preparedMessage;
@@ -384,9 +392,10 @@
         readonly S3Settings s3;
         readonly int queueDelaySeconds;
         readonly HybridPubSubChecker hybridPubSubChecker;
+        readonly JsonSerializerOptions transportMessageSerializerOptions;
         IAmazonSQS sqsClient;
         QueueCache queueCache;
-        IJsonSerializerStrategy serializerStrategy;
+
         static readonly Dictionary<string, Type> EmptyDictionary = new Dictionary<string, Type>();
 
         static readonly ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));

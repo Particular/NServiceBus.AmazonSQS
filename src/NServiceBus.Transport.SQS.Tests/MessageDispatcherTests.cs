@@ -10,9 +10,9 @@
     using Amazon.SQS.Model;
     using Configure;
     using DelayedDelivery;
-    using Newtonsoft.Json.Linq;
     using NServiceBus;
     using NUnit.Framework;
+    using Particular.Approvals;
     using Routing;
     using Settings;
     using SQS;
@@ -38,7 +38,8 @@
                     new OutgoingMessage("1234", new Dictionary<string, string>
                     {
                         {TransportHeaders.TimeToBeReceived, ExpectedTtbr.ToString()},
-                        {Headers.ReplyToAddress, ExpectedReplyToAddress}
+                        {Headers.ReplyToAddress, ExpectedReplyToAddress},
+                        {Headers.MessageId, "093C17C6-D32E-44FE-9134-65C10C1287EB"}
                     }, Encoding.Default.GetBytes("{}")),
                     new UnicastAddressTag("address"),
                     new DispatchProperties(),
@@ -51,15 +52,7 @@
             Assert.IsNotEmpty(mockSqsClient.RequestsSent, "No requests sent");
             var request = mockSqsClient.RequestsSent.First();
 
-            var bodyJson = JObject.Parse(request.MessageBody);
-
-            Assert.IsTrue(bodyJson.ContainsKey("TimeToBeReceived"), "TimeToBeReceived not serialized");
-            Assert.AreEqual(ExpectedTtbr.ToString(), bodyJson["TimeToBeReceived"].Value<string>(), "Expected TTBR mismatch");
-
-            Assert.IsTrue(bodyJson.ContainsKey("ReplyToAddress"), "ReplyToAddress not serialized");
-            Assert.IsTrue(bodyJson["ReplyToAddress"].HasValues, "ReplyToAddress is not an object");
-            Assert.IsTrue(bodyJson["ReplyToAddress"].Value<JObject>().ContainsKey("Queue"), "ReplyToAddress does not have a Queue value");
-            Assert.AreEqual(ExpectedReplyToAddress, bodyJson["ReplyToAddress"].Value<JObject>()["Queue"].Value<string>(), "Expected ReplyToAddress mismatch");
+            Approver.Verify(request.MessageBody);
         }
 
         [Test]
@@ -75,7 +68,8 @@
                     new OutgoingMessage("1234", new Dictionary<string, string>
                     {
                         {TransportHeaders.TimeToBeReceived, ExpectedTtbr.ToString()},
-                        {Headers.ReplyToAddress, ExpectedReplyToAddress}
+                        {Headers.ReplyToAddress, ExpectedReplyToAddress},
+                        {Headers.MessageId, "093C17C6-D32E-44FE-9134-65C10C1287EB"}
                     }, Encoding.Default.GetBytes("{}")),
                     new UnicastAddressTag("address"),
                     new DispatchProperties(),
@@ -88,18 +82,13 @@
             Assert.IsNotEmpty(mockSqsClient.RequestsSent, "No requests sent");
             var request = mockSqsClient.RequestsSent.First();
 
-            IDictionary<string, JToken> bodyJson = JObject.Parse(request.MessageBody);
-
-            Assert.IsFalse(bodyJson.ContainsKey("TimeToBeReceived"), "TimeToBeReceived serialized");
-            Assert.IsFalse(bodyJson.ContainsKey("ReplyToAddress"), "ReplyToAddress serialized");
+            Approver.Verify(request.MessageBody);
         }
 
         public static IEnumerable MessageIdConstraintsSource
         {
             get
             {
-
-
                 yield return new TestCaseData(new DispatchProperties
                 {
                     DelayDeliveryWith = new DelayDeliveryWith(TimeSpan.FromMinutes(30))
