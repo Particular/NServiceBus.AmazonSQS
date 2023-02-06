@@ -75,7 +75,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
                                 sw.Stop();
                                 ctx.PublishTime = sw.Elapsed;
                             });
-                            return Task.FromResult(0);
+                            return Task.CompletedTask;
                         });
                     })
                     .WithEndpoint<NativePubSubSubscriber>(b =>
@@ -83,7 +83,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
                         b.When((_, ctx) =>
                         {
                             ctx.SubscribedNative = true;
-                            return Task.FromResult(0);
+                            return Task.CompletedTask;
                         });
                     })
                     .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
@@ -157,7 +157,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
                 public Task Handle(MyEvent @event, IMessageHandlerContext context)
                 {
                     testContext.IncrementNativePubSubSubscriberReceivedEventsCount();
-                    return Task.FromResult(0);
+                    return Task.CompletedTask;
                 }
             }
         }
@@ -190,7 +190,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
                 public Task Handle(MyEvent @event, IMessageHandlerContext context)
                 {
                     testContext.IncrementMessageDrivenPubSubSubscriberReceivedEventsCount();
-                    return Task.FromResult(0);
+                    return Task.CompletedTask;
                 }
             }
         }

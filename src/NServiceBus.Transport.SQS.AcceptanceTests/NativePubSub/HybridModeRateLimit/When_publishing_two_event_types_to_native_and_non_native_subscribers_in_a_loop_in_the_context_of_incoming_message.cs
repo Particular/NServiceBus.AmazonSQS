@@ -84,7 +84,7 @@
                         b.When((_, ctx) =>
                         {
                             ctx.SubscribedNative = true;
-                            return Task.FromResult(0);
+                            return Task.CompletedTask;
                         });
                     })
                     .WithEndpoint<Publisher>(b =>
@@ -225,7 +225,7 @@
                 public Task Handle(MyEvent @event, IMessageHandlerContext context)
                 {
                     testContext.IncrementNativePubSubSubscriberReceivedMyEventCount();
-                    return Task.FromResult(0);
+                    return Task.CompletedTask;
                 }
             }
         }
@@ -264,7 +264,7 @@
                 public Task Handle(MyEvent @event, IMessageHandlerContext context)
                 {
                     testContext.IncrementMessageDrivenPubSubSubscriberReceivedMyEventCount();
-                    return Task.FromResult(0);
+                    return Task.CompletedTask;
                 }
             }
 
@@ -280,7 +280,7 @@
                 public Task Handle(MySecondEvent @event, IMessageHandlerContext context)
                 {
                     testContext.IncrementMessageDrivenPubSubSubscriberReceivedMySecondEventCount();
-                    return Task.FromResult(0);
+                    return Task.CompletedTask;
                 }
             }
         }

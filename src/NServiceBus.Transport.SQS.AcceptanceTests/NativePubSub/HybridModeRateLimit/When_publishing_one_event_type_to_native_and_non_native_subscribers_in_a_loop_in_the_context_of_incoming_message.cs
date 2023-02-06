@@ -88,7 +88,7 @@
                         b.When((_, ctx) =>
                         {
                             ctx.SubscribedNative = true;
-                            return Task.FromResult(0);
+                            return Task.CompletedTask;
                         });
                     })
                     .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
@@ -186,7 +186,7 @@
                 public Task Handle(MyEvent @event, IMessageHandlerContext context)
                 {
                     testContext.IncrementNativePubSubSubscriberReceivedEventsCount();
-                    return Task.FromResult(0);
+                    return Task.CompletedTask;
                 }
             }
         }
@@ -219,7 +219,7 @@
                 public Task Handle(MyEvent @event, IMessageHandlerContext context)
                 {
                     testContext.IncrementMessageDrivenPubSubSubscriberReceivedEventsCount();
-                    return Task.FromResult(0);
+                    return Task.CompletedTask;
                 }
             }
         }
