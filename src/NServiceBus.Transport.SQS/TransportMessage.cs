@@ -28,9 +28,9 @@
             }
 
 #if NETFRAMEWORK
-            Body = outgoingMessage.Body.Length != 0 ? Convert.ToBase64String(outgoingMessage.Body.ToArray()) : null;
+            Body = outgoingMessage.Body.Length != 0 ? Convert.ToBase64String(outgoingMessage.Body.ToArray()) : string.Empty;
 #else
-            Body = outgoingMessage.Body.Length != 0 ? Convert.ToBase64String(outgoingMessage.Body.Span) : null;
+            Body = outgoingMessage.Body.Length != 0 ? Convert.ToBase64String(outgoingMessage.Body.Span) : string.Empty;
 #endif
         }
 

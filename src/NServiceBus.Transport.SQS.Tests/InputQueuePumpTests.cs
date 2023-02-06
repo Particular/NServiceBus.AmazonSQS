@@ -116,7 +116,7 @@ namespace NServiceBus.Transport.SQS.Tests
                     {Headers.MessageId, messageId},
                     {TransportHeaders.TimeToBeReceived, ttbr.ToString()}
                 },
-                Body = null
+                Body = string.Empty
             });
 
             var message = new Message
@@ -161,7 +161,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 {
                     {Headers.MessageId, messageId}
                 },
-                Body = null
+                Body = string.Empty
             });
 
             var message = new Message

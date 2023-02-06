@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Text;
     using System.Text.Json;
     using System.Threading.Tasks;
     using NServiceBus;
@@ -182,7 +183,7 @@
             var transportMessage = new TransportMessage(outgoingMessage, new DispatchProperties());
 
             var receivedBodyArray = await transportMessage.RetrieveBody(messageId, null);
-            var receivedBody = System.Text.Encoding.UTF8.GetString(receivedBodyArray);
+            var receivedBody = Encoding.Unicode.GetString(receivedBodyArray);
 
             Assert.AreEqual(body, receivedBodyArray);
             Assert.IsTrue(string.IsNullOrEmpty(receivedBody));
@@ -197,7 +198,7 @@
             var transportMessage = new TransportMessage(outgoingMessage, new DispatchProperties());
 
             var receivedBodyArray = await transportMessage.RetrieveBody(messageId, null);
-            var receivedBody = System.Text.Encoding.UTF8.GetString(receivedBodyArray);
+            var receivedBody = Encoding.Unicode.GetString(receivedBodyArray);
 
             Assert.IsTrue(string.IsNullOrEmpty(receivedBody));
         }
