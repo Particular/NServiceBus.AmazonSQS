@@ -155,7 +155,13 @@ namespace NServiceBus.Transport.SQS
 
                 if (message.OriginalDestination != null)
                 {
-                    throw new QueueDoesNotExistException($"Unable to send batch '{batchNumber}/{totalBatches}'. Destination '{message.OriginalDestination}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(configuration.DelayedDeliveryQueueDelayTime)}. To enable support for longer delays, call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()' on the '{message.OriginalDestination}' endpoint.", e);
+                    throw new QueueDoesNotExistException(
+                        $"Unable to send batch '{batchNumber}/{totalBatches}'. Destination '{message.OriginalDestination}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(configuration.DelayedDeliveryQueueDelayTime)}. To enable support for longer delays, call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()' on the '{message.OriginalDestination}' endpoint.",
+                        e,
+                        e.ErrorType,
+                        e.ErrorCode,
+                        e.RequestId,
+                        e.StatusCode);
                 }
 
                 Logger.Error($"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'. The destination does not exist.", e);
@@ -230,7 +236,13 @@ namespace NServiceBus.Transport.SQS
             }
             catch (QueueDoesNotExistException e) when (message.OriginalDestination != null)
             {
-                throw new QueueDoesNotExistException($"Destination '{message.OriginalDestination}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(configuration.DelayedDeliveryQueueDelayTime)}. To enable support for longer delays, call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()' on the '{message.OriginalDestination}' endpoint.", e);
+                throw new QueueDoesNotExistException(
+                    $"Destination '{message.OriginalDestination}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(configuration.DelayedDeliveryQueueDelayTime)}. To enable support for longer delays, call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()' on the '{message.OriginalDestination}' endpoint.",
+                    e,
+                    e.ErrorType,
+                    e.ErrorCode,
+                    e.RequestId,
+                    e.StatusCode);
             }
             catch (Exception ex)
             {
@@ -371,7 +383,13 @@ namespace NServiceBus.Transport.SQS
                 }
                 catch (QueueDoesNotExistException ex)
                 {
-                    throw new QueueDoesNotExistException($"Queue `{sqsPreparedMessage.Destination}` doesn't exist", ex);
+                    throw new QueueDoesNotExistException(
+                        $"Queue `{sqsPreparedMessage.Destination}` doesn't exist",
+                        ex,
+                        ex.ErrorType,
+                        ex.ErrorCode,
+                        ex.RequestId,
+                        ex.StatusCode);
                 }
 
                 if (delaySeconds > 0)
