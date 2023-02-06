@@ -6,7 +6,6 @@ namespace NServiceBus.Transport.SQS
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
-    using Amazon.Runtime;
     using Amazon.SQS;
     using Amazon.SQS.Model;
     using BitFaster.Caching.Lru;
@@ -37,9 +36,6 @@ namespace NServiceBus.Transport.SQS
             this.criticalErrorAction = criticalErrorAction;
             this.errorQueueAddress = errorQueueAddress;
             this.purgeOnStartup = purgeOnStartup;
-#pragma warning disable CS0618
-            awsEndpointUrl = sqsClient.Config.DetermineServiceURL();
-#pragma warning restore CS0618
             Id = receiverId;
             ReceiveAddress = receiveAddress;
             Subscriptions = subscriptionManager;
@@ -324,7 +320,7 @@ namespace NServiceBus.Transport.SQS
                 return;
             }
 
-            if (IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, CorrectClockSkew.GetClockCorrectionForEndpoint(awsEndpointUrl)))
+            if (IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, sqsClient.Config.ClockOffset))
             {
                 await DeleteMessage(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
             }
@@ -561,7 +557,6 @@ namespace NServiceBus.Transport.SQS
         readonly QueueCache queueCache;
         readonly S3Settings s3Settings;
         readonly Action<string, Exception, CancellationToken> criticalErrorAction;
-        readonly string awsEndpointUrl;
         readonly IReadOnlySettings coreSettings;
         readonly JsonSerializerOptions transportMessageSerializerOptions = new()
         {

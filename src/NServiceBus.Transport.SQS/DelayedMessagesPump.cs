@@ -6,7 +6,6 @@ namespace NServiceBus.Transport.SQS
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Amazon.Runtime;
     using Amazon.SQS;
     using Amazon.SQS.Model;
     using Extensions;
@@ -21,9 +20,6 @@ namespace NServiceBus.Transport.SQS
             this.queueCache = queueCache;
             this.queueDelayTimeSeconds = queueDelayTimeSeconds;
             this.sqsClient = sqsClient;
-#pragma warning disable CS0618
-            awsEndpointUrl = sqsClient.Config.DetermineServiceURL();
-#pragma warning restore CS0618
         }
 
         public async Task Initialize(CancellationToken cancellationToken = default)
@@ -149,7 +145,7 @@ namespace NServiceBus.Transport.SQS
                 return;
             }
 
-            var clockCorrection = CorrectClockSkew.GetClockCorrectionForEndpoint(awsEndpointUrl);
+            var clockCorrection = sqsClient.Config.ClockOffset;
             var preparedMessages = PrepareMessages(receivedMessages, clockCorrection, cancellationToken);
 
             cancellationToken.ThrowIfCancellationRequested();
@@ -427,7 +423,6 @@ namespace NServiceBus.Transport.SQS
         readonly int queueDelayTimeSeconds;
         string delayedDeliveryQueueUrl;
         Task pumpTask;
-        string awsEndpointUrl;
         string inputQueueUrl;
 
         // using the same logger for now
