@@ -72,6 +72,7 @@ namespace NServiceBus
     {
         public SqsTransport() { }
         public SqsTransport(Amazon.SQS.IAmazonSQS sqsClient, Amazon.SimpleNotificationService.IAmazonSimpleNotificationService snsClient) { }
+        public bool DoNotBase64EncodeOutgoingMessages { get; set; }
         public bool EnableV1CompatibilityMode { get; set; }
         public System.TimeSpan MaxTimeToLive { get; set; }
         public NServiceBus.PolicySettings Policies { get; }
@@ -109,6 +110,7 @@ namespace NServiceBus
         [System.Obsolete("The native delayed delivery is always enabled in version 6. The member currently " +
             "throws a NotImplementedException. Will be removed in version 7.0.0.", true)]
         public static void DisablePublishing(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
+        public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> DoNotBase64EncodeOutgoingMessages(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
         [System.Obsolete("The compatibility mode is deprecated. Switch to native publish/subscribe mode usi" +
             "ng SNS instead. The member currently throws a NotImplementedException. Will be r" +
             "emoved in version 7.0.0.", true)]

@@ -22,8 +22,9 @@
             TopicCache topicCache,
             S3Settings s3,
             int queueDelaySeconds,
-            bool v1Compatibility
-        )
+            bool v1Compatibility,
+            bool encodeBodyToBase64 = true
+            )
         {
             this.topicCache = topicCache;
             this.s3 = s3;
@@ -31,6 +32,7 @@
             this.snsClient = snsClient;
             this.sqsClient = sqsClient;
             this.queueCache = queueCache;
+            this.encodeBodyToBase64 = encodeBodyToBase64;            
 
             transportMessageSerializerOptions = v1Compatibility
                 ? new JsonSerializerOptions { TypeInfoResolver = TransportMessageSerializerContext.Default }
@@ -285,7 +287,7 @@
                 delaySeconds = Convert.ToInt64(Math.Ceiling((doNotDeliverBefore.At - DateTime.UtcNow).TotalSeconds));
             }
 
-            var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.Properties);
+            var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.Properties, encodeBodyToBase64);
 
             var messageId = transportOperation.Message.MessageId;
 
@@ -410,6 +412,7 @@
         readonly S3Settings s3;
         readonly int queueDelaySeconds;
         readonly HybridPubSubChecker hybridPubSubChecker;
+        readonly bool encodeBodyToBase64;
         readonly JsonSerializerOptions transportMessageSerializerOptions;
         IAmazonSQS sqsClient;
         QueueCache queueCache;

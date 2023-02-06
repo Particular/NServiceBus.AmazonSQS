@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Text;
     using Transport;
 
     class TransportMessage
@@ -14,7 +15,7 @@
         {
         }
 
-        public TransportMessage(OutgoingMessage outgoingMessage, DispatchProperties properties)
+        public TransportMessage(OutgoingMessage outgoingMessage, DispatchProperties properties, bool encodeBodyToBase64 = true)
         {
             Headers = outgoingMessage.Headers;
 
@@ -30,11 +31,18 @@
                 TimeToBeReceived = properties.DiscardIfNotReceivedBefore.MaxTime.ToString();
             }
 
+            if (outgoingMessage.Body.Length != 0)
+            {
 #if NETFRAMEWORK
-            Body = outgoingMessage.Body.Length != 0 ? Convert.ToBase64String(outgoingMessage.Body.ToArray()) : EmptyMessage;
+                Body = encodeBodyToBase64 ? Convert.ToBase64String(outgoingMessage.Body.ToArray()) : Encoding.Unicode.GetString(outgoingMessage.Body.ToArray());
 #else
-            Body = outgoingMessage.Body.Length != 0 ? Convert.ToBase64String(outgoingMessage.Body.Span) : EmptyMessage;
+                Body = encodeBodyToBase64 ? Convert.ToBase64String(outgoingMessage.Body.Span) : Encoding.Unicode.GetString(outgoingMessage.Body.Span);
 #endif
+            }
+            else
+            {
+                Body = EmptyMessage;
+            }
         }
 
         public Dictionary<string, string> Headers { get; set; }

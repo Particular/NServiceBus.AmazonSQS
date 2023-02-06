@@ -631,6 +631,74 @@
             StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{thirdUpload.Key}", mockSqsClient.RequestsSent.ElementAt(2).MessageBody);
         }
 
+        [Test]
+        public async Task Should_base64_encode_by_default()
+        {
+            var mockSqsClient = new MockSqsClient();
+
+            var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
+                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, v1Compatibility: true);
+
+            var msgBody = "my message body";
+            var msgBodyByte = Encoding.Unicode.GetBytes(msgBody);
+
+            var transportOperations = new TransportOperations(
+                new TransportOperation(
+                    new OutgoingMessage("1234", new Dictionary<string, string>
+                    {
+                        {TransportHeaders.TimeToBeReceived, ExpectedTtbr.ToString()},
+                        {Headers.ReplyToAddress, ExpectedReplyToAddress}
+                    }, msgBodyByte),
+                    new UnicastAddressTag("address"),
+                    new DispatchProperties(),
+                    DispatchConsistency.Isolated));
+
+            var transportTransaction = new TransportTransaction();
+
+            await dispatcher.Dispatch(transportOperations, transportTransaction);
+
+            Assert.IsNotEmpty(mockSqsClient.RequestsSent, "No requests sent");
+            var request = mockSqsClient.RequestsSent.First();
+
+            var bodyJson = JObject.Parse(request.MessageBody);
+
+            Assert.AreEqual(Convert.ToBase64String(msgBodyByte), bodyJson["Body"].Value<string>());
+        }
+
+        [Test]
+        public async Task Should_not_base64_encode_if_configured_not_to()
+        {
+            var mockSqsClient = new MockSqsClient();
+
+            var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
+                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, v1Compatibility: true, encodeBodyToBase64: false);
+
+            var msgBody = "my message body";
+            var msgBodyByte = Encoding.Unicode.GetBytes(msgBody);
+
+            var transportOperations = new TransportOperations(
+                new TransportOperation(
+                    new OutgoingMessage("1234", new Dictionary<string, string>
+                    {
+                        {TransportHeaders.TimeToBeReceived, ExpectedTtbr.ToString()},
+                        {Headers.ReplyToAddress, ExpectedReplyToAddress}
+                    }, msgBodyByte),
+                    new UnicastAddressTag("address"),
+                    new DispatchProperties(),
+                    DispatchConsistency.Isolated));
+
+            var transportTransaction = new TransportTransaction();
+
+            await dispatcher.Dispatch(transportOperations, transportTransaction);
+
+            Assert.IsNotEmpty(mockSqsClient.RequestsSent, "No requests sent");
+            var request = mockSqsClient.RequestsSent.First();
+
+            var bodyJson = JObject.Parse(request.MessageBody);
+
+            Assert.AreEqual(msgBody, bodyJson["Body"].Value<string>());
+        }
+
         interface IEvent { }
 
         interface IMyEvent : IEvent { }
