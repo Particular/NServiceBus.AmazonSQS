@@ -203,6 +203,21 @@
             Assert.IsTrue(string.IsNullOrEmpty(receivedBody));
         }
 
+        [Test]
+        public async Task Empty_message_string_body_is_received_as_empty()
+        {
+            var transportMessage = new TransportMessage()
+            {
+                Body = "empty message",
+            };
+
+            var receivedBodyArray = await transportMessage.RetrieveBody(Guid.NewGuid().ToString(), null);
+            var receivedBody = Encoding.Unicode.GetString(receivedBodyArray);
+
+            Assert.IsTrue(string.IsNullOrEmpty(receivedBody));
+            ;
+        }
+
         const string ExpectedReplyToAddress = "TestReplyToAddress";
         static readonly TimeSpan ExpectedTtbr = TimeSpan.MaxValue.Subtract(TimeSpan.FromHours(1));
     }
