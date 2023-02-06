@@ -13,6 +13,7 @@ namespace NServiceBus.Transport.SQS
     using Extensions;
     using Logging;
     using SimpleJson;
+    using Sqs;
     using static TransportHeaders;
 
     class InputQueuePump
@@ -136,7 +137,18 @@ namespace NServiceBus.Transport.SQS
                             return;
                         }
 
-                        _ = ProcessMessage(receivedMessage, maxConcurrencySemaphore, token);
+                        try
+                        {
+                            _ = ProcessMessage(receivedMessage, maxConcurrencySemaphore, token);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Debug("Returning message to queue...", ex);
+
+                            await ReturnMessageToQueue(receivedMessage).ConfigureAwait(false);
+
+                            throw;
+                        }
                     }
                 }
                 catch (OperationCanceledException)
@@ -160,6 +172,12 @@ namespace NServiceBus.Transport.SQS
                 var nativeMessageId = receivedMessage.MessageId;
                 string messageId = null;
                 var isPoisonMessage = false;
+
+                if (messagesToBeDeletedStorage.TryGetFailureInfoForMessage(nativeMessageId, out _))
+                {
+                    await DeleteMessage(receivedMessage, null).ConfigureAwait(false);
+                    return;
+                }
 
                 try
                 {
@@ -230,16 +248,23 @@ namespace NServiceBus.Transport.SQS
                     return;
                 }
 
-                if (!IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, CorrectClockSkew.GetClockCorrectionForEndpoint(awsEndpointUrl)))
+                if (IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, CorrectClockSkew.GetClockCorrectionForEndpoint(awsEndpointUrl)))
+                {
+                    // Always delete the message from the queue.
+                    // If processing failed, the onError handler will have moved the message
+                    // to a retry queue.
+                    await DeleteMessage(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
+                }
+                else
                 {
                     // here we also want to use the native message id because the core demands it like that
-                    await ProcessMessageWithInMemoryRetries(transportMessage.Headers, nativeMessageId, messageBody, receivedMessage, token).ConfigureAwait(false);
-                }
+                    var messageProcessed = await InnerProcessMessage(transportMessage.Headers, nativeMessageId, messageBody, receivedMessage, token).ConfigureAwait(false);
 
-                // Always delete the message from the queue.
-                // If processing failed, the onError handler will have moved the message
-                // to a retry queue.
-                await DeleteMessage(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
+                    if (messageProcessed)
+                    {
+                        await DeleteMessage(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
+                    }
+                }
             }
             finally
             {
@@ -247,62 +272,104 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        async Task ProcessMessageWithInMemoryRetries(Dictionary<string, string> headers, string nativeMessageId, byte[] body, Message nativeMessage, CancellationToken token)
+        async Task<bool> InnerProcessMessage(Dictionary<string, string> headers, string nativeMessageId, byte[] body, Message nativeMessage, CancellationToken token)
         {
-            var immediateProcessingAttempts = 0;
-            var messageProcessedOk = false;
-            var errorHandled = false;
+            // set the native message on the context for advanced usage scenario's
+            var context = new ContextBag();
+            context.Set(nativeMessage);
+            // We add it to the transport transaction to make it available in dispatching scenario's so we copy over message attributes when moving messages to the error/audit queue
+            var transportTransaction = new TransportTransaction();
+            transportTransaction.Set(nativeMessage);
+            transportTransaction.Set("IncomingMessageId", headers[Headers.MessageId]);
 
-            while (!errorHandled && !messageProcessedOk)
+            using (var messageContextCancellationTokenSource = new CancellationTokenSource())
             {
-                // set the native message on the context for advanced usage scenario's
-                var context = new ContextBag();
-                context.Set(nativeMessage);
-                // We add it to the transport transaction to make it available in dispatching scenario's so we copy over message attributes when moving messages to the error/audit queue
-                var transportTransaction = new TransportTransaction();
-                transportTransaction.Set(nativeMessage);
-                transportTransaction.Set("IncomingMessageId", headers[Headers.MessageId]);
-
                 try
                 {
-                    using (var messageContextCancellationTokenSource = new CancellationTokenSource())
-                    {
-                        var messageContext = new MessageContext(
-                            nativeMessageId,
-                            new Dictionary<string, string>(headers),
-                            body,
-                            transportTransaction,
-                            messageContextCancellationTokenSource,
-                            context);
 
-                        await onMessage(messageContext).ConfigureAwait(false);
+                    var messageContext = new MessageContext(
+                        nativeMessageId,
+                        new Dictionary<string, string>(headers),
+                        body,
+                        transportTransaction,
+                        messageContextCancellationTokenSource,
+                        context);
 
-                        messageProcessedOk = !messageContextCancellationTokenSource.IsCancellationRequested;
-                    }
+                    await onMessage(messageContext).ConfigureAwait(false);
+
                 }
-                catch (Exception ex)
-                    when (!(ex is OperationCanceledException && token.IsCancellationRequested))
+                catch (Exception ex) when (!(ex is OperationCanceledException && token.IsCancellationRequested))
                 {
-                    immediateProcessingAttempts++;
-                    var errorHandlerResult = ErrorHandleResult.RetryRequired;
+
+                    var deliveryAttempts = GetDeliveryAttempts(nativeMessageId);
 
                     try
                     {
-                        errorHandlerResult = await onError(new ErrorContext(ex,
+                        var errorHandlerResult = await onError(new ErrorContext(ex,
                             new Dictionary<string, string>(headers),
                             nativeMessageId,
                             body,
                             transportTransaction,
-                            immediateProcessingAttempts)).ConfigureAwait(false);
+                            deliveryAttempts)).ConfigureAwait(false);
+
+                        if (errorHandlerResult == ErrorHandleResult.RetryRequired)
+                        {
+                            await ReturnMessageToQueue(nativeMessage).ConfigureAwait(false);
+
+                            return false;
+                        }
                     }
                     catch (Exception onErrorEx)
                     {
                         criticalError.Raise($"Failed to execute recoverability policy for message with native ID: `{nativeMessageId}`", onErrorEx);
-                    }
 
-                    errorHandled = errorHandlerResult == ErrorHandleResult.Handled;
+                        await ReturnMessageToQueue(nativeMessage).ConfigureAwait(false);
+
+                        return false;
+                    }
                 }
+
+                if (messageContextCancellationTokenSource.IsCancellationRequested)
+                {
+                    await ReturnMessageToQueue(nativeMessage).ConfigureAwait(false);
+
+                    return false;
+                }
+
+                return true;
             }
+        }
+
+        async Task ReturnMessageToQueue(Message message)
+        {
+            try
+            {
+                await sqsClient.ChangeMessageVisibilityAsync(
+                    new ChangeMessageVisibilityRequest()
+                    {
+                        QueueUrl = inputQueueUrl,
+                        ReceiptHandle = message.ReceiptHandle,
+                        VisibilityTimeout = 0
+                    },
+                    CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (ReceiptHandleIsInvalidException ex)
+            {
+                Logger.Warn($"Failed to return message with native ID '{message.MessageId}' to the queue because the visibility timeout has expired. The message has already been returned to the queue.", ex);
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"Failed to return message with native ID '{message.MessageId}' to the queue. The message will return to the queue after the visibility timeout expires.", ex);
+            }
+        }
+
+        int GetDeliveryAttempts(string nativeMessageId)
+        {
+            deliveryAttemptsStorage.RecordFailureInfoForMessage(nativeMessageId);
+
+            deliveryAttemptsStorage.TryGetFailureInfoForMessage(nativeMessageId, out var attempts);
+
+            return attempts;
         }
 
         static bool IsMessageExpired(Message receivedMessage, Dictionary<string, string> headers, string messageId, TimeSpan clockOffset)
@@ -338,16 +405,23 @@ namespace NServiceBus.Transport.SQS
             {
                 // should not be cancelled
                 await sqsClient.DeleteMessageAsync(inputQueueUrl, message.ReceiptHandle, CancellationToken.None).ConfigureAwait(false);
+
+                if (!string.IsNullOrEmpty(s3BodyKey))
+                {
+                    Logger.Info($"Message body data with key '{s3BodyKey}' will be aged out by the S3 lifecycle policy when the TTL expires.");
+                }
             }
             catch (ReceiptHandleIsInvalidException ex)
             {
-                Logger.Info($"Message receipt handle {message.ReceiptHandle} no longer valid.", ex);
-                return; // if another receiver fetches the data from S3
-            }
+                Logger.Error($"Failed to delete message with native ID '{message.MessageId}' because the handler execution time exceeded the visibility timeout. Increase the length of the timeout on the queue. The message was returned to the queue.", ex);
 
-            if (!string.IsNullOrEmpty(s3BodyKey))
+                messagesToBeDeletedStorage.RecordFailureInfoForMessage(message.MessageId);
+            }
+            catch (Exception ex)
             {
-                Logger.Info($"Message body data with key '{s3BodyKey}' will be aged out by the S3 lifecycle policy when the TTL expires.");
+                Logger.Warn($"Failed to delete message with native ID '{message.MessageId}'. The message will be returned to the queue when the visibility timeout expires.", ex);
+
+                messagesToBeDeletedStorage.RecordFailureInfoForMessage(message.MessageId);
             }
         }
 
@@ -405,6 +479,8 @@ namespace NServiceBus.Transport.SQS
             // If there is a message body in S3, simply leave it there
         }
 
+        FailureInfoStorage messagesToBeDeletedStorage = new FailureInfoStorage(1000);
+        FailureInfoStorage deliveryAttemptsStorage = new FailureInfoStorage(1000);
         List<Task> pumpTasks;
         Func<ErrorContext, Task<ErrorHandleResult>> onError;
         Func<MessageContext, Task> onMessage;
