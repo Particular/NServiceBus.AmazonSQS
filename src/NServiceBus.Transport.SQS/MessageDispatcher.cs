@@ -165,7 +165,13 @@
 
                 if (message.OriginalDestination != null)
                 {
-                    throw new QueueDoesNotExistException($"Unable to send batch '{batchNumber}/{totalBatches}'. Destination '{message.OriginalDestination}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(queueDelaySeconds)}. To enable support for longer delays upgrade '{message.OriginalDestination}' endpoint to Version 6 of the transport or enable unrestricted delayed delivery.", e);
+                    throw new QueueDoesNotExistException(
+                        $"Unable to send batch '{batchNumber}/{totalBatches}'. Destination '{message.OriginalDestination}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(queueDelaySeconds)}. To enable support for longer delays upgrade '{message.OriginalDestination}' endpoint to Version 6 of the transport or enable unrestricted delayed delivery.",
+                        e,
+                        e.ErrorType,
+                        e.ErrorCode,
+                        e.RequestId,
+                        e.StatusCode);
                 }
 
                 Logger.Error($"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'. The destination does not exist.", e);
@@ -240,7 +246,13 @@
             }
             catch (QueueDoesNotExistException e) when (message.OriginalDestination != null)
             {
-                throw new QueueDoesNotExistException($"Destination '{message.OriginalDestination}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(queueDelaySeconds)}. To enable support for longer delays upgrade '{message.OriginalDestination}' endpoint to Version 6 of the transport or enable unrestricted delayed delivery.", e);
+                throw new QueueDoesNotExistException(
+                    $"Destination '{message.OriginalDestination}' doesn't support delayed messages longer than {TimeSpan.FromSeconds(queueDelaySeconds)}. To enable support for longer delays upgrade '{message.OriginalDestination}' endpoint to Version 6 of the transport or enable unrestricted delayed delivery.",
+                    e,
+                    e.ErrorType,
+                    e.ErrorCode,
+                    e.RequestId,
+                    e.StatusCode);
             }
             catch (Exception ex) when (!ex.IsCausedBy(cancellationToken))
             {
@@ -377,7 +389,13 @@
                 }
                 catch (QueueDoesNotExistException ex)
                 {
-                    throw new QueueDoesNotExistException($"Queue `{sqsPreparedMessage.Destination}` doesn't exist", ex);
+                    throw new QueueDoesNotExistException(
+                        $"Queue `{sqsPreparedMessage.Destination}` doesn't exist",
+                        ex,
+                        ex.ErrorType,
+                        ex.ErrorCode,
+                        ex.RequestId,
+                        ex.StatusCode);
                 }
 
                 if (delaySeconds > 0)
