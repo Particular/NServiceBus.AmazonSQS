@@ -5,11 +5,10 @@
     using System.Text;
     using System.Text.Json;
     using System.Threading.Tasks;
-    using NServiceBus;
     using NServiceBus.Transport.SQS.Extensions;
+    using NServiceBus;
     using NUnit.Framework;
     using Performance.TimeToBeReceived;
-    using SQS;
     using Transport;
 
     [TestFixture]
@@ -134,7 +133,7 @@
                 {
                     {Headers.MessageId, Guid.Empty.ToString()}
                 },
-                Body = null,
+                Body = (string)null,
                 S3BodyKey = (string)null,
                 TimeToBeReceived = ExpectedTtbr.ToString(),
                 ReplyToAddress = new TransportMessage.Address
@@ -185,8 +184,8 @@
             var receivedBodyArray = await transportMessage.RetrieveBody(messageId, null);
             var receivedBody = Encoding.Unicode.GetString(receivedBodyArray);
 
-            Assert.AreEqual(body, receivedBodyArray);
-            Assert.IsTrue(string.IsNullOrEmpty(receivedBody));
+            CollectionAssert.AreEqual(receivedBodyArray, body);
+            Assert.That(receivedBody, Is.Null.Or.Empty);
         }
 
         [Test]
@@ -200,13 +199,13 @@
             var receivedBodyArray = await transportMessage.RetrieveBody(messageId, null);
             var receivedBody = Encoding.Unicode.GetString(receivedBodyArray);
 
-            Assert.IsTrue(string.IsNullOrEmpty(receivedBody));
+            Assert.That(receivedBody, Is.Null.Or.Empty);
         }
 
         [Test]
         public async Task Empty_message_string_body_is_received_as_empty()
         {
-            var transportMessage = new TransportMessage()
+            var transportMessage = new TransportMessage
             {
                 Body = "empty message",
             };
@@ -214,8 +213,7 @@
             var receivedBodyArray = await transportMessage.RetrieveBody(Guid.NewGuid().ToString(), null);
             var receivedBody = Encoding.Unicode.GetString(receivedBodyArray);
 
-            Assert.IsTrue(string.IsNullOrEmpty(receivedBody));
-            ;
+            Assert.That(receivedBody, Is.Null.Or.Empty);
         }
 
         const string ExpectedReplyToAddress = "TestReplyToAddress";
