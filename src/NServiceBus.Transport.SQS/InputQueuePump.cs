@@ -263,43 +263,7 @@ namespace NServiceBus.Transport.SQS
             {
                 try
                 {
-                    if (receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
-                    {
-                        messageId = messageIdAttribute.StringValue;
-                    }
-                    else
-                    {
-                        messageId = nativeMessageId;
-                    }
-
-                    // When the MessageTypeFullName attribute is available, we're assuming native integration
-                    if (receivedMessage.MessageAttributes.TryGetValue(MessageTypeFullName, out var enclosedMessageType))
-                    {
-                        var headers = new Dictionary<string, string>
-                        {
-                            { Headers.MessageId, messageId },
-                            { Headers.EnclosedMessageTypes, enclosedMessageType.StringValue },
-                            {
-                                MessageTypeFullName, enclosedMessageType.StringValue
-                            } // we're copying over the value of the native message attribute into the headers, converting this into a nsb message
-                        };
-
-                        if (receivedMessage.MessageAttributes.TryGetValue(S3BodyKey, out var s3BodyKey))
-                        {
-                            headers.Add(S3BodyKey, s3BodyKey.StringValue);
-                        }
-
-                        transportMessage = new TransportMessage
-                        {
-                            Headers = headers,
-                            S3BodyKey = s3BodyKey?.StringValue,
-                            Body = receivedMessage.Body
-                        };
-                    }
-                    else
-                    {
-                        transportMessage = JsonSerializer.Deserialize<TransportMessage>(receivedMessage.Body, transportMessageSerializerOptions);
-                    }
+                    (messageId, transportMessage) = messageTranslationStrategy.FromAmazonSqsMessage(receivedMessage);
 
                     (messageBody, messageBodyBuffer) = await transportMessage.RetrieveBody(messageId, s3Settings, arrayPool, messageProcessingCancellationToken).ConfigureAwait(false);
                 }
@@ -578,12 +542,12 @@ namespace NServiceBus.Transport.SQS
         {
             TypeInfoResolver = TransportMessageSerializerContext.Default
         };
-
+ 		readonly IAmazonSqsMessageTranslationStrategy messageTranslationStrategy =
+            new DefaultAmazonSqsMessageTranslationStrategy();
         int numberOfMessagesToFetch;
         ReceiveMessageRequest receiveMessagesRequest;
         CancellationTokenSource messagePumpCancellationTokenSource;
         CancellationTokenSource messageProcessingCancellationTokenSource;
-
         static readonly ILog Logger = LogManager.GetLogger<MessagePump>();
     }
 }
