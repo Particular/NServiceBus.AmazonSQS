@@ -46,6 +46,8 @@
             {
                 EndpointSetup<DefaultServer>(c =>
                 {
+                    var transport = c.ConfigureSqsTransport();
+                    transport.Policies.AccountCondition = true;
                     c.DisableFeature<AutoSubscribe>();
                 });
             }

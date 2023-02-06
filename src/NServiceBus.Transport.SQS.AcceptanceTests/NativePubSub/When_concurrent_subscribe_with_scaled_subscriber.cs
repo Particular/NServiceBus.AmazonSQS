@@ -50,7 +50,12 @@ namespace NServiceBus.AcceptanceTests.NativePubSub
         {
             public Subscriber()
             {
-                EndpointSetup<DefaultServer>(c => { c.DisableFeature<AutoSubscribe>(); });
+                EndpointSetup<DefaultServer>(c =>
+                {
+                    var transport = c.ConfigureSqsTransport();
+                    transport.Policies.AccountCondition = true;
+                    c.DisableFeature<AutoSubscribe>();
+                });
             }
 
             public class MyHandler : IHandleMessages<MyEvent>
