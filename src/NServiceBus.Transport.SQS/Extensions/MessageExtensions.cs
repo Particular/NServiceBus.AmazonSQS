@@ -15,7 +15,7 @@
         {
             if (string.IsNullOrEmpty(transportMessage.S3BodyKey))
             {
-                if (string.IsNullOrEmpty(transportMessage.Body) || transportMessage.Body == "empty string")
+                if (string.IsNullOrEmpty(transportMessage.Body) || transportMessage.Body == "empty message")
                 {
                     return Array.Empty<byte>();
                 }
