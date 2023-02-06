@@ -58,7 +58,7 @@
             }
         }
 
-        public static async Task SendTo<TEndpoint>(Dictionary<string, MessageAttributeValue> messageAttributeValues, string message)
+        public static async Task SendTo<TEndpoint>(Dictionary<string, MessageAttributeValue> messageAttributeValues, string message, bool base64Encode = true)
         {
             using (var sqsClient = ConfigureEndpointSqsTransport.CreateSqsClient())
             {
@@ -67,7 +67,7 @@
                     QueueName = TestNameHelper.GetSqsQueueName(Conventions.EndpointNamingConvention(typeof(TEndpoint)), SetupFixture.NamePrefix)
                 }).ConfigureAwait(false);
 
-                var body = Convert.ToBase64String(Encoding.Unicode.GetBytes(message));
+                var body = base64Encode ? Convert.ToBase64String(Encoding.Unicode.GetBytes(message)) : message;
 
                 var sendMessageRequest = new SendMessageRequest
                 {

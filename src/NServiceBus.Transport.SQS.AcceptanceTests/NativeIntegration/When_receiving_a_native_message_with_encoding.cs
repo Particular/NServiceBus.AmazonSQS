@@ -12,7 +12,7 @@
     using EndpointTemplates;
     using NUnit.Framework;
 
-    public class When_receiving_a_native_message : NServiceBusAcceptanceTest
+    public class When_receiving_a_native_message_with_encoding : NServiceBusAcceptanceTest
     {
         static readonly string MessageToSend = new XDocument(new XElement("Message", new XElement("ThisIsTheMessage", "Hello!"))).ToString();
 
