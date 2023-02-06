@@ -2,35 +2,33 @@
 {
     using System.Collections.Generic;
     using Amazon.SQS.Model;
-    using SimpleJson;
     using static TransportHeaders;
 
-
-    interface IAmazonSqsMessageTranslationStrategy
+    /// <summary>
+    /// Configures how the incoming SQS transport message is extracted
+    /// </summary>
+    public interface IAmazonSqsIncomingMessageExtractor
     {
-        (string messageId, TransportMessage message) FromAmazonSqsMessage(Message receivedMessage);
+        /// <summary>
+        /// Performs the SQS transport message extraction
+        /// </summary>
+        /// <param name="receivedMessage"></param>
+        /// <param name="messageId"></param>
+        /// <param name="headers"></param>
+        /// <param name="s3BodyKey"></param>
+        /// <param name="body"></param>
+        /// <returns></returns>
+        bool TryExtractMessage(Message receivedMessage, string messageId, out Dictionary<string, string> headers, out string s3BodyKey, out string body);
     }
 
-    class DefaultAmazonSqsMessageTranslationStrategy : IAmazonSqsMessageTranslationStrategy
+    class DefaultAmazonSqsIncomingMessageExtractor : IAmazonSqsIncomingMessageExtractor
     {
-        public (string messageId, TransportMessage message) FromAmazonSqsMessage(Message receivedMessage)
+        public bool TryExtractMessage(Message receivedMessage, string messageId, out Dictionary<string, string> headers, out string s3BodyKey, out string body)
         {
-            TransportMessage transportMessage;
-            string messageId;
-
-            if (receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
-            {
-                messageId = messageIdAttribute.StringValue;
-            }
-            else
-            {
-                messageId = receivedMessage.MessageId;
-            }
-
             // When the MessageTypeFullName attribute is available, we're assuming native integration
             if (receivedMessage.MessageAttributes.TryGetValue(MessageTypeFullName, out var enclosedMessageType))
             {
-                var headers = new Dictionary<string, string>
+                headers = new Dictionary<string, string>
                 {
                     { Headers.MessageId, messageId },
                     { Headers.EnclosedMessageTypes, enclosedMessageType.StringValue },
@@ -39,24 +37,26 @@
                     } // we're copying over the value of the native message attribute into the headers, converting this into a nsb message
                 };
 
-                if (receivedMessage.MessageAttributes.TryGetValue(S3BodyKey, out var s3BodyKey))
+                if (receivedMessage.MessageAttributes.TryGetValue(S3BodyKey, out var s3BodyKeyValue))
                 {
-                    headers.Add(S3BodyKey, s3BodyKey.StringValue);
+                    headers.Add(S3BodyKey, s3BodyKeyValue.StringValue);
+                    s3BodyKey = s3BodyKeyValue.StringValue;
+                }
+                else
+                {
+                    s3BodyKey = default;
                 }
 
-                transportMessage = new TransportMessage
-                {
-                    Headers = headers,
-                    S3BodyKey = s3BodyKey?.StringValue,
-                    Body = receivedMessage.Body
-                };
-            }
-            else
-            {
-                transportMessage = SimpleJson.DeserializeObject<TransportMessage>(receivedMessage.Body);
+                body = receivedMessage.Body;
+
+                return true;
             }
 
-            return (messageId, transportMessage);
+            headers = default;
+            s3BodyKey = default;
+            body = default;
+
+            return false;
         }
     }
 }

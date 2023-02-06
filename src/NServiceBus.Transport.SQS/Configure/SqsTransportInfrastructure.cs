@@ -13,7 +13,7 @@
     class SqsTransportInfrastructure : TransportInfrastructure
     {
         public SqsTransportInfrastructure(SqsTransport transportDefinition, HostSettings hostSettings, ReceiveSettings[] receiverSettings, IAmazonSQS sqsClient,
-            IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, S3Settings s3Settings, PolicySettings policySettings, int queueDelayTimeSeconds, string topicNamePrefix, bool v1Compatibility, bool doNotBase64EncodeOutgoingMessages)
+            IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, S3Settings s3Settings, PolicySettings policySettings, int queueDelayTimeSeconds, string topicNamePrefix, bool v1Compatibility, bool doNotBase64EncodeOutgoingMessages, IAmazonSqsIncomingMessageExtractor incomingMessageExtractor)
         {
             this.transportDefinition = transportDefinition;
             this.sqsClient = sqsClient;
@@ -21,7 +21,7 @@
             coreSettings = hostSettings.CoreSettings;
             s3Client = s3Settings?.S3Client;
             Receivers = receiverSettings
-                .Select(receiverSetting => CreateMessagePump(receiverSetting, sqsClient, snsClient, queueCache, topicCache, s3Settings, policySettings, queueDelayTimeSeconds, topicNamePrefix, hostSettings.CriticalErrorAction))
+                .Select(receiverSetting => CreateMessagePump(receiverSetting, sqsClient, snsClient, queueCache, topicCache, s3Settings, policySettings, queueDelayTimeSeconds, topicNamePrefix, hostSettings.CriticalErrorAction, incomingMessageExtractor))
                 .ToDictionary(x => x.Id, x => x);
 
             Dispatcher = new MessageDispatcher(hostSettings.CoreSettings, sqsClient, snsClient, queueCache, topicCache, s3Settings,
@@ -31,12 +31,12 @@
         IMessageReceiver CreateMessagePump(ReceiveSettings receiveSettings, IAmazonSQS sqsClient,
             IAmazonSimpleNotificationService snsClient, QueueCache queueCache,
             TopicCache topicCache, S3Settings s3Settings, PolicySettings policySettings, int queueDelayTimeSeconds,
-            string topicNamePrefix, Action<string, Exception, CancellationToken> criticalErrorAction)
+            string topicNamePrefix, Action<string, Exception, CancellationToken> criticalErrorAction, IAmazonSqsIncomingMessageExtractor incomingMessageExtractor)
         {
             var receiveAddress = ToTransportAddress(receiveSettings.ReceiveAddress);
             var subManager = new SubscriptionManager(sqsClient, snsClient, receiveAddress, queueCache, topicCache, policySettings, topicNamePrefix);
 
-            return new MessagePump(receiveSettings.Id, receiveAddress, receiveSettings.ErrorQueue, receiveSettings.PurgeOnStartup, sqsClient, queueCache, s3Settings, subManager, queueDelayTimeSeconds, criticalErrorAction, coreSettings);
+            return new MessagePump(receiveSettings.Id, receiveAddress, receiveSettings.ErrorQueue, receiveSettings.PurgeOnStartup, sqsClient, queueCache, s3Settings, subManager, queueDelayTimeSeconds, criticalErrorAction, coreSettings, incomingMessageExtractor);
         }
 
         public override Task Shutdown(CancellationToken cancellationToken = default)

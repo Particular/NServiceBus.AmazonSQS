@@ -1,6 +1,8 @@
 ﻿namespace NServiceBus.Transport.SQS.Tests
 {
     using System;
+    using System.Collections.Generic;
+    using Amazon.SQS.Model;
     using NUnit.Framework;
 
     [TestFixture]
@@ -19,6 +21,7 @@
             transport.QueueNamePrefix("MyPrefix");
             transport.TopicNamePrefix("MyTopicPrefix");
             transport.TopicNameGenerator((type, name) => "42");
+            transport.IncomingMessageExtractor(new CustomerExtractor());
             transport.DoNotBase64EncodeOutgoingMessages();
 
             Assert.IsTrue(transport.Transport.EnableV1CompatibilityMode);
@@ -26,8 +29,15 @@
             Assert.AreEqual("MyPrefix", transport.Transport.QueueNamePrefix);
             Assert.AreEqual("MyTopicPrefix", transport.Transport.TopicNamePrefix);
             Assert.AreEqual("42", transport.Transport.TopicNameGenerator(null, null));
+            Assert.IsTrue(transport.Transport.IncomingMessageExtractor.GetType() == typeof(CustomerExtractor));
             Assert.IsTrue(transport.Transport.DoNotBase64EncodeOutgoingMessages);
 
         }
+
+        class CustomerExtractor : IAmazonSqsIncomingMessageExtractor
+        {
+            public bool TryExtractMessage(Message receivedMessage, string messageId, out Dictionary<string, string> headers, out string s3BodyKey, out string body) => throw new NotImplementedException();
+        }
+
     }
 }

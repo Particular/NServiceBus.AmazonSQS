@@ -15,6 +15,7 @@ namespace NServiceBus.Transport.SQS
     using Extensions;
     using Logging;
     using Settings;
+    using SimpleJson;
     using static TransportHeaders;
 
     class InputQueuePump : IMessageReceiver
@@ -29,7 +30,8 @@ namespace NServiceBus.Transport.SQS
             S3Settings s3Settings,
             SubscriptionManager subscriptionManager,
             Action<string, Exception, CancellationToken> criticalErrorAction,
-            IReadOnlySettings coreSettings)
+            IReadOnlySettings coreSettings,
+            IAmazonSqsIncomingMessageExtractor incomingMessageExtractor)
         {
             this.sqsClient = sqsClient;
             this.queueCache = queueCache;
@@ -37,6 +39,7 @@ namespace NServiceBus.Transport.SQS
             this.criticalErrorAction = criticalErrorAction;
             this.errorQueueAddress = errorQueueAddress;
             this.purgeOnStartup = purgeOnStartup;
+            this.incomingMessageExtractor = incomingMessageExtractor;
             Id = receiverId;
             ReceiveAddress = receiveAddress;
             Subscriptions = subscriptionManager;
@@ -263,7 +266,28 @@ namespace NServiceBus.Transport.SQS
             {
                 try
                 {
-                    (messageId, transportMessage) = messageTranslationStrategy.FromAmazonSqsMessage(receivedMessage);
+                    if (receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
+                    {
+                        messageId = messageIdAttribute.StringValue;
+                    }
+                    else
+                    {
+                        messageId = receivedMessage.MessageId;
+                    }
+
+                    if (incomingMessageExtractor.TryExtractMessage(receivedMessage, messageId, out var headers, out var s3BodyKey, out var body))
+                    {
+                        transportMessage = new TransportMessage()
+                        {
+                            Headers = headers,
+                            S3BodyKey = s3BodyKey,
+                            Body = body
+                        };
+                    }
+                    else
+                    {
+                        transportMessage = SimpleJson.DeserializeObject<TransportMessage>(receivedMessage.Body);
+                    }
 
                     (messageBody, messageBodyBuffer) = await transportMessage.RetrieveBody(messageId, s3Settings, arrayPool, messageProcessingCancellationToken).ConfigureAwait(false);
                 }
@@ -542,8 +566,7 @@ namespace NServiceBus.Transport.SQS
         {
             TypeInfoResolver = TransportMessageSerializerContext.Default
         };
- 		readonly IAmazonSqsMessageTranslationStrategy messageTranslationStrategy =
-            new DefaultAmazonSqsMessageTranslationStrategy();
+ 		readonly IAmazonSqsMessageTranslationStrategy messageTranslationStrategy;
         int numberOfMessagesToFetch;
         ReceiveMessageRequest receiveMessagesRequest;
         CancellationTokenSource messagePumpCancellationTokenSource;

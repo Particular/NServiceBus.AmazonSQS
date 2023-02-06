@@ -5,6 +5,7 @@ namespace NServiceBus
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
     using Configuration.AdvancedExtensibility;
+    using NServiceBus.Transport.SQS;
     using Transport.SQS.Configure;
 
     /// <summary>
@@ -197,6 +198,20 @@ namespace NServiceBus
         public static TransportExtensions<SqsTransport> EnableV1CompatibilityMode(this TransportExtensions<SqsTransport> transportExtensions)
         {
             transportExtensions.Transport.EnableV1CompatibilityMode = true;
+            return transportExtensions;
+        }
+
+        /// <summary>
+        /// Configures how the incoming SQS transport message is extracted.
+        /// </summary>
+        [PreObsolete(
+            ReplacementTypeOrMember = "SqsTransport.IncomingMessageExtractor",
+            Message = "The configuration has been moved to SqsTransport class.",
+            TreatAsErrorFromVersion = "7",
+            RemoveInVersion = "8")]
+        public static TransportExtensions<SqsTransport> IncomingMessageExtractor(this TransportExtensions<SqsTransport> transportExtensions, IAmazonSqsIncomingMessageExtractor incomingMessageExtractor)
+        {
+            transportExtensions.Transport.IncomingMessageExtractor = incomingMessageExtractor;
             return transportExtensions;
         }
 

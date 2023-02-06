@@ -25,7 +25,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 new QueueCache(mockSqsClient, dest => QueueCache.GetSqsQueueName(dest, "")),
                 null, null,
                 (error, exception, ct) => { },
-                new SettingsHolder());
+                new SettingsHolder(), new DefaultAmazonSqsIncomingMessageExtractor());
         }
 
         async Task SetupInitializedPump(OnMessage onMessage = null)

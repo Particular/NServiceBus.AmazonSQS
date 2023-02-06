@@ -26,13 +26,12 @@
                 Body = "message-body"
             };
 
-            var strategy = new DefaultAmazonSqsMessageTranslationStrategy();
+            var strategy = new DefaultAmazonSqsIncomingMessageExtractor();
 
-            var (messageId, transportMessage) = strategy.FromAmazonSqsMessage(message);
+            var canExtract = strategy.TryExtractMessage(message, message.MessageId, out _, out _, out var body);
 
-            Assert.That(messageId, Is.EqualTo(message.MessageId));
-            Assert.That(transportMessage, Is.Not.Null);
-            Assert.That(transportMessage.Body, Is.EqualTo(message.Body));
+            Assert.IsTrue(canExtract);
+            Assert.That(body, Is.EqualTo(message.Body));
         }
     }
 }
