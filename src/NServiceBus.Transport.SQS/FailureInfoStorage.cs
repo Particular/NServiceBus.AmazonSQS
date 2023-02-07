@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.Transport.Sqs
+﻿namespace NServiceBus.Transport.SQS
 {
     using System.Collections.Generic;
 
@@ -17,7 +17,7 @@
             {
                 if (failureInfoPerMessage.TryGetValue(messageId, out var node))
                 {
-                    // We have seen this message before, just update the counter and store exception.
+                    // We have seen this message before, just update the counter
                     node.Attempts++;
 
                     // Maintain invariant: leastRecentlyUsedMessages.First contains the LRU item.
@@ -58,11 +58,10 @@
             }
         }
 
-        Dictionary<string, FailureInfoNode> failureInfoPerMessage = new Dictionary<string, FailureInfoNode>();
-        LinkedList<string> leastRecentlyUsedMessages = new LinkedList<string>();
-        object lockObject = new object();
-
-        int maxElements;
+        readonly Dictionary<string, FailureInfoNode> failureInfoPerMessage = new Dictionary<string, FailureInfoNode>();
+        readonly LinkedList<string> leastRecentlyUsedMessages = new LinkedList<string>();
+        readonly object lockObject = new object();
+        readonly int maxElements;
 
         class FailureInfoNode
         {
@@ -73,6 +72,7 @@
             }
 
             public int Attempts { get; set; }
+
             public LinkedListNode<string> LeastRecentlyUsedEntry { get; }
         }
     }

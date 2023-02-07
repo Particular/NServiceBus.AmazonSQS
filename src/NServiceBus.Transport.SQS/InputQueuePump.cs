@@ -13,7 +13,6 @@ namespace NServiceBus.Transport.SQS
     using Extensions;
     using Logging;
     using SimpleJson;
-    using Sqs;
     using static TransportHeaders;
 
     class InputQueuePump
@@ -250,9 +249,6 @@ namespace NServiceBus.Transport.SQS
 
                 if (IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, CorrectClockSkew.GetClockCorrectionForEndpoint(awsEndpointUrl)))
                 {
-                    // Always delete the message from the queue.
-                    // If processing failed, the onError handler will have moved the message
-                    // to a retry queue.
                     await DeleteMessage(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
                 }
                 else
@@ -300,7 +296,6 @@ namespace NServiceBus.Transport.SQS
                 }
                 catch (Exception ex) when (!(ex is OperationCanceledException && token.IsCancellationRequested))
                 {
-
                     var deliveryAttempts = GetDeliveryAttempts(nativeMessageId);
 
                     try
@@ -479,8 +474,8 @@ namespace NServiceBus.Transport.SQS
             // If there is a message body in S3, simply leave it there
         }
 
-        FailureInfoStorage messagesToBeDeletedStorage = new FailureInfoStorage(1000);
-        FailureInfoStorage deliveryAttemptsStorage = new FailureInfoStorage(1000);
+        readonly FailureInfoStorage deliveryAttemptsStorage = new FailureInfoStorage(1_000);
+        readonly FailureInfoStorage messagesToBeDeletedStorage = new FailureInfoStorage(1_000);
         List<Task> pumpTasks;
         Func<ErrorContext, Task<ErrorHandleResult>> onError;
         Func<MessageContext, Task> onMessage;
