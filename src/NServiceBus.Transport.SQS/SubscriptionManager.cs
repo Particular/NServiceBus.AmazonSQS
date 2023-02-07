@@ -37,13 +37,27 @@ namespace NServiceBus.Transport.SQS
             // The number of elements is a best guess assuming that most endpoints don't have complex event type mappings
             // if they have the list will need to grow but that's probably OK.
             var setupSubscriptionTasks = new List<Task>(eventTypes.Length);
-            foreach (var eventType in eventTypes)
+            foreach (var eventTypeMetadata in eventTypes)
             {
-                SetupTypeSubscriptions(eventType, queueUrl, policyStatementsToBeSettled, setupSubscriptionTasks, cancellationToken);
+                if (IsTypeTopologyKnownConfigured(eventTypeMetadata.MessageType))
+                {
+                    if (Logger.IsDebugEnabled)
+                    {
+                        Logger.Debug($"Skipped subscription for '{eventTypeMetadata.MessageType.FullName}' for queue '{queueName}' because it is already configured");
+                    }
+                    continue;
+                }
+                SetupTypeSubscriptions(eventTypeMetadata, queueUrl, policyStatementsToBeSettled, setupSubscriptionTasks, cancellationToken);
             }
             await Task.WhenAll(setupSubscriptionTasks).ConfigureAwait(false);
 
             await SettlePolicy(queueUrl, policyStatementsToBeSettled, cancellationToken).ConfigureAwait(false);
+
+            // we loop again through the list of event metadata again and mark them all as configured
+            foreach (var eventTypeMetadata in eventTypes)
+            {
+                MarkTypeConfigured(eventTypeMetadata.MessageType);
+            }
         }
 
         public Task Unsubscribe(MessageMetadata message, ContextBag context, CancellationToken cancellationToken = default)
@@ -108,23 +122,7 @@ namespace NServiceBus.Transport.SQS
                 setupSubscriptionTasks.Add(CreateTopicAndSubscribe(mappedType, queueUrl, policyStatementsToBeSettled, cancellationToken));
             }
 
-            async Task CreateTopicAndSubscriptionForTheHandledMessageType()
-            {
-                if (IsTypeTopologyKnownConfigured(metadata.MessageType))
-                {
-                    if (Logger.IsDebugEnabled)
-                    {
-                        Logger.Debug($"Skipped subscription for '{metadata.MessageType.FullName}' for queue '{queueName}' because it is already configured");
-                    }
-
-                    return;
-                }
-
-                await CreateTopicAndSubscribe(metadata.MessageType, queueUrl, policyStatementsToBeSettled, cancellationToken).ConfigureAwait(false);
-                MarkTypeConfigured(metadata.MessageType);
-            }
-
-            setupSubscriptionTasks.Add(CreateTopicAndSubscriptionForTheHandledMessageType());
+            setupSubscriptionTasks.Add(CreateTopicAndSubscribe(metadata.MessageType, queueUrl, policyStatementsToBeSettled, cancellationToken));
         }
 
         async Task CreateTopicAndSubscribe(string topicName, string queueUrl, ConcurrentBag<PolicyStatement> policyStatementsToBeSettled, CancellationToken cancellationToken)
