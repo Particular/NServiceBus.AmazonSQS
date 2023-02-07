@@ -111,7 +111,7 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(expectedId, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(expectedId, new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address"),
                     properties,
                     DispatchConsistency.Isolated));
@@ -134,12 +134,12 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     new DispatchProperties(),
                     DispatchConsistency.Isolated),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
                     new DispatchProperties(),
                     DispatchConsistency.Isolated));
@@ -166,10 +166,10 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new MulticastAddressTag(typeof(Event))),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new MulticastAddressTag(typeof(AnotherEvent)))
                 );
 
@@ -212,10 +212,10 @@
             };
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(messageId, headers, Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(messageId, headers, Encoding.Unicode.GetBytes("{}")),
                     new MulticastAddressTag(typeof(Event))),
                 new TransportOperation(
-                    new OutgoingMessage(messageId, headers, Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(messageId, headers, Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("abc"))
             );
 
@@ -246,10 +246,10 @@
             };
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(messageId, headers, Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(messageId, headers, Encoding.Unicode.GetBytes("{}")),
                     new MulticastAddressTag(typeof(Event))),
                 new TransportOperation(
-                    new OutgoingMessage(messageId, headers, Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(messageId, headers, Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("abc"))
             );
 
@@ -276,7 +276,7 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new MulticastAddressTag(typeof(Event)))
             );
 
@@ -304,7 +304,7 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new MulticastAddressTag(typeof(object)))
             );
 
@@ -334,12 +334,12 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(longBodyMessageId, new Dictionary<string, string>(), Encoding.Default.GetBytes(new string('x', 256 * 1024))),
+                    new OutgoingMessage(longBodyMessageId, new Dictionary<string, string>(), Encoding.Unicode.GetBytes(new string('x', 256 * 1024))),
                     new MulticastAddressTag(typeof(Event)),
                     new DispatchProperties(),
                     DispatchConsistency.Isolated),
                 new TransportOperation( /* Crazy long message id will cause the message to go over limits because attributes count as well */
-                    new OutgoingMessage(crazyLongMessageId, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(crazyLongMessageId, new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new MulticastAddressTag(typeof(AnotherEvent)),
                     new DispatchProperties(),
                     DispatchConsistency.Isolated));
@@ -378,7 +378,7 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     properties,
                     DispatchConsistency.Isolated));
@@ -399,12 +399,12 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     new DispatchProperties(),
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
                     new DispatchProperties(),
                     DispatchConsistency.Default));
@@ -437,12 +437,12 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     properties,
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     properties,
                     DispatchConsistency.Default));
@@ -506,22 +506,22 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(firstMessageIdThatWillFail, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(firstMessageIdThatWillFail, new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     new DispatchProperties(),
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(firstMessageThatWillBeSuccessful, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(firstMessageThatWillBeSuccessful, new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     new DispatchProperties(),
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(secondMessageThatWillBeSuccessful, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(secondMessageThatWillBeSuccessful, new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
                     new DispatchProperties(),
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(secondMessageIdThatWillFail, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(secondMessageIdThatWillFail, new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
                     new DispatchProperties(),
                     DispatchConsistency.Default));
@@ -551,17 +551,17 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes(new string('x', 256 * 1024))),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes(new string('x', 256 * 1024))),
                     new UnicastAddressTag("address1"),
                     new DispatchProperties(),
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes(new string('x', 256 * 1024))),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes(new string('x', 256 * 1024))),
                     new UnicastAddressTag("address2"),
                     new DispatchProperties(),
                     DispatchConsistency.Default),
                 new TransportOperation( /* Crazy long message id will cause the message to go over limits because attributes count as well */
-                    new OutgoingMessage(new string('x', 256 * 1024), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(new string('x', 256 * 1024), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
                     new DispatchProperties(),
                     DispatchConsistency.Default));
@@ -597,17 +597,17 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes(new string('x', 256 * 1024))),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes(new string('x', 256 * 1024))),
                     new UnicastAddressTag("address1"),
                     new DispatchProperties(),
                     DispatchConsistency.Isolated),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes(new string('x', 256 * 1024))),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes(new string('x', 256 * 1024))),
                     new UnicastAddressTag("address2"),
                     new DispatchProperties(),
                     DispatchConsistency.Isolated),
                 new TransportOperation( /* Crazy long message id will cause the message to go over limits because attributes count as well */
-                    new OutgoingMessage(new string('x', 256 * 1024), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(new string('x', 256 * 1024), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
                     new DispatchProperties(),
                     DispatchConsistency.Isolated));
