@@ -72,6 +72,25 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
+        public async Task Subscribe_with_topic_mappings_again_should_ignore_because_cached()
+        {
+            var manager = CreateNonBatchingSubscriptionManager();
+
+            var eventType = typeof(Event);
+            customEventToTopicsMappings.Add(eventType, new[] { "custom-topic-name" });
+
+            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
+
+            var initialSubscribeRequests = new List<SubscribeRequest>(snsClient.SubscribeRequestsSent);
+            snsClient.SubscribeRequestsSent.Clear();
+
+            await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
+
+            Assert.IsNotEmpty(initialSubscribeRequests);
+            Assert.IsEmpty(snsClient.SubscribeRequestsSent);
+        }
+
+        [Test]
         public async Task Subscribe_Unsubscribe_and_Subscribe_again()
         {
             var manager = CreateNonBatchingSubscriptionManager();
