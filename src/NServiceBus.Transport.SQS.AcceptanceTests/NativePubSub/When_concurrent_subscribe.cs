@@ -12,7 +12,8 @@
         public async Task It_should_still_deliver()
         {
             var context = await Scenario.Define<Context>()
-                .WithEndpoint<Publisher>(b => b.When(c => c.Subscribed, (session, ctx) => Task.WhenAll(session.Publish(new MyEvent()), session.Publish(new MyOtherEvent()))))
+                .WithEndpoint<Publisher>(b => b.When(c => c.Subscribed, (session, _) =>
+                    Task.WhenAll(session.Publish(new MyEvent()), session.Publish(new MyOtherEvent()))))
                 .WithEndpoint<Subscriber>(b => b.When(async (session, ctx) =>
                 {
                     await Task.WhenAll(session.Subscribe<MyEvent>(), session.Subscribe<MyOtherEvent>());
@@ -34,21 +35,22 @@
 
         public class Publisher : EndpointConfigurationBuilder
         {
-            public Publisher()
-            {
-                EndpointSetup<DefaultPublisher>(c => { });
-            }
+            public Publisher() => EndpointSetup<DefaultPublisher>();
         }
 
         public class Subscriber : EndpointConfigurationBuilder
         {
-            public Subscriber()
-            {
+            public Subscriber() =>
                 EndpointSetup<DefaultServer>(c =>
                 {
+                    var transport = c.ConfigureSqsTransport();
+                    // Due to optimistic concurrency on queue metadata modifications it is required
+                    // to make sure the same policy outcome is achieved for all concurrent subscribes
+                    // otherwise policies might be partial which can lead to message loss
+                    transport.Policies.TopicNamespaceConditions.Add("NServiceBus.AcceptanceTests.NativePubSub");
+
                     c.DisableFeature<AutoSubscribe>();
                 });
-            }
 
             public class MyHandler : IHandleMessages<MyEvent>
             {
