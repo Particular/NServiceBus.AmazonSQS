@@ -58,7 +58,11 @@
                 sqsRequest = new CreateQueueRequest
                 {
                     QueueName = delayDeliveryQueuePhysicalAddress,
-                    Attributes = new Dictionary<string, string> { { "FifoQueue", "true" } }
+                    Attributes = new Dictionary<string, string>
+                    {
+                        { "FifoQueue", "true" },
+                        { QueueAttributeName.DelaySeconds, queueDelaySeconds.ToString(CultureInfo.InvariantCulture) },
+                    }
                 };
 
                 Logger.Info($"Creating SQS delayed delivery queue with name '{sqsRequest.QueueName}' for address '{address}'.");
@@ -71,8 +75,11 @@
                     QueueUrl = createQueueResponse.QueueUrl
                 };
 
+                // Set the queue attributes in a separate call.
+                // If you call CreateQueue with a queue name that already exists, and with a different
+                // value for MessageRetentionPeriod, the service throws. This will happen if you
+                // change the MaxTTLDays configuration property.
                 sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod, TransportConstraints.DelayedDeliveryQueueMessageRetentionPeriod.TotalSeconds.ToString(CultureInfo.InvariantCulture));
-                sqsAttributesRequest.Attributes.Add(QueueAttributeName.DelaySeconds, queueDelaySeconds.ToString(CultureInfo.InvariantCulture));
 
                 await sqsClient.SetQueueAttributesAsync(sqsAttributesRequest, cancellationToken).ConfigureAwait(false);
             }
