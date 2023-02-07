@@ -47,7 +47,7 @@
                     // Due to optimistic concurrency on queue metadata modifications it is required
                     // to make sure the same policy outcome is achieved for all concurrent subscribes
                     // otherwise policies might be partial which can lead to message loss
-                    transport.Policies.TopicNamespaceConditions.Add("NServiceBus.AcceptanceTests.NativePubSub");
+                    transport.Policies().AddNamespaceCondition("NServiceBus.AcceptanceTests.NativePubSub");
 
                     c.DisableFeature<AutoSubscribe>();
                 });
