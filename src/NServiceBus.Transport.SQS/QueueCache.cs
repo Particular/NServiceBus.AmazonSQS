@@ -2,7 +2,9 @@
 {
     using System;
     using System.Collections.Concurrent;
+#if NETFRAMEWORK
     using System.Text;
+#endif
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.SQS;
@@ -74,13 +76,36 @@
             return GetSanitizedQueueName(queueName);
         }
 
+        // SQS queue names can only have alphanumeric characters, hyphens and underscores.
+        // Any other characters will be replaced with a hyphen.
         static string GetSanitizedQueueName(string queueName)
         {
-            var queueNameBuilder = new StringBuilder(queueName);
             var skipCharacters = queueName.EndsWith(".fifo") ? 5 : 0;
-            // SQS queue names can only have alphanumeric characters, hyphens and underscores.
-            // Any other characters will be replaced with a hyphen.
-            for (var i = 0; i < queueNameBuilder.Length - skipCharacters; ++i)
+            var charactersToProcess = queueName.Length - skipCharacters;
+#if NET
+            return string.Create(queueName.Length, (queueName, charactersToProcess), static (chars, state) =>
+            {
+                var (queueName, charactersToProcess) = state;
+                var queueNameSpan = queueName.AsSpan();
+                for (int i = 0; i < chars.Length; i++)
+                {
+                    var c = queueNameSpan[i];
+                    if (!char.IsLetterOrDigit(c)
+                        && c != '-'
+                        && c != '_'
+                        && i < charactersToProcess)
+                    {
+                        chars[i] = '-';
+                    }
+                    else
+                    {
+                        chars[i] = c;
+                    }
+                }
+            });
+#else
+            var queueNameBuilder = new StringBuilder(queueName);
+            for (var i = 0; i < charactersToProcess; ++i)
             {
                 var c = queueNameBuilder[i];
                 if (!char.IsLetterOrDigit(c)
@@ -92,6 +117,7 @@
             }
 
             return queueNameBuilder.ToString();
+#endif
         }
 
         readonly ConcurrentDictionary<string, string> queueNameToUrlCache;
