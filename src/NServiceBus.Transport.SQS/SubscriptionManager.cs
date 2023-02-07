@@ -139,7 +139,7 @@ namespace NServiceBus.Transport.SQS
             await SubscribeTo(createTopicResponse.TopicArn, topicName, queueUrl, policyStatementsToBeSettled, cancellationToken).ConfigureAwait(false);
         }
 
-        async Task SubscribeTo(string topicArn, string topicName, string queueUrl, ConcurrentBag<PolicyStatement> policyStatementsToBeSettled, CancellationToken cancellationToken)
+        async ValueTask SubscribeTo(string topicArn, string topicName, string queueUrl, ConcurrentBag<PolicyStatement> policyStatementsToBeSettled, CancellationToken cancellationToken)
         {
             var sqsQueueArn = await queueCache.GetQueueArn(queueUrl, cancellationToken).ConfigureAwait(false);
 
