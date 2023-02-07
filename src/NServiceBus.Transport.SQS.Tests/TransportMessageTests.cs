@@ -2,11 +2,13 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Text;
     using System.Text.Json;
+    using System.Threading.Tasks;
+    using NServiceBus.Transport.SQS.Extensions;
     using NServiceBus;
     using NUnit.Framework;
     using Performance.TimeToBeReceived;
-    using SQS;
     using Transport;
 
     [TestFixture]
@@ -131,7 +133,7 @@
                 {
                     {Headers.MessageId, Guid.Empty.ToString()}
                 },
-                Body = "empty message",
+                Body = TransportMessage.EmptyMessage,
                 S3BodyKey = (string)null,
                 TimeToBeReceived = ExpectedTtbr.ToString(),
                 ReplyToAddress = new TransportMessage.Address
@@ -158,7 +160,7 @@
                 {
                     {Headers.MessageId, Guid.Empty.ToString()}
                 },
-                Body = "empty message",
+                Body = TransportMessage.EmptyMessage,
                 S3BodyKey = (string)null
             });
 
@@ -168,6 +170,50 @@
             Assert.AreEqual(TimeSpan.MaxValue.ToString(), transportMessage.TimeToBeReceived, "TimeToBeReceived does not match expected value.");
             Assert.IsFalse(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), "ReplyToAddress header was found");
             Assert.IsNull(transportMessage.ReplyToAddress, "ReplyToAddress was not null.");
+        }
+
+        [Test]
+        public async Task Empty_body_is_received_ok()
+        {
+            var messageId = Guid.NewGuid().ToString();
+            var body = Array.Empty<byte>();
+            var outgoingMessage = new OutgoingMessage(messageId, new Dictionary<string, string>(), body);
+
+            var transportMessage = new TransportMessage(outgoingMessage, new DispatchProperties());
+
+            var receivedBodyArray = await transportMessage.RetrieveBody(messageId, null);
+            var receivedBody = Encoding.Unicode.GetString(receivedBodyArray);
+
+            CollectionAssert.AreEqual(receivedBodyArray, body);
+            Assert.That(receivedBody, Is.Null.Or.Empty);
+        }
+
+        [Test]
+        public async Task Null_body_is_received_ok()
+        {
+            var messageId = Guid.NewGuid().ToString();
+            var outgoingMessage = new OutgoingMessage(messageId, new Dictionary<string, string>(), null);
+
+            var transportMessage = new TransportMessage(outgoingMessage, new DispatchProperties());
+
+            var receivedBodyArray = await transportMessage.RetrieveBody(messageId, null);
+            var receivedBody = Encoding.Unicode.GetString(receivedBodyArray);
+
+            Assert.That(receivedBody, Is.Null.Or.Empty);
+        }
+
+        [Test]
+        public async Task Empty_message_string_body_is_received_as_empty()
+        {
+            var transportMessage = new TransportMessage
+            {
+                Body = "empty message",
+            };
+
+            var receivedBodyArray = await transportMessage.RetrieveBody(Guid.NewGuid().ToString(), null);
+            var receivedBody = Encoding.Unicode.GetString(receivedBodyArray);
+
+            Assert.That(receivedBody, Is.Null.Or.Empty);
         }
 
         const string ExpectedReplyToAddress = "TestReplyToAddress";
