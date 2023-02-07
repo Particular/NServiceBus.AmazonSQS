@@ -18,17 +18,12 @@
             this.queueNameGenerator = queueNameGenerator;
         }
 
-        public void SetQueueUrl(string queueName, string queueUrl)
-        {
-            queueNameToUrlCache.TryAdd(queueName, queueUrl);
-        }
+        public void SetQueueUrl(string queueName, string queueUrl) => queueNameToUrlCache.TryAdd(queueName, queueUrl);
 
         public string GetPhysicalQueueName(string queueName)
-        {
-            return queueNameToPhysicalAddressCache.GetOrAdd(queueName, name => queueNameGenerator(name));
-        }
+            => queueNameToPhysicalAddressCache.GetOrAdd(queueName, static (name, generator) => generator(name), queueNameGenerator);
 
-        public async Task<string> GetQueueArn(string queueUrl, CancellationToken cancellationToken = default)
+        public async ValueTask<string> GetQueueArn(string queueUrl, CancellationToken cancellationToken = default)
         {
             if (queueUrlToQueueArnCache.TryGetValue(queueUrl, out var queueArn))
             {
@@ -39,7 +34,7 @@
             return queueUrlToQueueArnCache.AddOrUpdate(queueUrl, queueAttributes["QueueArn"], (key, value) => value);
         }
 
-        public async Task<string> GetQueueUrl(string queueName, CancellationToken cancellationToken = default)
+        public async ValueTask<string> GetQueueUrl(string queueName, CancellationToken cancellationToken = default)
         {
             if (queueNameToUrlCache.TryGetValue(queueName, out var queueUrl))
             {
@@ -50,7 +45,7 @@
             var response = await sqsClient.GetQueueUrlAsync(physicalQueueName, cancellationToken)
                 .ConfigureAwait(false);
             queueUrl = response.QueueUrl;
-            return queueNameToUrlCache.AddOrUpdate(queueName, queueUrl, (key, value) => value);
+            return queueNameToUrlCache.AddOrUpdate(queueName, queueUrl, static (_, value) => value);
         }
 
         public static string GetSqsQueueName(string destination, string queueNamePrefix)
