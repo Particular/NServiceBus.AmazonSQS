@@ -133,7 +133,7 @@
                 {
                     {Headers.MessageId, Guid.Empty.ToString()}
                 },
-                Body = (string)null,
+                Body = TransportMessage.EmptyMessage,
                 S3BodyKey = (string)null,
                 TimeToBeReceived = ExpectedTtbr.ToString(),
                 ReplyToAddress = new TransportMessage.Address
@@ -160,7 +160,7 @@
                 {
                     {Headers.MessageId, Guid.Empty.ToString()}
                 },
-                Body = (string)null,
+                Body = TransportMessage.EmptyMessage,
                 S3BodyKey = (string)null
             });
 
