@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.7.103.2" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.103.4" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.101.5" />
     <PackageReference Include="AWSSDK.SQS" Version="3.7.100.68" />
     <PackageReference Include="BitFaster.Caching" Version="2.1.1" />
