@@ -67,15 +67,13 @@
 
         static async Task UploadMessageBodyToS3(string key)
         {
-            using (var s3Client = ConfigureEndpointSqsTransport.CreateS3Client())
+            using var s3Client = ConfigureEndpointSqsTransport.CreateS3Client();
+            await s3Client.PutObjectAsync(new PutObjectRequest
             {
-                await s3Client.PutObjectAsync(new PutObjectRequest
-                {
-                    Key = key,
-                    BucketName = ConfigureEndpointSqsTransport.S3BucketName,
-                    ContentBody = MessageToSend
-                });
-            }
+                Key = key,
+                BucketName = ConfigureEndpointSqsTransport.S3BucketName,
+                ContentBody = MessageToSend
+            });
         }
 
         public class Receiver : EndpointConfigurationBuilder
