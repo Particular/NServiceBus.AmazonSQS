@@ -21,7 +21,7 @@
                     {
                         cfg.SendFailedMessagesTo(Conventions.EndpointNamingConvention(typeof(ErrorSpy)));
                     });
-                    c.When(async (session, ctx) =>
+                    c.When(async (_, ctx) =>
                     {
                         await NativeEndpoint.SendTo<Receiver, Message>(new Dictionary<string, MessageAttributeValue>
                             {
@@ -51,17 +51,11 @@
 
         public class Receiver : EndpointConfigurationBuilder
         {
-            public Receiver()
-            {
-                EndpointSetup<DefaultServer>();
-            }
+            public Receiver() => EndpointSetup<DefaultServer>();
 
             class MyHandler : IHandleMessages<Message>
             {
-                public MyHandler(Context testContext)
-                {
-                    this.testContext = testContext;
-                }
+                public MyHandler(Context testContext) => this.testContext = testContext;
 
                 public Task Handle(Message message, IMessageHandlerContext context)
                 {
@@ -75,7 +69,7 @@
                     return Task.CompletedTask;
                 }
 
-                Context testContext;
+                readonly Context testContext;
             }
         }
 
@@ -88,26 +82,18 @@
 
         class Context : ScenarioContext
         {
-            public string ErrorQueueAddress { get; set; }
             public string MessageReceived { get; set; }
-            public bool MessageMovedToPoisonQueue { get; set; }
             public Dictionary<string, MessageAttributeValue> MessageAttributesFoundInNativeMessage { get; set; }
             public bool MessageFoundInErrorQueue { get; set; }
         }
 
         class ErrorSpy : EndpointConfigurationBuilder
         {
-            public ErrorSpy()
-            {
-                EndpointSetup<DefaultServer>(config => config.LimitMessageProcessingConcurrencyTo(1));
-            }
+            public ErrorSpy() => EndpointSetup<DefaultServer>(config => config.LimitMessageProcessingConcurrencyTo(1));
 
             class ErrorMessageHandler : IHandleMessages<Message>
             {
-                public ErrorMessageHandler(Context testContext)
-                {
-                    this.testContext = testContext;
-                }
+                public ErrorMessageHandler(Context testContext) => this.testContext = testContext;
 
                 public Task Handle(Message initiatingMessage, IMessageHandlerContext context)
                 {
@@ -121,7 +107,7 @@
                     return Task.CompletedTask;
                 }
 
-                Context testContext;
+                readonly Context testContext;
             }
         }
     }

@@ -23,36 +23,26 @@
 
         public class Receiver : EndpointConfigurationBuilder
         {
-            public Receiver()
-            {
+            public Receiver() =>
                 EndpointSetup<DefaultServer>(c =>
                     c.Pipeline.Register(typeof(MyCustomBehavior), "Behavior that needs access to native message"));
-            }
 
             class MyCustomBehavior : Behavior<IIncomingPhysicalMessageContext>
             {
-                Context testContext;
-
-                public MyCustomBehavior(Context testContext)
-                {
-                    this.testContext = testContext;
-                }
+                public MyCustomBehavior(Context testContext) => this.testContext = testContext;
 
                 public override Task Invoke(IIncomingPhysicalMessageContext context, Func<Task> next)
                 {
                     testContext.BehaviorHasAccessToNativeSqsMessage = context.Extensions.TryGet<Amazon.SQS.Model.Message>(out _);
                     return next();
                 }
+
+                readonly Context testContext;
             }
 
             class MyHandler : IHandleMessages<Message>
             {
-                Context testContext;
-
-                public MyHandler(Context testContext)
-                {
-                    this.testContext = testContext;
-                }
+                public MyHandler(Context testContext) => this.testContext = testContext;
 
                 public Task Handle(Message message, IMessageHandlerContext context)
                 {
@@ -61,6 +51,8 @@
 
                     return Task.CompletedTask;
                 }
+
+                readonly Context testContext;
             }
         }
 
