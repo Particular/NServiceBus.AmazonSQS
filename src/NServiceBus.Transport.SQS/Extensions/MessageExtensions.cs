@@ -3,7 +3,6 @@
 namespace NServiceBus.Transport.SQS.Extensions
 {
     using System;
-    using System.Buffers;
     using System.Globalization;
     using Amazon.SQS.Model;
 

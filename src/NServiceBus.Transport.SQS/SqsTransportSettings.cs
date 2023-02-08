@@ -177,20 +177,6 @@ namespace NServiceBus
         /// Configures the SQS transport to be compatible with 1.x versions of the transport.
         /// </summary>
         [PreObsolete(
-            ReplacementTypeOrMember = "SqsTransport.DoNotBase64EncodeOutgoingMessages",
-            Message = "The configuration has been moved to SqsTransport class.",
-            TreatAsErrorFromVersion = "7",
-            RemoveInVersion = "8")]
-        public static TransportExtensions<SqsTransport> DoNotBase64EncodeOutgoingMessages(this TransportExtensions<SqsTransport> transportExtensions)
-        {
-            transportExtensions.Transport.DoNotBase64EncodeOutgoingMessages = true;
-            return transportExtensions;
-        }
-
-        /// <summary>
-        /// Configures the SQS transport to be compatible with 1.x versions of the transport.
-        /// </summary>
-        [PreObsolete(
             ReplacementTypeOrMember = "SqsTransport.EnableV1CompatibilityMode",
             Message = "The configuration has been moved to SqsTransport class.",
             TreatAsErrorFromVersion = "7",
