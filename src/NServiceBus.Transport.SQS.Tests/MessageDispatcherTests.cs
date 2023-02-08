@@ -10,6 +10,7 @@
     using Amazon.SQS.Model;
     using Configure;
     using DelayedDelivery;
+    using Newtonsoft.Json.Linq;
     using NServiceBus;
     using NUnit.Framework;
     using Particular.Approvals;
@@ -394,7 +395,7 @@
         {
             var mockSqsClient = new MockSqsClient();
 
-            var dispatcher = new MessageDispatcher(new Settings.SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
+            var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
                 dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, true);
 
             var transportOperations = new TransportOperations(
@@ -545,7 +546,7 @@
             var mockS3Client = new MockS3Client();
             var mockSqsClient = new MockSqsClient();
 
-            var dispatcher = new MessageDispatcher(new Settings.SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
+            var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
                 dest => QueueCache.GetSqsQueueName(dest, "")), null,
                 new S3Settings("someBucket", "somePrefix", mockS3Client), 15 * 60, true);
 
@@ -591,7 +592,7 @@
             var mockS3Client = new MockS3Client();
             var mockSqsClient = new MockSqsClient();
 
-            var dispatcher = new MessageDispatcher(new Settings.SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
+            var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
                 dest => QueueCache.GetSqsQueueName(dest, "")), null,
                 new S3Settings("someBucket", "somePrefix", mockS3Client), 15 * 60, true);
 

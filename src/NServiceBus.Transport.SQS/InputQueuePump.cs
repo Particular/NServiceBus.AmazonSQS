@@ -298,7 +298,7 @@ namespace NServiceBus.Transport.SQS
                     }
                     else
                     {
-                         transportMessage = JsonSerializer.Deserialize<TransportMessage>(receivedMessage.Body, transportMessageSerializerOptions);
+                        transportMessage = JsonSerializer.Deserialize<TransportMessage>(receivedMessage.Body, transportMessageSerializerOptions);
                     }
 
                     (messageBody, messageBodyBuffer) = await transportMessage.RetrieveBody(messageId, s3Settings, arrayPool, messageProcessingCancellationToken).ConfigureAwait(false);
@@ -310,7 +310,7 @@ namespace NServiceBus.Transport.SQS
                     isPoisonMessage = true;
                 }
 
-                if (isPoisonMessage || messageBody.IsEmpty)
+                if (isPoisonMessage || transportMessage == null)
                 {
                     var logMessage = $"Treating message with {messageId} as a poison message. Moving to error queue.";
 
@@ -327,33 +327,21 @@ namespace NServiceBus.Transport.SQS
                         .ConfigureAwait(false);
                     return;
                 }
-                          
 
-	            if (IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, sqsClient.Config.ClockOffset))
-	            {
-	                await DeleteMessage(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
-	            }
-	            else
-	            {
-	                // here we also want to use the native message id because the core demands it like that
-	                var messageProcessed = await InnerProcessMessage(transportMessage.Headers, nativeMessageId, messageBody, receivedMessage, messageProcessingCancellationToken).ConfigureAwait(false);
-	
-	                if (messageProcessed)
-	 	               {
- 	                   await DeleteMessage(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
- 	               }
- 	               else
- 	               {
- 	                   // here we also want to use the native message id because the core demands it like that
- 	                   var messageProcessed = await InnerProcessMessage(transportMessage.Headers, nativeMessageId,
- 	                       messageBody, receivedMessage, messageProcessingCancellationToken).ConfigureAwait(false);
+                if (IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, sqsClient.Config.ClockOffset))
+                {
+                    await DeleteMessage(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
+                }
+                else
+                {
+                    // here we also want to use the native message id because the core demands it like that
+                    var messageProcessed = await InnerProcessMessage(transportMessage.Headers, nativeMessageId, messageBody, receivedMessage, messageProcessingCancellationToken).ConfigureAwait(false);
 
-	 	                   if (messageProcessed)
- 	                   {
- 	                       await DeleteMessage(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
- 	                   }
- 	               }
- 	           }
+                    if (messageProcessed)
+                    {
+                        await DeleteMessage(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
+                    }
+                }
             }
             finally
             {

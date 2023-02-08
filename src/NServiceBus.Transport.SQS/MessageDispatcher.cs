@@ -32,7 +32,7 @@
             this.snsClient = snsClient;
             this.sqsClient = sqsClient;
             this.queueCache = queueCache;
-            this.encodeBodyToBase64 = encodeBodyToBase64;            
+            this.encodeBodyToBase64 = encodeBodyToBase64;
 
             transportMessageSerializerOptions = v1Compatibility
                 ? new JsonSerializerOptions { TypeInfoResolver = TransportMessageSerializerContext.Default }
