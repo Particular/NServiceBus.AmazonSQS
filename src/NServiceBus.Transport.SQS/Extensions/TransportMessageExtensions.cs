@@ -11,19 +11,17 @@ namespace NServiceBus.Transport.SQS.Extensions
 
     static class TransportMessageExtensions
     {
-        public static async Task<(ReadOnlyMemory<byte> MessageBody, byte[]? MessageBodyBuffer)> RetrieveBody(this TransportMessage transportMessage, string messageId, S3Settings s3Settings, ArrayPool<byte> arrayPool,
+        public static async ValueTask<(ReadOnlyMemory<byte> MessageBody, byte[]? MessageBodyBuffer)> RetrieveBody(this TransportMessage transportMessage, string messageId, S3Settings s3Settings, ArrayPool<byte> arrayPool,
             CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(transportMessage.S3BodyKey))
             {
                 if (transportMessage.Body == TransportMessage.EmptyMessage)
                 {
-                    return (Array.Empty<byte>(), null);
+                    return EmptyMessage;
                 }
-                else
-                {
-                    return ConvertBody(transportMessage.Body, arrayPool);
-                }
+
+                return ConvertBody(transportMessage.Body, arrayPool);
             }
 
             if (s3Settings == null)
@@ -76,5 +74,8 @@ namespace NServiceBus.Transport.SQS.Extensions
             return (buffer.AsMemory(0, writtenBytes), buffer);
 #endif
         }
+
+        static readonly (ReadOnlyMemory<byte> MessageBody, byte[]? MessageBodyBuffer)
+            EmptyMessage = (Array.Empty<byte>(), null);
     }
 }
