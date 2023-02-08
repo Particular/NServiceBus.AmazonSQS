@@ -5,12 +5,12 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
+    using System.Text.Json.Nodes;
     using System.Threading.Tasks;
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS.Model;
     using Configure;
     using DelayedDelivery;
-    using Newtonsoft.Json.Linq;
     using NServiceBus;
     using NUnit.Framework;
     using Particular.Approvals;
@@ -661,9 +661,9 @@
             Assert.IsNotEmpty(mockSqsClient.RequestsSent, "No requests sent");
             var request = mockSqsClient.RequestsSent.First();
 
-            var bodyJson = JObject.Parse(request.MessageBody);
+            var bodyJson = JsonNode.Parse(request.MessageBody);
 
-            Assert.AreEqual(Convert.ToBase64String(msgBodyByte), bodyJson["Body"].Value<string>());
+            Assert.AreEqual(Convert.ToBase64String(msgBodyByte), bodyJson["Body"].GetValue<string>());
         }
 
         [Test]
@@ -695,9 +695,9 @@
             Assert.IsNotEmpty(mockSqsClient.RequestsSent, "No requests sent");
             var request = mockSqsClient.RequestsSent.First();
 
-            var bodyJson = JObject.Parse(request.MessageBody);
+            var bodyJson = JsonNode.Parse(request.MessageBody);
 
-            Assert.AreEqual(msgBody, bodyJson["Body"].Value<string>());
+            Assert.AreEqual(msgBody, bodyJson["Body"].GetValue<string>());
         }
 
         interface IEvent { }
