@@ -11,6 +11,7 @@
     using Amazon.SQS.Model;
     using Configure;
     using DelayedDelivery;
+    using Newtonsoft.Json.Linq;
     using NServiceBus;
     using NUnit.Framework;
     using Particular.Approvals;

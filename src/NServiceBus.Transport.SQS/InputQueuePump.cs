@@ -327,7 +327,6 @@ namespace NServiceBus.Transport.SQS
                         .ConfigureAwait(false);
                     return;
                 }
-                          
 
                 if (IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, sqsClient.Config.ClockOffset))
                 {
