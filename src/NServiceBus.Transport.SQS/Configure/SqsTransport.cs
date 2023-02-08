@@ -125,7 +125,7 @@
         /// </summary>
         public IAmazonSqsIncomingMessageExtractor IncomingMessageExtractor { get; set; } = new DefaultAmazonSqsIncomingMessageExtractor();
 
-		/// <summary>
+        /// <summary>
         /// Configures the SQS transport to not base64 encode outgoing messages. 
         /// Only turn this on if all your endpoints are version 6.1.0 or above.
         /// </summary>
