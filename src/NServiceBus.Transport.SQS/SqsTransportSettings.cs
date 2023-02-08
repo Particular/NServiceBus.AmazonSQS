@@ -158,7 +158,8 @@ namespace NServiceBus
         }
 
         /// <summary>
-        /// Configures the SQS transport to be compatible with 1.x versions of the transport.
+        /// Configures the SQS transport to not base64 encode outgoing messages.
+        /// Only turn this on if all your endpoints are version 6.1.0 or above.
         /// </summary>
         [PreObsolete(
             ReplacementTypeOrMember = "SqsTransport.DoNotBase64EncodeOutgoingMessages",
