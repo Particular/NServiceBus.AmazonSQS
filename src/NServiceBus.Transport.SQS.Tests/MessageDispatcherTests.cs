@@ -5,6 +5,7 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
+    using System.Text.Json.Nodes;
     using System.Threading.Tasks;
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS.Model;
@@ -111,7 +112,7 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(expectedId, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(expectedId, new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address"),
                     properties,
                     DispatchConsistency.Isolated));
@@ -134,12 +135,12 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     new DispatchProperties(),
                     DispatchConsistency.Isolated),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
                     new DispatchProperties(),
                     DispatchConsistency.Isolated));
@@ -166,10 +167,10 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new MulticastAddressTag(typeof(Event))),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new MulticastAddressTag(typeof(AnotherEvent)))
                 );
 
@@ -212,10 +213,10 @@
             };
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(messageId, headers, Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(messageId, headers, Encoding.Unicode.GetBytes("{}")),
                     new MulticastAddressTag(typeof(Event))),
                 new TransportOperation(
-                    new OutgoingMessage(messageId, headers, Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(messageId, headers, Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("abc"))
             );
 
@@ -246,10 +247,10 @@
             };
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(messageId, headers, Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(messageId, headers, Encoding.Unicode.GetBytes("{}")),
                     new MulticastAddressTag(typeof(Event))),
                 new TransportOperation(
-                    new OutgoingMessage(messageId, headers, Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(messageId, headers, Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("abc"))
             );
 
@@ -276,7 +277,7 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new MulticastAddressTag(typeof(Event)))
             );
 
@@ -304,7 +305,7 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new MulticastAddressTag(typeof(object)))
             );
 
@@ -334,12 +335,12 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(longBodyMessageId, new Dictionary<string, string>(), Encoding.Default.GetBytes(new string('x', 256 * 1024))),
+                    new OutgoingMessage(longBodyMessageId, new Dictionary<string, string>(), Encoding.Unicode.GetBytes(new string('x', 256 * 1024))),
                     new MulticastAddressTag(typeof(Event)),
                     new DispatchProperties(),
                     DispatchConsistency.Isolated),
                 new TransportOperation( /* Crazy long message id will cause the message to go over limits because attributes count as well */
-                    new OutgoingMessage(crazyLongMessageId, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(crazyLongMessageId, new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new MulticastAddressTag(typeof(AnotherEvent)),
                     new DispatchProperties(),
                     DispatchConsistency.Isolated));
@@ -378,7 +379,7 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     properties,
                     DispatchConsistency.Isolated));
@@ -394,17 +395,17 @@
         {
             var mockSqsClient = new MockSqsClient();
 
-            var dispatcher = new MessageDispatcher(new Settings.SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
+            var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
                 dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, true);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     new DispatchProperties(),
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
                     new DispatchProperties(),
                     DispatchConsistency.Default));
@@ -437,12 +438,12 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     properties,
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     properties,
                     DispatchConsistency.Default));
@@ -506,22 +507,22 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(firstMessageIdThatWillFail, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(firstMessageIdThatWillFail, new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     new DispatchProperties(),
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(firstMessageThatWillBeSuccessful, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(firstMessageThatWillBeSuccessful, new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     new DispatchProperties(),
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(secondMessageThatWillBeSuccessful, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(secondMessageThatWillBeSuccessful, new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
                     new DispatchProperties(),
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(secondMessageIdThatWillFail, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(secondMessageIdThatWillFail, new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
                     new DispatchProperties(),
                     DispatchConsistency.Default));
@@ -545,23 +546,23 @@
             var mockS3Client = new MockS3Client();
             var mockSqsClient = new MockSqsClient();
 
-            var dispatcher = new MessageDispatcher(new Settings.SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
+            var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
                 dest => QueueCache.GetSqsQueueName(dest, "")), null,
                 new S3Settings("someBucket", "somePrefix", mockS3Client), 15 * 60, true);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes(new string('x', 256 * 1024))),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes(new string('x', 256 * 1024))),
                     new UnicastAddressTag("address1"),
                     new DispatchProperties(),
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes(new string('x', 256 * 1024))),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes(new string('x', 256 * 1024))),
                     new UnicastAddressTag("address2"),
                     new DispatchProperties(),
                     DispatchConsistency.Default),
                 new TransportOperation( /* Crazy long message id will cause the message to go over limits because attributes count as well */
-                    new OutgoingMessage(new string('x', 256 * 1024), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(new string('x', 256 * 1024), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
                     new DispatchProperties(),
                     DispatchConsistency.Default));
@@ -591,23 +592,23 @@
             var mockS3Client = new MockS3Client();
             var mockSqsClient = new MockSqsClient();
 
-            var dispatcher = new MessageDispatcher(new Settings.SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
+            var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
                 dest => QueueCache.GetSqsQueueName(dest, "")), null,
                 new S3Settings("someBucket", "somePrefix", mockS3Client), 15 * 60, true);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes(new string('x', 256 * 1024))),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes(new string('x', 256 * 1024))),
                     new UnicastAddressTag("address1"),
                     new DispatchProperties(),
                     DispatchConsistency.Isolated),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes(new string('x', 256 * 1024))),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Unicode.GetBytes(new string('x', 256 * 1024))),
                     new UnicastAddressTag("address2"),
                     new DispatchProperties(),
                     DispatchConsistency.Isolated),
                 new TransportOperation( /* Crazy long message id will cause the message to go over limits because attributes count as well */
-                    new OutgoingMessage(new string('x', 256 * 1024), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(new string('x', 256 * 1024), new Dictionary<string, string>(), Encoding.Unicode.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
                     new DispatchProperties(),
                     DispatchConsistency.Isolated));
@@ -629,6 +630,74 @@
             StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{firstUpload.Key}", mockSqsClient.RequestsSent.ElementAt(0).MessageBody);
             StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{secondUpload.Key}", mockSqsClient.RequestsSent.ElementAt(1).MessageBody);
             StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{thirdUpload.Key}", mockSqsClient.RequestsSent.ElementAt(2).MessageBody);
+        }
+
+        [Test]
+        public async Task Should_base64_encode_by_default()
+        {
+            var mockSqsClient = new MockSqsClient();
+
+            var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
+                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, v1Compatibility: true);
+
+            var msgBody = "my message body";
+            var msgBodyByte = Encoding.Unicode.GetBytes(msgBody);
+
+            var transportOperations = new TransportOperations(
+                new TransportOperation(
+                    new OutgoingMessage("1234", new Dictionary<string, string>
+                    {
+                        {TransportHeaders.TimeToBeReceived, ExpectedTtbr.ToString()},
+                        {Headers.ReplyToAddress, ExpectedReplyToAddress}
+                    }, msgBodyByte),
+                    new UnicastAddressTag("address"),
+                    new DispatchProperties(),
+                    DispatchConsistency.Isolated));
+
+            var transportTransaction = new TransportTransaction();
+
+            await dispatcher.Dispatch(transportOperations, transportTransaction);
+
+            Assert.IsNotEmpty(mockSqsClient.RequestsSent, "No requests sent");
+            var request = mockSqsClient.RequestsSent.First();
+
+            var bodyJson = JsonNode.Parse(request.MessageBody);
+
+            Assert.AreEqual(Convert.ToBase64String(msgBodyByte), bodyJson["Body"].GetValue<string>());
+        }
+
+        [Test]
+        public async Task Should_not_base64_encode_if_configured_not_to()
+        {
+            var mockSqsClient = new MockSqsClient();
+
+            var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
+                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, v1Compatibility: true, encodeBodyToBase64: false);
+
+            var msgBody = "my message body";
+            var msgBodyByte = Encoding.Unicode.GetBytes(msgBody);
+
+            var transportOperations = new TransportOperations(
+                new TransportOperation(
+                    new OutgoingMessage("1234", new Dictionary<string, string>
+                    {
+                        {TransportHeaders.TimeToBeReceived, ExpectedTtbr.ToString()},
+                        {Headers.ReplyToAddress, ExpectedReplyToAddress}
+                    }, msgBodyByte),
+                    new UnicastAddressTag("address"),
+                    new DispatchProperties(),
+                    DispatchConsistency.Isolated));
+
+            var transportTransaction = new TransportTransaction();
+
+            await dispatcher.Dispatch(transportOperations, transportTransaction);
+
+            Assert.IsNotEmpty(mockSqsClient.RequestsSent, "No requests sent");
+            var request = mockSqsClient.RequestsSent.First();
+
+            var bodyJson = JsonNode.Parse(request.MessageBody);
+
+            Assert.AreEqual(msgBody, bodyJson["Body"].GetValue<string>());
         }
 
         interface IEvent { }

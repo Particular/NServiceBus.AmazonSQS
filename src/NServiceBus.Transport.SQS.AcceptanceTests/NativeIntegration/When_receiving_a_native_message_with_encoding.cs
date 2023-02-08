@@ -12,7 +12,7 @@
     using EndpointTemplates;
     using NUnit.Framework;
 
-    public class When_receiving_a_native_message : NServiceBusAcceptanceTest
+    public class When_receiving_a_native_message_with_encoding : NServiceBusAcceptanceTest
     {
         static readonly string MessageToSend = new XDocument(new XElement("Message", new XElement("ThisIsTheMessage", "Hello!"))).ToString();
 
@@ -36,7 +36,8 @@
         [Test]
         public async Task Should_fail_when_messagetypefullname_not_present()
         {
-            var cancellationTokenSource = new CancellationTokenSource();
+            using var cancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = cancellationTokenSource.Token;
             try
             {
                 await Scenario.Define<Context>()
@@ -58,7 +59,7 @@
                             _ = NativeEndpoint.ConsumePoisonQueue(ctx.TestRunId, ctx.ErrorQueueAddress, _ =>
                             {
                                 ctx.MessageMovedToPoisonQueue = true;
-                            }, cancellationTokenSource.Token);
+                            }, cancellationToken);
                         }).DoNotFailOnErrorMessages();
                     })
                     .Done(c => c.MessageMovedToPoisonQueue)
@@ -92,33 +93,23 @@
 
         static async Task UploadMessageBodyToS3(string key)
         {
-            using (var s3Client = ConfigureEndpointSqsTransport.CreateS3Client())
+            using var s3Client = ConfigureEndpointSqsTransport.CreateS3Client();
+            await s3Client.PutObjectAsync(new PutObjectRequest
             {
-                await s3Client.PutObjectAsync(new PutObjectRequest
-                {
-                    Key = key,
-                    BucketName = ConfigureEndpointSqsTransport.S3BucketName,
-                    ContentBody = MessageToSend
-                });
-            }
+                Key = key,
+                BucketName = ConfigureEndpointSqsTransport.S3BucketName,
+                ContentBody = MessageToSend
+            });
         }
 
         public class Receiver : EndpointConfigurationBuilder
         {
-            public Receiver()
-            {
-                EndpointSetup<DefaultServer>(c =>
-                {
-                    c.ConfigureSqsTransport().S3 = new S3Settings(ConfigureEndpointSqsTransport.S3BucketName, ConfigureEndpointSqsTransport.S3Prefix, ConfigureEndpointSqsTransport.CreateS3Client());
-                });
-            }
+            public Receiver() =>
+                EndpointSetup<DefaultServer>();
 
             class MyHandler : IHandleMessages<Message>
             {
-                public MyHandler(Context testContext)
-                {
-                    this.testContext = testContext;
-                }
+                public MyHandler(Context testContext) => this.testContext = testContext;
 
                 public Task Handle(Message message, IMessageHandlerContext context)
                 {
@@ -127,7 +118,7 @@
                     return Task.CompletedTask;
                 }
 
-                Context testContext;
+                readonly Context testContext;
             }
         }
 

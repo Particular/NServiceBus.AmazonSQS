@@ -60,17 +60,11 @@
 
         public class Receiver : EndpointConfigurationBuilder
         {
-            public Receiver()
-            {
-                EndpointSetup<DefaultServer>();
-            }
+            public Receiver() => EndpointSetup<DefaultServer>();
 
             class MyHandler : IHandleMessages<Message>
             {
-                public MyHandler(Context testContext)
-                {
-                    this.testContext = testContext;
-                }
+                public MyHandler(Context testContext) => this.testContext = testContext;
 
                 public Task Handle(Message message, IMessageHandlerContext context)
                 {
@@ -84,7 +78,7 @@
                     return Task.CompletedTask;
                 }
 
-                Context testContext;
+                readonly Context testContext;
             }
         }
 
@@ -106,17 +100,11 @@
 
         class ErrorSpy : EndpointConfigurationBuilder
         {
-            public ErrorSpy()
-            {
-                EndpointSetup<DefaultServer>(config => config.LimitMessageProcessingConcurrencyTo(1));
-            }
+            public ErrorSpy() => EndpointSetup<DefaultServer>(config => config.LimitMessageProcessingConcurrencyTo(1));
 
             class ErrorMessageHandler : IHandleMessages<Message>
             {
-                public ErrorMessageHandler(Context testContext)
-                {
-                    this.testContext = testContext;
-                }
+                public ErrorMessageHandler(Context testContext) => this.testContext = testContext;
 
                 public Task Handle(Message initiatingMessage, IMessageHandlerContext context)
                 {
@@ -130,7 +118,7 @@
                     return Task.CompletedTask;
                 }
 
-                Context testContext;
+                readonly Context testContext;
             }
         }
     }

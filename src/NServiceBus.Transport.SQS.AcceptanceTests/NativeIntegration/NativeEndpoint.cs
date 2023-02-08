@@ -13,34 +13,32 @@
     {
         public static async Task ConsumePoisonQueue(Guid testRunId, string errorQueueAddress, Action<Message> nativeMessageAccessor = null, CancellationToken cancellationToken = default)
         {
-            using (var sqsClient = ConfigureEndpointSqsTransport.CreateSqsClient())
+            using var sqsClient = ConfigureEndpointSqsTransport.CreateSqsClient();
+            var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
             {
-                var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
+                QueueName = TestNameHelper.GetSqsQueueName(errorQueueAddress, SetupFixture.NamePrefix)
+            }, cancellationToken).ConfigureAwait(false);
+
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var receiveMessageResponse = await sqsClient.ReceiveMessageAsync(new ReceiveMessageRequest
                 {
-                    QueueName = TestNameHelper.GetSqsQueueName(errorQueueAddress, SetupFixture.NamePrefix)
+                    QueueUrl = getQueueUrlResponse.QueueUrl,
+                    WaitTimeSeconds = 5,
+                    MessageAttributeNames = new List<string> { "*" }
                 }, cancellationToken).ConfigureAwait(false);
 
-                while (true)
+                foreach (var msg in receiveMessageResponse.Messages)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    var receiveMessageResponse = await sqsClient.ReceiveMessageAsync(new ReceiveMessageRequest
+                    msg.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute);
+                    if (messageIdAttribute?.StringValue == testRunId.ToString())
                     {
-                        QueueUrl = getQueueUrlResponse.QueueUrl,
-                        WaitTimeSeconds = 5,
-                        MessageAttributeNames = new List<string> { "*" }
-                    }, cancellationToken).ConfigureAwait(false);
-
-                    foreach (var msg in receiveMessageResponse.Messages)
-                    {
-                        msg.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute);
-                        if (messageIdAttribute?.StringValue == testRunId.ToString())
-                        {
-                            nativeMessageAccessor?.Invoke(msg);
-                        }
-
-                        await sqsClient.DeleteMessageAsync(getQueueUrlResponse.QueueUrl, msg.ReceiptHandle, cancellationToken);
+                        nativeMessageAccessor?.Invoke(msg);
                     }
+
+                    await sqsClient.DeleteMessageAsync(getQueueUrlResponse.QueueUrl, msg.ReceiptHandle, cancellationToken);
                 }
             }
         }
@@ -49,35 +47,31 @@
             TMessage message)
             where TMessage : IMessage
         {
-            using (var sw = new StringWriter())
-            {
-                var serializer = new System.Xml.Serialization.XmlSerializer(typeof(TMessage));
-                serializer.Serialize(sw, message);
+            using var sw = new StringWriter();
+            var serializer = new System.Xml.Serialization.XmlSerializer(typeof(TMessage));
+            serializer.Serialize(sw, message);
 
-                await SendTo<TEndpoint>(messageAttributeValues, sw.ToString());
-            }
+            await SendTo<TEndpoint>(messageAttributeValues, sw.ToString());
         }
 
-        public static async Task SendTo<TEndpoint>(Dictionary<string, MessageAttributeValue> messageAttributeValues, string message)
+        public static async Task SendTo<TEndpoint>(Dictionary<string, MessageAttributeValue> messageAttributeValues, string message, bool base64Encode = true)
         {
-            using (var sqsClient = ConfigureEndpointSqsTransport.CreateSqsClient())
+            using var sqsClient = ConfigureEndpointSqsTransport.CreateSqsClient();
+            var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
             {
-                var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
-                {
-                    QueueName = TestNameHelper.GetSqsQueueName(Conventions.EndpointNamingConvention(typeof(TEndpoint)), SetupFixture.NamePrefix)
-                }).ConfigureAwait(false);
+                QueueName = TestNameHelper.GetSqsQueueName(Conventions.EndpointNamingConvention(typeof(TEndpoint)), SetupFixture.NamePrefix)
+            }).ConfigureAwait(false);
 
-                var body = Convert.ToBase64String(Encoding.Unicode.GetBytes(message));
+            var body = base64Encode ? Convert.ToBase64String(Encoding.Unicode.GetBytes(message)) : message;
 
-                var sendMessageRequest = new SendMessageRequest
-                {
-                    QueueUrl = getQueueUrlResponse.QueueUrl,
-                    MessageAttributes = messageAttributeValues,
-                    MessageBody = body
-                };
+            var sendMessageRequest = new SendMessageRequest
+            {
+                QueueUrl = getQueueUrlResponse.QueueUrl,
+                MessageAttributes = messageAttributeValues,
+                MessageBody = body
+            };
 
-                await sqsClient.SendMessageAsync(sendMessageRequest).ConfigureAwait(false);
-            }
+            await sqsClient.SendMessageAsync(sendMessageRequest).ConfigureAwait(false);
         }
     }
 }
