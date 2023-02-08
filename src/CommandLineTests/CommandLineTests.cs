@@ -11,6 +11,7 @@
     using Amazon.Auth.AccessControlPolicy;
     using Amazon.S3;
     using Amazon.S3.Model;
+    using Amazon.S3.Util;
     using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS;
@@ -862,7 +863,7 @@
                 await Task.Delay(backOff);
                 executions++;
 
-                bucketExists = await s3.DoesS3BucketExistAsync(bucketName);
+                bucketExists = await AmazonS3Util.DoesS3BucketExistV2Async(s3, bucketName);
             }
             while (bucketExists && backOff < MaximumBackoffInterval);
 
