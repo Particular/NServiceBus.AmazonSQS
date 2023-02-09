@@ -191,13 +191,13 @@ namespace NServiceBus
         /// Configures how the incoming SQS transport message is extracted.
         /// </summary>
         [PreObsolete(
-            ReplacementTypeOrMember = "SqsTransport.IncomingMessageExtractor",
+            ReplacementTypeOrMember = "SqsTransport.MessageExtractor",
             Message = "The configuration has been moved to SqsTransport class.",
             TreatAsErrorFromVersion = "7",
             RemoveInVersion = "8")]
-        public static TransportExtensions<SqsTransport> IncomingMessageExtractor(this TransportExtensions<SqsTransport> transportExtensions, IAmazonSqsIncomingMessageExtractor incomingMessageExtractor)
+        public static TransportExtensions<SqsTransport> MessageExtractor(this TransportExtensions<SqsTransport> transportExtensions, IMessageExtractor messageExtractor)
         {
-            transportExtensions.Transport.IncomingMessageExtractor = incomingMessageExtractor;
+            transportExtensions.Transport.MessageExtractor = messageExtractor;
             return transportExtensions;
         }
 

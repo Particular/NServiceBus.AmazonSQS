@@ -26,9 +26,9 @@
                 Body = "message-body"
             };
 
-            var strategy = new DefaultAmazonSqsIncomingMessageExtractor();
+            var strategy = new DefaultMessageExtractor();
 
-            var canExtract = strategy.TryExtractMessage(message, message.MessageId, out _, out _, out var body);
+            var canExtract = strategy.TryExtractIncomingMessage(message, message.MessageId, out _, out _, out var body);
 
             Assert.IsTrue(canExtract);
             Assert.That(body, Is.EqualTo(message.Body));

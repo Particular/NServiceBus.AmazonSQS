@@ -123,7 +123,7 @@
         /// <summary>
         /// Configures how the incoming SQS transport message is extracted
         /// </summary>
-        public IAmazonSqsIncomingMessageExtractor IncomingMessageExtractor { get; set; } = new DefaultAmazonSqsIncomingMessageExtractor();
+        public IMessageExtractor MessageExtractor { get; set; } = new DefaultMessageExtractor();
 
         /// <summary>
         /// Configures the SQS transport to not base64 encode outgoing messages. 
@@ -235,7 +235,7 @@
         public override async Task<TransportInfrastructure> Initialize(HostSettings hostSettings, ReceiveSettings[] receivers, string[] sendingAddresses, CancellationToken cancellationToken = default)
         {
             var topicCache = new TopicCache(SnsClient, hostSettings.CoreSettings, eventToTopicsMappings, eventToEventsMappings, topicNameGenerator, topicNamePrefix);
-            var infra = new SqsTransportInfrastructure(this, hostSettings, receivers, SqsClient, SnsClient, QueueCache, topicCache, S3, Policies, QueueDelayTime, topicNamePrefix, EnableV1CompatibilityMode, DoNotBase64EncodeOutgoingMessages, IncomingMessageExtractor);
+            var infra = new SqsTransportInfrastructure(this, hostSettings, receivers, SqsClient, SnsClient, QueueCache, topicCache, S3, Policies, QueueDelayTime, topicNamePrefix, EnableV1CompatibilityMode, DoNotBase64EncodeOutgoingMessages, MessageExtractor);
 
             var queueCreator = new QueueCreator(SqsClient, QueueCache, S3, maxTimeToLive, QueueDelayTime);
 

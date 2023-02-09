@@ -21,7 +21,7 @@
             transport.QueueNamePrefix("MyPrefix");
             transport.TopicNamePrefix("MyTopicPrefix");
             transport.TopicNameGenerator((type, name) => "42");
-            transport.IncomingMessageExtractor(new CustomerExtractor());
+            transport.MessageExtractor(new CustomerExtractor());
             transport.DoNotBase64EncodeOutgoingMessages();
 
             Assert.IsTrue(transport.Transport.EnableV1CompatibilityMode);
@@ -29,14 +29,14 @@
             Assert.AreEqual("MyPrefix", transport.Transport.QueueNamePrefix);
             Assert.AreEqual("MyTopicPrefix", transport.Transport.TopicNamePrefix);
             Assert.AreEqual("42", transport.Transport.TopicNameGenerator(null, null));
-            Assert.IsTrue(transport.Transport.IncomingMessageExtractor.GetType() == typeof(CustomerExtractor));
+            Assert.IsTrue(transport.Transport.MessageExtractor.GetType() == typeof(CustomerExtractor));
             Assert.IsTrue(transport.Transport.DoNotBase64EncodeOutgoingMessages);
 
         }
 
-        class CustomerExtractor : IAmazonSqsIncomingMessageExtractor
+        class CustomerExtractor : IMessageExtractor
         {
-            public bool TryExtractMessage(Message receivedMessage, string messageId, out Dictionary<string, string> headers, out string s3BodyKey, out string body) => throw new NotImplementedException();
+            public bool TryExtractIncomingMessage(Message receivedMessage, string messageId, out Dictionary<string, string> headers, out string s3BodyKey, out string body) => throw new NotImplementedException();
         }
 
     }

@@ -23,9 +23,9 @@ namespace NServiceBus.Transport.SQS
             int queueDelayTimeSeconds,
             Action<string, Exception, CancellationToken> criticalErrorAction,
             IReadOnlySettings coreSettings,
-            IAmazonSqsIncomingMessageExtractor incomingMessageExtractor)
+            IMessageExtractor messageExtractor)
         {
-            inputQueuePump = new InputQueuePump(receiverId, receiveAddress, errorQueueAddress, purgeOnStartup, sqsClient, queueCache, s3Settings, subscriptionManager, criticalErrorAction, coreSettings, incomingMessageExtractor);
+            inputQueuePump = new InputQueuePump(receiverId, receiveAddress, errorQueueAddress, purgeOnStartup, sqsClient, queueCache, s3Settings, subscriptionManager, criticalErrorAction, coreSettings, messageExtractor);
             delayedMessagesPump = new DelayedMessagesPump(receiveAddress, sqsClient, queueCache, queueDelayTimeSeconds);
         }
 

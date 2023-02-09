@@ -30,7 +30,7 @@ namespace NServiceBus.Transport.SQS
             SubscriptionManager subscriptionManager,
             Action<string, Exception, CancellationToken> criticalErrorAction,
             IReadOnlySettings coreSettings,
-            IAmazonSqsIncomingMessageExtractor incomingMessageExtractor)
+            IMessageExtractor messageExtractor)
         {
             this.sqsClient = sqsClient;
             this.queueCache = queueCache;
@@ -38,7 +38,7 @@ namespace NServiceBus.Transport.SQS
             this.criticalErrorAction = criticalErrorAction;
             this.errorQueueAddress = errorQueueAddress;
             this.purgeOnStartup = purgeOnStartup;
-            this.incomingMessageExtractor = incomingMessageExtractor;
+            this.messageExtractor = messageExtractor;
             Id = receiverId;
             ReceiveAddress = receiveAddress;
             Subscriptions = subscriptionManager;
@@ -274,7 +274,7 @@ namespace NServiceBus.Transport.SQS
                         messageId = receivedMessage.MessageId;
                     }
 
-                    if (incomingMessageExtractor.TryExtractMessage(receivedMessage, messageId, out var headers, out var s3BodyKey, out var body))
+                    if (messageExtractor.TryExtractIncomingMessage(receivedMessage, messageId, out var headers, out var s3BodyKey, out var body))
                     {
                         transportMessage = new TransportMessage()
                         {
@@ -565,7 +565,7 @@ namespace NServiceBus.Transport.SQS
         {
             TypeInfoResolver = TransportMessageSerializerContext.Default
         };
-        readonly IAmazonSqsIncomingMessageExtractor incomingMessageExtractor;
+        readonly IMessageExtractor messageExtractor;
         int numberOfMessagesToFetch;
         ReceiveMessageRequest receiveMessagesRequest;
         CancellationTokenSource messagePumpCancellationTokenSource;

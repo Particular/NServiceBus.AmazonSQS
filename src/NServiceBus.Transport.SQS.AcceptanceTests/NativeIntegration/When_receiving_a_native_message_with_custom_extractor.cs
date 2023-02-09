@@ -37,7 +37,7 @@
             {
                 EndpointSetup<DefaultServer>(c =>
                 {
-                    c.ConfigureSqsTransport().IncomingMessageExtractor = new CustomMessageExtractor();
+                    c.ConfigureSqsTransport().MessageExtractor = new CustomMessageExtractor();
                 });
             }
 
@@ -69,9 +69,9 @@
             public string MessageReceived { get; set; }
         }
 
-        public class CustomMessageExtractor : IAmazonSqsIncomingMessageExtractor
+        public class CustomMessageExtractor : IMessageExtractor
         {
-            public bool TryExtractMessage(Amazon.SQS.Model.Message receivedMessage, string messageId, out Dictionary<string, string> headers, out string s3BodyKey, out string body)
+            public bool TryExtractIncomingMessage(Amazon.SQS.Model.Message receivedMessage, string messageId, out Dictionary<string, string> headers, out string s3BodyKey, out string body)
             {
                 if (receivedMessage.MessageAttributes.TryGetValue(CustomHeader, out var _))
                 {

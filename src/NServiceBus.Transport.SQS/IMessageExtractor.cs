@@ -6,7 +6,7 @@
     /// <summary>
     /// Configures how the incoming SQS transport message is extracted
     /// </summary>
-    public interface IAmazonSqsIncomingMessageExtractor
+    public interface IMessageExtractor
     {
         /// <summary>
         /// Performs the SQS transport message extraction
@@ -17,6 +17,6 @@
         /// <param name="s3BodyKey"></param>
         /// <param name="body"></param>
         /// <returns></returns>
-        bool TryExtractMessage(Message receivedMessage, string messageId, out Dictionary<string, string> headers, out string s3BodyKey, out string body);
+        bool TryExtractIncomingMessage(Message receivedMessage, string messageId, out Dictionary<string, string> headers, out string s3BodyKey, out string body);
     }
 }

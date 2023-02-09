@@ -74,8 +74,8 @@ namespace NServiceBus
         public SqsTransport(Amazon.SQS.IAmazonSQS sqsClient, Amazon.SimpleNotificationService.IAmazonSimpleNotificationService snsClient) { }
         public bool DoNotBase64EncodeOutgoingMessages { get; set; }
         public bool EnableV1CompatibilityMode { get; set; }
-        public NServiceBus.Transport.SQS.IAmazonSqsIncomingMessageExtractor IncomingMessageExtractor { get; set; }
         public System.TimeSpan MaxTimeToLive { get; set; }
+        public NServiceBus.Transport.SQS.IMessageExtractor MessageExtractor { get; set; }
         public NServiceBus.PolicySettings Policies { get; }
         public System.Func<string, string, string> QueueNameGenerator { get; set; }
         public string QueueNamePrefix { get; set; }
@@ -117,7 +117,6 @@ namespace NServiceBus
             "emoved in version 7.0.0.", true)]
         public static NServiceBus.SubscriptionMigrationModeSettings EnableMessageDrivenPubSubCompatibilityMode(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> EnableV1CompatibilityMode(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
-        public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> IncomingMessageExtractor(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, NServiceBus.Transport.SQS.IAmazonSqsIncomingMessageExtractor incomingMessageExtractor) { }
         public static void MapEvent(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Type eventType, string customTopicName) { }
         public static void MapEvent(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Type subscribedEventType, System.Collections.Generic.IEnumerable<string> customTopicsNames) { }
         public static void MapEvent(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Type subscribedEventType, System.Type publishedEventType) { }
@@ -125,6 +124,7 @@ namespace NServiceBus
         public static void MapEvent<TSubscribedEvent>(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string customTopicName) { }
         public static void MapEvent<TSubscribedEvent, TPublishedEvent>(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> MaxTimeToLive(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.TimeSpan maxTimeToLive) { }
+        public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> MessageExtractor(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, NServiceBus.Transport.SQS.IMessageExtractor messageExtractor) { }
         public static NServiceBus.PolicySettings Policies(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> QueueNamePrefix(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string queueNamePrefix) { }
         public static NServiceBus.S3Settings S3(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, string bucketForLargeMessages, string keyPrefix) { }
@@ -152,8 +152,8 @@ namespace NServiceBus.Transport.SQS.Configure
 }
 namespace NServiceBus.Transport.SQS
 {
-    public interface IAmazonSqsIncomingMessageExtractor
+    public interface IMessageExtractor
     {
-        bool TryExtractMessage(Amazon.SQS.Model.Message receivedMessage, string messageId, out System.Collections.Generic.Dictionary<string, string> headers, out string s3BodyKey, out string body);
+        bool TryExtractIncomingMessage(Amazon.SQS.Model.Message receivedMessage, string messageId, out System.Collections.Generic.Dictionary<string, string> headers, out string s3BodyKey, out string body);
     }
 }

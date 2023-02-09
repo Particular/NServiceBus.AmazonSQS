@@ -4,9 +4,9 @@
     using Amazon.SQS.Model;
     using static TransportHeaders;
 
-    class DefaultAmazonSqsIncomingMessageExtractor : IAmazonSqsIncomingMessageExtractor
+    class DefaultMessageExtractor : IMessageExtractor
     {
-        public bool TryExtractMessage(Message receivedMessage, string messageId, out Dictionary<string, string> headers, out string s3BodyKey, out string body)
+        public bool TryExtractIncomingMessage(Message receivedMessage, string messageId, out Dictionary<string, string> headers, out string s3BodyKey, out string body)
         {
             // When the MessageTypeFullName attribute is available, we're assuming native integration
             if (receivedMessage.MessageAttributes.TryGetValue(MessageTypeFullName, out var enclosedMessageType))

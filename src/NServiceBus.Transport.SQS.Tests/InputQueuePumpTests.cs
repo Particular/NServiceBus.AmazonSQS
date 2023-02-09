@@ -9,7 +9,6 @@ namespace NServiceBus.Transport.SQS.Tests
     using Amazon.SQS.Model;
     using NUnit.Framework;
     using Settings;
-    using SimpleJson;
 
     [TestFixture]
     public class InputQueuePumpTests
@@ -25,7 +24,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 new QueueCache(mockSqsClient, dest => QueueCache.GetSqsQueueName(dest, "")),
                 null, null,
                 (error, exception, ct) => { },
-                new SettingsHolder(), new DefaultAmazonSqsIncomingMessageExtractor());
+                new SettingsHolder(), new DefaultMessageExtractor());
         }
 
         async Task SetupInitializedPump(OnMessage onMessage = null)
