@@ -50,6 +50,7 @@ namespace NServiceBus.Transport.SQS.Extensions
         static (ReadOnlyMemory<byte> MessageBody, byte[]? MessageBodyBuffer) ConvertBody(string body, ArrayPool<byte> arrayPool)
         {
             var encoding = Encoding.Unicode;
+            // TODO check if we need fallback
 #if NETFRAMEWORK
             try
             {

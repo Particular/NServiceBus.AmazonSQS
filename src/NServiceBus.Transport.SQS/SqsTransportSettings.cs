@@ -158,17 +158,17 @@ namespace NServiceBus
         }
 
         /// <summary>
-        /// Configures the SQS transport to not base64 encode outgoing messages.
+        /// TODO: TBD
         /// Only turn this on if all your endpoints are version 6.1.0 or above.
         /// </summary>
         [PreObsolete(
-            ReplacementTypeOrMember = "SqsTransport.DoNotBase64EncodeOutgoingMessages",
+            ReplacementTypeOrMember = "SqsTransport.DoNotWrapOutgoingMessages",
             Message = "The configuration has been moved to SqsTransport class.",
             TreatAsErrorFromVersion = "7",
             RemoveInVersion = "8")]
-        public static TransportExtensions<SqsTransport> DoNotBase64EncodeOutgoingMessages(this TransportExtensions<SqsTransport> transportExtensions)
+        public static TransportExtensions<SqsTransport> DoNotWrapOutgoingMessages(this TransportExtensions<SqsTransport> transportExtensions)
         {
-            transportExtensions.Transport.DoNotBase64EncodeOutgoingMessages = true;
+            transportExtensions.Transport.DoNotWrapOutgoingMessages = true;
             return transportExtensions;
         }
 

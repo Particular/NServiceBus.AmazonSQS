@@ -667,12 +667,12 @@
         }
 
         [Test]
-        public async Task Should_not_base64_encode_if_configured_not_to()
+        public async Task Should_not_wrap_if_configured_not_to()
         {
             var mockSqsClient = new MockSqsClient();
 
             var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
-                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, v1Compatibility: true, encodeBodyToBase64: false);
+                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, v1Compatibility: true, wrapOutgoingMessages: false);
 
             var msgBody = "my message body";
             var msgBodyByte = Encoding.Unicode.GetBytes(msgBody);
@@ -682,7 +682,8 @@
                     new OutgoingMessage("1234", new Dictionary<string, string>
                     {
                         {TransportHeaders.TimeToBeReceived, ExpectedTtbr.ToString()},
-                        {Headers.ReplyToAddress, ExpectedReplyToAddress}
+                        {Headers.ReplyToAddress, ExpectedReplyToAddress},
+                        {Headers.MessageId, "74d4f8e4-0fc7-4f09-8d46-0b76994e76d6"}
                     }, msgBodyByte),
                     new UnicastAddressTag("address"),
                     new DispatchProperties(),
@@ -695,9 +696,7 @@
             Assert.IsNotEmpty(mockSqsClient.RequestsSent, "No requests sent");
             var request = mockSqsClient.RequestsSent.First();
 
-            var bodyJson = JsonNode.Parse(request.MessageBody);
-
-            Assert.AreEqual(msgBody, bodyJson["Body"].GetValue<string>());
+            Approver.Verify(request);
         }
 
         interface IEvent { }

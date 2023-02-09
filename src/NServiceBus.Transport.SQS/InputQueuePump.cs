@@ -15,7 +15,6 @@ namespace NServiceBus.Transport.SQS
     using Extensions;
     using Logging;
     using Settings;
-    using static TransportHeaders;
 
     class InputQueuePump : IMessageReceiver
     {
@@ -272,33 +271,49 @@ namespace NServiceBus.Transport.SQS
                         messageId = nativeMessageId;
                     }
 
-                    // When the MessageTypeFullName attribute is available, we're assuming native integration
-                    if (receivedMessage.MessageAttributes.TryGetValue(MessageTypeFullName, out var enclosedMessageType))
+                    if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.Headers, out var headersAttribute))
                     {
-                        var headers = new Dictionary<string, string>
-                        {
-                            { Headers.MessageId, messageId },
-                            { Headers.EnclosedMessageTypes, enclosedMessageType.StringValue },
-                            {
-                                MessageTypeFullName, enclosedMessageType.StringValue
-                            } // we're copying over the value of the native message attribute into the headers, converting this into a nsb message
-                        };
-
-                        if (receivedMessage.MessageAttributes.TryGetValue(S3BodyKey, out var s3BodyKey))
-                        {
-                            headers.Add(S3BodyKey, s3BodyKey.StringValue);
-                        }
-
                         transportMessage = new TransportMessage
                         {
-                            Headers = headers,
-                            S3BodyKey = s3BodyKey?.StringValue,
+                            Headers = JsonSerializer.Deserialize<Dictionary<string, string>>(headersAttribute.StringValue),
                             Body = receivedMessage.Body
                         };
+                        if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.S3BodyKey, out var s3BodyKey))
+                        {
+                            transportMessage.Headers.Add(TransportHeaders.S3BodyKey, s3BodyKey.StringValue);
+                            transportMessage.S3BodyKey = s3BodyKey.StringValue;
+                        }
                     }
                     else
                     {
-                        transportMessage = JsonSerializer.Deserialize<TransportMessage>(receivedMessage.Body, transportMessageSerializerOptions);
+                        // When the MessageTypeFullName attribute is available, we're assuming native integration
+                        if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.MessageTypeFullName, out var enclosedMessageType))
+                        {
+                            var headers = new Dictionary<string, string>
+                            {
+                                { Headers.MessageId, messageId },
+                                { Headers.EnclosedMessageTypes, enclosedMessageType.StringValue },
+                                {
+                                    TransportHeaders.MessageTypeFullName, enclosedMessageType.StringValue
+                                } // we're copying over the value of the native message attribute into the headers, converting this into a nsb message
+                            };
+
+                            if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.S3BodyKey, out var s3BodyKey))
+                            {
+                                headers.Add(TransportHeaders.S3BodyKey, s3BodyKey.StringValue);
+                            }
+
+                            transportMessage = new TransportMessage
+                            {
+                                Headers = headers,
+                                S3BodyKey = s3BodyKey?.StringValue,
+                                Body = receivedMessage.Body
+                            };
+                        }
+                        else
+                        {
+                            transportMessage = JsonSerializer.Deserialize<TransportMessage>(receivedMessage.Body, transportMessageSerializerOptions);
+                        }
                     }
 
                     (messageBody, messageBodyBuffer) = await transportMessage.RetrieveBody(messageId, s3Settings, arrayPool, messageProcessingCancellationToken).ConfigureAwait(false);
@@ -449,12 +464,12 @@ namespace NServiceBus.Transport.SQS
 
         static bool IsMessageExpired(Message receivedMessage, Dictionary<string, string> headers, string messageId, TimeSpan clockOffset)
         {
-            if (!headers.TryGetValue(TimeToBeReceived, out var rawTtbr))
+            if (!headers.TryGetValue(TransportHeaders.TimeToBeReceived, out var rawTtbr))
             {
                 return false;
             }
 
-            headers.Remove(TimeToBeReceived);
+            headers.Remove(TransportHeaders.TimeToBeReceived);
             var timeToBeReceived = TimeSpan.Parse(rawTtbr);
             if (timeToBeReceived == TimeSpan.MaxValue)
             {

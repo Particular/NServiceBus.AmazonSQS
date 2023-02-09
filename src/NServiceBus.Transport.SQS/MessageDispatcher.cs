@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text;
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
@@ -23,7 +24,7 @@
             S3Settings s3,
             int queueDelaySeconds,
             bool v1Compatibility,
-            bool encodeBodyToBase64 = true
+            bool wrapOutgoingMessages = true
             )
         {
             this.topicCache = topicCache;
@@ -32,7 +33,7 @@
             this.snsClient = snsClient;
             this.sqsClient = sqsClient;
             this.queueCache = queueCache;
-            this.encodeBodyToBase64 = encodeBodyToBase64;
+            this.wrapOutgoingMessages = wrapOutgoingMessages;
 
             transportMessageSerializerOptions = v1Compatibility
                 ? new JsonSerializerOptions { TypeInfoResolver = TransportMessageSerializerContext.Default }
@@ -287,8 +288,6 @@
                 delaySeconds = Convert.ToInt64(Math.Ceiling((doNotDeliverBefore.At - DateTime.UtcNow).TotalSeconds));
             }
 
-            var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.Properties, encodeBodyToBase64);
-
             var messageId = transportOperation.Message.MessageId;
 
             var preparedMessage = new TMessage();
@@ -304,7 +303,32 @@
             await ApplyUnicastOperationMappingIfNecessary(unicastTransportOperation, preparedMessage as SqsPreparedMessage, delaySeconds, messageId, nativeMessageAttributes, cancellationToken).ConfigureAwait(false);
             await ApplyMulticastOperationMappingIfNecessary(transportOperation as MulticastTransportOperation, preparedMessage as SnsPreparedMessage, cancellationToken).ConfigureAwait(false);
 
-            preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
+            var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.Properties);
+            if (!wrapOutgoingMessages)
+            {
+                // blunt allocation heavy hack for now
+                preparedMessage.Body = Encoding.UTF8.GetString(transportOperation.Message.Body.ToArray());
+                // probably think about how compact this should be?
+                var headers = JsonSerializer.Serialize(transportOperation.Message.Headers);
+                // ugly as hell but we can make this better later
+                if (preparedMessage is SqsPreparedMessage sqsMessage1)
+                {
+                    sqsMessage1.MessageAttributes[TransportHeaders.Headers] = new MessageAttributeValue { StringValue = headers, DataType = "String" };
+                }
+                else if (preparedMessage is SnsPreparedMessage sqsMessage2)
+                {
+                    sqsMessage2.MessageAttributes[TransportHeaders.Headers] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue() { StringValue = headers, DataType = "String" };
+                }
+                else
+                {
+                    throw new NotImplementedException("Yikes!");
+                }
+            }
+            else
+            {
+                preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
+            }
+
             preparedMessage.MessageId = messageId;
 
             preparedMessage.CalculateSize();
@@ -335,7 +359,33 @@
 
             sqsTransportMessage.S3BodyKey = key;
             sqsTransportMessage.Body = string.Empty;
-            preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
+
+            // This repetition is ugly but we can deal with this later
+            if (!wrapOutgoingMessages)
+            {
+                preparedMessage.Body = sqsTransportMessage.Body;
+                // probably think about how compact this should be?
+                transportOperation.Message.Headers.Add(TransportHeaders.S3BodyKey, sqsTransportMessage.S3BodyKey);
+                var headers = JsonSerializer.Serialize(transportOperation.Message.Headers);
+                // ugly as hell but we can make this better later
+                if (preparedMessage is SqsPreparedMessage sqsMessage1)
+                {
+                    sqsMessage1.MessageAttributes[TransportHeaders.Headers] = new MessageAttributeValue { StringValue = headers, DataType = "String" };
+                }
+                else if (preparedMessage is SnsPreparedMessage sqsMessage2)
+                {
+                    sqsMessage2.MessageAttributes[TransportHeaders.Headers] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue() { StringValue = headers, DataType = "String" };
+                }
+                else
+                {
+                    throw new NotImplementedException("Yikes!");
+                }
+            }
+            else
+            {
+                preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
+            }
+
             preparedMessage.CalculateSize();
 
             return preparedMessage;
@@ -412,7 +462,7 @@
         readonly S3Settings s3;
         readonly int queueDelaySeconds;
         readonly HybridPubSubChecker hybridPubSubChecker;
-        readonly bool encodeBodyToBase64;
+        readonly bool wrapOutgoingMessages;
         readonly JsonSerializerOptions transportMessageSerializerOptions;
         IAmazonSQS sqsClient;
         QueueCache queueCache;

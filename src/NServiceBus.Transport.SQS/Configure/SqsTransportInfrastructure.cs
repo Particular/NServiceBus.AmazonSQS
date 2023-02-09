@@ -13,7 +13,7 @@
     class SqsTransportInfrastructure : TransportInfrastructure
     {
         public SqsTransportInfrastructure(SqsTransport transportDefinition, HostSettings hostSettings, ReceiveSettings[] receiverSettings, IAmazonSQS sqsClient,
-            IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, S3Settings s3Settings, PolicySettings policySettings, int queueDelayTimeSeconds, string topicNamePrefix, bool v1Compatibility, bool doNotBase64EncodeOutgoingMessages)
+            IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, S3Settings s3Settings, PolicySettings policySettings, int queueDelayTimeSeconds, string topicNamePrefix, bool v1Compatibility, bool doNotWrapOutgoingMessages)
         {
             this.transportDefinition = transportDefinition;
             this.sqsClient = sqsClient;
@@ -25,7 +25,7 @@
                 .ToDictionary(x => x.Id, x => x);
 
             Dispatcher = new MessageDispatcher(hostSettings.CoreSettings, sqsClient, snsClient, queueCache, topicCache, s3Settings,
-                queueDelayTimeSeconds, v1Compatibility, !doNotBase64EncodeOutgoingMessages);
+                queueDelayTimeSeconds, v1Compatibility, !doNotWrapOutgoingMessages);
         }
 
         IMessageReceiver CreateMessagePump(ReceiveSettings receiveSettings, IAmazonSQS sqsClient,
