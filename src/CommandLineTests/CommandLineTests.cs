@@ -11,6 +11,7 @@
     using Amazon.Auth.AccessControlPolicy;
     using Amazon.S3;
     using Amazon.S3.Model;
+    using Amazon.S3.Util;
     using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS;
@@ -543,9 +544,9 @@
             retentionPeriodInSeconds ??= DefaultConfigurationValues.RetentionPeriod.TotalSeconds;
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
-            var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+            var queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
 
-            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string> { QueueAttributeName.MessageRetentionPeriod, QueueAttributeName.QueueArn }).ConfigureAwait(false);
+            var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string> { QueueAttributeName.MessageRetentionPeriod, QueueAttributeName.QueueArn }).ConfigureAwait(false);
 
             Assert.AreEqual(retentionPeriodInSeconds, queueAttributesResponse.MessageRetentionPeriod);
 
@@ -560,9 +561,9 @@
             suffix ??= DefaultConfigurationValues.DelayedDeliveryQueueSuffix;
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}{suffix}");
-            var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+            var queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
 
-            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
+            var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
             {
                 QueueAttributeName.MessageRetentionPeriod,
                 QueueAttributeName.DelaySeconds,
@@ -581,7 +582,7 @@
 
             var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
 
-            var findTopicResponse = await sns.FindTopicAsync(topicName).ConfigureAwait(false);
+            var findTopicResponse = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
 
             Assert.IsNotNull(findTopicResponse.TopicArn);
 
@@ -593,15 +594,15 @@
             prefix ??= DefaultConfigurationValues.QueueNamePrefix;
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
-            var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
-            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
+            var queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+            var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
             {
                 QueueAttributeName.Policy
             }).ConfigureAwait(false);
             var policy = Policy.FromJson(queueAttributesResponse.Policy);
 
             var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
-            var findTopicResponse = await sns.FindTopicAsync(topicName).ConfigureAwait(false);
+            var findTopicResponse = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
 
             Assert.IsTrue(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(findTopicResponse.TopicArn))));
         }
@@ -611,15 +612,15 @@
             prefix ??= DefaultConfigurationValues.QueueNamePrefix;
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
-            var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
-            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
+            var queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+            var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
             {
                 QueueAttributeName.Policy
             }).ConfigureAwait(false);
             var policy = Policy.FromJson(queueAttributesResponse.Policy);
 
             var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
-            var findTopicResponse = await sns.FindTopicAsync(topicName).ConfigureAwait(false);
+            var findTopicResponse = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
 
             Assert.IsFalse(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(findTopicResponse.TopicArn))));
         }
@@ -629,8 +630,8 @@
             prefix ??= DefaultConfigurationValues.QueueNamePrefix;
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
-            var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
-            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
+            var queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+            var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
             {
                 QueueAttributeName.QueueArn,
                 QueueAttributeName.Policy
@@ -648,8 +649,8 @@
             prefix ??= DefaultConfigurationValues.QueueNamePrefix;
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
-            var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
-            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
+            var queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+            var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
             {
                 QueueAttributeName.QueueArn,
                 QueueAttributeName.Policy
@@ -667,8 +668,8 @@
             prefix ??= DefaultConfigurationValues.QueueNamePrefix;
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
-            var queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
-            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
+            var queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+            var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
             {
                 QueueAttributeName.QueueArn,
                 QueueAttributeName.Policy
@@ -703,7 +704,7 @@
 
         async Task<string> VerifyBucket(string bucketName)
         {
-            var listBucketsResponse = await s3.ListBucketsAsync(new ListBucketsRequest()).ConfigureAwait(false);
+            var listBucketsResponse = await s3Client.ListBucketsAsync(new ListBucketsRequest()).ConfigureAwait(false);
             var bucket = listBucketsResponse.Buckets.FirstOrDefault(x => string.Equals(x.BucketName, bucketName, StringComparison.InvariantCultureIgnoreCase));
 
             Assert.IsNotNull(bucket);
@@ -725,14 +726,14 @@
                 await Task.Delay(backOff);
                 executions++;
 
-                var lifecycleConfig = await s3.GetLifecycleConfigurationAsync(bucketName).ConfigureAwait(false);
+                var lifecycleConfig = await s3Client.GetLifecycleConfigurationAsync(bucketName).ConfigureAwait(false);
                 setLifeCycleConfig = lifecycleConfig.Configuration.Rules.FirstOrDefault(x => x.Id == "NServiceBus.SQS.DeleteMessageBodies");
             }
             while (setLifeCycleConfig == null && backOff < MaximumBackoffInterval);
 
             Assert.IsNotNull(setLifeCycleConfig);
             Assert.AreEqual(expiration, setLifeCycleConfig.Expiration.Days);
-            Assert.AreEqual(keyPrefix, (setLifeCycleConfig.Filter.LifecycleFilterPredicate as LifecyclePrefixPredicate).Prefix);
+            Assert.AreEqual(keyPrefix, ((LifecyclePrefixPredicate)setLifeCycleConfig.Filter.LifecycleFilterPredicate).Prefix);
         }
 
         async Task VerifySubscription(string topicArn, string queueArn)
@@ -742,7 +743,7 @@
 
             do
             {
-                upToAHundredSubscriptions = await sns.ListSubscriptionsByTopicAsync(topicArn, upToAHundredSubscriptions?.NextToken)
+                upToAHundredSubscriptions = await snsClient.ListSubscriptionsByTopicAsync(topicArn, upToAHundredSubscriptions?.NextToken)
                     .ConfigureAwait(false);
 
                 foreach (var upToAHundredSubscription in upToAHundredSubscriptions.Subscriptions)
@@ -764,7 +765,7 @@
 
             do
             {
-                upToAHundredSubscriptions = await sns.ListSubscriptionsByTopicAsync(topicArn, upToAHundredSubscriptions?.NextToken)
+                upToAHundredSubscriptions = await snsClient.ListSubscriptionsByTopicAsync(topicArn, upToAHundredSubscriptions?.NextToken)
                     .ConfigureAwait(false);
 
                 foreach (var upToAHundredSubscription in upToAHundredSubscriptions.Subscriptions)
@@ -785,7 +786,7 @@
 
             var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
 
-            var findTopicResponse = await sns.FindTopicAsync(topicName).ConfigureAwait(false);
+            var findTopicResponse = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
 
             Assert.IsNull(findTopicResponse);
         }
@@ -807,7 +808,7 @@
                     await Task.Delay(backOff);
                     executions++;
 
-                    queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+                    queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
                 }
                 catch (QueueDoesNotExistException)
                 {
@@ -836,7 +837,7 @@
                     await Task.Delay(backOff);
                     executions++;
 
-                    queueUrlResponse = await sqs.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+                    queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
                 }
                 catch (QueueDoesNotExistException)
                 {
@@ -860,7 +861,7 @@
                 await Task.Delay(backOff);
                 executions++;
 
-                bucketExists = await s3.DoesS3BucketExistAsync(bucketName);
+                bucketExists = await AmazonS3Util.DoesS3BucketExistV2Async(s3Client, bucketName);
             }
             while (bucketExists && backOff < MaximumBackoffInterval);
 
@@ -874,19 +875,19 @@
 
             var regionEndpoint = RegionEndpoint.GetBySystemName(region);
 
-            sqs = new AmazonSQSClient(accessKeyId, secretAccessKey, regionEndpoint);
-            sns = new AmazonSimpleNotificationServiceClient(accessKeyId, secretAccessKey, regionEndpoint);
-            s3 = new AmazonS3Client(accessKeyId, secretAccessKey, regionEndpoint);
+            sqsClient = new AmazonSQSClient(accessKeyId, secretAccessKey, regionEndpoint);
+            snsClient = new AmazonSimpleNotificationServiceClient(accessKeyId, secretAccessKey, regionEndpoint);
+            s3Client = new AmazonS3Client(accessKeyId, secretAccessKey, regionEndpoint);
         }
 
         [TearDown]
         public async Task TearDown()
         {
-            using (sqs)
-            using (sns)
-            using (s3)
+            using (sqsClient)
+            using (snsClient)
+            using (s3Client)
             {
-                await Cleanup.DeleteAllResourcesWithPrefix(sqs, sns, s3, prefix).ConfigureAwait(false);
+                await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, prefix).ConfigureAwait(false);
             }
         }
 
@@ -896,9 +897,9 @@
         readonly string secretAccessKey = Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
         readonly string region = Environment.GetEnvironmentVariable("AWS_REGION");
 
-        IAmazonSQS sqs;
-        IAmazonSimpleNotificationService sns;
-        IAmazonS3 s3;
+        IAmazonSQS sqsClient;
+        IAmazonSimpleNotificationService snsClient;
+        IAmazonS3 s3Client;
         const string EndpointName = "nsb-cli-test";
         const string BucketName = "nsb-cli-test-bucket";
         const string EventType = "MyNamespace.MyMessage1";
