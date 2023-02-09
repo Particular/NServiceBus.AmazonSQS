@@ -7,6 +7,7 @@ namespace NServiceBus.Transport.SQS.Tests
     using Amazon.Runtime;
     using Amazon.S3;
     using Amazon.S3.Model;
+    using Amazon.S3.Util;
     using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
     using Amazon.SQS;
@@ -92,7 +93,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 {
                     try
                     {
-                        if (!await s3Client.DoesS3BucketExistAsync(bucketName))
+                        if (!await AmazonS3Util.DoesS3BucketExistV2Async(s3Client, bucketName))
                         {
                             return;
                         }

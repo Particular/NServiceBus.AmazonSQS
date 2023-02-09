@@ -6,6 +6,7 @@
     using System.Threading.Tasks;
     using Amazon.S3;
     using Amazon.S3.Model;
+    using Amazon.S3.Util;
 
     static class Bucket
     {
@@ -13,7 +14,7 @@
         {
             await Console.Out.WriteLineAsync($"Creating bucket with name '{bucketName}' for endpoint '{endpointName}'.");
 
-            if (!await s3.DoesS3BucketExistAsync(bucketName))
+            if (!await AmazonS3Util.DoesS3BucketExistV2Async(s3, bucketName))
             {
                 await s3.RetryConflictsAsync(async () =>
                         await s3.PutBucketAsync(new PutBucketRequest { BucketName = bucketName }).ConfigureAwait(false),
@@ -77,7 +78,7 @@
         {
             await Console.Out.WriteLineAsync($"Delete bucket with name '{bucketName}' for endpoint '{endpointName}'.");
 
-            if (await s3.DoesS3BucketExistAsync(bucketName))
+            if (await AmazonS3Util.DoesS3BucketExistV2Async(s3, bucketName))
             {
                 var response = await s3.GetBucketLocationAsync(bucketName);
                 S3Region region;
