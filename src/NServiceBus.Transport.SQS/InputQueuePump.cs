@@ -274,12 +274,25 @@ namespace NServiceBus.Transport.SQS
                         messageId = receivedMessage.MessageId;
                     }
 
-                    if (messageExtractor.TryExtractIncomingMessage(receivedMessage, messageId, out var headers, out var s3BodyKey, out var body))
+                    if (messageExtractor.TryExtractIncomingMessage(receivedMessage, out var headers, out var body))
                     {
+                        if (!headers.ContainsKey(Headers.EnclosedMessageTypes))
+                        {
+                            throw new Exception($"Headers returned from `IMessageExtractor.TryExtractIncomingMessage` must contain the `{Headers.EnclosedMessageTypes}` header.");
+                        }
+                        if (headers.ContainsKey(Headers.MessageId))
+                        {
+                            throw new Exception($"Headers returned from `IMessageExtractor.TryExtractIncomingMessage` cannot contain the `{Headers.MessageId}` header.");
+                        }
+                        else
+                        {
+                            headers.Add(Headers.MessageId, messageId);
+                        }
+
                         transportMessage = new TransportMessage()
                         {
                             Headers = headers,
-                            S3BodyKey = s3BodyKey,
+                            S3BodyKey = headers.ContainsKey(S3BodyKey) ? headers[S3BodyKey] : default,
                             Body = body
                         };
                     }

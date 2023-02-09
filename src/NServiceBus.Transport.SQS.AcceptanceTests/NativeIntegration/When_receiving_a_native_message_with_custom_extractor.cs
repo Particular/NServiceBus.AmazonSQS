@@ -15,12 +15,12 @@
         static readonly string CustomHeader = "MyCustomHeader";
 
         [Test]
-        public async Task Should_be_processed()
+        public async Task Should_be_processed_if_extractor_is_valid()
         {
             var context = await Scenario.Define<Context>()
-                .WithEndpoint<Receiver>(c => c.When(async _ =>
+                .WithEndpoint<ReceiverWithValidMessageExtractor>(c => c.When(async _ =>
                 {
-                    await NativeEndpoint.SendTo<Receiver>(new Dictionary<string, MessageAttributeValue>
+                    await NativeEndpoint.SendTo<ReceiverWithValidMessageExtractor>(new Dictionary<string, MessageAttributeValue>
                     {
                         {CustomHeader, new MessageAttributeValue {DataType = "String", StringValue = typeof(Message).FullName}}
                     }, MessageToSend);
@@ -31,9 +31,9 @@
             Assert.AreEqual("Hello!", context.MessageReceived);
         }
 
-        public class Receiver : EndpointConfigurationBuilder
+        public class ReceiverWithValidMessageExtractor : EndpointConfigurationBuilder
         {
-            public Receiver()
+            public ReceiverWithValidMessageExtractor()
             {
                 EndpointSetup<DefaultServer>(c =>
                 {
@@ -66,29 +66,30 @@
 
         class Context : ScenarioContext
         {
+            public Context()
+            {
+
+            }
             public string MessageReceived { get; set; }
         }
 
         public class CustomMessageExtractor : IMessageExtractor
         {
-            public bool TryExtractIncomingMessage(Amazon.SQS.Model.Message receivedMessage, string messageId, out Dictionary<string, string> headers, out string s3BodyKey, out string body)
+            public bool TryExtractIncomingMessage(Amazon.SQS.Model.Message receivedMessage, out Dictionary<string, string> headers, out string body)
             {
                 if (receivedMessage.MessageAttributes.TryGetValue(CustomHeader, out var _))
                 {
                     headers = new Dictionary<string, string>
                 {
-                    { Headers.MessageId, messageId },
                     { Headers.EnclosedMessageTypes,  typeof(Message).FullName}
                 };
 
                     body = receivedMessage.Body;
-                    s3BodyKey = default;
 
                     return true;
                 }
 
                 headers = default;
-                s3BodyKey = default;
                 body = default;
 
                 return false;

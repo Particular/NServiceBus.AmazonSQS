@@ -6,28 +6,21 @@
 
     class DefaultMessageExtractor : IMessageExtractor
     {
-        public bool TryExtractIncomingMessage(Message receivedMessage, string messageId, out Dictionary<string, string> headers, out string s3BodyKey, out string body)
+        public bool TryExtractIncomingMessage(Message receivedMessage, out Dictionary<string, string> headers, out string body)
         {
             // When the MessageTypeFullName attribute is available, we're assuming native integration
             if (receivedMessage.MessageAttributes.TryGetValue(MessageTypeFullName, out var enclosedMessageType))
             {
                 headers = new Dictionary<string, string>
                 {
-                    { Headers.MessageId, messageId },
+                    // we're copying over the value of the native message attribute into the headers, converting this into a nsb message
                     { Headers.EnclosedMessageTypes, enclosedMessageType.StringValue },
-                    {
-                        MessageTypeFullName, enclosedMessageType.StringValue
-                    } // we're copying over the value of the native message attribute into the headers, converting this into a nsb message
+                    { MessageTypeFullName, enclosedMessageType.StringValue }
                 };
 
                 if (receivedMessage.MessageAttributes.TryGetValue(S3BodyKey, out var s3BodyKeyValue))
                 {
                     headers.Add(S3BodyKey, s3BodyKeyValue.StringValue);
-                    s3BodyKey = s3BodyKeyValue.StringValue;
-                }
-                else
-                {
-                    s3BodyKey = default;
                 }
 
                 body = receivedMessage.Body;
@@ -36,7 +29,6 @@
             }
 
             headers = default;
-            s3BodyKey = default;
             body = default;
 
             return false;

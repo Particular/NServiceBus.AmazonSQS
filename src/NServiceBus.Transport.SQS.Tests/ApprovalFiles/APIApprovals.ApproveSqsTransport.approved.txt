@@ -154,6 +154,6 @@ namespace NServiceBus.Transport.SQS
 {
     public interface IMessageExtractor
     {
-        bool TryExtractIncomingMessage(Amazon.SQS.Model.Message receivedMessage, string messageId, out System.Collections.Generic.Dictionary<string, string> headers, out string s3BodyKey, out string body);
+        bool TryExtractIncomingMessage(Amazon.SQS.Model.Message receivedMessage, out System.Collections.Generic.Dictionary<string, string> headers, out string body);
     }
 }

@@ -36,7 +36,7 @@
 
         class CustomerExtractor : IMessageExtractor
         {
-            public bool TryExtractIncomingMessage(Message receivedMessage, string messageId, out Dictionary<string, string> headers, out string s3BodyKey, out string body) => throw new NotImplementedException();
+            public bool TryExtractIncomingMessage(Message receivedMessage, out Dictionary<string, string> headers, out string body) => throw new NotImplementedException();
         }
 
     }

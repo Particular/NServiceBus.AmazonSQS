@@ -28,7 +28,7 @@
 
             var strategy = new DefaultMessageExtractor();
 
-            var canExtract = strategy.TryExtractIncomingMessage(message, message.MessageId, out _, out _, out var body);
+            var canExtract = strategy.TryExtractIncomingMessage(message, out _, out var body);
 
             Assert.IsTrue(canExtract);
             Assert.That(body, Is.EqualTo(message.Body));
