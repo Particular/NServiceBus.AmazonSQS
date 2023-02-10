@@ -305,7 +305,6 @@
 
             preparedMessage.MessageId = messageId;
 
-            var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.Properties);
             if (!wrapOutgoingMessages)
             {
                 // blunt allocation heavy hack for now
@@ -313,25 +312,32 @@
                 // probably think about how compact this should be?
                 var headers = JsonSerializer.Serialize(transportOperation.Message.Headers);
                 SetMessageAttribute(preparedMessage, TransportHeaders.Headers, headers);
+
+                var key = await CheckSizeAndUploadToS3IfNeeded(preparedMessage, messageId, transportOperation,
+                    cancellationToken).ConfigureAwait(false);
+
+                if (key != null)
+                {
+                    preparedMessage.Body = string.Empty;
+                    SetMessageAttribute(preparedMessage, TransportHeaders.S3BodyKey, key);
+                    preparedMessage.CalculateSize();
+                }
             }
             else
             {
+                var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.Properties);
                 preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
-            }
+                var key = await CheckSizeAndUploadToS3IfNeeded(preparedMessage, messageId, transportOperation,
+                    cancellationToken).ConfigureAwait(false);
 
-            if (!wrapOutgoingMessages)
-            {
-                preparedMessage.Body = string.Empty;
-                SetMessageAttribute(preparedMessage, TransportHeaders.S3BodyKey, key);
+                if (key != null)
+                {
+                    sqsTransportMessage.S3BodyKey = key;
+                    sqsTransportMessage.Body = string.Empty;
+                    preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
+                    preparedMessage.CalculateSize();
+                }
             }
-            else
-            {
-                sqsTransportMessage.S3BodyKey = key;
-                sqsTransportMessage.Body = string.Empty;
-                preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
-            }
-
-            preparedMessage.CalculateSize();
 
             return preparedMessage;
         }
