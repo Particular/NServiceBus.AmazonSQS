@@ -317,8 +317,7 @@
                 var headers = JsonSerializer.Serialize(transportOperation.Message.Headers);
                 SetMessageAttribute(preparedMessage, TransportHeaders.Headers, headers);
 
-                var key = await CheckSizeAndUploadToS3IfNeeded(preparedMessage, messageId, transportOperation,
-                    cancellationToken).ConfigureAwait(false);
+                var key = await CheckSizeAndUploadToS3IfNeeded(preparedMessage, transportOperation, cancellationToken).ConfigureAwait(false);
 
                 if (key != null)
                 {
@@ -331,8 +330,7 @@
             {
                 var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.Properties);
                 preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
-                var key = await CheckSizeAndUploadToS3IfNeeded(preparedMessage, messageId, transportOperation,
-                    cancellationToken).ConfigureAwait(false);
+                var key = await CheckSizeAndUploadToS3IfNeeded(preparedMessage, transportOperation, cancellationToken).ConfigureAwait(false);
 
                 if (key != null)
                 {
@@ -346,7 +344,7 @@
             return preparedMessage;
         }
 
-        async Task<string> CheckSizeAndUploadToS3IfNeeded(PreparedMessage preparedMessage, string messageId,
+        async Task<string> CheckSizeAndUploadToS3IfNeeded(PreparedMessage preparedMessage,
             IOutgoingTransportOperation transportOperation,
             CancellationToken cancellationToken)
         {
@@ -356,7 +354,7 @@
                 return null;
             }
 
-            return await UploadToS3(messageId, transportOperation, cancellationToken).ConfigureAwait(false);
+            return await UploadToS3(preparedMessage.MessageId, transportOperation, cancellationToken).ConfigureAwait(false);
         }
 
         async Task<string> UploadToS3(string messageId, IOutgoingTransportOperation transportOperation, CancellationToken cancellationToken)
@@ -385,17 +383,17 @@
         void SetMessageAttribute<TMessage>(TMessage preparedMessage, string key, string value)
             where TMessage : PreparedMessage
         {
-            if (preparedMessage is SqsPreparedMessage sqsMessage1)
+            if (preparedMessage is SqsPreparedMessage sqsMessage)
             {
-                sqsMessage1.MessageAttributes[key] = new MessageAttributeValue { StringValue = value, DataType = "String" };
+                sqsMessage.MessageAttributes[key] = new MessageAttributeValue { StringValue = value, DataType = "String" };
             }
-            else if (preparedMessage is SnsPreparedMessage sqsMessage2)
+            else if (preparedMessage is SnsPreparedMessage snsMessage)
             {
-                sqsMessage2.MessageAttributes[key] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue() { StringValue = value, DataType = "String" };
+                snsMessage.MessageAttributes[key] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue() { StringValue = value, DataType = "String" };
             }
             else
             {
-                throw new NotImplementedException("Yikes!");
+                throw new NotImplementedException($"Unknown prepared message type '{preparedMessage?.GetType()?.FullName}'");
             }
 
         }
