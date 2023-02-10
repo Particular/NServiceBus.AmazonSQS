@@ -353,7 +353,7 @@
             preparedMessage.CalculateSize();
             if (preparedMessage.Size <= TransportConstraints.MaximumMessageSize)
             {
-                return string.Empty;
+                return null;
             }
 
             return await UploadToS3(messageId, transportOperation, cancellationToken).ConfigureAwait(false);
