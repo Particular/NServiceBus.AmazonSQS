@@ -310,19 +310,7 @@
                 preparedMessage.Body = Encoding.UTF8.GetString(transportOperation.Message.Body.ToArray());
                 // probably think about how compact this should be?
                 var headers = JsonSerializer.Serialize(transportOperation.Message.Headers);
-                // ugly as hell but we can make this better later
-                if (preparedMessage is SqsPreparedMessage sqsMessage1)
-                {
-                    sqsMessage1.MessageAttributes[TransportHeaders.Headers] = new MessageAttributeValue { StringValue = headers, DataType = "String" };
-                }
-                else if (preparedMessage is SnsPreparedMessage sqsMessage2)
-                {
-                    sqsMessage2.MessageAttributes[TransportHeaders.Headers] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue() { StringValue = headers, DataType = "String" };
-                }
-                else
-                {
-                    throw new NotImplementedException("Yikes!");
-                }
+                SetMessageAttribute(preparedMessage, TransportHeaders.Headers, headers);
             }
             else
             {
@@ -357,38 +345,40 @@
                 await s3.S3Client.PutObjectAsync(putObjectRequest, cancellationToken).ConfigureAwait(false);
             }
 
-            sqsTransportMessage.S3BodyKey = key;
-            sqsTransportMessage.Body = string.Empty;
-
             // This repetition is ugly but we can deal with this later
             if (!wrapOutgoingMessages)
             {
-                preparedMessage.Body = sqsTransportMessage.Body;
-                // probably think about how compact this should be?
-                transportOperation.Message.Headers.Add(TransportHeaders.S3BodyKey, sqsTransportMessage.S3BodyKey);
-                var headers = JsonSerializer.Serialize(transportOperation.Message.Headers);
-                // ugly as hell but we can make this better later
-                if (preparedMessage is SqsPreparedMessage sqsMessage1)
-                {
-                    sqsMessage1.MessageAttributes[TransportHeaders.Headers] = new MessageAttributeValue { StringValue = headers, DataType = "String" };
-                }
-                else if (preparedMessage is SnsPreparedMessage sqsMessage2)
-                {
-                    sqsMessage2.MessageAttributes[TransportHeaders.Headers] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue() { StringValue = headers, DataType = "String" };
-                }
-                else
-                {
-                    throw new NotImplementedException("Yikes!");
-                }
+                preparedMessage.Body = string.Empty;
+                SetMessageAttribute(preparedMessage, TransportHeaders.S3BodyKey, key);
             }
             else
             {
+                sqsTransportMessage.S3BodyKey = key;
+                sqsTransportMessage.Body = string.Empty;
                 preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
             }
 
             preparedMessage.CalculateSize();
 
             return preparedMessage;
+        }
+
+        void SetMessageAttribute<TMessage>(TMessage preparedMessage, string key, string value)
+            where TMessage : PreparedMessage
+        {
+            if (preparedMessage is SqsPreparedMessage sqsMessage1)
+            {
+                sqsMessage1.MessageAttributes[key] = new MessageAttributeValue { StringValue = value, DataType = "String" };
+            }
+            else if (preparedMessage is SnsPreparedMessage sqsMessage2)
+            {
+                sqsMessage2.MessageAttributes[key] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue() { StringValue = value, DataType = "String" };
+            }
+            else
+            {
+                throw new NotImplementedException("Yikes!");
+            }
+
         }
 
         async Task ApplyMulticastOperationMappingIfNecessary(MulticastTransportOperation transportOperation, SnsPreparedMessage snsPreparedMessage, CancellationToken cancellationToken)
