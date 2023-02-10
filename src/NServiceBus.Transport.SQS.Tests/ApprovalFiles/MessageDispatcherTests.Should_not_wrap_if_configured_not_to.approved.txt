@@ -1,0 +1,24 @@
+{
+  "DelaySeconds": 0,
+  "MessageAttributes": {
+    "NServiceBus.MessageId": {
+      "BinaryListValues": [],
+      "BinaryValue": null,
+      "DataType": "String",
+      "StringListValues": [],
+      "StringValue": "1234"
+    },
+    "NServiceBus.AmazonSQS.Headers": {
+      "BinaryListValues": [],
+      "BinaryValue": null,
+      "DataType": "String",
+      "StringListValues": [],
+      "StringValue": "{\"NServiceBus.AmazonSQS.TimeToBeReceived\":\"10675199.01:48:05.4775807\",\"NServiceBus.ReplyToAddress\":\"TestReplyToAddress\",\"NServiceBus.MessageId\":\"74d4f8e4-0fc7-4f09-8d46-0b76994e76d6\"}"
+    }
+  },
+  "MessageBody": "my message body",
+  "MessageDeduplicationId": null,
+  "MessageGroupId": null,
+  "MessageSystemAttributes": {},
+  "QueueUrl": "address"
+}
