@@ -307,8 +307,12 @@
 
             if (!wrapOutgoingMessages)
             {
+#if NETFRAMEWORK
                 // blunt allocation heavy hack for now
-                preparedMessage.Body = Encoding.UTF8.GetString(transportOperation.Message.Body.ToArray());
+                preparedMessage.Body = Encoding.Unicode.GetString(transportOperation.Message.Body.ToArray());
+#else
+                preparedMessage.Body = Encoding.Unicode.GetString(transportOperation.Message.Body.Span);
+#endif
                 // probably think about how compact this should be?
                 var headers = JsonSerializer.Serialize(transportOperation.Message.Headers);
                 SetMessageAttribute(preparedMessage, TransportHeaders.Headers, headers);
