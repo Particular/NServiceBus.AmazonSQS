@@ -325,27 +325,8 @@
                 return preparedMessage;
             }
 
-            if (s3 == null)
-            {
-                throw new Exception("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
-            }
+            string key = await UploadToS3(messageId, transportOperation, cancellationToken).ConfigureAwait(false);
 
-            var key = $"{s3.KeyPrefix}/{messageId}";
-            using (var bodyStream = new ReadonlyStream(transportOperation.Message.Body))
-            {
-                var putObjectRequest = new PutObjectRequest
-                {
-                    BucketName = s3.BucketName,
-                    InputStream = bodyStream,
-                    Key = key
-                };
-
-                s3.NullSafeEncryption.ModifyPutRequest(putObjectRequest);
-
-                await s3.S3Client.PutObjectAsync(putObjectRequest, cancellationToken).ConfigureAwait(false);
-            }
-
-            // This repetition is ugly but we can deal with this later
             if (!wrapOutgoingMessages)
             {
                 preparedMessage.Body = string.Empty;
@@ -361,6 +342,29 @@
             preparedMessage.CalculateSize();
 
             return preparedMessage;
+        }
+
+        async Task<string> UploadToS3(string messageId, IOutgoingTransportOperation transportOperation, CancellationToken cancellationToken)
+        {
+            if (s3 == null)
+            {
+                throw new Exception("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
+            }
+
+            var key = $"{s3.KeyPrefix}/{messageId}";
+            using var bodyStream = new ReadonlyStream(transportOperation.Message.Body);
+            var putObjectRequest = new PutObjectRequest
+            {
+                BucketName = s3.BucketName,
+                InputStream = bodyStream,
+                Key = key
+            };
+
+            s3.NullSafeEncryption.ModifyPutRequest(putObjectRequest);
+
+            await s3.S3Client.PutObjectAsync(putObjectRequest, cancellationToken).ConfigureAwait(false);
+
+            return key;
         }
 
         void SetMessageAttribute<TMessage>(TMessage preparedMessage, string key, string value)
