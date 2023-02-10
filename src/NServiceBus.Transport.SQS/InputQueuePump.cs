@@ -275,12 +275,12 @@ namespace NServiceBus.Transport.SQS
                     {
                         transportMessage = new TransportMessage
                         {
-                            Headers = JsonSerializer.Deserialize<Dictionary<string, string>>(headersAttribute.StringValue),
+                            Headers = JsonSerializer.Deserialize<Dictionary<string, string>>(headersAttribute.StringValue) ?? new Dictionary<string, string>(),
                             Body = receivedMessage.Body
                         };
                         if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.S3BodyKey, out var s3BodyKey))
                         {
-                            transportMessage.Headers.Add(TransportHeaders.S3BodyKey, s3BodyKey.StringValue);
+                            transportMessage.Headers[TransportHeaders.S3BodyKey] = s3BodyKey.StringValue;
                             transportMessage.S3BodyKey = s3BodyKey.StringValue;
                         }
                     }
