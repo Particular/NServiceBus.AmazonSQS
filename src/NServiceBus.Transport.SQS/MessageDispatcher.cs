@@ -303,6 +303,8 @@
             await ApplyUnicastOperationMappingIfNecessary(unicastTransportOperation, preparedMessage as SqsPreparedMessage, delaySeconds, messageId, nativeMessageAttributes, cancellationToken).ConfigureAwait(false);
             await ApplyMulticastOperationMappingIfNecessary(transportOperation as MulticastTransportOperation, preparedMessage as SnsPreparedMessage, cancellationToken).ConfigureAwait(false);
 
+            preparedMessage.MessageId = messageId;
+
             var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.Properties);
             if (!wrapOutgoingMessages)
             {
@@ -316,16 +318,6 @@
             {
                 preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
             }
-
-            preparedMessage.MessageId = messageId;
-
-            preparedMessage.CalculateSize();
-            if (preparedMessage.Size <= TransportConstraints.MaximumMessageSize)
-            {
-                return preparedMessage;
-            }
-
-            string key = await UploadToS3(messageId, transportOperation, cancellationToken).ConfigureAwait(false);
 
             if (!wrapOutgoingMessages)
             {
@@ -342,6 +334,19 @@
             preparedMessage.CalculateSize();
 
             return preparedMessage;
+        }
+
+        async Task<string> CheckSizeAndUploadToS3IfNeeded(PreparedMessage preparedMessage, string messageId,
+            IOutgoingTransportOperation transportOperation,
+            CancellationToken cancellationToken)
+        {
+            preparedMessage.CalculateSize();
+            if (preparedMessage.Size <= TransportConstraints.MaximumMessageSize)
+            {
+                return string.Empty;
+            }
+
+            return await UploadToS3(messageId, transportOperation, cancellationToken).ConfigureAwait(false);
         }
 
         async Task<string> UploadToS3(string messageId, IOutgoingTransportOperation transportOperation, CancellationToken cancellationToken)
