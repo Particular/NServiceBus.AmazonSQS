@@ -114,7 +114,8 @@
         public PolicySettings Policies { get; } = new PolicySettings();
 
         /// <summary>
-        /// Configures the SQS transport to not base64 encode outgoing messages. 
+        /// Configures the SQS transport to not use a custom wrapper for outgoing messages.
+        /// NServiceBus headers will be sent as an Amazon message attribute. 
         /// Only turn this on if all your endpoints are version 6.1.0 or above.
         /// </summary>
         public bool DoNotWrapOutgoingMessages { get; set; }
