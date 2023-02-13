@@ -3,8 +3,10 @@
 namespace NServiceBus
 {
     using System;
+    using System.Text;
     using Amazon.S3;
     using NServiceBus.Pipeline;
+    using NServiceBus.Transport;
 
     public static partial class SqsTransportSettings
     {
@@ -65,6 +67,21 @@ namespace NServiceBus
         public static void DisablePublishing(this TransportExtensions<SqsTransport> transportExtensions)
             => throw new NotImplementedException();
 
+        /// <summary>
+        /// Configures the SQS transport to be compatible with 1.x versions of the transport.
+        /// </summary>
+        [ObsoleteEx(
+            ReplacementTypeOrMember = "SqsTransport.EnableV1CompatibilityMode",
+            Message = "Configures the SQS transport to be compatible with 1.x versions of the transport.",
+            TreatAsErrorFromVersion = "7",
+            RemoveInVersion = "8")]
+        public static TransportExtensions<SqsTransport> EnableV1CompatibilityMode(this TransportExtensions<SqsTransport> transportExtensions)
+        {
+#pragma warning disable CS0618 // Type or member is obsolete
+            transportExtensions.Transport.EnableV1CompatibilityMode = true;
+#pragma warning restore CS0618 // Type or member is obsolete
+            return transportExtensions;
+        }
     }
 
     public partial class S3Settings
@@ -194,6 +211,43 @@ namespace NServiceBus
         {
             TopicNamespaceConditions.Add(topicNamespace);
         }
+    }
+
+    public partial class SqsTransport
+    {
+        /// <summary>
+        /// Translates a <see cref="T:NServiceBus.Transport.QueueAddress" /> object into a transport specific queue address-string.
+        /// </summary>
+        [ObsoleteEx(Message = "Inject the ITransportAddressResolver type to access the address translation mechanism at runtime. See the NServiceBus version 8 upgrade guide for further details.",
+                    TreatAsErrorFromVersion = "7",
+                    RemoveInVersion = "8")]
+#pragma warning disable CS0672 // Member overrides obsolete member
+        public override string ToTransportAddress(QueueAddress address)
+#pragma warning restore CS0672 // Member overrides obsolete member
+        {
+            var queueName = address.BaseAddress;
+            var queue = new StringBuilder(queueName);
+            if (address.Discriminator != null)
+            {
+                queue.Append("-" + address.Discriminator);
+            }
+
+            if (address.Qualifier != null)
+            {
+                queue.Append("-" + address.Qualifier);
+            }
+
+            return QueueCache.GetPhysicalQueueName(queue.ToString());
+        }
+
+        /// <summary>
+        /// Configures the SQS transport to be compatible with 1.x versions of the transport.
+        /// </summary>
+        [ObsoleteEx(
+            Message = "Configures the SQS transport to be compatible with 1.x versions of the transport.",
+            TreatAsErrorFromVersion = "7",
+            RemoveInVersion = "8")]
+        public bool EnableV1CompatibilityMode { get; set; }
     }
 }
 #pragma warning restore 1591
