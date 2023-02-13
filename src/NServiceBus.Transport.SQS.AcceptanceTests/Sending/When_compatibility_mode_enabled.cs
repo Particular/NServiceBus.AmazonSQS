@@ -35,7 +35,10 @@
                 EndpointSetup<DefaultServer>(builder =>
                 {
                     builder.ConfigureRouting().RouteToEndpoint(typeof(Message), typeof(Receiver));
+
+#pragma warning disable CS0618 // Type or member is obsolete
                     builder.ConfigureSqsTransport().EnableV1CompatibilityMode = true;
+#pragma warning restore CS0618 // Type or member is obsolete
                 });
 
             public class Handler : IHandleMessages<Reply>

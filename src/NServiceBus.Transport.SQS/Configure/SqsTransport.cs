@@ -3,7 +3,6 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.SimpleNotificationService;
@@ -16,7 +15,7 @@
     /// <summary>
     /// Sqs transport definition.
     /// </summary>
-    public class SqsTransport : TransportDefinition
+    public partial class SqsTransport : TransportDefinition
     {
         /// <summary>
         /// SQS client for the transport.
@@ -103,12 +102,6 @@
                 topicNameGenerator = value;
             }
         }
-
-
-        /// <summary>
-        /// Configures the SQS transport to be compatible with 1.x versions of the transport.
-        /// </summary>
-        public bool EnableV1CompatibilityMode { get; set; }
 
         /// <summary>
         /// Configures the SQS transport to use S3 to store payload of large messages.
@@ -240,31 +233,6 @@
             await Task.WhenAll(createQueueTasks).ConfigureAwait(false);
 
             return infra;
-        }
-
-        /// <summary>
-        /// Translates a <see cref="T:NServiceBus.Transport.QueueAddress" /> object into a transport specific queue address-string.
-        /// </summary>
-        [ObsoleteEx(Message = "Inject the ITransportAddressResolver type to access the address translation mechanism at runtime. See the NServiceBus version 8 upgrade guide for further details.",
-                    TreatAsErrorFromVersion = "7",
-                    RemoveInVersion = "8")]
-#pragma warning disable CS0672 // Member overrides obsolete member
-        public override string ToTransportAddress(QueueAddress address)
-#pragma warning restore CS0672 // Member overrides obsolete member
-        {
-            var queueName = address.BaseAddress;
-            var queue = new StringBuilder(queueName);
-            if (address.Discriminator != null)
-            {
-                queue.Append("-" + address.Discriminator);
-            }
-
-            if (address.Qualifier != null)
-            {
-                queue.Append("-" + address.Qualifier);
-            }
-
-            return QueueCache.GetPhysicalQueueName(queue.ToString());
         }
 
         QueueCache QueueCache =>

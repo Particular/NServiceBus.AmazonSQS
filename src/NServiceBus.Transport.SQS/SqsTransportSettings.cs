@@ -173,20 +173,6 @@ namespace NServiceBus
         }
 
         /// <summary>
-        /// Configures the SQS transport to be compatible with 1.x versions of the transport.
-        /// </summary>
-        [PreObsolete(
-            ReplacementTypeOrMember = "SqsTransport.EnableV1CompatibilityMode",
-            Message = "The configuration has been moved to SqsTransport class.",
-            TreatAsErrorFromVersion = "7",
-            RemoveInVersion = "8")]
-        public static TransportExtensions<SqsTransport> EnableV1CompatibilityMode(this TransportExtensions<SqsTransport> transportExtensions)
-        {
-            transportExtensions.Transport.EnableV1CompatibilityMode = true;
-            return transportExtensions;
-        }
-
-        /// <summary>
         /// Maps a specific message type to a set of topics. The transport will automatically map the most concrete type to a topic.
         /// In case a subscriber needs to subscribe to a type up in the message inheritance chain a custom mapping needs to be defined.
         /// </summary>

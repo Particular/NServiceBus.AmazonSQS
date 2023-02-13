@@ -14,14 +14,19 @@
 
             var transport = config.UseTransport<SqsTransport>();
 
+#pragma warning disable CS0618 // Type or member is obsolete
             transport.EnableV1CompatibilityMode();
+#pragma warning restore CS0618 // Type or member is obsolete
+
             transport.MaxTimeToLive(TimeSpan.FromMinutes(42));
             transport.QueueNamePrefix("MyPrefix");
             transport.TopicNamePrefix("MyTopicPrefix");
             transport.TopicNameGenerator((type, name) => "42");
             transport.DoNotBase64EncodeOutgoingMessages();
 
+#pragma warning disable CS0618 // Type or member is obsolete
             Assert.IsTrue(transport.Transport.EnableV1CompatibilityMode);
+#pragma warning restore CS0618 // Type or member is obsolete
             Assert.AreEqual(TimeSpan.FromMinutes(42), transport.Transport.MaxTimeToLive);
             Assert.AreEqual("MyPrefix", transport.Transport.QueueNamePrefix);
             Assert.AreEqual("MyTopicPrefix", transport.Transport.TopicNamePrefix);
