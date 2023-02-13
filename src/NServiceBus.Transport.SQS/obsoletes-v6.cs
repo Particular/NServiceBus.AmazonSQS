@@ -71,7 +71,6 @@ namespace NServiceBus
         /// Configures the SQS transport to be compatible with 1.x versions of the transport.
         /// </summary>
         [ObsoleteEx(
-            ReplacementTypeOrMember = "SqsTransport.EnableV1CompatibilityMode",
             Message = "Configures the SQS transport to be compatible with 1.x versions of the transport.",
             TreatAsErrorFromVersion = "7",
             RemoveInVersion = "8")]

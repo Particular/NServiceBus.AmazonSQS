@@ -119,8 +119,8 @@ namespace NServiceBus
             "emoved in version 7.0.0.", true)]
         public static NServiceBus.SubscriptionMigrationModeSettings EnableMessageDrivenPubSubCompatibilityMode(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
         [System.Obsolete("Configures the SQS transport to be compatible with 1.x versions of the transport." +
-            " Use `SqsTransport.EnableV1CompatibilityMode` instead. Will be treated as an err" +
-            "or from version 7.0.0. Will be removed in version 8.0.0.", false)]
+            " Will be treated as an error from version 7.0.0. Will be removed in version 8.0." +
+            "0.", false)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> EnableV1CompatibilityMode(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
         public static void MapEvent(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Type eventType, string customTopicName) { }
         public static void MapEvent(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Type subscribedEventType, System.Collections.Generic.IEnumerable<string> customTopicsNames) { }
