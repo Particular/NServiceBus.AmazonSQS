@@ -8,17 +8,15 @@ namespace NServiceBus.Transport.SQS.Tests
     using SQS;
 
     [TestFixture]
-    public class BatcherTests
+    public class SqsPreparedMessageBatcherTests
     {
         [Test]
         public void NoBatchesIfNothingToBatch()
         {
-            var preparedMessages = new SqsPreparedMessage[0]
-            {
-            };
+            var preparedMessages = Array.Empty<SqsPreparedMessage>();
             PrecalculateSize(preparedMessages);
 
-            var batches = Batcher.Batch(preparedMessages);
+            var batches = SqsPreparedMessageBatcher.Batch(preparedMessages);
 
             Assert.IsEmpty(batches);
         }
@@ -34,7 +32,7 @@ namespace NServiceBus.Transport.SQS.Tests
             };
             PrecalculateSize(preparedMessages);
 
-            var batches = Batcher.Batch(preparedMessages);
+            var batches = SqsPreparedMessageBatcher.Batch(preparedMessages);
 
             Assert.AreEqual(3, batches.Count());
             Assert.AreEqual("https://destination1", batches.ElementAt(0).BatchRequest.QueueUrl);
@@ -52,7 +50,7 @@ namespace NServiceBus.Transport.SQS.Tests
             };
             PrecalculateSize(preparedMessages);
 
-            var batches = Batcher.Batch(preparedMessages);
+            var batches = SqsPreparedMessageBatcher.Batch(preparedMessages);
 
             Assert.AreEqual(2, batches.Count());
             Assert.AreEqual("https://Destination1", batches.ElementAt(0).BatchRequest.QueueUrl);
@@ -77,7 +75,7 @@ namespace NServiceBus.Transport.SQS.Tests
             };
             PrecalculateSize(preparedMessages);
 
-            var batches = Batcher.Batch(preparedMessages);
+            var batches = SqsPreparedMessageBatcher.Batch(preparedMessages);
 
             Assert.AreEqual(1, batches.Count());
             Assert.AreEqual(10, batches.ElementAt(0).BatchRequest.Entries.Count);
@@ -105,7 +103,7 @@ namespace NServiceBus.Transport.SQS.Tests
             };
             PrecalculateSize(preparedMessages);
 
-            var batches = Batcher.Batch(preparedMessages);
+            var batches = SqsPreparedMessageBatcher.Batch(preparedMessages);
 
             Assert.AreEqual(2, batches.Count());
             Assert.AreEqual(10, batches.ElementAt(0).BatchRequest.Entries.Count);
@@ -168,7 +166,7 @@ namespace NServiceBus.Transport.SQS.Tests
             };
             PrecalculateSize(preparedMessages);
 
-            var batches = Batcher.Batch(preparedMessages);
+            var batches = SqsPreparedMessageBatcher.Batch(preparedMessages);
 
             Assert.AreEqual(7, batches.Count());
             Assert.AreEqual(1, batches.ElementAt(0).BatchRequest.Entries.Count);
@@ -236,7 +234,7 @@ namespace NServiceBus.Transport.SQS.Tests
             };
             PrecalculateSize(preparedMessages);
 
-            var batches = Batcher.Batch(preparedMessages);
+            var batches = SqsPreparedMessageBatcher.Batch(preparedMessages);
 
             Assert.AreEqual(7, batches.Count());
             Assert.AreEqual(1, batches.ElementAt(0).BatchRequest.Entries.Count);
@@ -289,7 +287,7 @@ namespace NServiceBus.Transport.SQS.Tests
             };
             PrecalculateSize(preparedMessages);
 
-            var batches = Batcher.Batch(preparedMessages);
+            var batches = SqsPreparedMessageBatcher.Batch(preparedMessages);
 
             Assert.AreEqual(4, batches.Count());
             Assert.AreEqual(10, batches.ElementAt(0).BatchRequest.Entries.Count);
@@ -309,7 +307,7 @@ namespace NServiceBus.Transport.SQS.Tests
             };
             PrecalculateSize(preparedMessages);
 
-            var batches = Batcher.Batch(preparedMessages);
+            var batches = SqsPreparedMessageBatcher.Batch(preparedMessages);
 
             Assert.AreNotEqual(messageId, batches.Single().BatchRequest.Entries.Single().Id);
         }
@@ -329,7 +327,7 @@ namespace NServiceBus.Transport.SQS.Tests
             };
             PrecalculateSize(preparedMessages);
 
-            var batches = Batcher.Batch(preparedMessages);
+            var batches = SqsPreparedMessageBatcher.Batch(preparedMessages);
 
             // not exactly a really robust test but good enough
             Assert.AreEqual("SomeValue", batches.Single().BatchRequest.Entries.Single().MessageAttributes["SomeKey"].StringValue);
@@ -347,7 +345,7 @@ namespace NServiceBus.Transport.SQS.Tests
             };
             PrecalculateSize(preparedMessages);
 
-            var batches = Batcher.Batch(preparedMessages);
+            var batches = SqsPreparedMessageBatcher.Batch(preparedMessages);
 
             var firstBatch = batches.ElementAt(0);
             var firstEntry = firstBatch.BatchRequest.Entries.ElementAt(0);
@@ -369,7 +367,7 @@ namespace NServiceBus.Transport.SQS.Tests
             };
             PrecalculateSize(preparedMessages);
 
-            var batches = Batcher.Batch(preparedMessages);
+            var batches = SqsPreparedMessageBatcher.Batch(preparedMessages);
 
             var firstBatch = batches.ElementAt(0);
             var firstEntry = firstBatch.BatchRequest.Entries.ElementAt(0);
@@ -391,7 +389,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             PrecalculateSize(preparedMessages);
 
-            var batches = Batcher.Batch(preparedMessages);
+            var batches = SqsPreparedMessageBatcher.Batch(preparedMessages);
 
             Assert.AreEqual(2, batches.Count);
             Assert.AreEqual(TransportConstraints.MaximumItemsInBatch, batches[0].BatchRequest.Entries.Count);
@@ -410,7 +408,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             PrecalculateSize(preparedMessages);
 
-            var batches = Batcher.Batch(preparedMessages);
+            var batches = SqsPreparedMessageBatcher.Batch(preparedMessages);
 
             Assert.AreEqual(3, batches.Count);
             Assert.AreEqual(TransportConstraints.MaximumItemsInBatch - 1, batches[0].BatchRequest.Entries.Count);
@@ -418,7 +416,7 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.AreEqual(2, batches[2].BatchRequest.Entries.Count);
         }
 
-        static void PrecalculateSize(IEnumerable<PreparedMessage> preparedMessages)
+        static void PrecalculateSize(IEnumerable<SqsPreparedMessage> preparedMessages)
         {
             foreach (var preparedMessage in preparedMessages)
             {

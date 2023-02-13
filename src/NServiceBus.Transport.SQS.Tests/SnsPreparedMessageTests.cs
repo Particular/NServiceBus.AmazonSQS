@@ -11,6 +11,21 @@ namespace NServiceBus.Transport.SQS.Tests
     public class SnsPreparedMessageTests
     {
         [Test]
+        public void CalculateSize_BodyTakenIntoAccount()
+        {
+            var expectedSize = 10;
+
+            var message = new SnsPreparedMessage
+            {
+                Body = new string('a', expectedSize)
+            };
+
+            message.CalculateSize();
+
+            Assert.AreEqual(expectedSize, message.Size);
+        }
+
+        [Test]
         public void CalculateSize_TakesAttributesIntoAccount()
         {
             var message = new SnsPreparedMessage();

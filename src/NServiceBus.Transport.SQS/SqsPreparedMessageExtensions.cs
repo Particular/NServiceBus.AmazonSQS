@@ -7,22 +7,19 @@ namespace NServiceBus.Transport.SQS
     using MessageAttributeValue = Amazon.SQS.Model.MessageAttributeValue;
     using SnsMessageAttributeValue = Amazon.SimpleNotificationService.Model.MessageAttributeValue;
 
-    static class PreparedMessageExtensions
+    static class SqsPreparedMessageExtensions
     {
-        public static SendMessageRequest ToRequest(this SqsPreparedMessage message)
-        {
-            return new SendMessageRequest(message.QueueUrl, message.Body)
+        public static SendMessageRequest ToRequest(this SqsPreparedMessage message) =>
+            new(message.QueueUrl, message.Body)
             {
                 MessageGroupId = message.MessageGroupId,
                 MessageDeduplicationId = message.MessageDeduplicationId,
                 MessageAttributes = message.MessageAttributes,
                 DelaySeconds = message.DelaySeconds
             };
-        }
 
-        public static PublishRequest ToPublishRequest(this SnsPreparedMessage message)
-        {
-            return new PublishRequest(message.Destination, message.Body)
+        public static PublishRequest ToPublishRequest(this SnsPreparedMessage message) =>
+            new(message.Destination, message.Body)
             {
                 MessageAttributes = message.MessageAttributes.ToDictionary(x => x.Key, x => new SnsMessageAttributeValue
                 {
@@ -31,7 +28,6 @@ namespace NServiceBus.Transport.SQS
                     BinaryValue = x.Value.BinaryValue,
                 })
             };
-        }
 
         public static void CopyMessageAttributes(this SqsPreparedMessage message, Dictionary<string, MessageAttributeValue> nativeMessageAttributes)
         {
@@ -58,33 +54,28 @@ namespace NServiceBus.Transport.SQS
             message.MessageAttributes.Remove(TransportHeaders.S3BodyKey);
         }
 
-        static SendMessageBatchRequestEntry ToBatchEntry(this SqsPreparedMessage message, string batchEntryId)
-        {
-            return new SendMessageBatchRequestEntry(batchEntryId, message.Body)
+        static SendMessageBatchRequestEntry ToBatchEntry(this SqsPreparedMessage message, string batchEntryId) =>
+            new(batchEntryId, message.Body)
             {
                 MessageAttributes = message.MessageAttributes,
                 MessageGroupId = message.MessageGroupId,
                 MessageDeduplicationId = message.MessageDeduplicationId,
                 DelaySeconds = message.DelaySeconds
             };
-        }
 
-        public static BatchEntry<TMessage> ToBatchRequest<TMessage>(this TMessage message, Dictionary<string, TMessage> batchEntries)
-            where TMessage : SqsPreparedMessage
+        public static SqsBatchEntry ToBatchRequest(this SqsPreparedMessage message, Dictionary<string, SqsPreparedMessage> batchEntries)
         {
             var preparedMessagesBydId = batchEntries.ToDictionary(x => x.Key, x => x.Value);
 
-            var batchRequestEntries = new List<SendMessageBatchRequestEntry>();
+            var batchRequestEntries = new List<SendMessageBatchRequestEntry>(batchEntries.Count);
             foreach (var kvp in preparedMessagesBydId)
             {
                 batchRequestEntries.Add(kvp.Value.ToBatchEntry(kvp.Key));
             }
 
-            return new BatchEntry<TMessage>
-            {
-                BatchRequest = new SendMessageBatchRequest(message.QueueUrl, batchRequestEntries),
-                PreparedMessagesBydId = preparedMessagesBydId
-            };
+            return new SqsBatchEntry(
+                new SendMessageBatchRequest(message.QueueUrl, batchRequestEntries),
+                preparedMessagesBydId);
         }
     }
 }
