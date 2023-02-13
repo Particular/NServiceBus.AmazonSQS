@@ -18,23 +18,22 @@
                     DataType = "String"
                 };
         }
-
         public string Body { get; set; }
         public string Destination { get; set; }
         public long Size { get; private set; }
+
+        public string OriginalDestination { get; set; }
+        public string QueueUrl { get; set; }
+        public int DelaySeconds { get; set; }
+        public string MessageGroupId { get; set; }
+        public string MessageDeduplicationId { get; set; }
+        public Dictionary<string, MessageAttributeValue> MessageAttributes { get; } = new();
 
         public void CalculateSize()
         {
             Size = Body?.Length ?? 0;
             Size += CalculateAttributesSize();
         }
-
-        public string OriginalDestination { get; set; }
-        public string QueueUrl { get; set; }
-        public int DelaySeconds { get; set; }
-        public Dictionary<string, MessageAttributeValue> MessageAttributes { get; } = new Dictionary<string, MessageAttributeValue>();
-        public string MessageGroupId { get; set; }
-        public string MessageDeduplicationId { get; set; }
 
         long CalculateAttributesSize()
         {

@@ -127,31 +127,31 @@
             await Task.WhenAll(batchTasks).ConfigureAwait(false);
         }
 
-        async Task SendBatch(SqsBatchEntry sqsBatch, int batchNumber, int totalBatches, CancellationToken cancellationToken)
+        async Task SendBatch(SqsBatchEntry batch, int batchNumber, int totalBatches, CancellationToken cancellationToken)
         {
             try
             {
                 if (Logger.IsDebugEnabled)
                 {
-                    var message = sqsBatch.PreparedMessagesBydId.Values.First();
+                    var message = batch.PreparedMessagesBydId.Values.First();
 
-                    Logger.Debug($"Sending batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", sqsBatch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
+                    Logger.Debug($"Sending batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
                 }
 
-                var result = await sqsClient.SendMessageBatchAsync(sqsBatch.BatchRequest, cancellationToken).ConfigureAwait(false);
+                var result = await sqsClient.SendMessageBatchAsync(batch.BatchRequest, cancellationToken).ConfigureAwait(false);
 
                 if (Logger.IsDebugEnabled)
                 {
-                    var message = sqsBatch.PreparedMessagesBydId.Values.First();
+                    var message = batch.PreparedMessagesBydId.Values.First();
 
-                    Logger.Debug($"Sent batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", sqsBatch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
+                    Logger.Debug($"Sent batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
                 }
 
                 List<Task> redispatchTasks = null;
                 foreach (var errorEntry in result.Failed)
                 {
                     redispatchTasks ??= new List<Task>(result.Failed.Count);
-                    var messageToRetry = sqsBatch.PreparedMessagesBydId[errorEntry.Id];
+                    var messageToRetry = batch.PreparedMessagesBydId[errorEntry.Id];
                     Logger.Info($"Retrying message with MessageId {messageToRetry.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
                     redispatchTasks.Add(SendMessageForBatch(messageToRetry, batchNumber, totalBatches, cancellationToken));
                 }
@@ -163,7 +163,7 @@
             }
             catch (QueueDoesNotExistException e)
             {
-                var message = sqsBatch.PreparedMessagesBydId.Values.First();
+                var message = batch.PreparedMessagesBydId.Values.First();
 
                 if (message.OriginalDestination != null)
                 {
@@ -176,14 +176,14 @@
                         e.StatusCode);
                 }
 
-                Logger.Error($"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", sqsBatch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'. The destination does not exist.", e);
+                Logger.Error($"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'. The destination does not exist.", e);
                 throw;
             }
             catch (Exception ex) when (!ex.IsCausedBy(cancellationToken))
             {
-                var message = sqsBatch.PreparedMessagesBydId.Values.First();
+                var message = batch.PreparedMessagesBydId.Values.First();
 
-                Logger.Error($"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", sqsBatch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'", ex);
+                Logger.Error($"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'", ex);
                 throw;
             }
         }
@@ -390,7 +390,7 @@
             snsPreparedMessage.Destination = existingTopicArn;
         }
 
-        async Task ApplyUnicastOperationMapping(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, string messageId, Dictionary<string, MessageAttributeValue> nativeMessageAttributes, CancellationToken cancellationToken)
+        async ValueTask ApplyUnicastOperationMapping(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, string messageId, Dictionary<string, MessageAttributeValue> nativeMessageAttributes, CancellationToken cancellationToken)
         {
             // copy over the message attributes that were set on the incoming message for error/audit scenario's if available
             sqsPreparedMessage.CopyMessageAttributes(nativeMessageAttributes);

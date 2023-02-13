@@ -22,7 +22,7 @@
         public string Destination { get; set; }
         public long Size { get; private set; }
 
-        public Dictionary<string, MessageAttributeValue> MessageAttributes { get; } = new Dictionary<string, MessageAttributeValue>();
+        public Dictionary<string, MessageAttributeValue> MessageAttributes { get; } = new();
 
         public void CalculateSize()
         {
