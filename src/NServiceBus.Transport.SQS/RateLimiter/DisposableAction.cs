@@ -4,20 +4,13 @@
 
     partial class RateLimiter
     {
-        class DisposableAction : IDisposable
+        readonly struct DisposableAction : IDisposable
         {
-            public DisposableAction(Action onDisposedCallback)
-            {
-                this.onDisposedCallback = onDisposedCallback;
-            }
+            public DisposableAction(Action onDisposedCallback) => this.onDisposedCallback = onDisposedCallback;
 
-            public void Dispose()
-            {
-                onDisposedCallback?.Invoke();
-                onDisposedCallback = null;
-            }
+            public void Dispose() => onDisposedCallback?.Invoke();
 
-            Action onDisposedCallback;
+            readonly Action onDisposedCallback;
         }
     }
 }

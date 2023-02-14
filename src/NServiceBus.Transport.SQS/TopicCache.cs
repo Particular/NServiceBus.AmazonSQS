@@ -1,3 +1,4 @@
+#nullable enable
 namespace NServiceBus.Transport.SQS
 {
     using System;
@@ -14,12 +15,12 @@ namespace NServiceBus.Transport.SQS
     {
         class TopicCacheItem
         {
-            public Topic Topic { get; set; }
+            public Topic? Topic { get; set; }
 
             public DateTime CreatedOn { get; } = DateTime.UtcNow;
         }
 
-        public TopicCache(IAmazonSimpleNotificationService snsClient, IReadOnlySettings settings, EventToTopicsMappings eventToTopicsMappings, EventToEventsMappings eventToEventsMappings, Func<Type, string, string> topicNameGenerator, string topicNamePrefix)
+        public TopicCache(IAmazonSimpleNotificationService snsClient, IReadOnlySettings? settings, EventToTopicsMappings eventToTopicsMappings, EventToEventsMappings eventToEventsMappings, Func<Type, string, string> topicNameGenerator, string topicNamePrefix)
         {
             this.topicNameGenerator = topicNameGenerator;
             this.topicNamePrefix = topicNamePrefix;
@@ -40,10 +41,10 @@ namespace NServiceBus.Transport.SQS
 
         public EventToTopicsMappings CustomEventToTopicsMappings { get; }
 
-        public async ValueTask<string> GetTopicArn(Type eventType, CancellationToken cancellationToken = default)
+        public async ValueTask<string?> GetTopicArn(Type eventType, CancellationToken cancellationToken = default)
         {
             var topic = await GetAndCacheTopicIfFound(eventType, cancellationToken).ConfigureAwait(false);
-            return topic.TopicArn;
+            return topic?.TopicArn;
         }
 
         public string GetTopicName(Type messageType)
@@ -55,10 +56,10 @@ namespace NServiceBus.Transport.SQS
 
             return topicNameCache.GetOrAdd(messageType, topicNameGenerator(messageType, topicNamePrefix));
         }
-        public ValueTask<Topic> GetTopic(Type eventType, CancellationToken cancellationToken = default)
+        public ValueTask<Topic?> GetTopic(Type eventType, CancellationToken cancellationToken = default)
             => GetAndCacheTopicIfFound(eventType, cancellationToken);
 
-        bool TryGetTopicFromCache(Type messageType, out Topic topic)
+        bool TryGetTopicFromCache(Type messageType, out Topic? topic)
         {
             if (topicCache.TryGetValue(messageType, out var topicCacheItem))
             {
@@ -79,9 +80,7 @@ namespace NServiceBus.Transport.SQS
             return false;
         }
 
-#pragma warning disable PS0004 // A parameter of type CancellationToken on a private delegate or method should be required
-        async ValueTask<Topic> GetAndCacheTopicIfFound(Type messageType, CancellationToken cancellationToken = default)
-#pragma warning restore PS0004 // A parameter of type CancellationToken on a private delegate or method should be required
+        async ValueTask<Topic?> GetAndCacheTopicIfFound(Type messageType, CancellationToken cancellationToken)
         {
             if (Logger.IsDebugEnabled)
             {
@@ -98,8 +97,9 @@ namespace NServiceBus.Transport.SQS
                 Logger.Debug($"Topic for '{messageType}' not found in cache.");
             }
 
-            var foundTopic = await snsListTopicsRateLimiter.Execute(async () =>
+            var foundTopic = await snsListTopicsRateLimiter.Execute(static async (state, cancellationToken) =>
             {
+                var (@this, messageType, snsClient) = state;
                 if (Logger.IsDebugEnabled)
                 {
                     Logger.Debug($"Performing second Topic cache lookup for '{messageType}'.");
@@ -109,12 +109,12 @@ namespace NServiceBus.Transport.SQS
                  * rate limiter. Before trying to reach out to SNS we do another
                  * cache lookup
                  */
-                if (TryGetTopicFromCache(messageType, out var cachedValue))
+                if (@this.TryGetTopicFromCache(messageType, out var cachedValue))
                 {
                     return cachedValue;
                 }
 
-                var topicName = GetTopicName(messageType);
+                var topicName = @this.GetTopicName(messageType);
 
                 if (Logger.IsDebugEnabled)
                 {
@@ -122,7 +122,7 @@ namespace NServiceBus.Transport.SQS
                 }
 
                 return await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
-            }).ConfigureAwait(false);
+            }, (this, messageType, snsClient), cancellationToken).ConfigureAwait(false);
 
             //We cache also null/not found topics, they'll be wiped
             //from the cache at lookup time based on the configured TTL

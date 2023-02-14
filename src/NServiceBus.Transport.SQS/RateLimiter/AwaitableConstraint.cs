@@ -29,18 +29,16 @@
                 requestsTimeStamps = new SizeConstrainedStack<DateTime>(this.maxAllowedRequests);
             }
 
-#pragma warning disable PS0018 // A task-returning method should have a CancellationToken parameter unless it has a parameter implementing ICancellableContext
-            public async Task<IDisposable> WaitIfNeeded()
-#pragma warning restore PS0018 // A task-returning method should have a CancellationToken parameter unless it has a parameter implementing ICancellableContext
+            public async Task<DisposableAction> WaitIfNeeded(CancellationToken cancellationToken = default)
             {
-                await semaphore.WaitAsync().ConfigureAwait(false);
+                await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
                 var requestsCount = 0;
                 var now = DateTime.UtcNow;
                 var allocatedTimeLowerBound = now - timeConstraint;
                 var request = requestsTimeStamps.First;
                 LinkedListNode<DateTime> lastRequest = null;
-                while ((request != null) && (request.Value > allocatedTimeLowerBound))
+                while (request != null && request.Value > allocatedTimeLowerBound)
                 {
                     //counting how many requests have already
                     //been performed within the allocated time
@@ -51,7 +49,7 @@
 
                 if (requestsCount < maxAllowedRequests)
                 {
-                    return new DisposableAction(OnActionDisposed);
+                    return new DisposableAction(() => OnActionDisposed());
                 }
 
                 Debug.Assert(request == null);
@@ -60,15 +58,17 @@
                 try
                 {
                     Logger.Info($"Requests threshold of {maxAllowedRequests} requests every {timeConstraint} reached for API '{apiName}'. Waiting {timeToWait}.");
-                    await Task.Delay(timeToWait).ConfigureAwait(false);
+                    await Task.Delay(timeToWait, cancellationToken).ConfigureAwait(false);
                 }
+#pragma warning disable PS0019
                 catch (Exception)
+#pragma warning restore PS0019
                 {
                     _ = semaphore.Release();
                     throw;
                 }
 
-                return new DisposableAction(OnActionDisposed);
+                return new DisposableAction(() => OnActionDisposed());
             }
 
             void OnActionDisposed()
@@ -83,7 +83,7 @@
             readonly int maxAllowedRequests;
             TimeSpan timeConstraint;
             readonly string apiName;
-            readonly SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
+            readonly SemaphoreSlim semaphore = new(1, 1);
             static ILog Logger = LogManager.GetLogger(typeof(AwaitableConstraint));
         }
     }
