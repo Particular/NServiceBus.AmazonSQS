@@ -47,11 +47,16 @@
             TMessage message)
             where TMessage : IMessage
         {
-            using var sw = new StringWriter();
+            using var sw = new Utf8StringWriter();
             var serializer = new System.Xml.Serialization.XmlSerializer(typeof(TMessage));
             serializer.Serialize(sw, message);
 
             await SendTo<TEndpoint>(messageAttributeValues, sw.ToString());
+        }
+
+        sealed class Utf8StringWriter : StringWriter
+        {
+            public override Encoding Encoding => Encoding.UTF8;
         }
 
         public static async Task SendTo<TEndpoint>(Dictionary<string, MessageAttributeValue> messageAttributeValues, string message, bool base64Encode = true)
