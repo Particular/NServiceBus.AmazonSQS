@@ -40,9 +40,10 @@ namespace NServiceBus.Transport.SQS
 
         public EventToTopicsMappings CustomEventToTopicsMappings { get; }
 
-        public Task<string> GetTopicArn(Type eventType, CancellationToken cancellationToken = default)
+        public async ValueTask<string> GetTopicArn(Type eventType, CancellationToken cancellationToken = default)
         {
-            return GetAndCacheTopicIfFound(eventType, cancellationToken).ContinueWith(t => t.Result?.TopicArn);
+            var topic = await GetAndCacheTopicIfFound(eventType, cancellationToken).ConfigureAwait(false);
+            return topic.TopicArn;
         }
 
         public string GetTopicName(Type messageType)
@@ -54,10 +55,8 @@ namespace NServiceBus.Transport.SQS
 
             return topicNameCache.GetOrAdd(messageType, topicNameGenerator(messageType, topicNamePrefix));
         }
-        public Task<Topic> GetTopic(Type eventType, CancellationToken cancellationToken = default)
-        {
-            return GetAndCacheTopicIfFound(eventType, cancellationToken);
-        }
+        public ValueTask<Topic> GetTopic(Type eventType, CancellationToken cancellationToken = default)
+            => GetAndCacheTopicIfFound(eventType, cancellationToken);
 
         bool TryGetTopicFromCache(Type messageType, out Topic topic)
         {
@@ -81,32 +80,46 @@ namespace NServiceBus.Transport.SQS
         }
 
 #pragma warning disable PS0004 // A parameter of type CancellationToken on a private delegate or method should be required
-        async Task<Topic> GetAndCacheTopicIfFound(Type messageType, CancellationToken cancellationToken = default)
+        async ValueTask<Topic> GetAndCacheTopicIfFound(Type messageType, CancellationToken cancellationToken = default)
 #pragma warning restore PS0004 // A parameter of type CancellationToken on a private delegate or method should be required
         {
-            Logger.Debug($"Performing first Topic cache lookup for '{messageType}'.");
+            if (Logger.IsDebugEnabled)
+            {
+                Logger.Debug($"Performing first Topic cache lookup for '{messageType}'.");
+            }
+
             if (TryGetTopicFromCache(messageType, out var cachedTopic))
             {
                 return cachedTopic;
             }
 
-            Logger.Debug($"Topic for '{messageType}' not found in cache.");
+            if (Logger.IsDebugEnabled)
+            {
+                Logger.Debug($"Topic for '{messageType}' not found in cache.");
+            }
 
             var foundTopic = await snsListTopicsRateLimiter.Execute(async () =>
             {
+                if (Logger.IsDebugEnabled)
+                {
+                    Logger.Debug($"Performing second Topic cache lookup for '{messageType}'.");
+                }
                 /*
                  * Rate limiter serializes requests, only 1 thread is allowed per
                  * rate limiter. Before trying to reach out to SNS we do another
                  * cache lookup
                  */
-                Logger.Debug($"Performing second Topic cache lookup for '{messageType}'.");
                 if (TryGetTopicFromCache(messageType, out var cachedValue))
                 {
                     return cachedValue;
                 }
 
                 var topicName = GetTopicName(messageType);
-                Logger.Debug($"Finding topic '{topicName}' using 'ListTopics' SNS API.");
+
+                if (Logger.IsDebugEnabled)
+                {
+                    Logger.Debug($"Finding topic '{topicName}' using 'ListTopics' SNS API.");
+                }
 
                 return await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
             }).ConfigureAwait(false);
@@ -116,23 +129,31 @@ namespace NServiceBus.Transport.SQS
             var added = topicCache.TryAdd(messageType, new TopicCacheItem { Topic = foundTopic });
             if (added)
             {
-                Logger.Debug($"Added topic '{foundTopic?.TopicArn ?? "<null>"}' to cache. Cache items count: {topicCache.Count}.");
+                if (Logger.IsDebugEnabled)
+                {
+                    Logger.Debug(
+                        $"Added topic '{foundTopic?.TopicArn ?? "<null>"}' to cache. Cache items count: {topicCache.Count}.");
+                }
             }
             else
             {
-                Logger.Debug($"Topic already present in cache. Topic '{foundTopic?.TopicArn ?? "<null>"}'. Cache items count: {topicCache.Count}.");
+                if (Logger.IsDebugEnabled)
+                {
+                    Logger.Debug(
+                        $"Topic already present in cache. Topic '{foundTopic?.TopicArn ?? "<null>"}'. Cache items count: {topicCache.Count}.");
+                }
             }
 
             return foundTopic;
         }
 
         IAmazonSimpleNotificationService snsClient;
-        ConcurrentDictionary<Type, TopicCacheItem> topicCache = new ConcurrentDictionary<Type, TopicCacheItem>();
-        ConcurrentDictionary<Type, string> topicNameCache = new ConcurrentDictionary<Type, string>();
+        ConcurrentDictionary<Type, TopicCacheItem> topicCache = new();
+        ConcurrentDictionary<Type, string> topicNameCache = new();
         static ILog Logger = LogManager.GetLogger(typeof(TopicCache));
         readonly Func<Type, string, string> topicNameGenerator;
         readonly string topicNamePrefix;
         readonly TimeSpan notFoundTopicsCacheTTL;
-        readonly SnsListTopicsRateLimiter snsListTopicsRateLimiter = new SnsListTopicsRateLimiter();
+        readonly SnsListTopicsRateLimiter snsListTopicsRateLimiter = new();
     }
 }
