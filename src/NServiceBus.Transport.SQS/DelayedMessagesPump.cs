@@ -259,7 +259,7 @@ namespace NServiceBus.Transport.SQS
 
         async Task BatchDispatchPreparedMessages(IReadOnlyCollection<SqsReceivedDelayedMessage> preparedMessages, CancellationToken cancellationToken)
         {
-            var batchesToSend = Batcher.Batch(preparedMessages);
+            var batchesToSend = SqsPreparedMessageBatcher.Batch(preparedMessages);
             var operationCount = batchesToSend.Count;
             Task[] batchTasks = null;
             for (var i = 0; i < operationCount; i++)
@@ -274,7 +274,7 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        async Task SendDelayedMessagesInBatches(BatchEntry<SqsReceivedDelayedMessage> batch, int batchNumber, int totalBatches, CancellationToken cancellationToken)
+        async Task SendDelayedMessagesInBatches(SqsBatchEntry batch, int batchNumber, int totalBatches, CancellationToken cancellationToken)
         {
             if (Logger.IsDebugEnabled)
             {
@@ -298,7 +298,7 @@ namespace NServiceBus.Transport.SQS
             await deletionTask.ConfigureAwait(false);
         }
 
-        async Task ChangeVisibilityOfDelayedMessagesThatFailedBatchDeliveryInBatches(BatchEntry<SqsReceivedDelayedMessage> batch, SendMessageBatchResponse result, int batchNumber, int totalBatches, CancellationToken cancellationToken)
+        async Task ChangeVisibilityOfDelayedMessagesThatFailedBatchDeliveryInBatches(SqsBatchEntry batch, SendMessageBatchResponse result, int batchNumber, int totalBatches, CancellationToken cancellationToken)
         {
             try
             {
@@ -306,7 +306,7 @@ namespace NServiceBus.Transport.SQS
                 foreach (var failed in result.Failed)
                 {
                     changeVisibilityBatchRequestEntries ??= new List<ChangeMessageVisibilityBatchRequestEntry>(result.Failed.Count);
-                    var preparedMessage = batch.PreparedMessagesBydId[failed.Id];
+                    var preparedMessage = (SqsReceivedDelayedMessage)batch.PreparedMessagesBydId[failed.Id];
                     // need to reuse the previous batch entry ID so that we can map again in failure scenarios, this is fine given that IDs only need to be unique per request
                     changeVisibilityBatchRequestEntries.Add(new ChangeMessageVisibilityBatchRequestEntry(failed.Id, preparedMessage.ReceiptHandle)
                     {
@@ -357,13 +357,13 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        async Task DeleteDelayedMessagesThatWereDeliveredSuccessfullyAsBatchesInBatches(BatchEntry<SqsReceivedDelayedMessage> batch, SendMessageBatchResponse result, int batchNumber, int totalBatches, CancellationToken cancellationToken)
+        async Task DeleteDelayedMessagesThatWereDeliveredSuccessfullyAsBatchesInBatches(SqsBatchEntry batch, SendMessageBatchResponse result, int batchNumber, int totalBatches, CancellationToken cancellationToken)
         {
             List<DeleteMessageBatchRequestEntry> deleteBatchRequestEntries = null;
             foreach (var successful in result.Successful)
             {
                 deleteBatchRequestEntries ??= new List<DeleteMessageBatchRequestEntry>(result.Successful.Count);
-                var preparedMessage = batch.PreparedMessagesBydId[successful.Id];
+                var preparedMessage = (SqsReceivedDelayedMessage)batch.PreparedMessagesBydId[successful.Id];
                 // need to reuse the previous batch entry ID so that we can map again in failure scenarios, this is fine given that IDs only need to be unique per request
                 deleteBatchRequestEntries.Add(new DeleteMessageBatchRequestEntry(successful.Id, preparedMessage.ReceiptHandle));
             }
@@ -391,7 +391,7 @@ namespace NServiceBus.Transport.SQS
                 foreach (var errorEntry in deleteResult.Failed)
                 {
                     deleteTasks ??= new List<Task>(deleteResult.Failed.Count);
-                    var messageToDeleteWithAnotherAttempt = batch.PreparedMessagesBydId[errorEntry.Id];
+                    var messageToDeleteWithAnotherAttempt = (SqsReceivedDelayedMessage)batch.PreparedMessagesBydId[errorEntry.Id];
                     Logger.Info($"Retrying message deletion with MessageId {messageToDeleteWithAnotherAttempt.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
                     deleteTasks.Add(DeleteMessage(messageToDeleteWithAnotherAttempt, cancellationToken));
                 }

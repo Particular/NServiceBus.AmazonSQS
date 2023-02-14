@@ -4,9 +4,9 @@
     using System.Collections.Generic;
     using Amazon.SimpleNotificationService.Model;
 
-    class SnsPreparedMessage : PreparedMessage
+    class SnsPreparedMessage
     {
-        public override string MessageId
+        public string MessageId
         {
             get => MessageAttributes.ContainsKey(Headers.MessageId) ? MessageAttributes[Headers.MessageId].StringValue : null;
             set =>
@@ -18,9 +18,19 @@
                     DataType = "String"
                 };
         }
-        public Dictionary<string, MessageAttributeValue> MessageAttributes { get; } = new Dictionary<string, MessageAttributeValue>();
+        public string Body { get; set; }
+        public string Destination { get; set; }
+        public long Size { get; private set; }
 
-        protected override long CalculateAttributesSize()
+        public Dictionary<string, MessageAttributeValue> MessageAttributes { get; } = new();
+
+        public void CalculateSize()
+        {
+            Size = Body?.Length ?? 0;
+            Size += CalculateAttributesSize();
+        }
+
+        long CalculateAttributesSize()
         {
             var size = 0L;
             foreach (var messageAttributeValue in MessageAttributes)

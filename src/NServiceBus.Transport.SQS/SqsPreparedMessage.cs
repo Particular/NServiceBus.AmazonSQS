@@ -4,9 +4,9 @@
     using System.Collections.Generic;
     using Amazon.SQS.Model;
 
-    class SqsPreparedMessage : PreparedMessage
+    class SqsPreparedMessage
     {
-        public override string MessageId
+        public string MessageId
         {
             get => MessageAttributes.ContainsKey(Headers.MessageId) ? MessageAttributes[Headers.MessageId].StringValue : null;
             set =>
@@ -18,15 +18,24 @@
                     DataType = "String"
                 };
         }
+        public string Body { get; set; }
+        public string Destination { get; set; }
+        public long Size { get; private set; }
 
         public string OriginalDestination { get; set; }
         public string QueueUrl { get; set; }
         public int DelaySeconds { get; set; }
-        public Dictionary<string, MessageAttributeValue> MessageAttributes { get; } = new Dictionary<string, MessageAttributeValue>();
         public string MessageGroupId { get; set; }
         public string MessageDeduplicationId { get; set; }
+        public Dictionary<string, MessageAttributeValue> MessageAttributes { get; } = new();
 
-        protected override long CalculateAttributesSize()
+        public void CalculateSize()
+        {
+            Size = Body?.Length ?? 0;
+            Size += CalculateAttributesSize();
+        }
+
+        long CalculateAttributesSize()
         {
             var size = 0L;
             foreach (var messageAttributeValue in MessageAttributes)

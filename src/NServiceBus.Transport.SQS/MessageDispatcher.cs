@@ -51,7 +51,7 @@
 
             // in order to not enumerate multi cast operations multiple times this code assumes the hashset is filled on the synchronous path of the async method!
             var multicastEventsMessageIdsToType = new Dictionary<string, Type>();
-            concurrentDispatchTasks.Add(DispatchMulticast(outgoingMessages.MulticastTransportOperations, multicastEventsMessageIdsToType, transaction, cancellationToken));
+            concurrentDispatchTasks.Add(DispatchMulticast(outgoingMessages.MulticastTransportOperations, multicastEventsMessageIdsToType, cancellationToken));
 
             foreach (var dispatchConsistencyGroup in outgoingMessages.UnicastTransportOperations
                 .GroupBy(o => o.RequiredDispatchConsistency))
@@ -80,14 +80,14 @@
             }
         }
 
-        Task DispatchMulticast(List<MulticastTransportOperation> multicastTransportOperations, Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction, CancellationToken cancellationToken)
+        Task DispatchMulticast(List<MulticastTransportOperation> multicastTransportOperations, Dictionary<string, Type> multicastEventsMessageIdsToType, CancellationToken cancellationToken)
         {
             List<Task> tasks = null;
             foreach (var operation in multicastTransportOperations)
             {
                 multicastEventsMessageIdsToType.Add(operation.Message.MessageId, operation.MessageType);
                 tasks ??= new List<Task>(multicastTransportOperations.Count);
-                tasks.Add(Dispatch(operation, EmptyDictionary, transportTransaction, cancellationToken));
+                tasks.Add(Dispatch(operation, cancellationToken));
             }
 
             return tasks != null ? Task.WhenAll(tasks) : Task.CompletedTask;
@@ -110,12 +110,12 @@
             var tasks = new List<Task<SqsPreparedMessage>>();
             foreach (var operation in toBeBatchedTransportOperations)
             {
-                tasks.Add(PrepareMessage<SqsPreparedMessage>(operation, multicastEventsMessageIdsToType, transportTransaction, cancellationToken));
+                tasks.Add(PrepareMessage(operation, multicastEventsMessageIdsToType, transportTransaction, cancellationToken));
             }
 
             await Task.WhenAll(tasks).ConfigureAwait(false);
 
-            var batches = Batcher.Batch(tasks.Select(x => x.Result).Where(x => x != null));
+            var batches = SqsPreparedMessageBatcher.Batch(tasks.Select(x => x.Result).Where(x => x != null));
 
             var operationCount = batches.Count;
             var batchTasks = new Task[operationCount];
@@ -127,7 +127,7 @@
             await Task.WhenAll(batchTasks).ConfigureAwait(false);
         }
 
-        async Task SendBatch(BatchEntry<SqsPreparedMessage> batch, int batchNumber, int totalBatches, CancellationToken cancellationToken)
+        async Task SendBatch(SqsBatchEntry batch, int batchNumber, int totalBatches, CancellationToken cancellationToken)
         {
             try
             {
@@ -188,9 +188,9 @@
             }
         }
 
-        async Task Dispatch(MulticastTransportOperation transportOperation, Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction, CancellationToken cancellationToken)
+        async Task Dispatch(MulticastTransportOperation transportOperation, CancellationToken cancellationToken)
         {
-            var message = await PrepareMessage<SnsPreparedMessage>(transportOperation, multicastEventsMessageIdsToType, transportTransaction, cancellationToken)
+            var message = await PrepareMessage(transportOperation, cancellationToken)
                 .ConfigureAwait(false);
 
             if (message == null)
@@ -221,7 +221,7 @@
 
         async Task Dispatch(UnicastTransportOperation transportOperation, Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction, CancellationToken cancellationToken)
         {
-            var message = await PrepareMessage<SqsPreparedMessage>(transportOperation, multicastEventsMessageIdsToType, transportTransaction, cancellationToken)
+            var message = await PrepareMessage(transportOperation, multicastEventsMessageIdsToType, transportTransaction, cancellationToken)
                 .ConfigureAwait(false);
 
             if (message == null)
@@ -263,12 +263,9 @@
             }
         }
 
-        async Task<TMessage> PrepareMessage<TMessage>(IOutgoingTransportOperation transportOperation, Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction, CancellationToken cancellationToken)
-            where TMessage : PreparedMessage, new()
+        async Task<SqsPreparedMessage> PrepareMessage(UnicastTransportOperation transportOperation, Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction, CancellationToken cancellationToken)
         {
-            var unicastTransportOperation = transportOperation as UnicastTransportOperation;
-
-            if (!await hybridPubSubChecker.PublishUsingMessageDrivenPubSub(unicastTransportOperation, multicastEventsMessageIdsToType, topicCache, queueCache, snsClient).ConfigureAwait(false))
+            if (!await hybridPubSubChecker.PublishUsingMessageDrivenPubSub(transportOperation, multicastEventsMessageIdsToType, topicCache, queueCache, snsClient).ConfigureAwait(false))
             {
                 return null;
             }
@@ -291,7 +288,7 @@
 
             var messageId = transportOperation.Message.MessageId;
 
-            var preparedMessage = new TMessage();
+            var preparedMessage = new SqsPreparedMessage();
 
             // In case we're handling a message of which the incoming message id equals the outgoing message id, we're essentially handling an error or audit scenario, in which case we want copy over the message attributes
             // from the native message, so we don't lose part of the message
@@ -301,8 +298,7 @@
 
             var nativeMessageAttributes = forwardingANativeMessage ? nativeMessage.MessageAttributes : null;
 
-            await ApplyUnicastOperationMappingIfNecessary(unicastTransportOperation, preparedMessage as SqsPreparedMessage, delaySeconds, messageId, nativeMessageAttributes, cancellationToken).ConfigureAwait(false);
-            await ApplyMulticastOperationMappingIfNecessary(transportOperation as MulticastTransportOperation, preparedMessage as SnsPreparedMessage, cancellationToken).ConfigureAwait(false);
+            await ApplyUnicastOperationMapping(transportOperation, preparedMessage, delaySeconds, messageId, nativeMessageAttributes, cancellationToken).ConfigureAwait(false);
 
             preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
             preparedMessage.MessageId = messageId;
@@ -341,24 +337,61 @@
             return preparedMessage;
         }
 
-        async Task ApplyMulticastOperationMappingIfNecessary(MulticastTransportOperation transportOperation, SnsPreparedMessage snsPreparedMessage, CancellationToken cancellationToken)
+        async Task<SnsPreparedMessage> PrepareMessage(MulticastTransportOperation transportOperation, CancellationToken cancellationToken)
         {
-            if (transportOperation == null || snsPreparedMessage == null)
+            var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.Properties, encodeBodyToBase64);
+
+            var messageId = transportOperation.Message.MessageId;
+
+            var preparedMessage = new SnsPreparedMessage();
+
+            await ApplyMulticastOperationMapping(transportOperation, preparedMessage, cancellationToken).ConfigureAwait(false);
+
+            preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
+            preparedMessage.MessageId = messageId;
+
+            preparedMessage.CalculateSize();
+            if (preparedMessage.Size <= TransportConstraints.MaximumMessageSize)
             {
-                return;
+                return preparedMessage;
             }
 
+            if (s3 == null)
+            {
+                throw new Exception("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
+            }
+
+            var key = $"{s3.KeyPrefix}/{messageId}";
+            using (var bodyStream = new ReadonlyStream(transportOperation.Message.Body))
+            {
+                var putObjectRequest = new PutObjectRequest
+                {
+                    BucketName = s3.BucketName,
+                    InputStream = bodyStream,
+                    Key = key
+                };
+
+                s3.NullSafeEncryption.ModifyPutRequest(putObjectRequest);
+
+                await s3.S3Client.PutObjectAsync(putObjectRequest, cancellationToken).ConfigureAwait(false);
+            }
+
+            sqsTransportMessage.S3BodyKey = key;
+            sqsTransportMessage.Body = string.Empty;
+            preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
+            preparedMessage.CalculateSize();
+
+            return preparedMessage;
+        }
+
+        async Task ApplyMulticastOperationMapping(MulticastTransportOperation transportOperation, SnsPreparedMessage snsPreparedMessage, CancellationToken cancellationToken)
+        {
             var existingTopicArn = await topicCache.GetTopicArn(transportOperation.MessageType, cancellationToken).ConfigureAwait(false);
             snsPreparedMessage.Destination = existingTopicArn;
         }
 
-        async Task ApplyUnicastOperationMappingIfNecessary(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, string messageId, Dictionary<string, MessageAttributeValue> nativeMessageAttributes, CancellationToken cancellationToken)
+        async ValueTask ApplyUnicastOperationMapping(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, string messageId, Dictionary<string, MessageAttributeValue> nativeMessageAttributes, CancellationToken cancellationToken)
         {
-            if (transportOperation == null || sqsPreparedMessage == null)
-            {
-                return;
-            }
-
             // copy over the message attributes that were set on the incoming message for error/audit scenario's if available
             sqsPreparedMessage.CopyMessageAttributes(nativeMessageAttributes);
             sqsPreparedMessage.RemoveNativeHeaders();
@@ -416,8 +449,6 @@
         readonly JsonSerializerOptions transportMessageSerializerOptions;
         IAmazonSQS sqsClient;
         QueueCache queueCache;
-
-        static readonly Dictionary<string, Type> EmptyDictionary = new Dictionary<string, Type>();
 
         static readonly ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
     }
