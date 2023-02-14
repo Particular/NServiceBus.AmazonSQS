@@ -16,7 +16,7 @@ namespace NServiceBus.Transport.SQS.Tests
         {
             var expectedSize = 10;
 
-            var message = new SnsPreparedMessage
+            var message = new SqsPreparedMessage
             {
                 Body = new string('a', expectedSize)
             };
