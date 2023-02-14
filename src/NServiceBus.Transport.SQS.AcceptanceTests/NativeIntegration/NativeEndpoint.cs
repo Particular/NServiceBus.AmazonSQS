@@ -62,7 +62,7 @@
                 QueueName = TestNameHelper.GetSqsQueueName(Conventions.EndpointNamingConvention(typeof(TEndpoint)), SetupFixture.NamePrefix)
             }).ConfigureAwait(false);
 
-            var body = base64Encode ? Convert.ToBase64String(Encoding.Unicode.GetBytes(message)) : message;
+            var body = base64Encode ? Convert.ToBase64String(Encoding.UTF8.GetBytes(message)) : message;
 
             var sendMessageRequest = new SendMessageRequest
             {

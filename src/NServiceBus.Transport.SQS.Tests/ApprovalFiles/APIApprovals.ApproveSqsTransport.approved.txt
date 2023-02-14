@@ -72,7 +72,7 @@ namespace NServiceBus
     {
         public SqsTransport() { }
         public SqsTransport(Amazon.SQS.IAmazonSQS sqsClient, Amazon.SimpleNotificationService.IAmazonSimpleNotificationService snsClient) { }
-        public bool DoNotBase64EncodeOutgoingMessages { get; set; }
+        public bool DoNotWrapOutgoingMessages { get; set; }
         [System.Obsolete("Configures the SQS transport to be compatible with 1.x versions of the transport." +
             " Will be treated as an error from version 7.0.0. Will be removed in version 8.0." +
             "0.", false)]
@@ -113,7 +113,7 @@ namespace NServiceBus
         [System.Obsolete("The native delayed delivery is always enabled in version 6. The member currently " +
             "throws a NotImplementedException. Will be removed in version 7.0.0.", true)]
         public static void DisablePublishing(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
-        public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> DoNotBase64EncodeOutgoingMessages(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
+        public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> DoNotWrapOutgoingMessages(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
         [System.Obsolete("The compatibility mode is deprecated. Switch to native publish/subscribe mode usi" +
             "ng SNS instead. The member currently throws a NotImplementedException. Will be r" +
             "emoved in version 7.0.0.", true)]

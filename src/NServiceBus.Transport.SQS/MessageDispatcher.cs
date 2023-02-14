@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text;
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
@@ -23,7 +24,7 @@
             S3Settings s3,
             int queueDelaySeconds,
             bool v1Compatibility,
-            bool encodeBodyToBase64 = true
+            bool wrapOutgoingMessages = true
             )
         {
             this.topicCache = topicCache;
@@ -32,7 +33,7 @@
             this.snsClient = snsClient;
             this.sqsClient = sqsClient;
             this.queueCache = queueCache;
-            this.encodeBodyToBase64 = encodeBodyToBase64;
+            this.wrapOutgoingMessages = wrapOutgoingMessages;
 
             transportMessageSerializerOptions = v1Compatibility
                 ? new JsonSerializerOptions { TypeInfoResolver = TransportMessageSerializerContext.Default }
@@ -284,8 +285,6 @@
                 delaySeconds = Convert.ToInt64(Math.Ceiling((doNotDeliverBefore.At - DateTime.UtcNow).TotalSeconds));
             }
 
-            var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.Properties, encodeBodyToBase64);
-
             var messageId = transportOperation.Message.MessageId;
 
             var preparedMessage = new SqsPreparedMessage();
@@ -300,88 +299,119 @@
 
             await ApplyUnicastOperationMapping(transportOperation, preparedMessage, delaySeconds, messageId, nativeMessageAttributes, cancellationToken).ConfigureAwait(false);
 
-            preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
             preparedMessage.MessageId = messageId;
 
-            preparedMessage.CalculateSize();
-            if (preparedMessage.Size <= TransportConstraints.MaximumMessageSize)
+            if (!wrapOutgoingMessages)
             {
-                return preparedMessage;
-            }
+#if NETFRAMEWORK
+                // blunt allocation heavy hack for now
+                preparedMessage.Body = Encoding.UTF8.GetString(transportOperation.Message.Body.ToArray());
+#else
+                preparedMessage.Body = Encoding.UTF8.GetString(transportOperation.Message.Body.Span);
+#endif
+                // probably think about how compact this should be?
+                var headers = JsonSerializer.Serialize(transportOperation.Message.Headers);
+                preparedMessage.MessageAttributes[TransportHeaders.Headers] = new MessageAttributeValue { StringValue = headers, DataType = "String" };
 
-            if (s3 == null)
-            {
-                throw new Exception("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
-            }
-
-            var key = $"{s3.KeyPrefix}/{messageId}";
-            using (var bodyStream = new ReadonlyStream(transportOperation.Message.Body))
-            {
-                var putObjectRequest = new PutObjectRequest
+                preparedMessage.CalculateSize();
+                if (preparedMessage.Size > TransportConstraints.MaximumMessageSize)
                 {
-                    BucketName = s3.BucketName,
-                    InputStream = bodyStream,
-                    Key = key
-                };
-
-                s3.NullSafeEncryption.ModifyPutRequest(putObjectRequest);
-
-                await s3.S3Client.PutObjectAsync(putObjectRequest, cancellationToken).ConfigureAwait(false);
+                    var s3key = await UploadToS3(preparedMessage.MessageId, transportOperation, cancellationToken).ConfigureAwait(false);
+                    preparedMessage.Body = TransportMessage.EmptyMessage;
+                    preparedMessage.MessageAttributes[TransportHeaders.S3BodyKey] = new MessageAttributeValue { StringValue = s3key, DataType = "String" };
+                    preparedMessage.CalculateSize();
+                }
             }
-
-            sqsTransportMessage.S3BodyKey = key;
-            sqsTransportMessage.Body = string.Empty;
-            preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
-            preparedMessage.CalculateSize();
+            else
+            {
+                var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.Properties);
+                preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
+                preparedMessage.CalculateSize();
+                if (preparedMessage.Size > TransportConstraints.MaximumMessageSize)
+                {
+                    var s3key = await UploadToS3(preparedMessage.MessageId, transportOperation, cancellationToken).ConfigureAwait(false);
+                    sqsTransportMessage.S3BodyKey = s3key;
+                    sqsTransportMessage.Body = string.Empty;
+                    preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
+                    preparedMessage.MessageAttributes[TransportHeaders.S3BodyKey] = new MessageAttributeValue { StringValue = s3key, DataType = "String" };
+                    preparedMessage.CalculateSize();
+                }
+            }
 
             return preparedMessage;
         }
 
         async Task<SnsPreparedMessage> PrepareMessage(MulticastTransportOperation transportOperation, CancellationToken cancellationToken)
         {
-            var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.Properties, encodeBodyToBase64);
-
             var messageId = transportOperation.Message.MessageId;
 
             var preparedMessage = new SnsPreparedMessage();
 
             await ApplyMulticastOperationMapping(transportOperation, preparedMessage, cancellationToken).ConfigureAwait(false);
 
-            preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
             preparedMessage.MessageId = messageId;
 
-            preparedMessage.CalculateSize();
-            if (preparedMessage.Size <= TransportConstraints.MaximumMessageSize)
+            if (!wrapOutgoingMessages)
             {
-                return preparedMessage;
+#if NETFRAMEWORK
+                // blunt allocation heavy hack for now
+                preparedMessage.Body = Encoding.UTF8.GetString(transportOperation.Message.Body.ToArray());
+#else
+                preparedMessage.Body = Encoding.UTF8.GetString(transportOperation.Message.Body.Span);
+#endif
+                // probably think about how compact this should be?
+                var headers = JsonSerializer.Serialize(transportOperation.Message.Headers);
+                preparedMessage.MessageAttributes[TransportHeaders.Headers] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue() { StringValue = headers, DataType = "String" };
+
+                preparedMessage.CalculateSize();
+                if (preparedMessage.Size > TransportConstraints.MaximumMessageSize)
+                {
+                    var s3key = await UploadToS3(preparedMessage.MessageId, transportOperation, cancellationToken).ConfigureAwait(false);
+                    preparedMessage.Body = TransportMessage.EmptyMessage;
+                    preparedMessage.MessageAttributes[TransportHeaders.S3BodyKey] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue() { StringValue = s3key, DataType = "String" };
+                    preparedMessage.CalculateSize();
+                }
+            }
+            else
+            {
+                var snsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.Properties);
+                preparedMessage.Body = JsonSerializer.Serialize(snsTransportMessage, transportMessageSerializerOptions);
+                preparedMessage.CalculateSize();
+                if (preparedMessage.Size > TransportConstraints.MaximumMessageSize)
+                {
+                    var s3key = await UploadToS3(preparedMessage.MessageId, transportOperation, cancellationToken).ConfigureAwait(false);
+                    snsTransportMessage.S3BodyKey = s3key;
+                    snsTransportMessage.Body = string.Empty;
+                    preparedMessage.Body = JsonSerializer.Serialize(snsTransportMessage, transportMessageSerializerOptions);
+                    preparedMessage.MessageAttributes[TransportHeaders.S3BodyKey] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue() { StringValue = s3key, DataType = "String" };
+                    preparedMessage.CalculateSize();
+                }
             }
 
+            return preparedMessage;
+        }
+
+        async Task<string> UploadToS3(string messageId, IOutgoingTransportOperation transportOperation, CancellationToken cancellationToken)
+        {
             if (s3 == null)
             {
                 throw new Exception("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
             }
 
             var key = $"{s3.KeyPrefix}/{messageId}";
-            using (var bodyStream = new ReadonlyStream(transportOperation.Message.Body))
+            using var bodyStream = new ReadonlyStream(transportOperation.Message.Body);
+            var putObjectRequest = new PutObjectRequest
             {
-                var putObjectRequest = new PutObjectRequest
-                {
-                    BucketName = s3.BucketName,
-                    InputStream = bodyStream,
-                    Key = key
-                };
+                BucketName = s3.BucketName,
+                InputStream = bodyStream,
+                Key = key
+            };
 
-                s3.NullSafeEncryption.ModifyPutRequest(putObjectRequest);
+            s3.NullSafeEncryption.ModifyPutRequest(putObjectRequest);
 
-                await s3.S3Client.PutObjectAsync(putObjectRequest, cancellationToken).ConfigureAwait(false);
-            }
+            await s3.S3Client.PutObjectAsync(putObjectRequest, cancellationToken).ConfigureAwait(false);
 
-            sqsTransportMessage.S3BodyKey = key;
-            sqsTransportMessage.Body = string.Empty;
-            preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
-            preparedMessage.CalculateSize();
-
-            return preparedMessage;
+            return key;
         }
 
         async Task ApplyMulticastOperationMapping(MulticastTransportOperation transportOperation, SnsPreparedMessage snsPreparedMessage, CancellationToken cancellationToken)
@@ -445,7 +475,7 @@
         readonly S3Settings s3;
         readonly int queueDelaySeconds;
         readonly HybridPubSubChecker hybridPubSubChecker;
-        readonly bool encodeBodyToBase64;
+        readonly bool wrapOutgoingMessages;
         readonly JsonSerializerOptions transportMessageSerializerOptions;
         IAmazonSQS sqsClient;
         QueueCache queueCache;

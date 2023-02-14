@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Text;
     using Transport;
 
     class TransportMessage
@@ -15,7 +14,7 @@
         {
         }
 
-        public TransportMessage(OutgoingMessage outgoingMessage, DispatchProperties properties, bool encodeBodyToBase64 = true)
+        public TransportMessage(OutgoingMessage outgoingMessage, DispatchProperties properties)
         {
             Headers = outgoingMessage.Headers;
 
@@ -34,9 +33,9 @@
             if (outgoingMessage.Body.Length != 0)
             {
 #if NETFRAMEWORK
-                Body = encodeBodyToBase64 ? Convert.ToBase64String(outgoingMessage.Body.ToArray()) : Encoding.Unicode.GetString(outgoingMessage.Body.ToArray());
+                Body = Convert.ToBase64String(outgoingMessage.Body.ToArray());
 #else
-                Body = encodeBodyToBase64 ? Convert.ToBase64String(outgoingMessage.Body.Span) : Encoding.Unicode.GetString(outgoingMessage.Body.Span);
+                Body = Convert.ToBase64String(outgoingMessage.Body.Span);
 #endif
             }
             else
