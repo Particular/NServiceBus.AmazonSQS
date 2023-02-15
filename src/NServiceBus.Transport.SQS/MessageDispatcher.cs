@@ -266,7 +266,7 @@
 
         async Task<SqsPreparedMessage> PrepareMessage(UnicastTransportOperation transportOperation, Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction, CancellationToken cancellationToken)
         {
-            if (!await hybridPubSubChecker.PublishUsingMessageDrivenPubSub(transportOperation, multicastEventsMessageIdsToType, topicCache, queueCache, snsClient).ConfigureAwait(false))
+            if (await hybridPubSubChecker.ThisIsAPublishMessageNotUsingMessageDrivenPubSub(transportOperation, multicastEventsMessageIdsToType, topicCache, queueCache, snsClient).ConfigureAwait(false))
             {
                 return null;
             }

@@ -55,7 +55,7 @@
         }
 
 #pragma warning disable PS0018 // A task-returning method should have a CancellationToken parameter unless it has a parameter implementing ICancellableContext
-        public async Task<bool> PublishUsingMessageDrivenPubSub(UnicastTransportOperation unicastTransportOperation, Dictionary<string, Type> multicastEventsMessageIdsToType, TopicCache topicCache, QueueCache queueCache, IAmazonSimpleNotificationService snsClient)
+        public async Task<bool> ThisIsAPublishMessageNotUsingMessageDrivenPubSub(UnicastTransportOperation unicastTransportOperation, Dictionary<string, Type> multicastEventsMessageIdsToType, TopicCache topicCache, QueueCache queueCache, IAmazonSimpleNotificationService snsClient)
 #pragma warning restore PS0018 // A task-returning method should have a CancellationToken parameter unless it has a parameter implementing ICancellableContext
         {
             // The following check is required by the message-driven pub/sub hybrid mode in Core
@@ -74,7 +74,7 @@
                 var existingTopic = await topicCache.GetTopic(eventType).ConfigureAwait(false);
                 if (existingTopic == null)
                 {
-                    return true;
+                    return false;
                 }
 
                 var cacheKey = existingTopic.TopicArn + unicastTransportOperation.Destination;
@@ -102,11 +102,11 @@
 
                 if (cacheItem.IsThereAnSnsSubscription)
                 {
-                    return false;
+                    return true;
                 }
             }
 
-            return true;
+            return false;
         }
 
         SnsListSubscriptionsByTopicRateLimiter rateLimiter;
