@@ -15,6 +15,7 @@
     using Newtonsoft.Json.Linq;
     using NServiceBus;
     using NUnit.Framework;
+    using Particular.Approvals;
     using Routing;
     using Settings;
     using SQS;
@@ -25,7 +26,7 @@
     {
         static TimeSpan expectedTtbr = TimeSpan.MaxValue.Subtract(TimeSpan.FromHours(1));
 
-        const string expectedReplyToAddress = "TestReplyToAddress";
+        const string ExpectedReplyToAddress = "TestReplyToAddress";
 
         [Test]
         public async Task Sends_V1_compatible_payload_when_configured()
@@ -43,7 +44,7 @@
                     new OutgoingMessage("1234", new Dictionary<string, string>
                     {
                         {TransportHeaders.TimeToBeReceived, expectedTtbr.ToString()},
-                        {Headers.ReplyToAddress, expectedReplyToAddress}
+                        {Headers.ReplyToAddress, ExpectedReplyToAddress}
                     }, Encoding.Default.GetBytes("{}")),
                     new UnicastAddressTag("address"),
                     DispatchConsistency.Isolated));
@@ -64,7 +65,7 @@
             Assert.IsTrue(bodyJson.ContainsKey("ReplyToAddress"), "ReplyToAddress not serialized");
             Assert.IsTrue(bodyJson["ReplyToAddress"].HasValues, "ReplyToAddress is not an object");
             Assert.IsTrue(bodyJson["ReplyToAddress"].Value<JObject>().ContainsKey("Queue"), "ReplyToAddress does not have a Queue value");
-            Assert.AreEqual(expectedReplyToAddress, bodyJson["ReplyToAddress"].Value<JObject>()["Queue"].Value<string>(), "Expected ReplyToAddress mismatch");
+            Assert.AreEqual(ExpectedReplyToAddress, bodyJson["ReplyToAddress"].Value<JObject>()["Queue"].Value<string>(), "Expected ReplyToAddress mismatch");
         }
 
         [Test]
@@ -83,7 +84,7 @@
                     new OutgoingMessage("1234", new Dictionary<string, string>
                     {
                         {TransportHeaders.TimeToBeReceived, expectedTtbr.ToString()},
-                        {Headers.ReplyToAddress, expectedReplyToAddress}
+                        {Headers.ReplyToAddress, ExpectedReplyToAddress}
                     }, Encoding.Default.GetBytes("{}")),
                     new UnicastAddressTag("address"),
                     DispatchConsistency.Isolated));
@@ -132,7 +133,7 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(expectedId, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(expectedId, new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address"),
                     DispatchConsistency.Isolated,
                     constraints));
@@ -158,11 +159,11 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     DispatchConsistency.Isolated),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
                     DispatchConsistency.Isolated));
 
@@ -190,10 +191,10 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
                     new MulticastAddressTag(typeof(Event))),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
                     new MulticastAddressTag(typeof(AnotherEvent)))
                 );
 
@@ -237,10 +238,10 @@
             };
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(messageId, headers, Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(messageId, headers, Encoding.UTF8.GetBytes("{}")),
                     new MulticastAddressTag(typeof(Event))),
                 new TransportOperation(
-                    new OutgoingMessage(messageId, headers, Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(messageId, headers, Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("abc"))
             );
 
@@ -272,10 +273,10 @@
             };
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(messageId, headers, Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(messageId, headers, Encoding.UTF8.GetBytes("{}")),
                     new MulticastAddressTag(typeof(Event))),
                 new TransportOperation(
-                    new OutgoingMessage(messageId, headers, Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(messageId, headers, Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("abc"))
             );
 
@@ -303,7 +304,7 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
                     new MulticastAddressTag(typeof(Event)))
             );
 
@@ -332,7 +333,7 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
                     new MulticastAddressTag(typeof(object)))
             );
 
@@ -345,7 +346,9 @@
         }
 
         [Test]
-        public async Task Should_upload_large_multicast_operations_request_to_s3()
+        [TestCase(true)]
+        [TestCase(false)]
+        public async Task Should_upload_large_multicast_operations_request_to_s3(bool wrapMessage)
         {
             string keyPrefix = "somePrefix";
 
@@ -353,22 +356,30 @@
             var transportExtensions = new TransportExtensions<SqsTransport>(settings);
             transportExtensions.S3("someBucket", keyPrefix);
 
+            var transportConfiguration = new TransportConfiguration(settings);
+
             var mockS3Client = new MockS3Client();
             var mockSnsClient = new MockSnsClient();
 
-            var transportConfiguration = new TransportConfiguration(settings);
-            var dispatcher = new MessageDispatcher(transportConfiguration, mockS3Client, null, mockSnsClient, new QueueCache(null, transportConfiguration), new TopicCache(mockSnsClient, settings.SetupMessageMetadataRegistry(), transportConfiguration));
+            var dispatcher = new MessageDispatcher(
+                transportConfiguration,
+                mockS3Client,
+                null,
+                mockSnsClient,
+                new QueueCache(null, transportConfiguration),
+                new TopicCache(mockSnsClient, settings.SetupMessageMetadataRegistry(), transportConfiguration),
+                wrapMessage);
 
             var longBodyMessageId = Guid.NewGuid().ToString();
             /* Crazy long message id will cause the message to go over limits because attributes count as well */
             var crazyLongMessageId = new string('x', 256 * 1024);
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(longBodyMessageId, new Dictionary<string, string>(), Encoding.Default.GetBytes(new string('x', 256 * 1024))),
+                    new OutgoingMessage(longBodyMessageId, new Dictionary<string, string>(), Encoding.UTF8.GetBytes(new string('x', 256 * 1024))),
                     new MulticastAddressTag(typeof(Event)),
                     DispatchConsistency.Isolated),
-                new TransportOperation(
-                    new OutgoingMessage(crazyLongMessageId, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                new TransportOperation( /* Crazy long message id will cause the message to go over limits because attributes count as well */
+                    new OutgoingMessage(crazyLongMessageId, new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
                     new MulticastAddressTag(typeof(AnotherEvent)),
                     DispatchConsistency.Isolated));
 
@@ -385,8 +396,16 @@
 
             Assert.AreEqual("someBucket", longBodyMessageUpload.BucketName);
             Assert.AreEqual("someBucket", crazyLongMessageUpload.BucketName);
-            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{longBodyMessageUpload.Key}", mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == longBodyMessageId).Message);
-            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{crazyLongMessageUpload.Key}", mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == crazyLongMessageId).Message);
+            if (wrapMessage)
+            {
+                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{longBodyMessageUpload.Key}", mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == longBodyMessageId).Message);
+                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{crazyLongMessageUpload.Key}", mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == crazyLongMessageId).Message);
+            }
+            else
+            {
+                Assert.AreEqual(longBodyMessageUpload.Key, mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == longBodyMessageId).MessageAttributes[TransportHeaders.S3BodyKey].StringValue);
+                Assert.AreEqual(crazyLongMessageUpload.Key, mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == crazyLongMessageId).MessageAttributes[TransportHeaders.S3BodyKey].StringValue);
+            }
         }
 
         [Test]
@@ -406,7 +425,7 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     DispatchConsistency.Isolated,
                     new List<DeliveryConstraint>
@@ -433,11 +452,11 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
                     DispatchConsistency.Default));
 
@@ -469,7 +488,7 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     DispatchConsistency.Default,
                     new List<DeliveryConstraint>
@@ -477,7 +496,7 @@
                         new DelayDeliveryWith(TimeSpan.FromMinutes(30))
                     }),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     DispatchConsistency.Default,
                     new List<DeliveryConstraint>
@@ -547,19 +566,19 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(firstMessageIdThatWillFail, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(firstMessageIdThatWillFail, new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(firstMessageThatWillBeSuccessful, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(firstMessageThatWillBeSuccessful, new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(secondMessageThatWillBeSuccessful, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(secondMessageThatWillBeSuccessful, new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(secondMessageIdThatWillFail, new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(secondMessageIdThatWillFail, new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
                     DispatchConsistency.Default));
 
@@ -578,7 +597,9 @@
         }
 
         [Test]
-        public async Task Should_upload_large_non_isolated_operations_to_s3()
+        [TestCase(true)]
+        [TestCase(false)]
+        public async Task Should_upload_large_non_isolated_operations_to_s3(bool wrapMessage)
         {
             var settings = new SettingsHolder();
             var transportExtensions = new TransportExtensions<SqsTransport>(settings);
@@ -588,19 +609,18 @@
             var mockSqsClient = new MockSqsClient();
 
             var transportConfiguration = new TransportConfiguration(settings);
-            var dispatcher = new MessageDispatcher(transportConfiguration, mockS3Client, mockSqsClient, null, new QueueCache(mockSqsClient, transportConfiguration), null);
-
+            var dispatcher = new MessageDispatcher(transportConfiguration, mockS3Client, mockSqsClient, null, new QueueCache(mockSqsClient, transportConfiguration), new TopicCache(null, settings.SetupMessageMetadataRegistry(), transportConfiguration), wrapMessage);
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes(new string('x', 256 * 1024))),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes(new string('x', 256 * 1024))),
                     new UnicastAddressTag("address1"),
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes(new string('x', 256 * 1024))),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes(new string('x', 256 * 1024))),
                     new UnicastAddressTag("address2"),
                     DispatchConsistency.Default),
                 new TransportOperation( /* Crazy long message id will cause the message to go over limits because attributes count as well */
-                    new OutgoingMessage(new string('x', 256 * 1024), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(new string('x', 256 * 1024), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
                     DispatchConsistency.Default));
 
@@ -619,13 +639,24 @@
             Assert.AreEqual("someBucket", firstUpload.BucketName);
             Assert.AreEqual("someBucket", secondUpload.BucketName);
             Assert.AreEqual("someBucket", thirdUpload.BucketName);
-            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{firstUpload.Key}", mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.ElementAt(0).MessageBody);
-            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{secondUpload.Key}", mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.ElementAt(0).MessageBody);
-            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{thirdUpload.Key}", mockSqsClient.BatchRequestsSent.ElementAt(2).Entries.ElementAt(0).MessageBody);
+            if (wrapMessage)
+            {
+                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{firstUpload.Key}", mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.ElementAt(0).MessageBody);
+                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{secondUpload.Key}", mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.ElementAt(0).MessageBody);
+                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{thirdUpload.Key}", mockSqsClient.BatchRequestsSent.ElementAt(2).Entries.ElementAt(0).MessageBody);
+            }
+            else
+            {
+                Assert.AreEqual(firstUpload.Key, mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.ElementAt(0).MessageAttributes[TransportHeaders.S3BodyKey].StringValue);
+                Assert.AreEqual(secondUpload.Key, mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.ElementAt(0).MessageAttributes[TransportHeaders.S3BodyKey].StringValue);
+                Assert.AreEqual(thirdUpload.Key, mockSqsClient.BatchRequestsSent.ElementAt(2).Entries.ElementAt(0).MessageAttributes[TransportHeaders.S3BodyKey].StringValue);
+            }
         }
 
         [Test]
-        public async Task Should_upload_large_isolated_operations_request_to_s3()
+        [TestCase(true)]
+        [TestCase(false)]
+        public async Task Should_upload_large_isolated_operations_request_to_s3(bool wrapMessage)
         {
             var settings = new SettingsHolder();
             var transportExtensions = new TransportExtensions<SqsTransport>(settings);
@@ -635,19 +666,18 @@
             var mockSqsClient = new MockSqsClient();
 
             var transportConfiguration = new TransportConfiguration(settings);
-            var dispatcher = new MessageDispatcher(transportConfiguration, mockS3Client, mockSqsClient, null, new QueueCache(mockSqsClient, transportConfiguration), null);
-
+            var dispatcher = new MessageDispatcher(transportConfiguration, mockS3Client, mockSqsClient, null, new QueueCache(mockSqsClient, transportConfiguration), new TopicCache(null, settings.SetupMessageMetadataRegistry(), transportConfiguration), wrapMessage);
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes(new string('x', 256 * 1024))),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes(new string('x', 4 * 256 * 1024))),
                     new UnicastAddressTag("address1"),
                     DispatchConsistency.Isolated),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.Default.GetBytes(new string('x', 256 * 1024))),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes(new string('x', 4 * 256 * 1024))),
                     new UnicastAddressTag("address2"),
                     DispatchConsistency.Isolated),
                 new TransportOperation( /* Crazy long message id will cause the message to go over limits because attributes count as well */
-                    new OutgoingMessage(new string('x', 256 * 1024), new Dictionary<string, string>(), Encoding.Default.GetBytes("{}")),
+                    new OutgoingMessage(new string('x', 4 * 256 * 1024), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
                     DispatchConsistency.Isolated));
 
@@ -666,9 +696,84 @@
             Assert.AreEqual("someBucket", firstUpload.BucketName);
             Assert.AreEqual("someBucket", secondUpload.BucketName);
             Assert.AreEqual("someBucket", thirdUpload.BucketName);
-            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{firstUpload.Key}", mockSqsClient.RequestsSent.ElementAt(0).MessageBody);
-            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{secondUpload.Key}", mockSqsClient.RequestsSent.ElementAt(1).MessageBody);
-            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{thirdUpload.Key}", mockSqsClient.RequestsSent.ElementAt(2).MessageBody);
+            if (wrapMessage)
+            {
+                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{firstUpload.Key}", mockSqsClient.RequestsSent.ElementAt(0).MessageBody);
+                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{secondUpload.Key}", mockSqsClient.RequestsSent.ElementAt(1).MessageBody);
+                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{thirdUpload.Key}", mockSqsClient.RequestsSent.ElementAt(2).MessageBody);
+            }
+            else
+            {
+                Assert.AreEqual(firstUpload.Key, mockSqsClient.RequestsSent.ElementAt(0).MessageAttributes[TransportHeaders.S3BodyKey].StringValue);
+                Assert.AreEqual(secondUpload.Key, mockSqsClient.RequestsSent.ElementAt(1).MessageAttributes[TransportHeaders.S3BodyKey].StringValue);
+                Assert.AreEqual(thirdUpload.Key, mockSqsClient.RequestsSent.ElementAt(2).MessageAttributes[TransportHeaders.S3BodyKey].StringValue);
+            }
+        }
+
+        [Test]
+        public async Task Should_base64_encode_by_default()
+        {
+            var mockSqsClient = new MockSqsClient();
+            var settings = new SettingsHolder();
+            var transportConfiguration = new TransportConfiguration(settings);
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, null, new QueueCache(mockSqsClient, transportConfiguration), new TopicCache(null, settings.SetupMessageMetadataRegistry(), transportConfiguration));
+            var msgBody = "my message body";
+            var msgBodyByte = Encoding.UTF8.GetBytes(msgBody);
+            var transportOperations = new TransportOperations(
+                new TransportOperation(
+                    new OutgoingMessage("1234", new Dictionary<string, string>
+                    {
+                        {TransportHeaders.TimeToBeReceived, expectedTtbr.ToString()},
+                        {Headers.ReplyToAddress, ExpectedReplyToAddress}
+                    }, msgBodyByte),
+                    new UnicastAddressTag("address"),
+                    DispatchConsistency.Isolated));
+
+            var transportTransaction = new TransportTransaction();
+
+            await dispatcher.Dispatch(transportOperations, transportTransaction, new ContextBag());
+
+            Assert.IsNotEmpty(mockSqsClient.RequestsSent, "No requests sent");
+            var request = mockSqsClient.RequestsSent.First();
+
+            var bodyJson = SimpleJson.SimpleJson.DeserializeObject<SimpleJson.JsonObject>(request.MessageBody);
+
+            Assert.AreEqual(Convert.ToBase64String(msgBodyByte), bodyJson["Body"].ToString());
+        }
+
+        [Test]
+        public async Task Should_not_wrap_if_configured_not_to()
+        {
+            var mockSqsClient = new MockSqsClient();
+
+            var settings = new SettingsHolder();
+
+            var transportConfiguration = new TransportConfiguration(settings);
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, null, new QueueCache(mockSqsClient, transportConfiguration), new TopicCache(null, settings.SetupMessageMetadataRegistry(), transportConfiguration), false);
+
+            var msgBody = "my message body";
+            var msgBodyByte = Encoding.UTF8.GetBytes(msgBody);
+
+            var transportOperations = new TransportOperations(
+                new TransportOperation(
+                    new OutgoingMessage("1234", new Dictionary<string, string>
+                    {
+                        {TransportHeaders.TimeToBeReceived, expectedTtbr.ToString()},
+                        {Headers.ReplyToAddress, ExpectedReplyToAddress},
+                        {Headers.MessageId, "74d4f8e4-0fc7-4f09-8d46-0b76994e76d6"}
+                    }, msgBodyByte),
+                    new UnicastAddressTag("address"),
+                    DispatchConsistency.Isolated)
+                );
+
+            var transportTransaction = new TransportTransaction();
+
+            await dispatcher.Dispatch(transportOperations, transportTransaction, new ContextBag());
+
+            Assert.IsNotEmpty(mockSqsClient.RequestsSent, "No requests sent");
+            var request = mockSqsClient.RequestsSent.First();
+
+            Approver.Verify(request);
         }
 
         interface IEvent { }

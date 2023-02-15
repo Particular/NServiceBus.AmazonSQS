@@ -36,5 +36,6 @@
         public const string SubscriptionsCacheTTL = Prefix + nameof(SubscriptionsCacheTTL);
         public const string NotFoundTopicsCacheTTL = Prefix + nameof(NotFoundTopicsCacheTTL);
         public const string EnableMigrationModeSettingKey = "NServiceBus.Subscriptions.EnableMigrationMode";
+        public const string DoNotWrapOutgoingMessages = Prefix + nameof(DoNotWrapOutgoingMessages);
     }
 }
