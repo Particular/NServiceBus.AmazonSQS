@@ -33,7 +33,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var transportMessage = new TransportMessage(outgoingMessage, new DispatchProperties());
 
             (var receivedBodyArray, bodyBuffer) = await transportMessage.RetrieveBody(messageId, null, arrayPool);
-            var receivedBody = Encoding.Unicode.GetString(receivedBodyArray.ToArray());
+            var receivedBody = Encoding.UTF8.GetString(receivedBodyArray.ToArray());
 
             CollectionAssert.AreEqual(receivedBodyArray.ToArray(), body);
             Assert.That(receivedBody, Is.Null.Or.Empty);
@@ -48,7 +48,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var transportMessage = new TransportMessage(outgoingMessage, new DispatchProperties());
 
             (var receivedBodyArray, bodyBuffer) = await transportMessage.RetrieveBody(messageId, null, arrayPool);
-            var receivedBody = Encoding.Unicode.GetString(receivedBodyArray.ToArray());
+            var receivedBody = Encoding.UTF8.GetString(receivedBodyArray.ToArray());
 
             Assert.That(receivedBody, Is.Null.Or.Empty);
         }
@@ -62,7 +62,7 @@ namespace NServiceBus.Transport.SQS.Tests
             };
 
             (var receivedBodyArray, bodyBuffer) = await transportMessage.RetrieveBody(Guid.NewGuid().ToString(), null, arrayPool);
-            var receivedBody = Encoding.Unicode.GetString(receivedBodyArray.ToArray());
+            var receivedBody = Encoding.UTF8.GetString(receivedBodyArray.ToArray());
 
             Assert.That(receivedBody, Is.Null.Or.Empty);
         }

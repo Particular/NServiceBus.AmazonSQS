@@ -114,10 +114,11 @@
         public PolicySettings Policies { get; } = new PolicySettings();
 
         /// <summary>
-        /// Configures the SQS transport to not base64 encode outgoing messages. 
+        /// Configures the SQS transport to not use a custom wrapper for outgoing messages.
+        /// NServiceBus headers will be sent as an Amazon message attribute. 
         /// Only turn this on if all your endpoints are version 6.1.0 or above.
         /// </summary>
-        public bool DoNotBase64EncodeOutgoingMessages { get; set; }
+        public bool DoNotWrapOutgoingMessages { get; set; }
 
         /// <summary>
         /// Configures the delay time to use (up to 15 minutes) when messages are delayed. If message is delayed for longer than
@@ -223,7 +224,7 @@
         public override async Task<TransportInfrastructure> Initialize(HostSettings hostSettings, ReceiveSettings[] receivers, string[] sendingAddresses, CancellationToken cancellationToken = default)
         {
             var topicCache = new TopicCache(SnsClient, hostSettings.CoreSettings, eventToTopicsMappings, eventToEventsMappings, topicNameGenerator, topicNamePrefix);
-            var infra = new SqsTransportInfrastructure(this, hostSettings, receivers, SqsClient, SnsClient, QueueCache, topicCache, S3, Policies, QueueDelayTime, topicNamePrefix, EnableV1CompatibilityMode, DoNotBase64EncodeOutgoingMessages);
+            var infra = new SqsTransportInfrastructure(this, hostSettings, receivers, SqsClient, SnsClient, QueueCache, topicCache, S3, Policies, QueueDelayTime, topicNamePrefix, EnableV1CompatibilityMode, DoNotWrapOutgoingMessages);
 
             var queueCreator = new QueueCreator(SqsClient, QueueCache, S3, maxTimeToLive, QueueDelayTime);
 

@@ -1,31 +1,36 @@
 ﻿namespace NServiceBus.AcceptanceTests.Sending
 {
-    using System.Text.Json.Nodes;
     using System.Threading.Tasks;
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
     using EndpointTemplates;
     using NUnit.Framework;
 
-    public class When_compatibility_mode_disabled : NServiceBusAcceptanceTest
+    public class When_sending_not_wrapped_message : NServiceBusAcceptanceTest
     {
+        public static object[] Payload =
+        {
+            new object[] { new byte[4] },
+            new object[] { new byte[500 * 1024] }
+        };
+
         [Test]
-        public async Task Should_receive_message()
+        [TestCaseSource(nameof(Payload))]
+        public async Task Should_receive_message(byte[] payload)
         {
             var context = await Scenario.Define<Context>()
-                .WithEndpoint<Sender>(b => b.When(session => session.Send(new Message())))
+                .WithEndpoint<Sender>(b => b.When(session => session.Send(new MyMessageWithPayload() { Payload = payload })))
                 .WithEndpoint<Receiver>()
                 .Done(c => c.Received)
                 .Run();
 
-            // ReplyToAddress and TimeToBeReceived should not to be propagated to the transport message as properties
-            Assert.That(context.MessageContent, Does.Not.ContainKey("ReplyToAddress"));
-            Assert.That(context.MessageContent, Does.Not.ContainKey("TimeToBeReceived"));
+            Assert.That(context.Received, Is.True);
+            Assert.AreEqual(payload, context.ReceivedPayload, "The payload should be handled correctly");
         }
 
         public class Context : ScenarioContext
         {
-            public JsonNode MessageContent { get; set; }
+            public byte[] ReceivedPayload { get; set; }
             public bool Received { get; set; }
         }
 
@@ -34,10 +39,8 @@
             public Sender() =>
                 EndpointSetup<DefaultServer>(builder =>
                 {
-                    builder.ConfigureRouting().RouteToEndpoint(typeof(Message), typeof(Receiver));
-#pragma warning disable CS0618 // Type or member is obsolete
-                    builder.ConfigureSqsTransport().EnableV1CompatibilityMode = false;
-#pragma warning restore CS0618 // Type or member is obsolete
+                    builder.ConfigureRouting().RouteToEndpoint(typeof(MyMessageWithPayload), typeof(Receiver));
+                    builder.ConfigureSqsTransport().DoNotWrapOutgoingMessages = true;
                 });
 
             public class Handler : IHandleMessages<Reply>
@@ -60,14 +63,14 @@
         {
             public Receiver() => EndpointSetup<DefaultServer>();
 
-            public class MyMessageHandler : IHandleMessages<Message>
+            public class MyMessageHandler : IHandleMessages<MyMessageWithPayload>
             {
                 public MyMessageHandler(Context testContext)
-                    => this.testContext = testContext;
+                   => this.testContext = testContext;
 
-                public Task Handle(Message message, IMessageHandlerContext context)
+                public Task Handle(MyMessageWithPayload message, IMessageHandlerContext context)
                 {
-                    testContext.MessageContent = JsonNode.Parse(context.Extensions.Get<Amazon.SQS.Model.Message>().Body);
+                    testContext.ReceivedPayload = message.Payload;
                     return context.Reply(new Reply());
                 }
 
@@ -76,8 +79,9 @@
 
         }
 
-        public class Message : ICommand
+        public class MyMessageWithPayload : ICommand
         {
+            public byte[] Payload { get; set; }
         }
 
         public class Reply : IMessage

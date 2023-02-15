@@ -47,11 +47,16 @@
             TMessage message)
             where TMessage : IMessage
         {
-            using var sw = new StringWriter();
+            using var sw = new Utf8StringWriter();
             var serializer = new System.Xml.Serialization.XmlSerializer(typeof(TMessage));
             serializer.Serialize(sw, message);
 
             await SendTo<TEndpoint>(messageAttributeValues, sw.ToString());
+        }
+
+        sealed class Utf8StringWriter : StringWriter
+        {
+            public override Encoding Encoding => Encoding.UTF8;
         }
 
         public static async Task SendTo<TEndpoint>(Dictionary<string, MessageAttributeValue> messageAttributeValues, string message, bool base64Encode = true)
@@ -62,7 +67,7 @@
                 QueueName = TestNameHelper.GetSqsQueueName(Conventions.EndpointNamingConvention(typeof(TEndpoint)), SetupFixture.NamePrefix)
             }).ConfigureAwait(false);
 
-            var body = base64Encode ? Convert.ToBase64String(Encoding.Unicode.GetBytes(message)) : message;
+            var body = base64Encode ? Convert.ToBase64String(Encoding.UTF8.GetBytes(message)) : message;
 
             var sendMessageRequest = new SendMessageRequest
             {
