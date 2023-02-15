@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.AcceptanceTests
+﻿namespace NServiceBus.AcceptanceTests.Sending
 {
     using System.Text.Json.Nodes;
     using System.Threading.Tasks;
