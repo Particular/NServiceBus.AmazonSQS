@@ -285,9 +285,7 @@
                 delaySeconds = Convert.ToInt64(Math.Ceiling((doNotDeliverBefore.At - DateTime.UtcNow).TotalSeconds));
             }
 
-            var messageId = transportOperation.Message.MessageId;
-
-            var preparedMessage = new SqsPreparedMessage();
+            var preparedMessage = new SqsPreparedMessage() { MessageId = transportOperation.Message.MessageId };
 
             // In case we're handling a message of which the incoming message id equals the outgoing message id, we're essentially handling an error or audit scenario, in which case we want copy over the message attributes
             // from the native message, so we don't lose part of the message
@@ -297,20 +295,11 @@
 
             var nativeMessageAttributes = forwardingANativeMessage ? nativeMessage.MessageAttributes : null;
 
-            await ApplyUnicastOperationMapping(transportOperation, preparedMessage, delaySeconds, messageId, nativeMessageAttributes, cancellationToken).ConfigureAwait(false);
-
-            preparedMessage.MessageId = messageId;
+            await ApplyUnicastOperationMapping(transportOperation, preparedMessage, delaySeconds, nativeMessageAttributes, cancellationToken).ConfigureAwait(false);
 
             if (!wrapOutgoingMessages)
             {
-#if NETFRAMEWORK
-                // blunt allocation heavy hack for now
-                preparedMessage.Body = Encoding.UTF8.GetString(transportOperation.Message.Body.ToArray());
-#else
-                preparedMessage.Body = Encoding.UTF8.GetString(transportOperation.Message.Body.Span);
-#endif
-                // probably think about how compact this should be?
-                var headers = JsonSerializer.Serialize(transportOperation.Message.Headers);
+                (preparedMessage.Body, var headers) = GetMessageBodyAndHeaders(transportOperation.Message);
                 preparedMessage.MessageAttributes[TransportHeaders.Headers] = new MessageAttributeValue { StringValue = headers, DataType = "String" };
 
                 preparedMessage.CalculateSize();
@@ -343,24 +332,13 @@
 
         async Task<SnsPreparedMessage> PrepareMessage(MulticastTransportOperation transportOperation, CancellationToken cancellationToken)
         {
-            var messageId = transportOperation.Message.MessageId;
-
-            var preparedMessage = new SnsPreparedMessage();
+            var preparedMessage = new SnsPreparedMessage() { MessageId = transportOperation.Message.MessageId };
 
             await ApplyMulticastOperationMapping(transportOperation, preparedMessage, cancellationToken).ConfigureAwait(false);
 
-            preparedMessage.MessageId = messageId;
-
             if (!wrapOutgoingMessages)
             {
-#if NETFRAMEWORK
-                // blunt allocation heavy hack for now
-                preparedMessage.Body = Encoding.UTF8.GetString(transportOperation.Message.Body.ToArray());
-#else
-                preparedMessage.Body = Encoding.UTF8.GetString(transportOperation.Message.Body.Span);
-#endif
-                // probably think about how compact this should be?
-                var headers = JsonSerializer.Serialize(transportOperation.Message.Headers);
+                (preparedMessage.Body, var headers) = GetMessageBodyAndHeaders(transportOperation.Message);
                 preparedMessage.MessageAttributes[TransportHeaders.Headers] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue() { StringValue = headers, DataType = "String" };
 
                 preparedMessage.CalculateSize();
@@ -389,6 +367,20 @@
             }
 
             return preparedMessage;
+        }
+
+        (string, string) GetMessageBodyAndHeaders(OutgoingMessage outgoingMessage)
+        {
+#if NETFRAMEWORK
+            // blunt allocation heavy hack for now
+            var body = Encoding.UTF8.GetString(outgoingMessage.Body.ToArray());
+#else
+            var body = Encoding.UTF8.GetString(outgoingMessage.Body.Span);
+#endif
+            // probably think about how compact this should be?
+            var headers = JsonSerializer.Serialize(outgoingMessage.Headers);
+
+            return (body, headers);
         }
 
         async Task<string> UploadToS3(string messageId, IOutgoingTransportOperation transportOperation, CancellationToken cancellationToken)
@@ -420,7 +412,7 @@
             snsPreparedMessage.Destination = existingTopicArn;
         }
 
-        async ValueTask ApplyUnicastOperationMapping(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, string messageId, Dictionary<string, MessageAttributeValue> nativeMessageAttributes, CancellationToken cancellationToken)
+        async ValueTask ApplyUnicastOperationMapping(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, Dictionary<string, MessageAttributeValue> nativeMessageAttributes, CancellationToken cancellationToken)
         {
             // copy over the message attributes that were set on the incoming message for error/audit scenario's if available
             sqsPreparedMessage.CopyMessageAttributes(nativeMessageAttributes);
@@ -434,8 +426,8 @@
                 sqsPreparedMessage.QueueUrl = await queueCache.GetQueueUrl(sqsPreparedMessage.Destination, cancellationToken)
                     .ConfigureAwait(false);
 
-                sqsPreparedMessage.MessageDeduplicationId = messageId;
-                sqsPreparedMessage.MessageGroupId = messageId;
+                sqsPreparedMessage.MessageDeduplicationId = sqsPreparedMessage.MessageId;
+                sqsPreparedMessage.MessageGroupId = sqsPreparedMessage.MessageId;
 
                 sqsPreparedMessage.MessageAttributes[TransportHeaders.DelaySeconds] = new MessageAttributeValue
                 {
