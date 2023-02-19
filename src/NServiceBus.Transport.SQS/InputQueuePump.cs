@@ -278,6 +278,7 @@ namespace NServiceBus.Transport.SQS
                             Headers = JsonSerializer.Deserialize<Dictionary<string, string>>(headersAttribute.StringValue) ?? new Dictionary<string, string>(),
                             Body = receivedMessage.Body
                         };
+                        transportMessage.Headers[Headers.MessageId] = messageId;
                         if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.S3BodyKey, out var s3BodyKey))
                         {
                             transportMessage.Headers[TransportHeaders.S3BodyKey] = s3BodyKey.StringValue;

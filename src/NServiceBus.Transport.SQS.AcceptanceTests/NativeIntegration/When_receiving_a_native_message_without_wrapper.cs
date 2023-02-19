@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Text.Json;
     using System.Threading.Tasks;
     using System.Xml.Linq;
     using AcceptanceTesting;
@@ -10,12 +11,12 @@
     using EndpointTemplates;
     using NUnit.Framework;
 
-    public class When_receiving_a_native_message_without_encoding : NServiceBusAcceptanceTest
+    public class When_receiving_a_native_message_without_wrapper : NServiceBusAcceptanceTest
     {
-        static readonly string MessageToSend = new XDocument(new XElement("Message", new XElement("ThisIsTheMessage", "Hello!"))).ToString();
+        static readonly string MessageToSend = new XDocument(new XElement("NServiceBus.AcceptanceTests.NativeIntegration.NativeMessage", new XElement("ThisIsTheMessage", "Hello!"))).ToString();
 
         [Test]
-        public async Task Should_be_processed_when_messagetypefullname_present()
+        public async Task Should_be_processed_when_nsbheaders_present_with_messageid()
         {
             var context = await Scenario.Define<Context>()
                 .WithEndpoint<Receiver>(c => c.When(async _ =>
@@ -24,10 +25,34 @@
                         new Dictionary<string, MessageAttributeValue>
                         {
                             {
-                                "MessageTypeFullName",
+                                "NServiceBus.AmazonSQS.Headers",
                                 new MessageAttributeValue
                                 {
-                                    DataType = "String", StringValue = typeof(Message).FullName
+                                    DataType = "String", StringValue = GetHeaders(messageId: Guid.NewGuid().ToString())
+                                }
+                            }
+                        }, MessageToSend, false);
+                }))
+                .Done(c => c.MessageReceived != null)
+                .Run();
+
+            Assert.AreEqual("Hello!", context.MessageReceived);
+        }
+
+        [Test]
+        public async Task Should_be_processed_when_nsbheaders_present_without_messageid()
+        {
+            var context = await Scenario.Define<Context>()
+                .WithEndpoint<Receiver>(c => c.When(async _ =>
+                {
+                    await NativeEndpoint.SendTo<Receiver>(
+                        new Dictionary<string, MessageAttributeValue>
+                        {
+                            {
+                                "NServiceBus.AmazonSQS.Headers",
+                                new MessageAttributeValue
+                                {
+                                    DataType = "String", StringValue = GetHeaders()
                                 }
                             }
                         }, MessageToSend, false);
@@ -50,19 +75,35 @@
                         new Dictionary<string, MessageAttributeValue>
                         {
                             {
-                                "MessageTypeFullName",
+                                "NServiceBus.AmazonSQS.Headers",
                                 new MessageAttributeValue
                                 {
-                                    DataType = "String", StringValue = typeof(Message).FullName
+                                    DataType = "String", StringValue = GetHeaders(s3Key: key)
                                 }
-                            },
-                            { "S3BodyKey", new MessageAttributeValue { DataType = "String", StringValue = key } },
+                            }
                         }, MessageToSend, false);
                 }))
                 .Done(c => c.MessageReceived != null)
                 .Run();
 
             Assert.AreEqual("Hello!", context.MessageReceived);
+        }
+
+        string GetHeaders(string s3Key = null, string messageId = null)
+        {
+            var nsbHeaders = new Dictionary<string, string>();
+
+            if (!string.IsNullOrEmpty(s3Key))
+            {
+                nsbHeaders.Add("S3BodyKey", "s3Key");
+            }
+
+            if (!string.IsNullOrEmpty(messageId))
+            {
+                nsbHeaders.Add("NServiceBus.MessageId", messageId);
+            }
+
+            return JsonSerializer.Serialize(nsbHeaders);
         }
 
         static async Task UploadMessageBodyToS3(string key)
@@ -80,11 +121,11 @@
         {
             public Receiver() => EndpointSetup<DefaultServer>();
 
-            class MyHandler : IHandleMessages<Message>
+            class MyHandler : IHandleMessages<NativeMessage>
             {
                 public MyHandler(Context testContext) => this.testContext = testContext;
 
-                public Task Handle(Message message, IMessageHandlerContext context)
+                public Task Handle(NativeMessage message, IMessageHandlerContext context)
                 {
                     testContext.MessageReceived = message.ThisIsTheMessage;
 
@@ -95,14 +136,13 @@
             }
         }
 
-        public class Message : IMessage
-        {
-            public string ThisIsTheMessage { get; set; }
-        }
-
         class Context : ScenarioContext
         {
             public string MessageReceived { get; set; }
         }
+    }
+    public class NativeMessage : IMessage
+    {
+        public string ThisIsTheMessage { get; set; }
     }
 }
