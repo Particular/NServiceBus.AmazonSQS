@@ -45,6 +45,22 @@ namespace NServiceBus.Transport.SQS
 
         public async Task Initialize(PushRuntimeSettings limitations, OnMessage onMessage, OnError onError, CancellationToken cancellationToken = default)
         {
+            try
+            {
+                inputQueueUrl = await queueCache.GetQueueUrl(ReceiveAddress, cancellationToken)
+                .ConfigureAwait(false);
+            }
+            catch (QueueDoesNotExistException ex)
+            {
+                throw new QueueDoesNotExistException(
+                        $"Queue `{ReceiveAddress}` doesn't exist. Call endpointConfiguration.EnableInstallers() to create the queues at startup, or create them manually.",
+                        ex,
+                        ex.ErrorType,
+                        ex.ErrorCode,
+                        ex.RequestId,
+                        ex.StatusCode);
+            }
+
             inputQueueUrl = await queueCache.GetQueueUrl(ReceiveAddress, cancellationToken)
                 .ConfigureAwait(false);
             errorQueueUrl = await queueCache.GetQueueUrl(errorQueueAddress, cancellationToken)
