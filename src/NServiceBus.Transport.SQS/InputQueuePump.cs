@@ -284,6 +284,10 @@ namespace NServiceBus.Transport.SQS
                             transportMessage.Headers[TransportHeaders.S3BodyKey] = s3BodyKey.StringValue;
                             transportMessage.S3BodyKey = s3BodyKey.StringValue;
                         }
+                        if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.Encoding, out var messageEncoding))
+                        {
+                            transportMessage.Headers[TransportHeaders.Encoding] = messageEncoding.StringValue;
+                        }
                     }
                     else
                     {

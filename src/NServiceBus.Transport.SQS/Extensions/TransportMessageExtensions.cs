@@ -4,6 +4,7 @@ namespace NServiceBus.Transport.SQS.Extensions
     using System;
     using System.Buffers;
     using System.IO;
+    using System.Linq;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -21,7 +22,7 @@ namespace NServiceBus.Transport.SQS.Extensions
                     return EmptyMessage;
                 }
 
-                return ConvertBody(transportMessage.Body, arrayPool);
+                return ConvertBody(transportMessage.Body, arrayPool, transportMessage.Headers.Keys.Contains(TransportHeaders.Encoding) ? transportMessage.Headers[TransportHeaders.Encoding] : string.Empty);
             }
 
             if (s3Settings == null)
@@ -47,9 +48,14 @@ namespace NServiceBus.Transport.SQS.Extensions
             return (buffer.AsMemory(0, contentLength), buffer);
         }
 
-        static (ReadOnlyMemory<byte> MessageBody, byte[]? MessageBodyBuffer) ConvertBody(string body, ArrayPool<byte> arrayPool)
+        static (ReadOnlyMemory<byte> MessageBody, byte[]? MessageBodyBuffer) ConvertBody(string body, ArrayPool<byte> arrayPool, string messageEncoding)
         {
             var encoding = Encoding.UTF8;
+            if (!string.IsNullOrEmpty(messageEncoding))
+            {
+                encoding = Encoding.GetEncoding(messageEncoding);
+            }
+
             // TODO check if we need fallback
 #if NETFRAMEWORK
             try

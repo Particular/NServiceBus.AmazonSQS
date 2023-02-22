@@ -6,6 +6,7 @@
         public const string TimeToBeReceived = Prefix + nameof(TimeToBeReceived);
         public const string DelaySeconds = Prefix + nameof(DelaySeconds);
         public const string Headers = Prefix + nameof(Headers);
+        public const string Encoding = Prefix + nameof(Encoding);
         public const string S3BodyKey = "S3BodyKey";
         public const string MessageTypeFullName = "MessageTypeFullName";
     }

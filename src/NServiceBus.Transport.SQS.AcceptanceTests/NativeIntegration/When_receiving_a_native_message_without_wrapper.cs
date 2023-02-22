@@ -14,6 +14,9 @@
     public class When_receiving_a_native_message_without_wrapper : NServiceBusAcceptanceTest
     {
         static readonly string MessageToSend = new XDocument(new XElement("NServiceBus.AcceptanceTests.NativeIntegration.NativeMessage", new XElement("ThisIsTheMessage", "Hello!"))).ToString();
+        //NOTE the unicode gets converted to utf-16 by .net automatically
+        //static readonly string MessageToSendUnicode = new XDocument(new XElement("NServiceBus.AcceptanceTests.NativeIntegration.NativeMessage", new XElement("ThisIsTheMessage", @"This Unicode string contains two characters with codes outside the traditional ASCII code range, Pi (\u03a0) and Sigma (\u03a3)."))).ToString();
+        //static readonly string MessageToSendUnicode = new XDocument(new XElement("NServiceBus.AcceptanceTests.NativeIntegration.NativeMessage", new XElement("ThisIsTheMessage", "\u00abX\u00bb"))).ToString();
 
         [Test]
         public async Task Should_be_processed_when_nsbheaders_present_with_messageid()
@@ -38,6 +41,30 @@
 
             Assert.AreEqual("Hello!", context.MessageReceived);
         }
+
+        //[Test]
+        //public async Task Should_be_processed_when_nsbheaders_present_with_encoding_unicode_specified()
+        //{
+        //    var context = await Scenario.Define<Context>()
+        //        .WithEndpoint<Receiver>(c => c.When(async _ =>
+        //        {
+        //            await NativeEndpoint.SendTo<Receiver>(
+        //                new Dictionary<string, MessageAttributeValue>
+        //                {
+        //                    {
+        //                        "NServiceBus.AmazonSQS.Headers",
+        //                        new MessageAttributeValue
+        //                        {
+        //                            DataType = "String", StringValue = GetHeaders(messageId: Guid.NewGuid().ToString(), encoding: "unicode")
+        //                        }
+        //                    }
+        //                }, MessageToSendUnicode, false);
+        //        }))
+        //        .Done(c => c.MessageReceived != null)
+        //        .Run();
+
+        //    Assert.AreEqual("Hello", context.MessageReceived);
+        //}
 
         [Test]
         public async Task Should_be_processed_when_nsbheaders_present_without_messageid()
@@ -89,7 +116,7 @@
             Assert.AreEqual("Hello!", context.MessageReceived);
         }
 
-        string GetHeaders(string s3Key = null, string messageId = null)
+        string GetHeaders(string s3Key = null, string messageId = null, string encoding = null)
         {
             var nsbHeaders = new Dictionary<string, string>();
 
@@ -101,6 +128,11 @@
             if (!string.IsNullOrEmpty(messageId))
             {
                 nsbHeaders.Add("NServiceBus.MessageId", messageId);
+            }
+
+            if (!string.IsNullOrEmpty(encoding))
+            {
+                nsbHeaders.Add("NServiceBus.AmazonSQS.Encoding", encoding);
             }
 
             return JsonSerializer.Serialize(nsbHeaders);
