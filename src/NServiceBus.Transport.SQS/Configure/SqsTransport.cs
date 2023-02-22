@@ -235,8 +235,6 @@
                     .Concat(infra.Receivers.Values.Select(x => queueCreator.CreateQueueIfNecessary(x.ReceiveAddress, true))).ToArray();
 
                 await Task.WhenAll(createQueueTasks).ConfigureAwait(false);
-
-                //NOTE do we also need to do the subscriptions here??
             }
 
             return infra;
