@@ -1,11 +1,11 @@
 ﻿namespace NServiceBus.AcceptanceTests.Sending
 {
-    using System.Text.Json.Nodes;
     using System.Threading.Tasks;
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
     using EndpointTemplates;
     using NUnit.Framework;
+    using SimpleJson;
 
     public class When_compatibility_mode_disabled : NServiceBusAcceptanceTest
     {
@@ -25,7 +25,7 @@
 
         public class Context : ScenarioContext
         {
-            public JsonNode MessageContent { get; set; }
+            internal JsonObject MessageContent { get; set; }
             public bool Received { get; set; }
         }
 
@@ -34,10 +34,7 @@
             public Sender() =>
                 EndpointSetup<DefaultServer>(builder =>
                 {
-                    builder.ConfigureRouting().RouteToEndpoint(typeof(Message), typeof(Receiver));
-#pragma warning disable CS0618 // Type or member is obsolete
-                    builder.ConfigureSqsTransport().EnableV1CompatibilityMode = false;
-#pragma warning restore CS0618 // Type or member is obsolete
+                    builder.ConfigureSqsTransport().Routing().RouteToEndpoint(typeof(Message), typeof(Receiver));
                 });
 
             public class Handler : IHandleMessages<Reply>
@@ -49,7 +46,7 @@
                 {
                     testContext.Received = true;
 
-                    return Task.CompletedTask;
+                    return Task.FromResult(0);
                 }
 
                 readonly Context testContext;
@@ -67,7 +64,7 @@
 
                 public Task Handle(Message message, IMessageHandlerContext context)
                 {
-                    testContext.MessageContent = JsonNode.Parse(context.Extensions.Get<Amazon.SQS.Model.Message>().Body);
+                    testContext.MessageContent = SimpleJson.DeserializeObject<JsonObject>(context.Extensions.Get<Amazon.SQS.Model.Message>().Body);
                     return context.Reply(new Reply());
                 }
 
