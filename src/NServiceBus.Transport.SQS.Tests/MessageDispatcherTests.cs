@@ -329,7 +329,7 @@
             var dispatcher = new MessageDispatcher(new SettingsHolder(), null, mockSnsClient, new QueueCache(null,
                     dest => QueueCache.GetSqsQueueName(dest, "")),
                 new TopicCache(mockSnsClient, new SettingsHolder(), new EventToTopicsMappings(), new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""),
-                new S3Settings("someBucket", keyPrefix, mockS3Client), 15 * 60, wrapMessage);
+                new S3Settings("someBucket", keyPrefix, mockS3Client), 15 * 60, v1Compatibility: false, wrapOutgoingMessages: wrapMessage);
 
             var longBodyMessageId = Guid.NewGuid().ToString();
             /* Crazy long message id will cause the message to go over limits because attributes count as well */
@@ -359,8 +359,16 @@
 
             Assert.AreEqual("someBucket", longBodyMessageUpload.BucketName);
             Assert.AreEqual("someBucket", crazyLongMessageUpload.BucketName);
-            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{longBodyMessageUpload.Key}", mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == longBodyMessageId).Message);
-            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{crazyLongMessageUpload.Key}", mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == crazyLongMessageId).Message);
+            if (wrapMessage)
+            {
+                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{longBodyMessageUpload.Key}", mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == longBodyMessageId).Message);
+                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{crazyLongMessageUpload.Key}", mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == crazyLongMessageId).Message);
+            }
+            else
+            {
+                Assert.AreEqual(longBodyMessageUpload.Key, mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == longBodyMessageId).MessageAttributes[TransportHeaders.S3BodyKey].StringValue);
+                Assert.AreEqual(crazyLongMessageUpload.Key, mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == crazyLongMessageId).MessageAttributes[TransportHeaders.S3BodyKey].StringValue);
+            }
         }
 
         [Test]
@@ -552,7 +560,7 @@
 
             var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
                 dest => QueueCache.GetSqsQueueName(dest, "")), null,
-                new S3Settings("someBucket", "somePrefix", mockS3Client), 15 * 60, wrapMessage);
+                new S3Settings("someBucket", "somePrefix", mockS3Client), 15 * 60, v1Compatibility: false, wrapOutgoingMessages: wrapMessage);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -585,9 +593,18 @@
             Assert.AreEqual("someBucket", firstUpload.BucketName);
             Assert.AreEqual("someBucket", secondUpload.BucketName);
             Assert.AreEqual("someBucket", thirdUpload.BucketName);
-            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{firstUpload.Key}", mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.ElementAt(0).MessageBody);
-            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{secondUpload.Key}", mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.ElementAt(0).MessageBody);
-            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{thirdUpload.Key}", mockSqsClient.BatchRequestsSent.ElementAt(2).Entries.ElementAt(0).MessageBody);
+            if (wrapMessage)
+            {
+                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{firstUpload.Key}", mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.ElementAt(0).MessageBody);
+                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{secondUpload.Key}", mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.ElementAt(0).MessageBody);
+                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{thirdUpload.Key}", mockSqsClient.BatchRequestsSent.ElementAt(2).Entries.ElementAt(0).MessageBody);
+            }
+            else
+            {
+                Assert.AreEqual(firstUpload.Key, mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.ElementAt(0).MessageAttributes[TransportHeaders.S3BodyKey].StringValue);
+                Assert.AreEqual(secondUpload.Key, mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.ElementAt(0).MessageAttributes[TransportHeaders.S3BodyKey].StringValue);
+                Assert.AreEqual(thirdUpload.Key, mockSqsClient.BatchRequestsSent.ElementAt(2).Entries.ElementAt(0).MessageAttributes[TransportHeaders.S3BodyKey].StringValue);
+            }
         }
 
         [Test]
@@ -600,7 +617,7 @@
 
             var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
                 dest => QueueCache.GetSqsQueueName(dest, "")), null,
-                new S3Settings("someBucket", "somePrefix", mockS3Client), 15 * 60, wrapMessage);
+                new S3Settings("someBucket", "somePrefix", mockS3Client), 15 * 60, v1Compatibility: false, wrapOutgoingMessages: wrapMessage);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -633,9 +650,18 @@
             Assert.AreEqual("someBucket", firstUpload.BucketName);
             Assert.AreEqual("someBucket", secondUpload.BucketName);
             Assert.AreEqual("someBucket", thirdUpload.BucketName);
-            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{firstUpload.Key}", mockSqsClient.RequestsSent.ElementAt(0).MessageBody);
-            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{secondUpload.Key}", mockSqsClient.RequestsSent.ElementAt(1).MessageBody);
-            StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{thirdUpload.Key}", mockSqsClient.RequestsSent.ElementAt(2).MessageBody);
+            if (wrapMessage)
+            {
+                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{firstUpload.Key}", mockSqsClient.RequestsSent.ElementAt(0).MessageBody);
+                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{secondUpload.Key}", mockSqsClient.RequestsSent.ElementAt(1).MessageBody);
+                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{thirdUpload.Key}", mockSqsClient.RequestsSent.ElementAt(2).MessageBody);
+            }
+            else
+            {
+                Assert.AreEqual(firstUpload.Key, mockSqsClient.RequestsSent.ElementAt(0).MessageAttributes[TransportHeaders.S3BodyKey].StringValue);
+                Assert.AreEqual(secondUpload.Key, mockSqsClient.RequestsSent.ElementAt(1).MessageAttributes[TransportHeaders.S3BodyKey].StringValue);
+                Assert.AreEqual(thirdUpload.Key, mockSqsClient.RequestsSent.ElementAt(2).MessageAttributes[TransportHeaders.S3BodyKey].StringValue);
+            }
         }
 
         [Test]
