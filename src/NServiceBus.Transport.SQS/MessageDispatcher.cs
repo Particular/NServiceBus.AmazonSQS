@@ -344,6 +344,11 @@ namespace NServiceBus.Transport.SQS
                 delaySeconds = Convert.ToInt64(Math.Ceiling((doNotDeliverBefore.At - DateTime.UtcNow).TotalSeconds));
             }
 
+            if (!configuration.IsDelayedDeliveryEnabled && delaySeconds > TransportConfiguration.AwsMaximumQueueDelayTime)
+            {
+                throw new NotSupportedException($"To send messages with a delay time greater than '{TimeSpan.FromSeconds(TransportConfiguration.AwsMaximumQueueDelayTime)}', call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()'.");
+            }
+
             return delaySeconds;
         }
 
@@ -370,6 +375,11 @@ namespace NServiceBus.Transport.SQS
 
         async Task<string> UploadToS3(string messageId, IOutgoingTransportOperation transportOperation)
         {
+            if (string.IsNullOrEmpty(configuration.S3BucketForLargeMessages))
+            {
+                throw new Exception("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
+            }
+
             var key = $"{configuration.S3KeyPrefix}/{messageId}";
             using (var bodyStream = new MemoryStream(transportOperation.Message.Body))
             {
