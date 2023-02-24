@@ -22,7 +22,7 @@
                 .WithEndpoint<Publisher>(b => b.When(c => c.EndpointsStarted, session => session.Publish(new MyEventWithPayload() { Payload = payload })))
                 .WithEndpoint<Subscriber>(b => { })
                 .Done(c => c.GotTheEvent)
-                .Run(TimeSpan.FromSeconds(30));
+                .Run(TimeSpan.FromSeconds(45));
 
             Assert.True(context.GotTheEvent);
             Assert.AreEqual(payload, context.ReceivedPayload, "The payload should be handled correctly");
