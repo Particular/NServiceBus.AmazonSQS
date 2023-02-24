@@ -4,6 +4,7 @@ namespace NServiceBus.Transport.SQS.Extensions
     using System;
     using System.Buffers;
     using System.IO;
+    using System.Linq;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -21,7 +22,7 @@ namespace NServiceBus.Transport.SQS.Extensions
                     return EmptyMessage;
                 }
 
-                return ConvertBody(transportMessage.Body, arrayPool);
+                return ConvertBody(transportMessage.Body, arrayPool, transportMessage.Headers.Keys.Contains(TransportHeaders.Headers));
             }
 
             if (s3Settings == null)
@@ -47,33 +48,48 @@ namespace NServiceBus.Transport.SQS.Extensions
             return (buffer.AsMemory(0, contentLength), buffer);
         }
 
-        static (ReadOnlyMemory<byte> MessageBody, byte[]? MessageBodyBuffer) ConvertBody(string body, ArrayPool<byte> arrayPool)
+        static (ReadOnlyMemory<byte> MessageBody, byte[]? MessageBodyBuffer) ConvertBody(string body, ArrayPool<byte> arrayPool, bool isNativeMessage)
         {
             var encoding = Encoding.UTF8;
-            // TODO check if we need fallback
-#if NETFRAMEWORK
-            try
-            {
-                return (Convert.FromBase64String(body), null);
-            }
-            catch (FormatException)
-            {
-                var length = encoding.GetMaxByteCount(body.Length);
-                var buffer = arrayPool.Rent(length);
-                var writtenBytes = encoding.GetBytes(body, 0, body.Length, buffer, 0);
-                return (buffer.AsMemory(0, writtenBytes), buffer);
-            }
-#else
-            var length = encoding.GetMaxByteCount(body.Length);
-            var buffer = arrayPool.Rent(length);
-            if (Convert.TryFromBase64String(body, buffer, out var writtenBytes))
-            {
-                return (buffer.AsMemory(0, writtenBytes), buffer);
-            }
 
-            writtenBytes = encoding.GetBytes(body, buffer);
-            return (buffer.AsMemory(0, writtenBytes), buffer);
+            if (isNativeMessage)
+            {
+                return GetNonEncodedBody(body, arrayPool, null, encoding);
+            }
+            else
+            {
+#if NETFRAMEWORK
+                try
+                {
+                    return (Convert.FromBase64String(body), null);
+                }
+                catch (FormatException)
+                {
+                    return GetNonEncodedBody(body, arrayPool, null, encoding);
+                }
+#else
+                var buffer = GetBuffer(body, arrayPool, encoding);
+                if (Convert.TryFromBase64String(body, buffer, out var writtenBytes))
+                {
+                    return (buffer.AsMemory(0, writtenBytes), buffer);
+                }
+
+                return GetNonEncodedBody(body, arrayPool, buffer, encoding);
 #endif
+            }
+        }
+
+        static (ReadOnlyMemory<byte> MessageBody, byte[]? MessageBodyBuffer) GetNonEncodedBody(string body, ArrayPool<byte> arrayPool, byte[]? buffer, Encoding encoding)
+        {
+            buffer ??= GetBuffer(body, arrayPool, encoding);
+            var writtenBytes = encoding.GetBytes(body, 0, body.Length, buffer, 0);
+            return (buffer.AsMemory(0, writtenBytes), buffer);
+        }
+
+        static byte[] GetBuffer(string body, ArrayPool<byte> arrayPool, Encoding encoding)
+        {
+            var length = encoding.GetMaxByteCount(body.Length);
+            return arrayPool.Rent(length);
         }
 
         static readonly (ReadOnlyMemory<byte> MessageBody, byte[]? MessageBodyBuffer)
