@@ -62,18 +62,8 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
 
                     b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, (session, ctx) =>
                     {
-                        var sw = Stopwatch.StartNew();
-                        var tasks = new List<Task>(testCase.NumberOfEvents);
-                        for (int i = 0; i < testCase.NumberOfEvents; i++)
-                        {
-                            tasks.Add(session.Publish(new MyEvent()));
-                        }
-
-                        _ = Task.WhenAll(tasks).ContinueWith(t =>
-                        {
-                            sw.Stop();
-                            ctx.PublishTime = sw.Elapsed;
-                        });
+                        // Fire & Forget to make sure the when condition completes
+                        _ = Task.Run(() => PublishEvents(testCase, session, ctx));
                         return Task.CompletedTask;
                     });
                 })
@@ -95,6 +85,25 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
 
             Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedEventsCount);
             Assert.AreEqual(testCase.NumberOfEvents, context.NativePubSubSubscriberReceivedEventsCount);
+        }
+
+        static async Task PublishEvents(TestCase testCase, IMessageSession session, Context ctx)
+        {
+            var sw = Stopwatch.StartNew();
+            try
+            {
+                var tasks = new List<Task>(testCase.NumberOfEvents);
+                for (int i = 0; i < testCase.NumberOfEvents; i++)
+                {
+                    tasks.Add(session.Publish(new MyEvent()));
+                }
+                await Task.WhenAll(tasks);
+            }
+            finally
+            {
+                sw.Stop();
+                ctx.PublishTime = sw.Elapsed;
+            }
         }
 
         class Context : ScenarioContext

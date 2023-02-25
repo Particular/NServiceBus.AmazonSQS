@@ -82,19 +82,8 @@
 
                     b.When(c => c.SubscribedMessageDrivenToMyEvent && c.SubscribedMessageDrivenToMySecondEvent && c.SubscribedNative, (session, ctx) =>
                     {
-                        var sw = Stopwatch.StartNew();
-                        var tasks = new List<Task>(2 * testCase.NumberOfEvents);
-                        for (int i = 0; i < testCase.NumberOfEvents; i++)
-                        {
-                            tasks.Add(session.Publish(new MyEvent()));
-                            tasks.Add(session.Publish(new MySecondEvent()));
-                        }
-
-                        _ = Task.WhenAll(tasks).ContinueWith(t =>
-                        {
-                            sw.Stop();
-                            ctx.PublishTime = sw.Elapsed;
-                        });
+                        // Fire & Forget to make sure the when condition completes
+                        _ = Task.Run(() => PublishEvents(testCase, session, ctx));
                         return Task.CompletedTask;
                     });
                 })
@@ -122,6 +111,26 @@
             Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedMyEventCount);
             Assert.AreEqual(testCase.NumberOfEvents, context.NativePubSubSubscriberReceivedMyEventCount);
             Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedMySecondEventCount);
+        }
+
+        static async Task PublishEvents(TestCase testCase, IMessageSession session, Context ctx)
+        {
+            var sw = Stopwatch.StartNew();
+            try
+            {
+                var tasks = new List<Task>(2 * testCase.NumberOfEvents);
+                for (int i = 0; i < testCase.NumberOfEvents; i++)
+                {
+                    tasks.Add(session.Publish(new MyEvent()));
+                    tasks.Add(session.Publish(new MySecondEvent()));
+                }
+                await Task.WhenAll(tasks);
+            }
+            finally
+            {
+                sw.Stop();
+                ctx.PublishTime = sw.Elapsed;
+            }
         }
 
         class Context : ScenarioContext
