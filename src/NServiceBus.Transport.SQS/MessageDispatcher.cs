@@ -43,7 +43,7 @@
                     TypeInfoResolver = TransportMessageSerializerContext.Default
                 };
 
-            hybridPubSubChecker = new HybridPubSubChecker(settings);
+            hybridPubSubChecker = new HybridPubSubChecker(settings, topicCache, queueCache, snsClient);
         }
 
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, CancellationToken cancellationToken = default)
@@ -266,7 +266,7 @@
 
         async Task<SqsPreparedMessage> PrepareMessage(UnicastTransportOperation transportOperation, Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction, CancellationToken cancellationToken)
         {
-            if (await hybridPubSubChecker.ThisIsAPublishMessageNotUsingMessageDrivenPubSub(transportOperation, multicastEventsMessageIdsToType, topicCache, queueCache, snsClient, cancellationToken).ConfigureAwait(false))
+            if (await hybridPubSubChecker.ThisIsAPublishMessageNotUsingMessageDrivenPubSub(transportOperation, multicastEventsMessageIdsToType, cancellationToken).ConfigureAwait(false))
             {
                 return null;
             }

@@ -20,8 +20,11 @@
             public DateTime Age { get; } = DateTime.UtcNow;
         }
 
-        public HybridPubSubChecker(IReadOnlySettings settings)
+        public HybridPubSubChecker(IReadOnlySettings settings, TopicCache topicCache, QueueCache queueCache, IAmazonSimpleNotificationService snsClient)
         {
+            this.topicCache = topicCache;
+            this.queueCache = queueCache;
+            this.snsClient = snsClient;
             this.cacheTTL = TimeSpan.FromSeconds(5);
 
             if (settings != null && settings.TryGet(SettingsKeys.SubscriptionsCacheTTL, out TimeSpan cacheTTL))
@@ -30,7 +33,7 @@
             }
         }
 
-        public async Task<bool> ThisIsAPublishMessageNotUsingMessageDrivenPubSub(UnicastTransportOperation unicastTransportOperation, Dictionary<string, Type> multicastEventsMessageIdsToType, TopicCache topicCache, QueueCache queueCache, IAmazonSimpleNotificationService snsClient, CancellationToken cancellationToken = default)
+        public async Task<bool> ThisIsAPublishMessageNotUsingMessageDrivenPubSub(UnicastTransportOperation unicastTransportOperation, Dictionary<string, Type> multicastEventsMessageIdsToType, CancellationToken cancellationToken = default)
         {
             // The following check is required by the message-driven pub/sub hybrid mode in Core
             // to allow endpoints to migrate from message-driven pub/sub to native pub/sub
@@ -60,12 +63,12 @@
                 var lazyCacheItem = subscriptionsCache.AddOrUpdate(cacheKey,
                     static (cacheKey, state) =>
                     {
-                        var (@this, queueCache, snsClient, topic, destination, cancellationToken) = state;
-                        return @this.CreateLazyCacheItem(cacheKey, queueCache, snsClient, topic, destination, cancellationToken);
+                        var (@this, topic, destination, cancellationToken) = state;
+                        return @this.CreateLazyCacheItem(cacheKey, topic, destination, cancellationToken);
                     },
                     static (cacheKey, existingLazyCacheItem, state) =>
                     {
-                        var (@this, queueCache, snsClient, topic, destination, cancellationToken) = state;
+                        var (@this, topic, destination, cancellationToken) = state;
                         if (Logger.IsDebugEnabled)
                         {
                             Logger.Debug($"Subscription found in cache, key: '{cacheKey}'.");
@@ -85,11 +88,11 @@
                             {
                                 Logger.Debug($"Removing subscription '{cacheKey}' from cache: TTL expired.");
                             }
-                            return @this.CreateLazyCacheItem(cacheKey, queueCache, snsClient, topic, destination, cancellationToken);
+                            return @this.CreateLazyCacheItem(cacheKey, topic, destination, cancellationToken);
                         }
 
                         return existingLazyCacheItem;
-                    }, (this, queueCache, snsClient, existingTopic, unicastTransportOperation.Destination, cancellationToken));
+                    }, (this, existingTopic, unicastTransportOperation.Destination, cancellationToken));
 
                 var cacheItem = await lazyCacheItem.Value.ConfigureAwait(false);
 
@@ -102,7 +105,7 @@
             return false;
         }
 
-        Lazy<Task<SubscriptionsCacheItem>> CreateLazyCacheItem(string cacheKey, QueueCache queueCache, IAmazonSimpleNotificationService snsClient, Topic topic, string destination, CancellationToken cancellationToken) =>
+        Lazy<Task<SubscriptionsCacheItem>> CreateLazyCacheItem(string cacheKey, Topic topic, string destination, CancellationToken cancellationToken) =>
             new(async () =>
             {
                 if (Logger.IsDebugEnabled)
@@ -127,5 +130,8 @@
         readonly TimeSpan cacheTTL;
         readonly ConcurrentDictionary<string, Lazy<Task<SubscriptionsCacheItem>>> subscriptionsCache = new();
         static ILog Logger = LogManager.GetLogger(typeof(HybridPubSubChecker));
+        readonly TopicCache topicCache;
+        readonly QueueCache queueCache;
+        readonly IAmazonSimpleNotificationService snsClient;
     }
 }
