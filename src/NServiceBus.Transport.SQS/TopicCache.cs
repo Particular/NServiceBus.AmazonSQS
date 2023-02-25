@@ -13,7 +13,7 @@ namespace NServiceBus.Transport.SQS
 
     class TopicCache
     {
-        class TopicCacheItem
+        sealed class TopicCacheItem
         {
             public Topic? Topic { get; set; }
 
