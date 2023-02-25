@@ -97,6 +97,7 @@ namespace NServiceBus.Transport.SQS
             return (await lazyCacheItem.Value.ConfigureAwait(false)).Topic;
         }
 
+        // Deliberately uses a task instead of value task because tasks can be awaited multiple times while value tasks should not be
         Lazy<Task<TopicCacheItem>> CreateLazyCacheItem(Type messageType) =>
             new(async () =>
             {

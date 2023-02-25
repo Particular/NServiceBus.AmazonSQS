@@ -105,6 +105,7 @@
             return false;
         }
 
+        // Deliberately uses a task instead of value task because tasks can be awaited multiple times while value tasks should not be
         Lazy<Task<SubscriptionsCacheItem>> CreateLazyCacheItem(string cacheKey, Topic topic, string destination, CancellationToken cancellationToken) =>
             new(async () =>
             {
