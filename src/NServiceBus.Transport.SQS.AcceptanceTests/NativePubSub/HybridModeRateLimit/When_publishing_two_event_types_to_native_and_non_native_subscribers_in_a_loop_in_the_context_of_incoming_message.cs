@@ -176,7 +176,6 @@
                         tasks.Add(context.Publish(new MyEvent()));
                         tasks.Add(context.Publish(new MySecondEvent()));
                     }
-
                     await Task.WhenAll(tasks);
                     sw.Stop();
                     testContext.PublishTime = sw.Elapsed;

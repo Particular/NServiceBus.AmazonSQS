@@ -77,7 +77,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
                 })
                 .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
                 {
-                    b.When((session, ctx) => session.Subscribe<MyEvent>());
+                    b.When((session, _) => session.Subscribe<MyEvent>());
                 })
                 .Done(c => c.NativePubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents
                            && c.MessageDrivenPubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents)

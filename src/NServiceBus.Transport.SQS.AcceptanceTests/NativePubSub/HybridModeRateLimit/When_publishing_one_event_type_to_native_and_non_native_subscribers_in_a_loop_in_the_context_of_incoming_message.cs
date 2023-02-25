@@ -90,7 +90,7 @@
                 })
                 .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
                 {
-                    b.When((session, ctx) => session.Subscribe<MyEvent>());
+                    b.When((session, _) => session.Subscribe<MyEvent>());
                 })
                 .Done(c => c.NativePubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents
                            && c.MessageDrivenPubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents)
@@ -177,19 +177,17 @@
 
         public class MessageDrivenPubSubSubscriber : EndpointConfigurationBuilder
         {
-            public MessageDrivenPubSubSubscriber()
-            {
+            public MessageDrivenPubSubSubscriber() =>
                 EndpointSetup(new CustomizedServer(false), (c, sd) =>
-                {
-                    c.DisableFeature<AutoSubscribe>();
-                    c.GetSettings().Set("NServiceBus.AmazonSQS.DisableNativePubSub", true);
-                    c.GetSettings().GetOrCreate<Publishers>().AddOrReplacePublishers("LegacyConfig", new List<PublisherTableEntry>
                     {
-                         new PublisherTableEntry(typeof(MyEvent), PublisherAddress.CreateFromEndpointName(Conventions.EndpointNamingConvention(typeof(Publisher))))
-                    });
-                },
-                metadata => metadata.RegisterPublisherFor<MyEvent>(typeof(Publisher)));
-            }
+                        c.DisableFeature<AutoSubscribe>();
+                        c.GetSettings().Set("NServiceBus.AmazonSQS.DisableNativePubSub", true);
+                        c.GetSettings().GetOrCreate<Publishers>().AddOrReplacePublishers("LegacyConfig", new List<PublisherTableEntry>
+                        {
+                            new PublisherTableEntry(typeof(MyEvent), PublisherAddress.CreateFromEndpointName(Conventions.EndpointNamingConvention(typeof(Publisher))))
+                        });
+                    },
+                    metadata => metadata.RegisterPublisherFor<MyEvent>(typeof(Publisher)));
 
             public class MyEventMessageHandler : IHandleMessages<MyEvent>
             {

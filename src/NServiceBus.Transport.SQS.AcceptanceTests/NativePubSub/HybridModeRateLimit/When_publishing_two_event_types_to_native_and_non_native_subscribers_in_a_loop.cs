@@ -97,7 +97,7 @@
                 })
                 .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
                 {
-                    b.When(async (session, ctx) =>
+                    b.When(async (session, _) =>
                     {
                         await session.Subscribe<MyEvent>();
                         await session.Subscribe<MySecondEvent>();
