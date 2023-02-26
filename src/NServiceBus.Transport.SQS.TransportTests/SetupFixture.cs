@@ -40,18 +40,11 @@
         [OneTimeTearDown]
         public async Task OneTimeTearDown()
         {
-            var accessKeyId = EnvironmentHelper.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
-            var secretAccessKey = EnvironmentHelper.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
+            using var sqsClient = ClientFactories.CreateSqsClient();
+            using var snsClient = ClientFactories.CreateSnsClient();
+            using var s3Client = ClientFactories.CreateS3Client();
 
-            using (var sqsClient = string.IsNullOrEmpty(accessKeyId) ? ConfigureSqsTransportInfrastructure.CreateSqsClient() :
-                new AmazonSQSClient(accessKeyId, secretAccessKey))
-            using (var snsClient = string.IsNullOrEmpty(accessKeyId) ? ConfigureSqsTransportInfrastructure.CreateSnsClient() :
-                new AmazonSimpleNotificationServiceClient(accessKeyId, secretAccessKey))
-            using (var s3Client = string.IsNullOrEmpty(accessKeyId) ? ConfigureSqsTransportInfrastructure.CreateS3Client() :
-                new AmazonS3Client(accessKeyId, secretAccessKey))
-            {
-                await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, NamePrefix).ConfigureAwait(false);
-            }
+            await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, NamePrefix).ConfigureAwait(false);
         }
     }
 }

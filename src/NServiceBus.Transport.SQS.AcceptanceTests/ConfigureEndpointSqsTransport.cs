@@ -13,6 +13,7 @@
     using Routing;
     using Routing.NativePublishSubscribe;
     using Sagas;
+    using Transport.SQS.Tests;
     using Versioning;
     using MessageDriven = Routing.MessageDrivenSubscriptions;
 
@@ -49,7 +50,7 @@
 
         public static SqsTransport PrepareSqsTransport(bool supportsPublishSubscribe = true)
         {
-            var transport = new SqsTransport(CreateSqsClient(), CreateSnsClient(), supportsPublishSubscribe)
+            var transport = new SqsTransport(ClientFactories.CreateSqsClient(), ClientFactories.CreateSnsClient(), supportsPublishSubscribe)
             {
                 QueueNamePrefix = SetupFixture.NamePrefix,
                 TopicNamePrefix = SetupFixture.NamePrefix,
@@ -61,7 +62,7 @@
 
             if (!string.IsNullOrWhiteSpace(S3BucketName))
             {
-                transport.S3 = new S3Settings(S3BucketName, S3Prefix, CreateS3Client());
+                transport.S3 = new S3Settings(S3BucketName, S3Prefix, ClientFactories.CreateS3Client());
             }
 
             return transport;

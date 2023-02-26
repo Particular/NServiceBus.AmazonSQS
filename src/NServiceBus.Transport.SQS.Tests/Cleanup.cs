@@ -20,10 +20,9 @@ namespace NServiceBus.Transport.SQS.Tests
         [SetUp]
         public void SetUp()
         {
-            var credentials = new EnvironmentVariablesAWSCredentials();
-            sqsClient = new AmazonSQSClient(credentials);
-            snsClient = new AmazonSimpleNotificationServiceClient(credentials);
-            s3Client = new AmazonS3Client(credentials);
+            sqsClient = ClientFactories.CreateSqsClient();
+            snsClient = ClientFactories.CreateSnsClient();
+            s3Client = ClientFactories.CreateS3Client();
         }
 
         [TearDown]
@@ -264,8 +263,8 @@ namespace NServiceBus.Transport.SQS.Tests
             }
         }
 
-        AmazonSQSClient sqsClient;
-        AmazonSimpleNotificationServiceClient snsClient;
-        AmazonS3Client s3Client;
+        IAmazonSQS sqsClient;
+        IAmazonSimpleNotificationService snsClient;
+        IAmazonS3 s3Client;
     }
 }

@@ -7,6 +7,7 @@
     using Transport;
     using Transport.SQS;
     using NUnit.Framework;
+    using Transport.SQS.Tests;
 
     public class Sending_poison_messages : NServiceBusTransportTest
     {
@@ -44,53 +45,49 @@
 
         async Task SendPoisonMessage(string inputQueueName)
         {
-            using (var sqsClient = ConfigureSqsTransportInfrastructure.CreateSqsClient())
+            using var sqsClient = ClientFactories.CreateSqsClient();
+            var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
             {
-                var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
-                {
-                    QueueName = QueueCache.GetSqsQueueName(inputQueueName, SetupFixture.GetNamePrefix())
-                }).ConfigureAwait(false);
+                QueueName = QueueCache.GetSqsQueueName(inputQueueName, SetupFixture.GetNamePrefix())
+            }).ConfigureAwait(false);
 
-                await sqsClient.SendMessageAsync(new SendMessageRequest
-                {
-                    QueueUrl = getQueueUrlResponse.QueueUrl,
-                    MessageBody = PoisonMessageBody
-                }).ConfigureAwait(false);
-            }
+            await sqsClient.SendMessageAsync(new SendMessageRequest
+            {
+                QueueUrl = getQueueUrlResponse.QueueUrl,
+                MessageBody = PoisonMessageBody
+            }).ConfigureAwait(false);
         }
 
         async Task CheckErrorQueue(string errorQueueName, CancellationToken cancellationToken)
         {
-            using (var sqsClient = ConfigureSqsTransportInfrastructure.CreateSqsClient())
+            using var sqsClient = ClientFactories.CreateSqsClient();
+            var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
             {
-                var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
+                QueueName = QueueCache.GetSqsQueueName(errorQueueName, SetupFixture.GetNamePrefix())
+            }, cancellationToken).ConfigureAwait(false);
+
+            var messageReceived = false;
+            ReceiveMessageResponse receiveMessageResponse = null;
+
+            while (!messageReceived)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                receiveMessageResponse = await sqsClient.ReceiveMessageAsync(new ReceiveMessageRequest
                 {
-                    QueueName = QueueCache.GetSqsQueueName(errorQueueName, SetupFixture.GetNamePrefix())
+                    QueueUrl = getQueueUrlResponse.QueueUrl,
+                    WaitTimeSeconds = 20
                 }, cancellationToken).ConfigureAwait(false);
 
-                var messageReceived = false;
-                ReceiveMessageResponse receiveMessageResponse = null;
-
-                while (!messageReceived)
+                if (receiveMessageResponse.Messages.Any())
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    receiveMessageResponse = await sqsClient.ReceiveMessageAsync(new ReceiveMessageRequest
-                    {
-                        QueueUrl = getQueueUrlResponse.QueueUrl,
-                        WaitTimeSeconds = 20
-                    }, cancellationToken).ConfigureAwait(false);
-
-                    if (receiveMessageResponse.Messages.Any())
-                    {
-                        messageReceived = true;
-                    }
+                    messageReceived = true;
                 }
-
-                Assert.NotNull(receiveMessageResponse);
-                Assert.AreEqual(1, receiveMessageResponse.Messages.Count);
-                Assert.AreEqual(PoisonMessageBody, receiveMessageResponse.Messages.Single().Body);
             }
+
+            Assert.NotNull(receiveMessageResponse);
+            Assert.AreEqual(1, receiveMessageResponse.Messages.Count);
+            Assert.AreEqual(PoisonMessageBody, receiveMessageResponse.Messages.Single().Body);
         }
     }
 }

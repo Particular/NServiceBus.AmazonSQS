@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <Compile Include="..\NServiceBus.Transport.SQS.Tests\Cleanup.cs" />
+    <Compile Include="..\NServiceBus.Transport.SQS.Tests\ClientFactories.cs" />
     <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\ExceptionExtensions.cs" />
   </ItemGroup>
 

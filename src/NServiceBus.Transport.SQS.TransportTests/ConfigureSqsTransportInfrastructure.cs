@@ -7,6 +7,7 @@ using Amazon.SQS;
 using NServiceBus;
 using NServiceBus.AcceptanceTests.ScenarioDescriptors;
 using NServiceBus.Transport;
+using NServiceBus.Transport.SQS.Tests;
 using NServiceBus.TransportTests;
 using TransportTests;
 
@@ -18,7 +19,7 @@ public class ConfigureSqsTransportInfrastructure : IConfigureTransportInfrastruc
 
     public TransportDefinition CreateTransportDefinition()
     {
-        var transport = new SqsTransport(CreateSqsClient(), CreateSnsClient())
+        var transport = new SqsTransport(ClientFactories.CreateSqsClient(), ClientFactories.CreateSnsClient())
         {
             QueueNamePrefix = SetupFixture.GetNamePrefix(),
             TopicNamePrefix = SetupFixture.GetNamePrefix(),
@@ -30,7 +31,7 @@ public class ConfigureSqsTransportInfrastructure : IConfigureTransportInfrastruc
 
         if (!string.IsNullOrEmpty(S3BucketName))
         {
-            transport.S3 = new S3Settings(S3BucketName, S3Prefix, CreateS3Client());
+            transport.S3 = new S3Settings(S3BucketName, S3Prefix, ClientFactories.CreateS3Client());
         }
 
         return transport;

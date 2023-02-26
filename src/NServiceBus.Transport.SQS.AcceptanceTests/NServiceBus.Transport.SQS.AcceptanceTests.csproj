@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <Compile Include="..\NServiceBus.Transport.SQS.Tests\Cleanup.cs" />
+    <Compile Include="..\NServiceBus.Transport.SQS.Tests\ClientFactories.cs" />
   </ItemGroup>
 
   <ItemGroup>
