@@ -4,7 +4,6 @@ namespace NServiceBus.Transport.SQS.Tests
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
-    using Amazon.Runtime;
     using Amazon.S3;
     using Amazon.S3.Model;
     using Amazon.S3.Util;
@@ -72,15 +71,13 @@ namespace NServiceBus.Transport.SQS.Tests
             await DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, "TT");
         }
 
-        public static Task DeleteAllResourcesWithPrefix(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, IAmazonS3 s3Client, string namePrefix)
-        {
-            return Task.WhenAll(
+        public static Task DeleteAllResourcesWithPrefix(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, IAmazonS3 s3Client, string namePrefix) =>
+            Task.WhenAll(
                 DeleteAllQueuesWithPrefix(sqsClient, namePrefix),
                 DeleteAllTopicsWithPrefix(snsClient, namePrefix),
                 DeleteAllSubscriptionsWithPrefix(snsClient, namePrefix),
                 DeleteAllBucketsWithPrefix(s3Client, namePrefix)
             );
-        }
 
 
         public static async Task DeleteAllBucketsWithPrefix(IAmazonS3 s3Client, string namePrefix)

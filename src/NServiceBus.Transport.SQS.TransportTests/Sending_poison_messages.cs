@@ -25,7 +25,7 @@
                 (context, ct) =>
                 {
                     onMessageCalled = true;
-                    return Task.FromResult(0);
+                    return Task.CompletedTask;
                 },
                 (context, ct) =>
                 {

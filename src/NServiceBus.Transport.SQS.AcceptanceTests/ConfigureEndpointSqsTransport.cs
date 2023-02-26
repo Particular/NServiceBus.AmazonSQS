@@ -1,9 +1,5 @@
 ﻿namespace NServiceBus.AcceptanceTests
 {
-    using Amazon.Runtime;
-    using Amazon.S3;
-    using Amazon.SimpleNotificationService;
-    using Amazon.SQS;
     using ScenarioDescriptors;
     using System;
     using System.Threading.Tasks;
@@ -25,9 +21,7 @@
         readonly bool supportsPublishSubscribe;
 
         public ConfigureEndpointSqsTransport(bool supportsPublishSubscribe = true)
-        {
-            this.supportsPublishSubscribe = supportsPublishSubscribe;
-        }
+            => this.supportsPublishSubscribe = supportsPublishSubscribe;
 
         public Task Configure(string endpointName, EndpointConfiguration configuration, RunSettings settings, PublisherMetadata publisherMetadata)
         {
@@ -44,8 +38,7 @@
 
             ApplyMappingsToSupportMultipleInheritance(endpointName, transport);
 
-
-            return Task.FromResult(0);
+            return Task.CompletedTask;
         }
 
         public static SqsTransport PrepareSqsTransport(bool supportsPublishSubscribe = true)
@@ -98,29 +91,9 @@
             }
         }
 
-        public static IAmazonSQS CreateSqsClient()
-        {
-            var credentials = new EnvironmentVariablesAWSCredentials();
-            return new AmazonSQSClient(credentials);
-        }
-
-        public static IAmazonSimpleNotificationService CreateSnsClient()
-        {
-            var credentials = new EnvironmentVariablesAWSCredentials();
-            return new AmazonSimpleNotificationServiceClient(credentials);
-        }
-
-        public static IAmazonS3 CreateS3Client()
-        {
-            var credentials = new EnvironmentVariablesAWSCredentials();
-            return new AmazonS3Client(credentials);
-        }
-
-        public Task Cleanup()
-        {
+        public Task Cleanup() =>
             // Queues are cleaned up once, globally, in SetupFixture.
-            return Task.FromResult(0);
-        }
+            Task.CompletedTask;
 
         static void PreventInconclusiveTestsFromRunning(string endpointName)
         {

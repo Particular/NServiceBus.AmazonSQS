@@ -1,9 +1,5 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using Amazon.Runtime;
-using Amazon.S3;
-using Amazon.SimpleNotificationService;
-using Amazon.SQS;
 using NServiceBus;
 using NServiceBus.AcceptanceTests.ScenarioDescriptors;
 using NServiceBus.Transport;
@@ -38,37 +34,14 @@ public class ConfigureSqsTransportInfrastructure : IConfigureTransportInfrastruc
     }
 
     public Task<TransportInfrastructure> Configure(TransportDefinition transportDefinition, HostSettings hostSettings, QueueAddress inputQueueName,
-        string errorQueueName, CancellationToken cancellationToken)
-    {
-        return transportDefinition.Initialize(hostSettings, new[]
+        string errorQueueName, CancellationToken cancellationToken) =>
+        transportDefinition.Initialize(hostSettings, new[]
         {
             new ReceiveSettings(inputQueueName.ToString(), inputQueueName, true, false, errorQueueName),
         }, new[]
         {
             errorQueueName
         }, cancellationToken);
-    }
 
-    public static IAmazonSQS CreateSqsClient()
-    {
-        var credentials = new EnvironmentVariablesAWSCredentials();
-        return new AmazonSQSClient(credentials);
-    }
-
-    public static IAmazonSimpleNotificationService CreateSnsClient()
-    {
-        var credentials = new EnvironmentVariablesAWSCredentials();
-        return new AmazonSimpleNotificationServiceClient(credentials);
-    }
-
-    public static IAmazonS3 CreateS3Client()
-    {
-        var credentials = new EnvironmentVariablesAWSCredentials();
-        return new AmazonS3Client(credentials);
-    }
-
-    public Task Cleanup(CancellationToken cancellationToken)
-    {
-        return Task.FromResult(0);
-    }
+    public Task Cleanup(CancellationToken cancellationToken) => Task.CompletedTask;
 }
