@@ -10,6 +10,7 @@
     using Amazon.SQS.Model;
     using EndpointTemplates;
     using NUnit.Framework;
+    using Transport.SQS.Tests;
 
     public class When_receiving_a_native_message_without_wrapper : NServiceBusAcceptanceTest
     {
@@ -108,7 +109,7 @@
 
         static async Task UploadMessageBodyToS3(string key)
         {
-            using var s3Client = ConfigureEndpointSqsTransport.CreateS3Client();
+            using var s3Client = ClientFactories.CreateS3Client();
             await s3Client.PutObjectAsync(new PutObjectRequest
             {
                 Key = key,

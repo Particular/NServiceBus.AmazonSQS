@@ -3,11 +3,7 @@
     using System;
     using System.Text.RegularExpressions;
     using System.Threading.Tasks;
-    using Amazon.S3;
-    using Amazon.SimpleNotificationService;
-    using Amazon.SQS;
     using NUnit.Framework;
-    using ScenarioDescriptors;
     using Transport.SQS.Tests;
 
     [SetUpFixture]
@@ -43,18 +39,11 @@
         [OneTimeTearDown]
         public async Task OneTimeTearDown()
         {
-            var accessKeyId = EnvironmentHelper.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
-            var secretAccessKey = EnvironmentHelper.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
+            using var sqsClient = ClientFactories.CreateSqsClient();
+            using var snsClient = ClientFactories.CreateSnsClient();
+            using var s3Client = ClientFactories.CreateS3Client();
 
-            using (var sqsClient = string.IsNullOrEmpty(accessKeyId) ? SqsTransportExtensions.CreateSQSClient() :
-                new AmazonSQSClient(accessKeyId, secretAccessKey))
-            using (var snsClient = string.IsNullOrEmpty(accessKeyId) ? SqsTransportExtensions.CreateSnsClient() :
-                new AmazonSimpleNotificationServiceClient(accessKeyId, secretAccessKey))
-            using (var s3Client = string.IsNullOrEmpty(accessKeyId) ? SqsTransportExtensions.CreateS3Client() :
-                new AmazonS3Client(accessKeyId, secretAccessKey))
-            {
-                await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, NamePrefix).ConfigureAwait(false);
-            }
+            await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, NamePrefix).ConfigureAwait(false);
         }
     }
 }

@@ -1,4 +1,3 @@
-
 namespace NServiceBus
 {
     using System;
@@ -68,7 +67,7 @@ namespace NServiceBus
 
             BucketName = bucketForLargeMessages;
             KeyPrefix = keyPrefix;
-            S3Client = s3Client ?? new AmazonS3Client();
+            S3Client = s3Client ?? new AmazonS3Client(SqsTransport.Create<AmazonS3Config>());
         }
 
         /// <summary>

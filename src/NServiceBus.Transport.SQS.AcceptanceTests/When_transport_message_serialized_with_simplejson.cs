@@ -6,6 +6,7 @@ namespace NServiceBus.AcceptanceTests
     using Amazon.SQS.Model;
     using EndpointTemplates;
     using NUnit.Framework;
+    using Transport.SQS.Tests;
 
     public class When_transport_message_serialized_with_simplejson : NServiceBusAcceptanceTest
     {
@@ -27,7 +28,7 @@ namespace NServiceBus.AcceptanceTests
 
         static async Task SendTo<TEndpoint>(string message)
         {
-            using var sqsClient = ConfigureEndpointSqsTransport.CreateSqsClient();
+            using var sqsClient = ClientFactories.CreateSqsClient();
             var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
             {
                 QueueName = TestNameHelper.GetSqsQueueName(Conventions.EndpointNamingConvention(typeof(TEndpoint)), SetupFixture.NamePrefix)

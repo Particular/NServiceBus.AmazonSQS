@@ -4,6 +4,7 @@
     using AcceptanceTesting;
     using EndpointTemplates;
     using NUnit.Framework;
+    using Transport.SQS.Tests;
 
     public class When_using_large_message_with_unencrypted_bucket : NServiceBusAcceptanceTest
     {
@@ -23,7 +24,7 @@
 
             Assert.AreEqual(payloadToSend, context.ReceivedPayload, "The large payload should be handled correctly using the unencrypted S3 bucket");
 
-            var s3Client = ConfigureEndpointSqsTransport.CreateS3Client();
+            using var s3Client = ClientFactories.CreateS3Client();
 
             Assert.DoesNotThrowAsync(async () => await s3Client.GetObjectAsync(ConfigureEndpointSqsTransport.S3BucketName, $"{ConfigureEndpointSqsTransport.S3Prefix}/{context.MessageId}"));
         }
@@ -42,7 +43,7 @@
                 EndpointSetup<DefaultServer>(c =>
                 {
                     c.ConfigureSqsTransport().S3
-                        = new S3Settings(ConfigureEndpointSqsTransport.S3BucketName, ConfigureEndpointSqsTransport.S3Prefix, ConfigureEndpointSqsTransport.CreateS3Client());
+                        = new S3Settings(ConfigureEndpointSqsTransport.S3BucketName, ConfigureEndpointSqsTransport.S3Prefix, ClientFactories.CreateS3Client());
                 });
 
             public class MyMessageHandler : IHandleMessages<MyMessageWithLargePayload>

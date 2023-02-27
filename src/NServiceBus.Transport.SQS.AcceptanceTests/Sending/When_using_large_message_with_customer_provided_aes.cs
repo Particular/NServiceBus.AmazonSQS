@@ -8,6 +8,7 @@ namespace NServiceBus.AcceptanceTests.Sending
     using Amazon.S3.Model;
     using EndpointTemplates;
     using NUnit.Framework;
+    using Transport.SQS.Tests;
 
     public class When_using_large_message_with_customer_provided_aes : NServiceBusAcceptanceTest
     {
@@ -27,7 +28,7 @@ namespace NServiceBus.AcceptanceTests.Sending
 
             Assert.AreEqual(payloadToSend, context.ReceivedPayload, "The large payload should be handled correctly using the kms encrypted S3 bucket");
 
-            var s3Client = ConfigureEndpointSqsTransport.CreateS3Client();
+            using var s3Client = ClientFactories.CreateS3Client();
             var getObjectResponse = await s3Client.GetObjectAsync(new GetObjectRequest
             {
                 BucketName = BucketName,
@@ -65,7 +66,7 @@ namespace NServiceBus.AcceptanceTests.Sending
                     aesEncryption.GenerateKey();
                     Base64Key = Convert.ToBase64String(aesEncryption.Key);
 
-                    transportConfig.S3 = new S3Settings(BucketName, ConfigureEndpointSqsTransport.S3Prefix, ConfigureEndpointSqsTransport.CreateS3Client())
+                    transportConfig.S3 = new S3Settings(BucketName, ConfigureEndpointSqsTransport.S3Prefix, ClientFactories.CreateS3Client())
                     {
                         Encryption = new S3EncryptionWithCustomerProvidedKey(ServerSideEncryptionCustomerMethod.AES256, Base64Key)
                     };

@@ -8,12 +8,13 @@
     using System.Threading.Tasks;
     using AcceptanceTesting.Customization;
     using Amazon.SQS.Model;
+    using Transport.SQS.Tests;
 
     static class NativeEndpoint
     {
         public static async Task ConsumePoisonQueue(Guid testRunId, string errorQueueAddress, Action<Message> nativeMessageAccessor = null, CancellationToken cancellationToken = default)
         {
-            using var sqsClient = ConfigureEndpointSqsTransport.CreateSqsClient();
+            using var sqsClient = ClientFactories.CreateSqsClient();
             var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
             {
                 QueueName = TestNameHelper.GetSqsQueueName(errorQueueAddress, SetupFixture.NamePrefix)
@@ -61,7 +62,7 @@
 
         public static async Task SendTo<TEndpoint>(Dictionary<string, MessageAttributeValue> messageAttributeValues, string message, bool base64Encode = true)
         {
-            using var sqsClient = ConfigureEndpointSqsTransport.CreateSqsClient();
+            using var sqsClient = ClientFactories.CreateSqsClient();
             var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
             {
                 QueueName = TestNameHelper.GetSqsQueueName(Conventions.EndpointNamingConvention(typeof(TEndpoint)), SetupFixture.NamePrefix)
