@@ -80,6 +80,12 @@
                             return existingLazyCacheItem;
                         }
 
+                        // if something failed it is probably better to try again.
+                        if (existingLazyCacheItem.Value is { Status: TaskStatus.Canceled or TaskStatus.Faulted })
+                        {
+                            return @this.CreateLazyCacheItem(cacheKey, topic, destination, cancellationToken);
+                        }
+
                         // since the value is created there is nothing to await and thus it is safe to synchronously access the value
                         var subscriptionsCacheItem = existingLazyCacheItem.GetAwaiter().GetResult();
                         if (subscriptionsCacheItem.Age.Add(@this.cacheTTL) < DateTime.UtcNow)

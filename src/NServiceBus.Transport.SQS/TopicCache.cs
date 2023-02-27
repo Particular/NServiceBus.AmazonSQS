@@ -76,6 +76,12 @@ namespace NServiceBus.Transport.SQS
                     return existingLazyCacheItem;
                 }
 
+                // if something failed it is probably better to try again.
+                if (existingLazyCacheItem.Value is { Status: TaskStatus.Canceled or TaskStatus.Faulted })
+                {
+                    return @this.CreateLazyCacheItem(messageType);
+                }
+
                 // since the value is created there is nothing to await and thus it is safe to synchronously access the value
                 var topicCacheItem = existingLazyCacheItem.GetAwaiter().GetResult();
                 if (topicCacheItem.Topic == null && topicCacheItem.CreatedOn.Add(@this.notFoundTopicsCacheTTL) < DateTime.UtcNow)
