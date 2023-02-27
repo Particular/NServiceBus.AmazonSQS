@@ -28,7 +28,8 @@ namespace NServiceBus.Transport.SQS
             S3Settings s3Settings,
             SubscriptionManager subscriptionManager,
             Action<string, Exception, CancellationToken> criticalErrorAction,
-            IReadOnlySettings coreSettings)
+            IReadOnlySettings coreSettings,
+            bool setupInfrastructure = true)
         {
             this.sqsClient = sqsClient;
             this.queueCache = queueCache;
@@ -41,6 +42,7 @@ namespace NServiceBus.Transport.SQS
             Subscriptions = subscriptionManager;
 
             this.coreSettings = coreSettings;
+            this.setupInfrastructure = setupInfrastructure;
         }
 
         public async Task Initialize(PushRuntimeSettings limitations, OnMessage onMessage, OnError onError, CancellationToken cancellationToken = default)
@@ -52,8 +54,13 @@ namespace NServiceBus.Transport.SQS
             }
             catch (QueueDoesNotExistException ex)
             {
+                var msg = $"Queue `{ReceiveAddress}` doesn't exist. Call endpointConfiguration.EnableInstallers() to create the queues at startup, or create them manually.";
+                if (setupInfrastructure)
+                {
+                    msg = $"Queue `{ReceiveAddress}` doesn't exist. Ensure this process has the required permissions to create queues on Amazon SQS.";
+                }
                 throw new QueueDoesNotExistException(
-                        $"Queue `{ReceiveAddress}` doesn't exist. Call endpointConfiguration.EnableInstallers() to create the queues at startup, or create them manually.",
+                        msg,
                         ex,
                         ex.ErrorType,
                         ex.ErrorCode,
@@ -606,6 +613,9 @@ namespace NServiceBus.Transport.SQS
         readonly S3Settings s3Settings;
         readonly Action<string, Exception, CancellationToken> criticalErrorAction;
         readonly IReadOnlySettings coreSettings;
+
+        readonly bool setupInfrastructure;
+
         readonly JsonSerializerOptions transportMessageSerializerOptions = new()
         {
             TypeInfoResolver = TransportMessageSerializerContext.Default
