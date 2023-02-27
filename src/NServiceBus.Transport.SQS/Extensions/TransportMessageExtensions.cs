@@ -1,7 +1,6 @@
 namespace NServiceBus.Transport.SQS.Extensions
 {
     using System;
-    using System.Buffers;
     using System.IO;
     using System.Text;
     using System.Threading;
@@ -11,8 +10,7 @@ namespace NServiceBus.Transport.SQS.Extensions
 
     static class TransportMessageExtensions
     {
-        public static async Task<Tuple<ReadOnlyMemory<byte>, byte[]>> RetrieveBody(this TransportMessage transportMessage, TransportConfiguration transportConfiguration, IAmazonS3 s3Client, ArrayPool<byte> arrayPool,
-            CancellationToken cancellationToken = default)
+        public static async Task<byte[]> RetrieveBody(this TransportMessage transportMessage, TransportConfiguration transportConfiguration, IAmazonS3 s3Client, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(transportMessage.S3BodyKey))
             {
@@ -21,7 +19,7 @@ namespace NServiceBus.Transport.SQS.Extensions
                     return EmptyMessage;
                 }
 
-                return ConvertBody(transportMessage.Body, arrayPool);
+                return ConvertBody(transportMessage.Body);
             }
 
             var getObjectRequest = new GetObjectRequest
@@ -43,33 +41,27 @@ namespace NServiceBus.Transport.SQS.Extensions
 
             var s3GetResponse = await s3Client.GetObjectAsync(getObjectRequest, cancellationToken)
                 .ConfigureAwait(false);
-            int contentLength = (int)s3GetResponse.ContentLength;
-            var buffer = arrayPool.Rent(contentLength);
-            using (var memoryStream = new MemoryStream(buffer))
+
+            using (var memoryStream = new MemoryStream())
             {
-                await s3GetResponse.ResponseStream.CopyToAsync(memoryStream, 81920, cancellationToken).ConfigureAwait(false);
-                return Tuple.Create((ReadOnlyMemory<byte>)buffer.AsMemory(0, contentLength), buffer);
+                await s3GetResponse.ResponseStream.CopyToAsync(memoryStream).ConfigureAwait(false);
+                return memoryStream.ToArray();
             }
         }
 
-        static Tuple<ReadOnlyMemory<byte>, byte[]> ConvertBody(string body, ArrayPool<byte> arrayPool)
+        static byte[] ConvertBody(string body)
         {
             var encoding = Encoding.UTF8;
-            // TODO check if we need fallback
             try
             {
-                return Tuple.Create(new ReadOnlyMemory<byte>(Convert.FromBase64String(body)), default(byte[]));
+                return Convert.FromBase64String(body);
             }
             catch (FormatException)
             {
-                var length = encoding.GetMaxByteCount(body.Length);
-                var buffer = arrayPool.Rent(length);
-                var writtenBytes = encoding.GetBytes(body, 0, body.Length, buffer, 0);
-                return Tuple.Create((ReadOnlyMemory<byte>)buffer.AsMemory(0, writtenBytes), buffer);
+                return encoding.GetBytes(body);
             }
         }
 
-        static readonly Tuple<ReadOnlyMemory<byte>, byte[]>
-            EmptyMessage = Tuple.Create(new ReadOnlyMemory<byte>(), default(byte[]));
+        static readonly byte[] EmptyMessage = new byte[0];
     }
 }
