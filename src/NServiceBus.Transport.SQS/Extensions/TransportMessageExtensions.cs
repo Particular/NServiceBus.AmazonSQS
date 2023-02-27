@@ -62,6 +62,6 @@ namespace NServiceBus.Transport.SQS.Extensions
             }
         }
 
-        static readonly byte[] EmptyMessage = new byte[0];
+        static readonly byte[] EmptyMessage = Array.Empty<byte>();
     }
 }
