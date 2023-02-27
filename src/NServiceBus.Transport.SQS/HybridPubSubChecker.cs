@@ -46,7 +46,7 @@
             return item != null;
         }
 
-        public async Task<bool> PublishUsingMessageDrivenPubSub(UnicastTransportOperation unicastTransportOperation, HashSet<string> messageIdsOfMulticastedEvents, TopicCache topicCache, QueueCache queueCache, IAmazonSimpleNotificationService snsClient)
+        public async Task<bool> ThisIsAPublishMessageNotUsingMessageDrivenPubSub(UnicastTransportOperation unicastTransportOperation, HashSet<string> messageIdsOfMulticastedEvents, TopicCache topicCache, QueueCache queueCache, IAmazonSimpleNotificationService snsClient)
         {
             // The following check is required by the message-driven pub/sub hybrid mode in Core
             // to allow endpoints to migrate from message-driven pub/sub to native pub/sub
@@ -65,7 +65,7 @@
                 var existingTopic = await topicCache.GetTopic(mostConcreteEnclosedMessageType).ConfigureAwait(false);
                 if (existingTopic == null)
                 {
-                    return true;
+                    return false;
                 }
 
                 var cacheKey = existingTopic.TopicArn + unicastTransportOperation.Destination;
@@ -93,11 +93,11 @@
 
                 if (cacheItem.IsThereAnSnsSubscription)
                 {
-                    return false;
+                    return true;
                 }
             }
 
-            return true;
+            return false;
         }
 
         SnsListSubscriptionsByTopicRateLimiter rateLimiter;

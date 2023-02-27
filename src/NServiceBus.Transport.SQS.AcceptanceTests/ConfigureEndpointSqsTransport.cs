@@ -4,20 +4,34 @@
     using System.Threading.Tasks;
     using AcceptanceTesting.Customization;
     using AcceptanceTesting.Support;
+    using Amazon.Runtime;
+    using Amazon.S3;
     using NUnit.Framework;
     using Routing;
     using Routing.NativePublishSubscribe;
     using Sagas;
+    using ScenarioDescriptors;
     using Versioning;
     using MessageDriven = Routing.MessageDrivenSubscriptions;
 
     public class ConfigureEndpointSqsTransport : IConfigureEndpointTestExecution
     {
+        public static string S3BucketName;
+        const string S3BucketEnvironmentVariableName = "NSERVICEBUS_AMAZONSQS_S3BUCKET";
+        public const string S3Prefix = "test";
+
         public Task Configure(string endpointName, EndpointConfiguration configuration, RunSettings settings, PublisherMetadata publisherMetadata)
         {
             PreventInconclusiveTestsFromRunning(endpointName);
 
             var transportConfig = configuration.UseTransport<SqsTransport>();
+
+            S3BucketName = EnvironmentHelper.GetEnvironmentVariable(S3BucketEnvironmentVariableName);
+
+            if (!string.IsNullOrEmpty(S3BucketName))
+            {
+                transportConfig.S3(S3BucketName, S3Prefix);
+            }
 
             transportConfig.ConfigureSqsTransport(SetupFixture.NamePrefix);
 
@@ -64,6 +78,12 @@
             {
                 transportConfig.MapEvent<When_multiple_versions_of_a_message_is_published.V1Event, When_multiple_versions_of_a_message_is_published.V2Event>();
             }
+        }
+
+        public static IAmazonS3 CreateS3Client()
+        {
+            var credentials = new EnvironmentVariablesAWSCredentials();
+            return new AmazonS3Client(credentials);
         }
 
         public Task Cleanup()

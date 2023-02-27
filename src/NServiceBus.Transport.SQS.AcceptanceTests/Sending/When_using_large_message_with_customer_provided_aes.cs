@@ -1,4 +1,4 @@
-namespace NServiceBus.AcceptanceTests
+namespace NServiceBus.AcceptanceTests.Sending
 {
     using System;
     using System.Security.Cryptography;
@@ -9,7 +9,7 @@ namespace NServiceBus.AcceptanceTests
     using EndpointTemplates;
     using NUnit.Framework;
 
-    public class Sending_large_message_using_customer_provided_aes : NServiceBusAcceptanceTest
+    public class When_using_large_message_with_customer_provided_aes : NServiceBusAcceptanceTest
     {
         [Test]
         public async Task Should_receive_message()

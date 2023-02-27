@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.AcceptanceTests
+﻿namespace NServiceBus.AcceptanceTests.Sending
 {
     using System;
     using AcceptanceTesting;
@@ -7,7 +7,7 @@
     using NUnit.Framework;
     using Transport.SQS.Configure;
 
-    public class Sending_oversized_message_without_bucket_configured : NServiceBusAcceptanceTest
+    public class When_using_oversized_message_without_bucket_configured : NServiceBusAcceptanceTest
     {
         [Test]
         public void Should_fail()

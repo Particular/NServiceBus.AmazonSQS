@@ -98,7 +98,8 @@
 
         MessageDispatcher CreateMessageDispatcher()
         {
-            return new MessageDispatcher(configuration, s3Client, sqsClient, snsClient, queueCache, topicCache);
+            var doNotWrapOutgoingMessages = settings.GetOrDefault<bool>(SettingsKeys.DoNotWrapOutgoingMessages);
+            return new MessageDispatcher(configuration, s3Client, sqsClient, snsClient, queueCache, topicCache, !doNotWrapOutgoingMessages);
         }
 
         public override TransportReceiveInfrastructure ConfigureReceiveInfrastructure()

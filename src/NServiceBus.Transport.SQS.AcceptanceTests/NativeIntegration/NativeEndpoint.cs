@@ -53,7 +53,7 @@
             TMessage message)
             where TMessage : IMessage
         {
-            using (var sw = new StringWriter())
+            using (var sw = new Utf8StringWriter())
             {
                 var serializer = new System.Xml.Serialization.XmlSerializer(typeof(TMessage));
                 serializer.Serialize(sw, message);
@@ -62,7 +62,12 @@
             }
         }
 
-        public static async Task SendTo<TEndpoint>(Dictionary<string, MessageAttributeValue> messageAttributeValues, string message)
+        sealed class Utf8StringWriter : StringWriter
+        {
+            public override Encoding Encoding => Encoding.UTF8;
+        }
+
+        public static async Task SendTo<TEndpoint>(Dictionary<string, MessageAttributeValue> messageAttributeValues, string message, bool base64Encode = true)
         {
             var transport = new TransportExtensions<SqsTransport>(new SettingsHolder());
             transport = transport.ConfigureSqsTransport(SetupFixture.NamePrefix);
@@ -75,7 +80,7 @@
                         transportConfiguration)
                 }).ConfigureAwait(false);
 
-                var body = Convert.ToBase64String(Encoding.Unicode.GetBytes(message));
+                var body = base64Encode ? Convert.ToBase64String(Encoding.UTF8.GetBytes(message)) : message;
 
                 var sendMessageRequest = new SendMessageRequest
                 {

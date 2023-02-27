@@ -4,6 +4,7 @@ namespace NServiceBus.Transport.SQS
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Text;
     using System.Threading.Tasks;
     using Amazon.S3;
     using Amazon.S3.Model;
@@ -18,7 +19,7 @@ namespace NServiceBus.Transport.SQS
 
     class MessageDispatcher : IDispatchMessages
     {
-        public MessageDispatcher(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache)
+        public MessageDispatcher(TransportConfiguration configuration, IAmazonS3 s3Client, IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, bool wrapOutgoingMessages = true)
         {
             this.topicCache = topicCache;
             this.snsClient = snsClient;
@@ -28,6 +29,7 @@ namespace NServiceBus.Transport.SQS
             this.queueCache = queueCache;
             hybridPubSubChecker = new HybridPubSubChecker(configuration);
             serializerStrategy = configuration.UseV1CompatiblePayload ? SimpleJson.PocoJsonSerializerStrategy : ReducedPayloadSerializerStrategy.Instance;
+            this.wrapOutgoingMessages = wrapOutgoingMessages;
         }
 
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, ContextBag context)
@@ -36,7 +38,7 @@ namespace NServiceBus.Transport.SQS
 
             // in order to not enumerate multi cast operations multiple times this code assumes the hashset is filled on the synchronous path of the async method!
             var messageIdsOfMulticastEvents = new HashSet<string>();
-            concurrentDispatchTasks.Add(DispatchMulticast(outgoingMessages.MulticastTransportOperations, messageIdsOfMulticastEvents, transaction));
+            concurrentDispatchTasks.Add(DispatchMulticast(outgoingMessages.MulticastTransportOperations, messageIdsOfMulticastEvents));
 
             foreach (var dispatchConsistencyGroup in outgoingMessages.UnicastTransportOperations
                 .GroupBy(o => o.RequiredDispatchConsistency))
@@ -65,7 +67,7 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        Task DispatchMulticast(List<MulticastTransportOperation> multicastTransportOperations, HashSet<string> messageIdsOfMulticastEvents, TransportTransaction transportTransaction)
+        Task DispatchMulticast(List<MulticastTransportOperation> multicastTransportOperations, HashSet<string> messageIdsOfMulticastEvents)
         {
             List<Task> tasks = null;
             // ReSharper disable once LoopCanBeConvertedToQuery
@@ -73,7 +75,7 @@ namespace NServiceBus.Transport.SQS
             {
                 messageIdsOfMulticastEvents.Add(operation.Message.MessageId);
                 tasks = tasks ?? new List<Task>(multicastTransportOperations.Count);
-                tasks.Add(Dispatch(operation, emptyHashset, transportTransaction));
+                tasks.Add(Dispatch(operation));
             }
 
             return tasks != null ? Task.WhenAll(tasks) : TaskExtensions.Completed;
@@ -98,7 +100,7 @@ namespace NServiceBus.Transport.SQS
             // ReSharper disable once LoopCanBeConvertedToQuery
             foreach (var operation in toBeBatchedTransportOperations)
             {
-                tasks.Add(PrepareMessage<SqsPreparedMessage>(operation, messageIdsOfMulticastEvents, transportTransaction));
+                tasks.Add(PrepareMessage(operation, messageIdsOfMulticastEvents, transportTransaction));
             }
 
             await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -176,9 +178,9 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        async Task Dispatch(MulticastTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction)
+        async Task Dispatch(MulticastTransportOperation transportOperation)
         {
-            var message = await PrepareMessage<SnsPreparedMessage>(transportOperation, messageIdsOfMulticastedEvents, transportTransaction)
+            var message = await PrepareMessage(transportOperation)
                 .ConfigureAwait(false);
 
             if (message == null)
@@ -209,7 +211,7 @@ namespace NServiceBus.Transport.SQS
 
         async Task Dispatch(UnicastTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction)
         {
-            var message = await PrepareMessage<SqsPreparedMessage>(transportOperation, messageIdsOfMulticastedEvents, transportTransaction)
+            var message = await PrepareMessage(transportOperation, messageIdsOfMulticastedEvents, transportTransaction)
                 .ConfigureAwait(false);
 
             if (message == null)
@@ -251,16 +253,83 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        async Task<TMessage> PrepareMessage<TMessage>(IOutgoingTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction)
-            where TMessage : PreparedMessage, new()
+        async Task<SqsPreparedMessage> PrepareMessage(UnicastTransportOperation transportOperation, HashSet<string> messageIdsOfMulticastedEvents, TransportTransaction transportTransaction)
         {
-            var unicastTransportOperation = transportOperation as UnicastTransportOperation;
-
-            if (!await hybridPubSubChecker.PublishUsingMessageDrivenPubSub(unicastTransportOperation, messageIdsOfMulticastedEvents, topicCache, queueCache, snsClient).ConfigureAwait(false))
+            if (await hybridPubSubChecker.ThisIsAPublishMessageNotUsingMessageDrivenPubSub(transportOperation, messageIdsOfMulticastedEvents, topicCache, queueCache, snsClient).ConfigureAwait(false))
             {
                 return null;
             }
 
+            var preparedMessage = new SqsPreparedMessage() { MessageId = transportOperation.Message.MessageId };
+
+            await ApplyUnicastOperationMapping(transportOperation, preparedMessage, CalculateDelayedDeliverySeconds(transportOperation), GetNativeMessageAttributes(transportOperation, transportTransaction)).ConfigureAwait(false);
+
+            async Task PrepareSqsMessageBasedOnBodySize(TransportMessage transportMessage)
+            {
+                preparedMessage.CalculateSize();
+                if (preparedMessage.Size > TransportConfiguration.MaximumMessageSize)
+                {
+                    var s3Key = await UploadToS3(preparedMessage.MessageId, transportOperation).ConfigureAwait(false);
+                    preparedMessage.Body = transportMessage != null ? PrepareSerializedS3TransportMessage(transportMessage, s3Key) : TransportMessage.EmptyMessage;
+                    preparedMessage.MessageAttributes[TransportHeaders.S3BodyKey] = new MessageAttributeValue { StringValue = s3Key, DataType = "String" };
+                    preparedMessage.CalculateSize();
+                }
+            }
+
+            if (!wrapOutgoingMessages)
+            {
+                preparedMessage.Body = GetMessageBodyAndHeaders(transportOperation.Message, out var headers);
+                preparedMessage.MessageAttributes[TransportHeaders.Headers] = new MessageAttributeValue { StringValue = headers, DataType = "String" };
+
+                await PrepareSqsMessageBasedOnBodySize(null).ConfigureAwait(false);
+            }
+            else
+            {
+                var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.DeliveryConstraints);
+                preparedMessage.Body = SimpleJson.SerializeObject(sqsTransportMessage, serializerStrategy);
+                await PrepareSqsMessageBasedOnBodySize(sqsTransportMessage).ConfigureAwait(false);
+            }
+
+            return preparedMessage;
+        }
+
+        async Task<SnsPreparedMessage> PrepareMessage(MulticastTransportOperation transportOperation)
+        {
+            var preparedMessage = new SnsPreparedMessage() { MessageId = transportOperation.Message.MessageId };
+
+            await ApplyMulticastOperationMapping(transportOperation, preparedMessage).ConfigureAwait(false);
+
+            async Task PrepareSnsMessageBasedOnBodySize(TransportMessage transportMessage)
+            {
+                preparedMessage.CalculateSize();
+                if (preparedMessage.Size > TransportConfiguration.MaximumMessageSize)
+                {
+                    var s3Key = await UploadToS3(preparedMessage.MessageId, transportOperation).ConfigureAwait(false);
+                    preparedMessage.Body = transportMessage != null ? PrepareSerializedS3TransportMessage(transportMessage, s3Key) : TransportMessage.EmptyMessage;
+                    preparedMessage.MessageAttributes[TransportHeaders.S3BodyKey] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue { StringValue = s3Key, DataType = "String" };
+                    preparedMessage.CalculateSize();
+                }
+            }
+
+            if (!wrapOutgoingMessages)
+            {
+                preparedMessage.Body = GetMessageBodyAndHeaders(transportOperation.Message, out var headers);
+                preparedMessage.MessageAttributes[TransportHeaders.Headers] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue() { StringValue = headers, DataType = "String" };
+
+                await PrepareSnsMessageBasedOnBodySize(null).ConfigureAwait(false);
+            }
+            else
+            {
+                var snsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.DeliveryConstraints);
+                preparedMessage.Body = SimpleJson.SerializeObject(snsTransportMessage, serializerStrategy);
+                await PrepareSnsMessageBasedOnBodySize(snsTransportMessage).ConfigureAwait(false);
+            }
+
+            return preparedMessage;
+        }
+
+        long CalculateDelayedDeliverySeconds(UnicastTransportOperation transportOperation)
+        {
             var delayDeliveryWith = transportOperation.DeliveryConstraints.OfType<DelayDeliveryWith>().SingleOrDefault();
             var doNotDeliverBefore = transportOperation.DeliveryConstraints.OfType<DoNotDeliverBefore>().SingleOrDefault();
 
@@ -280,32 +349,32 @@ namespace NServiceBus.Transport.SQS
                 throw new NotSupportedException($"To send messages with a delay time greater than '{TimeSpan.FromSeconds(TransportConfiguration.AwsMaximumQueueDelayTime)}', call '.UseTransport<SqsTransport>().UnrestrictedDelayedDelivery()'.");
             }
 
-            var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.DeliveryConstraints);
+            return delaySeconds;
+        }
 
-            var messageId = transportOperation.Message.MessageId;
-
-            var preparedMessage = new TMessage();
-
+        Dictionary<string, MessageAttributeValue> GetNativeMessageAttributes(UnicastTransportOperation transportOperation, TransportTransaction transportTransaction)
+        {
             // In case we're handling a message of which the incoming message id equals the outgoing message id, we're essentially handling an error or audit scenario, in which case we want copy over the message attributes
             // from the native message, so we don't lose part of the message
             var forwardingANativeMessage = transportTransaction.TryGet<Message>(out var nativeMessage) &&
                                            transportTransaction.TryGet<string>("IncomingMessageId", out var incomingMessageId) &&
                                            incomingMessageId == transportOperation.Message.MessageId;
 
-            var nativeMessageAttributes = forwardingANativeMessage ? nativeMessage.MessageAttributes : null;
+            return forwardingANativeMessage ? nativeMessage.MessageAttributes : null;
+        }
 
-            await ApplyUnicastOperationMappingIfNecessary(unicastTransportOperation, preparedMessage as SqsPreparedMessage, delaySeconds, messageId, nativeMessageAttributes).ConfigureAwait(false);
-            await ApplyMulticastOperationMappingIfNecessary(transportOperation as MulticastTransportOperation, preparedMessage as SnsPreparedMessage).ConfigureAwait(false);
+        string GetMessageBodyAndHeaders(OutgoingMessage outgoingMessage, out string headers)
+        {
+            // blunt allocation heavy hack for now
+            var body = Encoding.UTF8.GetString(outgoingMessage.Body.ToArray());
+            // probably think about how compact this should be?
+            headers = SimpleJson.SerializeObject(outgoingMessage.Headers);
 
-            preparedMessage.Body = SimpleJson.SerializeObject(sqsTransportMessage, serializerStrategy);
-            preparedMessage.MessageId = messageId;
+            return body;
+        }
 
-            preparedMessage.CalculateSize();
-            if (preparedMessage.Size <= TransportConfiguration.MaximumMessageSize)
-            {
-                return preparedMessage;
-            }
-
+        async Task<string> UploadToS3(string messageId, IOutgoingTransportOperation transportOperation)
+        {
             if (string.IsNullOrEmpty(configuration.S3BucketForLargeMessages))
             {
                 throw new Exception("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
@@ -324,27 +393,23 @@ namespace NServiceBus.Transport.SQS
 
                 await s3Client.PutObjectAsync(putObjectRequest).ConfigureAwait(false);
             }
-
-            sqsTransportMessage.S3BodyKey = key;
-            sqsTransportMessage.Body = string.Empty;
-            preparedMessage.Body = SimpleJson.SerializeObject(sqsTransportMessage, serializerStrategy);
-            preparedMessage.CalculateSize();
-
-            return preparedMessage;
+            return key;
         }
 
-        async Task ApplyMulticastOperationMappingIfNecessary(MulticastTransportOperation transportOperation, SnsPreparedMessage snsPreparedMessage)
+        string PrepareSerializedS3TransportMessage(TransportMessage transportMessage, string s3Key)
         {
-            if (transportOperation == null || snsPreparedMessage == null)
-            {
-                return;
-            }
+            transportMessage.S3BodyKey = s3Key;
+            transportMessage.Body = string.Empty;
+            return SimpleJson.SerializeObject(transportMessage, serializerStrategy);
+        }
 
+        async Task ApplyMulticastOperationMapping(MulticastTransportOperation transportOperation, SnsPreparedMessage snsPreparedMessage)
+        {
             var existingTopicArn = await topicCache.GetTopicArn(transportOperation.MessageType).ConfigureAwait(false);
             snsPreparedMessage.Destination = existingTopicArn;
         }
 
-        async Task ApplyUnicastOperationMappingIfNecessary(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, string messageId, Dictionary<string, MessageAttributeValue> nativeMessageAttributes)
+        async Task ApplyUnicastOperationMapping(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, Dictionary<string, MessageAttributeValue> nativeMessageAttributes)
         {
             if (transportOperation == null || sqsPreparedMessage == null)
             {
@@ -363,8 +428,8 @@ namespace NServiceBus.Transport.SQS
                 sqsPreparedMessage.QueueUrl = await queueCache.GetQueueUrl(sqsPreparedMessage.Destination)
                     .ConfigureAwait(false);
 
-                sqsPreparedMessage.MessageDeduplicationId = messageId;
-                sqsPreparedMessage.MessageGroupId = messageId;
+                sqsPreparedMessage.MessageDeduplicationId = sqsPreparedMessage.MessageId;
+                sqsPreparedMessage.MessageGroupId = sqsPreparedMessage.MessageId;
 
                 sqsPreparedMessage.MessageAttributes[TransportHeaders.DelaySeconds] = new MessageAttributeValue
                 {
@@ -428,12 +493,12 @@ namespace NServiceBus.Transport.SQS
         readonly IAmazonSimpleNotificationService snsClient;
         readonly TopicCache topicCache;
         TransportConfiguration configuration;
+        readonly HybridPubSubChecker hybridPubSubChecker;
+        readonly bool wrapOutgoingMessages;
         IAmazonSQS sqsClient;
         IAmazonS3 s3Client;
         QueueCache queueCache;
         IJsonSerializerStrategy serializerStrategy;
-        readonly HybridPubSubChecker hybridPubSubChecker;
-        static readonly HashSet<string> emptyHashset = new HashSet<string>();
 
         static ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
     }

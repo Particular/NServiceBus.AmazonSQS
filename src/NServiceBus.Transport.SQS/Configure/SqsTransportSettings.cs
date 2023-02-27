@@ -53,6 +53,19 @@
         }
 
         /// <summary>
+        /// Configures the SQS transport to not use a custom wrapper for outgoing messages.
+        /// NServiceBus headers will be sent as an Amazon message attribute. 
+        /// Only turn this on if all your endpoints are version 6.1.0 or above.
+        /// </summary>
+        public static TransportExtensions<SqsTransport> DoNotWrapOutgoingMessages(this TransportExtensions<SqsTransport> transportExtensions)
+        {
+            Guard.AgainstNull(nameof(transportExtensions), transportExtensions);
+
+            transportExtensions.GetSettings().Set(SettingsKeys.DoNotWrapOutgoingMessages, true);
+            return transportExtensions;
+        }
+
+        /// <summary>
         /// This is the maximum time that a message will be retained within SQS
         /// and S3. If you send a message, and that message is not received and successfully
         /// processed within the specified time, the message will be lost. This value applies

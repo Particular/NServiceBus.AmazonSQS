@@ -1,11 +1,11 @@
-﻿namespace NServiceBus.AcceptanceTests
+﻿namespace NServiceBus.AcceptanceTests.Sending
 {
     using System.Threading.Tasks;
     using AcceptanceTesting;
     using EndpointTemplates;
     using NUnit.Framework;
 
-    public class Sending_large_message_using_kms_encrypted_bucket : NServiceBusAcceptanceTest
+    public class When_using_large_message_with_kms_encrypted_bucket : NServiceBusAcceptanceTest
     {
         [Test]
         public async Task Should_receive_message()
