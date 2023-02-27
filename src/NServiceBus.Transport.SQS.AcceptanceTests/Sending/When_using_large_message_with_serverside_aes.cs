@@ -6,7 +6,7 @@ namespace NServiceBus.AcceptanceTests.Sending
     using EndpointTemplates;
     using NUnit.Framework;
 
-    public class Sending_large_message_using_serverside_aes : NServiceBusAcceptanceTest
+    public class When_using_large_message_with_serverside_aes : NServiceBusAcceptanceTest
     {
         [Test]
         public async Task Should_receive_message()

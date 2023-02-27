@@ -7,7 +7,7 @@
     using NUnit.Framework;
     using Transport.SQS.Configure;
 
-    public class Sending_small_message_with_no_bucket_configured : NServiceBusAcceptanceTest
+    public class When_using_small_message_with_no_bucket_configured : NServiceBusAcceptanceTest
     {
         [Test]
         public async Task Should_receive_message()

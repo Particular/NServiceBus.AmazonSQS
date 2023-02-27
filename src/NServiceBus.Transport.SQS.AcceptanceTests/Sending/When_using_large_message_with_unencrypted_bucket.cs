@@ -5,7 +5,7 @@
     using EndpointTemplates;
     using NUnit.Framework;
 
-    public class Sending_large_message_using_kms_encrypted_bucket : NServiceBusAcceptanceTest
+    public class When_using_large_message_with_unencrypted_bucket : NServiceBusAcceptanceTest
     {
         [Test]
         public async Task Should_receive_message()
@@ -20,16 +20,14 @@
                 .Done(c => c.ReceivedPayload != null)
                 .Run();
 
-            Assert.AreEqual(payloadToSend, context.ReceivedPayload, "The large payload should be handled correctly using the kms encrypted S3 bucket");
+            Assert.AreEqual(payloadToSend, context.ReceivedPayload, "The large payload should be handled correctly using the unencrypted S3 bucket");
 
             var s3Client = SqsTransportExtensions.CreateS3Client();
 
-            Assert.DoesNotThrowAsync(async () => await s3Client.GetObjectAsync(BucketName, $"{SqsTransportExtensions.S3Prefix}/{context.MessageId}"));
+            Assert.DoesNotThrowAsync(async () => await s3Client.GetObjectAsync(SqsTransportExtensions.S3BucketName, $"{SqsTransportExtensions.S3Prefix}/{context.MessageId}"));
         }
 
         const int PayloadSize = 150 * 1024;
-
-        static string BucketName;
 
         public class Context : ScenarioContext
         {
@@ -41,14 +39,8 @@
         {
             public Endpoint()
             {
-                EndpointSetup<DefaultServer>(c =>
-                {
-                    var transportConfig = c.UseTransport<SqsTransport>();
-
-                    BucketName = $"{SqsTransportExtensions.S3BucketName}.kms";
-
-                    transportConfig.S3(BucketName, SqsTransportExtensions.S3Prefix);
-                });
+                EndpointSetup<DefaultServer>(c => c.UseTransport<SqsTransport>()
+                    .S3(SqsTransportExtensions.S3BucketName, SqsTransportExtensions.S3Prefix));
             }
 
             public class MyMessageHandler : IHandleMessages<MyMessageWithLargePayload>

@@ -8,7 +8,7 @@
     using EndpointTemplates;
     using NUnit.Framework;
 
-    public class Sending_message_to_nonexisting_queue : NServiceBusAcceptanceTest
+    public class When_trying_to_send_message_to_nonexisting_queue : NServiceBusAcceptanceTest
     {
         [Test]
         public void Should_throw_exception_with_queue_name()
