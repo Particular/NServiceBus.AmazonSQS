@@ -3,8 +3,10 @@
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
     using Amazon.SimpleNotificationService;
+    using Amazon.SimpleNotificationService.Model;
     using Configure;
     using NServiceBus.Logging;
     using NServiceBus.Transport.SQS.Extensions;
@@ -12,16 +14,17 @@
 
     class HybridPubSubChecker
     {
-        class SubscriptionsCacheItem
+        sealed class SubscriptionsCacheItem
         {
             public bool IsThereAnSnsSubscription { get; set; }
             public DateTime Age { get; } = DateTime.UtcNow;
         }
 
-        public HybridPubSubChecker(IReadOnlySettings settings)
+        public HybridPubSubChecker(IReadOnlySettings settings, TopicCache topicCache, QueueCache queueCache, IAmazonSimpleNotificationService snsClient)
         {
-            rateLimiter = new SnsListSubscriptionsByTopicRateLimiter();
-
+            this.topicCache = topicCache;
+            this.queueCache = queueCache;
+            this.snsClient = snsClient;
             this.cacheTTL = TimeSpan.FromSeconds(5);
 
             if (settings != null && settings.TryGet(SettingsKeys.SubscriptionsCacheTTL, out TimeSpan cacheTTL))
@@ -30,33 +33,7 @@
             }
         }
 
-        bool TryGetFromCache(string cacheKey, out SubscriptionsCacheItem item)
-        {
-            item = null;
-            if (subscriptionsCache.TryGetValue(cacheKey, out var cacheItem))
-            {
-                Logger.Debug($"Subscription found in cache, key: '{cacheKey}'.");
-                if (cacheItem.Age.Add(cacheTTL) < DateTime.UtcNow)
-                {
-                    Logger.Debug($"Removing subscription '{cacheKey}' from cache: TTL expired.");
-                    subscriptionsCache.TryRemove(cacheKey, out _);
-                }
-                else
-                {
-                    item = cacheItem;
-                }
-            }
-            else
-            {
-                Logger.Debug($"Subscription not found in cache, key: '{cacheKey}'.");
-            }
-
-            return item != null;
-        }
-
-#pragma warning disable PS0018 // A task-returning method should have a CancellationToken parameter unless it has a parameter implementing ICancellableContext
-        public async Task<bool> ThisIsAPublishMessageNotUsingMessageDrivenPubSub(UnicastTransportOperation unicastTransportOperation, Dictionary<string, Type> multicastEventsMessageIdsToType, TopicCache topicCache, QueueCache queueCache, IAmazonSimpleNotificationService snsClient)
-#pragma warning restore PS0018 // A task-returning method should have a CancellationToken parameter unless it has a parameter implementing ICancellableContext
+        public async Task<bool> ThisIsAPublishMessageNotUsingMessageDrivenPubSub(UnicastTransportOperation unicastTransportOperation, Dictionary<string, Type> multicastEventsMessageIdsToType, CancellationToken cancellationToken = default)
         {
             // The following check is required by the message-driven pub/sub hybrid mode in Core
             // to allow endpoints to migrate from message-driven pub/sub to native pub/sub
@@ -71,34 +48,59 @@
                 && unicastTransportOperation.Message.GetMessageIntent() == MessageIntent.Publish)
             {
                 var eventType = multicastEventsMessageIdsToType[unicastTransportOperation.Message.MessageId];
-                var existingTopic = await topicCache.GetTopic(eventType).ConfigureAwait(false);
+                var existingTopic = await topicCache.GetTopic(eventType, cancellationToken).ConfigureAwait(false);
                 if (existingTopic == null)
                 {
                     return false;
                 }
 
                 var cacheKey = existingTopic.TopicArn + unicastTransportOperation.Destination;
-                Logger.Debug($"Performing first subscription cache lookup for '{cacheKey}'.");
-                if (!TryGetFromCache(cacheKey, out var cacheItem))
+                if (Logger.IsDebugEnabled)
                 {
-                    cacheItem = await rateLimiter.Execute(async () =>
+                    Logger.Debug($"Performing subscription cache lookup for '{cacheKey}'.");
+                }
+
+                var lazyCacheItem = subscriptionsCache.AddOrUpdate(cacheKey,
+                    static (cacheKey, state) =>
                     {
-                        Logger.Debug($"Performing second subscription cache lookup for '{cacheKey}'.");
-                        if (TryGetFromCache(cacheKey, out var secondAttemptItem))
+                        var (@this, topic, destination, cancellationToken) = state;
+                        return @this.CreateLazyCacheItem(cacheKey, topic, destination, cancellationToken);
+                    },
+                    static (cacheKey, existingLazyCacheItem, state) =>
+                    {
+                        var (@this, topic, destination, cancellationToken) = state;
+                        if (Logger.IsDebugEnabled)
                         {
-                            return secondAttemptItem;
+                            Logger.Debug($"Subscription found in cache, key: '{cacheKey}'.");
                         }
 
-                        Logger.Debug($"Finding matching subscription for key '{cacheKey}' using SNS API.");
-                        var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, existingTopic, unicastTransportOperation.Destination)
-                            .ConfigureAwait(false);
+                        // if nothing has been materialized yet it is safe to return the existing entry because it will be fresh
+                        if (!existingLazyCacheItem.IsValueCreated)
+                        {
+                            return existingLazyCacheItem;
+                        }
 
-                        return new SubscriptionsCacheItem { IsThereAnSnsSubscription = matchingSubscriptionArn != null };
-                    }).ConfigureAwait(false);
+                        // if something failed it is probably better to try again.
+                        if (existingLazyCacheItem.Value is { Status: TaskStatus.Canceled or TaskStatus.Faulted })
+                        {
+                            return @this.CreateLazyCacheItem(cacheKey, topic, destination, cancellationToken);
+                        }
 
-                    Logger.Debug($"Adding subscription to cache as '{(cacheItem.IsThereAnSnsSubscription ? "found" : "not found")}', key: '{cacheKey}'.");
-                    _ = subscriptionsCache.TryAdd(cacheKey, cacheItem);
-                }
+                        // since the value is created there is nothing to await and thus it is safe to synchronously access the value
+                        var subscriptionsCacheItem = existingLazyCacheItem.GetAwaiter().GetResult();
+                        if (subscriptionsCacheItem.Age.Add(@this.cacheTTL) < DateTime.UtcNow)
+                        {
+                            if (Logger.IsDebugEnabled)
+                            {
+                                Logger.Debug($"Removing subscription '{cacheKey}' from cache: TTL expired.");
+                            }
+                            return @this.CreateLazyCacheItem(cacheKey, topic, destination, cancellationToken);
+                        }
+
+                        return existingLazyCacheItem;
+                    }, (this, existingTopic, unicastTransportOperation.Destination, cancellationToken));
+
+                var cacheItem = await lazyCacheItem.ConfigureAwait(false);
 
                 if (cacheItem.IsThereAnSnsSubscription)
                 {
@@ -109,9 +111,35 @@
             return false;
         }
 
-        SnsListSubscriptionsByTopicRateLimiter rateLimiter;
+        // Deliberately uses a task instead of value task because tasks can be awaited multiple times while value tasks should not be
+        AsyncCacheLazy<SubscriptionsCacheItem> CreateLazyCacheItem(string cacheKey, Topic topic, string destination, CancellationToken cancellationToken) =>
+            new(async () =>
+            {
+                if (Logger.IsDebugEnabled)
+                {
+                    Logger.Debug($"Subscription not found in cache, key: '{cacheKey}'.");
+                    Logger.Debug($"Finding matching subscription for key '{cacheKey}' using SNS API.");
+                }
+
+                var matchingSubscriptionArn = await snsClient.FindMatchingSubscription(queueCache, topic, destination, cancellationToken)
+                    .ConfigureAwait(false);
+
+                var cacheItem = new SubscriptionsCacheItem { IsThereAnSnsSubscription = matchingSubscriptionArn != null };
+
+                if (Logger.IsDebugEnabled)
+                {
+                    Logger.Debug($"Adding subscription to cache as '{(cacheItem.IsThereAnSnsSubscription ? "found" : "not found")}', key: '{cacheKey}'.");
+                }
+
+                return cacheItem;
+            });
+
         readonly TimeSpan cacheTTL;
-        readonly ConcurrentDictionary<string, SubscriptionsCacheItem> subscriptionsCache = new ConcurrentDictionary<string, SubscriptionsCacheItem>();
+        readonly ConcurrentDictionary<string, AsyncCacheLazy<SubscriptionsCacheItem>> subscriptionsCache = new();
+        readonly TopicCache topicCache;
+        readonly QueueCache queueCache;
+        readonly IAmazonSimpleNotificationService snsClient;
+
         static ILog Logger = LogManager.GetLogger(typeof(HybridPubSubChecker));
     }
 }

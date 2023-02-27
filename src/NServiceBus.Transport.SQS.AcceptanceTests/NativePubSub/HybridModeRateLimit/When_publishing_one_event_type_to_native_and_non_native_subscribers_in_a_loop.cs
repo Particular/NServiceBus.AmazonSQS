@@ -47,81 +47,89 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
         [Test, TestCaseSource(nameof(TestCases))]
         public async Task Should_not_rate_exceed(TestCase testCase)
         {
-            using (var handler = NamePrefixHandler.RunTestWithNamePrefixCustomization("OneEvt" + testCase.Sequence))
+            using var handler = NamePrefixHandler.RunTestWithNamePrefixCustomization("OneEvt" + testCase.Sequence);
+            await DeployInfrastructure(testCase);
+
+            var context = await Scenario.Define<Context>()
+                .WithEndpoint<Publisher>(b =>
+                {
+                    b.CustomConfig(config =>
+                    {
+                        var migrationMode = config.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
+                        migrationMode.SubscriptionsCacheTTL(testCase.SubscriptionsCacheTTL);
+                        migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);
+                    });
+
+                    b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, (session, ctx) =>
+                    {
+                        // Fire & Forget to make sure the when condition completes
+                        _ = Task.Run(() => PublishEvents(testCase, session, ctx));
+                        return Task.CompletedTask;
+                    });
+                })
+                .WithEndpoint<NativePubSubSubscriber>(b =>
+                {
+                    b.When((_, ctx) =>
+                    {
+                        ctx.SubscribedNative = true;
+                        return Task.CompletedTask;
+                    });
+                })
+                .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
+                {
+                    b.When((session, _) => session.Subscribe<MyEvent>());
+                })
+                .Done(c => c.NativePubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents
+                           && c.MessageDrivenPubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents)
+                .Run(testCase.TestExecutionTimeout);
+
+            Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedEventsCount);
+            Assert.AreEqual(testCase.NumberOfEvents, context.NativePubSubSubscriberReceivedEventsCount);
+        }
+
+        static async Task PublishEvents(TestCase testCase, IMessageSession session, Context ctx)
+        {
+            var sw = Stopwatch.StartNew();
+            try
             {
-                await DeployInfrastructure(testCase);
-
-                var context = await Scenario.Define<Context>()
-                    .WithEndpoint<Publisher>(b =>
-                    {
-                        b.CustomConfig(config =>
-                        {
-                            var migrationMode = config.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
-                            migrationMode.SubscriptionsCacheTTL(testCase.SubscriptionsCacheTTL);
-                            migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);
-                        });
-
-                        b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, (session, ctx) =>
-                        {
-                            var sw = Stopwatch.StartNew();
-                            var tasks = new List<Task>();
-                            for (int i = 0; i < testCase.NumberOfEvents; i++)
-                            {
-                                tasks.Add(session.Publish(new MyEvent()));
-                            }
-
-                            _ = Task.WhenAll(tasks).ContinueWith(t =>
-                            {
-                                sw.Stop();
-                                ctx.PublishTime = sw.Elapsed;
-                            });
-                            return Task.CompletedTask;
-                        });
-                    })
-                    .WithEndpoint<NativePubSubSubscriber>(b =>
-                    {
-                        b.When((_, ctx) =>
-                        {
-                            ctx.SubscribedNative = true;
-                            return Task.CompletedTask;
-                        });
-                    })
-                    .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
-                    {
-                        b.When((session, ctx) => session.Subscribe<MyEvent>());
-                    })
-                    .Done(c => c.NativePubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents
-                                   && c.MessageDrivenPubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents)
-                    .Run(TimeSpan.FromSeconds(40));
-
-                Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedEventsCount);
-                Assert.AreEqual(testCase.NumberOfEvents, context.NativePubSubSubscriberReceivedEventsCount);
+                var tasks = new List<Task>(testCase.NumberOfEvents);
+                for (int i = 0; i < testCase.NumberOfEvents; i++)
+                {
+                    tasks.Add(session.Publish(new MyEvent()));
+                }
+                await Task.WhenAll(tasks);
+            }
+            finally
+            {
+                sw.Stop();
+                ctx.PublishTime = sw.Elapsed;
             }
         }
 
-        public class Context : ScenarioContext
+        class Context : ScenarioContext
         {
-            int nativePubSubSubscriberReceivedEventsCount;
             public int NativePubSubSubscriberReceivedEventsCount => nativePubSubSubscriberReceivedEventsCount;
-            public void IncrementNativePubSubSubscriberReceivedEventsCount()
-            {
-                Interlocked.Increment(ref nativePubSubSubscriberReceivedEventsCount);
-            }
-            int messageDrivenPubSubSubscriberReceivedEventsCount;
-            public int MessageDrivenPubSubSubscriberReceivedEventsCount => messageDrivenPubSubSubscriberReceivedEventsCount;
-            public void IncrementMessageDrivenPubSubSubscriberReceivedEventsCount()
-            {
-                Interlocked.Increment(ref messageDrivenPubSubSubscriberReceivedEventsCount);
-            }
+
+            public int MessageDrivenPubSubSubscriberReceivedEventsCount =>
+                messageDrivenPubSubSubscriberReceivedEventsCount;
+
             public bool SubscribedMessageDriven { get; set; }
             public bool SubscribedNative { get; set; }
             public TimeSpan PublishTime { get; set; }
+
+            public void IncrementMessageDrivenPubSubSubscriberReceivedEventsCount()
+                => Interlocked.Increment(ref messageDrivenPubSubSubscriberReceivedEventsCount);
+
+            public void IncrementNativePubSubSubscriberReceivedEventsCount()
+                => Interlocked.Increment(ref nativePubSubSubscriberReceivedEventsCount);
+
+            int messageDrivenPubSubSubscriberReceivedEventsCount;
+            int nativePubSubSubscriberReceivedEventsCount;
         }
 
-        public class Publisher : EndpointConfigurationBuilder
+        class Publisher : EndpointConfigurationBuilder
         {
-            public Publisher()
-            {
+            public Publisher() =>
                 EndpointSetup<DefaultPublisher>(c =>
                 {
                     var subscriptionStorage = new TestingInMemorySubscriptionStorage();
@@ -135,63 +143,51 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
                         }
                     });
                 }).IncludeType<TestingInMemorySubscriptionPersistence>();
-            }
         }
 
-        public class NativePubSubSubscriber : EndpointConfigurationBuilder
+        class NativePubSubSubscriber : EndpointConfigurationBuilder
         {
-            public NativePubSubSubscriber()
-            {
-                EndpointSetup<DefaultServer>(c => { });
-            }
+            public NativePubSubSubscriber() => EndpointSetup<DefaultServer>(c => { });
 
             public class MyEventMessageHandler : IHandleMessages<MyEvent>
             {
-                Context testContext;
-
-                public MyEventMessageHandler(Context testContext)
-                {
-                    this.testContext = testContext;
-                }
+                public MyEventMessageHandler(Context testContext) => this.testContext = testContext;
 
                 public Task Handle(MyEvent @event, IMessageHandlerContext context)
                 {
                     testContext.IncrementNativePubSubSubscriberReceivedEventsCount();
                     return Task.CompletedTask;
                 }
+
+                readonly Context testContext;
             }
         }
 
-        public class MessageDrivenPubSubSubscriber : EndpointConfigurationBuilder
+        class MessageDrivenPubSubSubscriber : EndpointConfigurationBuilder
         {
-            public MessageDrivenPubSubSubscriber()
-            {
+            public MessageDrivenPubSubSubscriber() =>
                 EndpointSetup(new CustomizedServer(false), (c, rd) =>
-                {
-                    c.DisableFeature<AutoSubscribe>();
-                    c.GetSettings().Set("NServiceBus.AmazonSQS.DisableNativePubSub", true);
-                    c.GetSettings().GetOrCreate<Publishers>().AddOrReplacePublishers("LegacyConfig", new List<PublisherTableEntry>
                     {
-                         new PublisherTableEntry(typeof(MyEvent), PublisherAddress.CreateFromEndpointName(Conventions.EndpointNamingConvention(typeof(Publisher))))
-                    });
-                },
-                metadata => metadata.RegisterPublisherFor<MyEvent>(typeof(Publisher)));
-            }
+                        c.DisableFeature<AutoSubscribe>();
+                        c.GetSettings().Set("NServiceBus.AmazonSQS.DisableNativePubSub", true);
+                        c.GetSettings().GetOrCreate<Publishers>().AddOrReplacePublishers("LegacyConfig", new List<PublisherTableEntry>
+                        {
+                            new PublisherTableEntry(typeof(MyEvent), PublisherAddress.CreateFromEndpointName(Conventions.EndpointNamingConvention(typeof(Publisher))))
+                        });
+                    },
+                    metadata => metadata.RegisterPublisherFor<MyEvent>(typeof(Publisher)));
 
             public class MyEventMessageHandler : IHandleMessages<MyEvent>
             {
-                Context testContext;
-
-                public MyEventMessageHandler(Context testContext)
-                {
-                    this.testContext = testContext;
-                }
+                public MyEventMessageHandler(Context testContext) => this.testContext = testContext;
 
                 public Task Handle(MyEvent @event, IMessageHandlerContext context)
                 {
                     testContext.IncrementMessageDrivenPubSubSubscriberReceivedEventsCount();
                     return Task.CompletedTask;
                 }
+
+                readonly Context testContext;
             }
         }
 
