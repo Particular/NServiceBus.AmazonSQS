@@ -1,7 +1,6 @@
 namespace NServiceBus.Transport.SQS.Tests
 {
     using System;
-    using System.Buffers;
     using System.Collections.Generic;
     using System.Text;
     using System.Threading.Tasks;
@@ -12,18 +11,6 @@ namespace NServiceBus.Transport.SQS.Tests
     [TestFixture]
     public class TransportMessageExtensionsTests
     {
-        readonly ArrayPool<byte> arrayPool = ArrayPool<byte>.Shared;
-        byte[] bodyBuffer;
-
-        [TearDown]
-        public void TearDown()
-        {
-            if (bodyBuffer != null)
-            {
-                arrayPool.Return(bodyBuffer);
-            }
-        }
-
         [Test]
         public async Task Empty_body_is_received_ok()
         {
@@ -33,12 +20,10 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var transportMessage = new TransportMessage(outgoingMessage, new List<DeliveryConstraint>());
 
-            var result = await transportMessage.RetrieveBody(null, null, arrayPool);
-            var receivedBodyArray = result.Item1;
-            bodyBuffer = result.Item2;
-            var receivedBody = Encoding.UTF8.GetString(receivedBodyArray.ToArray());
+            var receivedBodyArray = await transportMessage.RetrieveBody(null, null).ConfigureAwait(false);
+            var receivedBody = Encoding.UTF8.GetString(receivedBodyArray);
 
-            CollectionAssert.AreEqual(receivedBodyArray.ToArray(), body);
+            CollectionAssert.AreEqual(receivedBodyArray, body);
             Assert.That(receivedBody, Is.Null.Or.Empty);
         }
 
@@ -50,10 +35,8 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var transportMessage = new TransportMessage(outgoingMessage, new List<DeliveryConstraint>());
 
-            var result = await transportMessage.RetrieveBody(null, null, arrayPool);
-            var receivedBodyArray = result.Item1;
-            bodyBuffer = result.Item2;
-            var receivedBody = Encoding.UTF8.GetString(receivedBodyArray.ToArray());
+            var receivedBodyArray = await transportMessage.RetrieveBody(null, null).ConfigureAwait(false);
+            var receivedBody = Encoding.UTF8.GetString(receivedBodyArray);
 
             Assert.That(receivedBody, Is.Null.Or.Empty);
         }
@@ -66,11 +49,8 @@ namespace NServiceBus.Transport.SQS.Tests
                 Body = "empty message",
             };
 
-            var result = await transportMessage.RetrieveBody(null, null, arrayPool);
-            var receivedBodyArray = result.Item1;
-            bodyBuffer = result.Item2;
-
-            var receivedBody = Encoding.UTF8.GetString(receivedBodyArray.ToArray());
+            var receivedBodyArray = await transportMessage.RetrieveBody(null, null).ConfigureAwait(false);
+            var receivedBody = Encoding.UTF8.GetString(receivedBodyArray);
 
             Assert.That(receivedBody, Is.Null.Or.Empty);
         }
