@@ -77,7 +77,7 @@ namespace NServiceBus.Transport.SQS
                 }
 
                 // since the value is created there is nothing to await and thus it is safe to synchronously access the value
-                var topicCacheItem = existingLazyCacheItem.Value.GetAwaiter().GetResult();
+                var topicCacheItem = existingLazyCacheItem.GetAwaiter().GetResult();
                 if (topicCacheItem.Topic == null && topicCacheItem.CreatedOn.Add(@this.notFoundTopicsCacheTTL) < DateTime.UtcNow)
                 {
                     if (Logger.IsDebugEnabled)
@@ -94,11 +94,11 @@ namespace NServiceBus.Transport.SQS
                 return existingLazyCacheItem;
             }, this);
 
-            return (await lazyCacheItem.Value.ConfigureAwait(false)).Topic;
+            return (await lazyCacheItem.ConfigureAwait(false)).Topic;
         }
 
         // Deliberately uses a task instead of value task because tasks can be awaited multiple times while value tasks should not be
-        Lazy<Task<TopicCacheItem>> CreateLazyCacheItem(Type messageType) =>
+        AsyncCacheLazy<TopicCacheItem> CreateLazyCacheItem(Type messageType) =>
             new(async () =>
             {
                 if (Logger.IsDebugEnabled)
@@ -115,14 +115,15 @@ namespace NServiceBus.Transport.SQS
 
                 var topic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
                 return new TopicCacheItem { Topic = topic };
-            }, LazyThreadSafetyMode.ExecutionAndPublication);
+            });
 
-        IAmazonSimpleNotificationService snsClient;
-        ConcurrentDictionary<Type, Lazy<Task<TopicCacheItem>>> topicCache = new();
-        ConcurrentDictionary<Type, string> topicNameCache = new();
-        static ILog Logger = LogManager.GetLogger(typeof(TopicCache));
+        readonly IAmazonSimpleNotificationService snsClient;
+        readonly ConcurrentDictionary<Type, AsyncCacheLazy<TopicCacheItem>> topicCache = new();
+        readonly ConcurrentDictionary<Type, string> topicNameCache = new();
         readonly Func<Type, string, string> topicNameGenerator;
         readonly string topicNamePrefix;
         readonly TimeSpan notFoundTopicsCacheTTL;
+
+        static readonly ILog Logger = LogManager.GetLogger(typeof(TopicCache));
     }
 }

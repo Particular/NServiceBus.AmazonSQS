@@ -81,7 +81,7 @@
                         }
 
                         // since the value is created there is nothing to await and thus it is safe to synchronously access the value
-                        var subscriptionsCacheItem = existingLazyCacheItem.Value.GetAwaiter().GetResult();
+                        var subscriptionsCacheItem = existingLazyCacheItem.GetAwaiter().GetResult();
                         if (subscriptionsCacheItem.Age.Add(@this.cacheTTL) < DateTime.UtcNow)
                         {
                             if (Logger.IsDebugEnabled)
@@ -94,7 +94,7 @@
                         return existingLazyCacheItem;
                     }, (this, existingTopic, unicastTransportOperation.Destination, cancellationToken));
 
-                var cacheItem = await lazyCacheItem.Value.ConfigureAwait(false);
+                var cacheItem = await lazyCacheItem.ConfigureAwait(false);
 
                 if (cacheItem.IsThereAnSnsSubscription)
                 {
@@ -106,7 +106,7 @@
         }
 
         // Deliberately uses a task instead of value task because tasks can be awaited multiple times while value tasks should not be
-        Lazy<Task<SubscriptionsCacheItem>> CreateLazyCacheItem(string cacheKey, Topic topic, string destination, CancellationToken cancellationToken) =>
+        AsyncCacheLazy<SubscriptionsCacheItem> CreateLazyCacheItem(string cacheKey, Topic topic, string destination, CancellationToken cancellationToken) =>
             new(async () =>
             {
                 if (Logger.IsDebugEnabled)
@@ -126,13 +126,14 @@
                 }
 
                 return cacheItem;
-            }, LazyThreadSafetyMode.ExecutionAndPublication);
+            });
 
         readonly TimeSpan cacheTTL;
-        readonly ConcurrentDictionary<string, Lazy<Task<SubscriptionsCacheItem>>> subscriptionsCache = new();
-        static ILog Logger = LogManager.GetLogger(typeof(HybridPubSubChecker));
+        readonly ConcurrentDictionary<string, AsyncCacheLazy<SubscriptionsCacheItem>> subscriptionsCache = new();
         readonly TopicCache topicCache;
         readonly QueueCache queueCache;
         readonly IAmazonSimpleNotificationService snsClient;
+
+        static ILog Logger = LogManager.GetLogger(typeof(HybridPubSubChecker));
     }
 }
