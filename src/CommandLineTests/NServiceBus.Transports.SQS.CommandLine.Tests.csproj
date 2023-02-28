@@ -9,9 +9,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.7.7.11" />
-    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.3.14" />
-    <PackageReference Include="AWSSDK.SQS" Version="3.7.2.11" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.103.16" />
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.101.16" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.100.80" />
     <PackageReference Include="GitHubActionsTestLogger" Version="1.2.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
     <PackageReference Include="NUnit" Version="3.13.2" />

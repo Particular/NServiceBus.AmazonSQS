@@ -5,7 +5,6 @@ namespace NServiceBus.Transport.SQS
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Amazon.Runtime;
     using Amazon.S3;
     using Amazon.SQS;
     using Amazon.SQS.Model;
@@ -22,7 +21,6 @@ namespace NServiceBus.Transport.SQS
             this.s3Client = s3Client;
             this.sqsClient = sqsClient;
             this.queueCache = queueCache;
-            awsEndpointUrl = sqsClient.Config.DetermineServiceURL();
         }
 
         public async Task<string> Initialize(Func<MessageContext, Task> onMessage, Func<ErrorContext, Task<ErrorHandleResult>> onError, CriticalError criticalError, PushSettings settings)
@@ -252,7 +250,7 @@ namespace NServiceBus.Transport.SQS
                     return;
                 }
 
-                if (IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, CorrectClockSkew.GetClockCorrectionForEndpoint(awsEndpointUrl)))
+                if (IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, sqsClient.Config.ClockOffset))
                 {
                     await DeleteMessage(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
                 }
@@ -495,7 +493,6 @@ namespace NServiceBus.Transport.SQS
         int numberOfMessagesToFetch;
         ReceiveMessageRequest receiveMessagesRequest;
         CriticalError criticalError;
-        string awsEndpointUrl;
 
         static ILog Logger = LogManager.GetLogger(typeof(MessagePump));
     }
