@@ -49,8 +49,7 @@ namespace NServiceBus.Transport.SQS
         {
             try
             {
-                inputQueueUrl = await queueCache.GetQueueUrl(ReceiveAddress, cancellationToken)
-                .ConfigureAwait(false);
+                inputQueueUrl = await queueCache.GetQueueUrl(ReceiveAddress, cancellationToken).ConfigureAwait(false);
             }
             catch (QueueDoesNotExistException ex)
             {
@@ -613,7 +612,6 @@ namespace NServiceBus.Transport.SQS
         readonly S3Settings s3Settings;
         readonly Action<string, Exception, CancellationToken> criticalErrorAction;
         readonly IReadOnlySettings coreSettings;
-
         readonly bool setupInfrastructure;
 
         readonly JsonSerializerOptions transportMessageSerializerOptions = new()

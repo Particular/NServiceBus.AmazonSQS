@@ -231,8 +231,8 @@
             {
                 var queueCreator = new QueueCreator(SqsClient, QueueCache, S3, maxTimeToLive, QueueDelayTime);
 
-                var createQueueTasks = sendingAddresses.Select(x => queueCreator.CreateQueueIfNecessary(x, false))
-                    .Concat(infra.Receivers.Values.Select(x => queueCreator.CreateQueueIfNecessary(x.ReceiveAddress, true))).ToArray();
+                var createQueueTasks = sendingAddresses.Select(x => queueCreator.CreateQueueIfNecessary(x, false, cancellationToken))
+                    .Concat(infra.Receivers.Values.Select(x => queueCreator.CreateQueueIfNecessary(x.ReceiveAddress, true, cancellationToken))).ToArray();
 
                 await Task.WhenAll(createQueueTasks).ConfigureAwait(false);
             }
