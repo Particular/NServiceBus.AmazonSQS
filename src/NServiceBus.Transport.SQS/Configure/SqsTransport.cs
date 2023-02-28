@@ -195,6 +195,7 @@
         {
             SqsClient = sqsClient;
             SnsClient = snsClient;
+            externallyManagedSqsSnsClients = true;
         }
 
         /// <summary>
@@ -225,7 +226,7 @@
         public override async Task<TransportInfrastructure> Initialize(HostSettings hostSettings, ReceiveSettings[] receivers, string[] sendingAddresses, CancellationToken cancellationToken = default)
         {
             var topicCache = new TopicCache(SnsClient, hostSettings.CoreSettings, eventToTopicsMappings, eventToEventsMappings, topicNameGenerator, topicNamePrefix);
-            var infra = new SqsTransportInfrastructure(this, hostSettings, receivers, SqsClient, SnsClient, QueueCache, topicCache, S3, Policies, QueueDelayTime, topicNamePrefix, EnableV1CompatibilityMode, DoNotWrapOutgoingMessages);
+            var infra = new SqsTransportInfrastructure(this, hostSettings, receivers, SqsClient, SnsClient, QueueCache, topicCache, S3, Policies, QueueDelayTime, topicNamePrefix, EnableV1CompatibilityMode, DoNotWrapOutgoingMessages, !externallyManagedSqsSnsClients);
 
             if (hostSettings.SetupInfrastructure)
             {
@@ -280,5 +281,6 @@
 
         static readonly TimeSpan MaxTimeToLiveUpperBound = TimeSpan.FromDays(14);
         static readonly TimeSpan MaxTimeToLiveLowerBound = TimeSpan.FromSeconds(60);
+        readonly bool externallyManagedSqsSnsClients;
     }
 }

@@ -11,7 +11,6 @@ namespace NServiceBus
     /// </summary>
     public partial class S3Settings
     {
-
         /// <summary>
         /// Configures the S3 Bucket that will be used to store message bodies
         /// for messages that are larger than 256k in size. If this option is not specified,
@@ -25,7 +24,6 @@ namespace NServiceBus
         /// <param name="s3Client">S3 client to use. If not provided the default client based on environment settings will be used.</param>
         public S3Settings(string bucketForLargeMessages, string keyPrefix, IAmazonS3 s3Client = null)
         {
-            S3Client = s3Client;
             Guard.AgainstNull(nameof(bucketForLargeMessages), bucketForLargeMessages);
             Guard.AgainstNullAndEmpty(nameof(keyPrefix), keyPrefix);
 
@@ -68,6 +66,7 @@ namespace NServiceBus
             BucketName = bucketForLargeMessages;
             KeyPrefix = keyPrefix;
             S3Client = s3Client ?? new AmazonS3Client(SqsTransport.Create<AmazonS3Config>());
+            ShouldDisposeS3Client = s3Client == null;
         }
 
         /// <summary>
@@ -91,5 +90,7 @@ namespace NServiceBus
         /// The S3 client to use.
         /// </summary>
         public IAmazonS3 S3Client { get; internal set; } //Internal setter for the legacy API shim.
+
+        internal bool ShouldDisposeS3Client { get; }
     }
 }

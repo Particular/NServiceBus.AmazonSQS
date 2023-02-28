@@ -13,14 +13,17 @@
     class SqsTransportInfrastructure : TransportInfrastructure
     {
         public SqsTransportInfrastructure(SqsTransport transportDefinition, HostSettings hostSettings, ReceiveSettings[] receiverSettings, IAmazonSQS sqsClient,
-            IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, S3Settings s3Settings, PolicySettings policySettings, int queueDelayTimeSeconds, string topicNamePrefix, bool v1Compatibility, bool doNotWrapOutgoingMessages)
+            IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, S3Settings s3Settings, PolicySettings policySettings, int queueDelayTimeSeconds, string topicNamePrefix, bool v1Compatibility, bool doNotWrapOutgoingMessages,
+            bool shouldDisposeSqsAndSnsClients)
         {
             this.transportDefinition = transportDefinition;
             this.sqsClient = sqsClient;
             this.snsClient = snsClient;
+            this.shouldDisposeSqsAndSnsClients = shouldDisposeSqsAndSnsClients;
             coreSettings = hostSettings.CoreSettings;
             s3Client = s3Settings?.S3Client;
             setupInfrastructure = hostSettings.SetupInfrastructure;
+            shouldDisposeS3Client = s3Settings != null && s3Settings.ShouldDisposeS3Client;
             Receivers = receiverSettings
                 .Select(receiverSetting => CreateMessagePump(receiverSetting, sqsClient, snsClient, queueCache, topicCache, s3Settings, policySettings, queueDelayTimeSeconds, topicNamePrefix, hostSettings.CriticalErrorAction))
                 .ToDictionary(x => x.Id, x => x);
@@ -42,9 +45,16 @@
 
         public override Task Shutdown(CancellationToken cancellationToken = default)
         {
-            sqsClient.Dispose();
-            snsClient.Dispose();
-            s3Client?.Dispose();
+            if (shouldDisposeSqsAndSnsClients)
+            {
+                sqsClient.Dispose();
+                snsClient.Dispose();
+            }
+
+            if (shouldDisposeS3Client)
+            {
+                s3Client?.Dispose();
+            }
 
             return Task.CompletedTask;
         }
@@ -56,8 +66,10 @@
         readonly SqsTransport transportDefinition;
         readonly IAmazonSQS sqsClient;
         readonly IAmazonSimpleNotificationService snsClient;
+        readonly bool shouldDisposeSqsAndSnsClients;
         readonly IAmazonS3 s3Client;
         readonly IReadOnlySettings coreSettings;
         readonly bool setupInfrastructure;
+        readonly bool shouldDisposeS3Client;
     }
 }
