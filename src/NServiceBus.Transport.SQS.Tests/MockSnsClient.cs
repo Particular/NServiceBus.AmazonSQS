@@ -275,6 +275,10 @@ namespace NServiceBus.Transport.SQS.Tests
             throw new NotImplementedException();
         }
 
+        public GetDataProtectionPolicyResponse GetDataProtectionPolicy(GetDataProtectionPolicyRequest request) => throw new NotImplementedException();
+
+        public Task<GetDataProtectionPolicyResponse> GetDataProtectionPolicyAsync(GetDataProtectionPolicyRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
+
         public GetEndpointAttributesResponse GetEndpointAttributes(GetEndpointAttributesRequest request)
         {
             throw new NotImplementedException();
@@ -510,6 +514,8 @@ namespace NServiceBus.Transport.SQS.Tests
             throw new NotImplementedException();
         }
 
+        public Task<PutDataProtectionPolicyResponse> PutDataProtectionPolicyAsync(PutDataProtectionPolicyRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
+
         public RemovePermissionResponse RemovePermission(string topicArn, string label)
         {
             throw new NotImplementedException();
@@ -641,6 +647,8 @@ namespace NServiceBus.Transport.SQS.Tests
         public Task<ListOriginationNumbersResponse> ListOriginationNumbersAsync(ListOriginationNumbersRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<ListSMSSandboxPhoneNumbersResponse> ListSMSSandboxPhoneNumbersAsync(ListSMSSandboxPhoneNumbersRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<PublishBatchResponse> PublishBatchAsync(PublishBatchRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+        public PutDataProtectionPolicyResponse PutDataProtectionPolicy(PutDataProtectionPolicyRequest request) => throw new NotImplementedException();
+
         public Task<VerifySMSSandboxPhoneNumberResponse> VerifySMSSandboxPhoneNumberAsync(VerifySMSSandboxPhoneNumberRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public CreateSMSSandboxPhoneNumberResponse CreateSMSSandboxPhoneNumber(CreateSMSSandboxPhoneNumberRequest request) => throw new NotImplementedException();
         public DeleteSMSSandboxPhoneNumberResponse DeleteSMSSandboxPhoneNumber(DeleteSMSSandboxPhoneNumberRequest request) => throw new NotImplementedException();

@@ -832,6 +832,10 @@
             throw new NotImplementedException();
         }
 
+        public GetObjectAttributesResponse GetObjectAttributes(GetObjectAttributesRequest request) => throw new NotImplementedException();
+
+        public Task<GetObjectAttributesResponse> GetObjectAttributesAsync(GetObjectAttributesRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
+
         public GetObjectLegalHoldResponse GetObjectLegalHold(GetObjectLegalHoldRequest request)
         {
             throw new NotImplementedException();
