@@ -13,42 +13,35 @@
     {
         public QueueCache(IAmazonSQS sqsClient, Func<string, string> queueNameGenerator)
         {
-            queueNameToUrlCache = new ConcurrentDictionary<string, string>();
-            queueNameToPhysicalAddressCache = new ConcurrentDictionary<string, string>();
-            queueUrlToQueueArnCache = new ConcurrentDictionary<string, string>();
+            queueNameToUrlCache = new();
+            queueNameToPhysicalAddressCache = new();
+            queueUrlToQueueArnCache = new();
             this.sqsClient = sqsClient;
             this.queueNameGenerator = queueNameGenerator;
         }
 
-        public void SetQueueUrl(string queueName, string queueUrl) => queueNameToUrlCache.TryAdd(queueName, queueUrl);
+        public void SetQueueUrl(string queueName, string queueUrl) => queueNameToUrlCache.TryAdd(queueName, Task.FromResult(queueUrl));
 
         public string GetPhysicalQueueName(string queueName)
             => queueNameToPhysicalAddressCache.GetOrAdd(queueName, static (name, generator) => generator(name), queueNameGenerator);
 
-        public async ValueTask<string> GetQueueArn(string queueUrl, CancellationToken cancellationToken = default)
-        {
-            if (queueUrlToQueueArnCache.TryGetValue(queueUrl, out var queueArn))
+        public async ValueTask<string> GetQueueArn(string queueUrl, CancellationToken cancellationToken = default) =>
+            await queueUrlToQueueArnCache.GetOrAdd(queueUrl, static async (queueUrl, sqsClient) =>
             {
-                return queueArn;
-            }
+                var queueAttributes = await sqsClient.GetAttributesAsync(queueUrl)
+                    .ConfigureAwait(false);
+                return queueAttributes["QueueArn"];
+            }, sqsClient).ConfigureAwait(false);
 
-            var queueAttributes = await sqsClient.GetAttributesAsync(queueUrl).ConfigureAwait(false);
-            return queueUrlToQueueArnCache.AddOrUpdate(queueUrl, queueAttributes["QueueArn"], (key, value) => value);
-        }
-
-        public async ValueTask<string> GetQueueUrl(string queueName, CancellationToken cancellationToken = default)
-        {
-            if (queueNameToUrlCache.TryGetValue(queueName, out var queueUrl))
+        public async ValueTask<string> GetQueueUrl(string queueName, CancellationToken cancellationToken = default) =>
+            await queueNameToUrlCache.GetOrAdd(queueName, static async (queueName, state) =>
             {
-                return queueUrl;
-            }
-
-            var physicalQueueName = GetPhysicalQueueName(queueName);
-            var response = await sqsClient.GetQueueUrlAsync(physicalQueueName, cancellationToken)
-                .ConfigureAwait(false);
-            queueUrl = response.QueueUrl;
-            return queueNameToUrlCache.AddOrUpdate(queueName, queueUrl, static (_, value) => value);
-        }
+                var (@this, cancellationToken) = state;
+                var physicalQueueName = @this.GetPhysicalQueueName(queueName);
+                var response = await @this.sqsClient.GetQueueUrlAsync(physicalQueueName, cancellationToken)
+                    .ConfigureAwait(false);
+                return response.QueueUrl;
+            }, (this, cancellationToken)).ConfigureAwait(false);
 
         public static string GetSqsQueueName(string destination, string queueNamePrefix)
         {
@@ -115,9 +108,12 @@
 #endif
         }
 
-        readonly ConcurrentDictionary<string, string> queueNameToUrlCache;
+        // Caching the task to make sure during concurrent operations we are not overwhelming metadata fetching
+        // These values do not require lazy like in Subscription and TopicCache because the used APIs do not
+        // have restrictions like SNS.
+        readonly ConcurrentDictionary<string, Task<string>> queueNameToUrlCache;
+        readonly ConcurrentDictionary<string, Task<string>> queueUrlToQueueArnCache;
         readonly ConcurrentDictionary<string, string> queueNameToPhysicalAddressCache;
-        readonly ConcurrentDictionary<string, string> queueUrlToQueueArnCache;
         readonly IAmazonSQS sqsClient;
         readonly Func<string, string> queueNameGenerator;
     }
