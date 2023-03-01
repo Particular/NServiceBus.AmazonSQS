@@ -1,5 +1,6 @@
 ﻿namespace NServiceBus.Transport.SQS.Tests
 {
+    using System;
     using Amazon.Runtime;
     using Amazon.S3;
     using Amazon.SimpleNotificationService;
@@ -7,24 +8,27 @@
 
     public static class ClientFactories
     {
-        public static IAmazonSQS CreateSqsClient()
+        public static IAmazonSQS CreateSqsClient(Action<AmazonSQSConfig> configure = default)
         {
             var credentials = new EnvironmentVariablesAWSCredentials();
             var config = Create<AmazonSQSConfig>();
+            configure?.Invoke(config);
             return new AmazonSQSClient(credentials, config);
         }
 
-        public static IAmazonSimpleNotificationService CreateSnsClient()
+        public static IAmazonSimpleNotificationService CreateSnsClient(Action<AmazonSimpleNotificationServiceConfig> configure = default)
         {
             var credentials = new EnvironmentVariablesAWSCredentials();
             var config = Create<AmazonSimpleNotificationServiceConfig>();
+            configure?.Invoke(config);
             return new AmazonSimpleNotificationServiceClient(credentials, config);
         }
 
-        public static IAmazonS3 CreateS3Client()
+        public static IAmazonS3 CreateS3Client(Action<AmazonS3Config> configure = default)
         {
             var credentials = new EnvironmentVariablesAWSCredentials();
             var config = Create<AmazonS3Config>();
+            configure?.Invoke(config);
             return new AmazonS3Client(credentials, config);
         }
 
