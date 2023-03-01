@@ -1,4 +1,3 @@
-#nullable enable
 namespace NServiceBus.Transport.SQS
 {
     using System;
@@ -13,14 +12,14 @@ namespace NServiceBus.Transport.SQS
 
     class TopicCache
     {
-        sealed class TopicCacheItem
+        class TopicCacheItem
         {
-            public Topic? Topic { get; set; }
+            public Topic Topic { get; set; }
 
             public DateTime CreatedOn { get; } = DateTime.UtcNow;
         }
 
-        public TopicCache(IAmazonSimpleNotificationService snsClient, IReadOnlySettings? settings, EventToTopicsMappings eventToTopicsMappings, EventToEventsMappings eventToEventsMappings, Func<Type, string, string> topicNameGenerator, string topicNamePrefix)
+        public TopicCache(IAmazonSimpleNotificationService snsClient, IReadOnlySettings settings, EventToTopicsMappings eventToTopicsMappings, EventToEventsMappings eventToEventsMappings, Func<Type, string, string> topicNameGenerator, string topicNamePrefix)
         {
             this.topicNameGenerator = topicNameGenerator;
             this.topicNamePrefix = topicNamePrefix;
@@ -41,10 +40,9 @@ namespace NServiceBus.Transport.SQS
 
         public EventToTopicsMappings CustomEventToTopicsMappings { get; }
 
-        public async ValueTask<string?> GetTopicArn(Type eventType, CancellationToken cancellationToken = default)
+        public Task<string> GetTopicArn(Type eventType, CancellationToken cancellationToken = default)
         {
-            var topic = await GetAndCacheTopicIfFound(eventType, cancellationToken).ConfigureAwait(false);
-            return topic?.TopicArn;
+            return GetAndCacheTopicIfFound(eventType, cancellationToken).ContinueWith(t => t.Result?.TopicArn);
         }
 
         public string GetTopicName(Type messageType)
@@ -56,80 +54,85 @@ namespace NServiceBus.Transport.SQS
 
             return topicNameCache.GetOrAdd(messageType, topicNameGenerator(messageType, topicNamePrefix));
         }
-        public ValueTask<Topic?> GetTopic(Type eventType, CancellationToken cancellationToken = default)
-            => GetAndCacheTopicIfFound(eventType, cancellationToken);
-
-        async ValueTask<Topic?> GetAndCacheTopicIfFound(Type messageType, CancellationToken cancellationToken)
+        public Task<Topic> GetTopic(Type eventType, CancellationToken cancellationToken = default)
         {
-            if (Logger.IsDebugEnabled)
-            {
-                Logger.Debug($"Performing topic cache lookup for '{messageType}'.");
-            }
-
-            var lazyCacheItem = topicCache.AddOrUpdate(messageType,
-                static (type, @this) => @this.CreateLazyCacheItem(type),
-                static (messageType, existingLazyCacheItem, @this) =>
-            {
-                // if nothing has been materialized yet it is safe to return the existing entry because it will be fresh
-                if (!existingLazyCacheItem.IsValueCreated)
-                {
-                    return existingLazyCacheItem;
-                }
-
-                // if something failed it is probably better to try again.
-                if (existingLazyCacheItem.Value is { Status: TaskStatus.Canceled or TaskStatus.Faulted })
-                {
-                    return @this.CreateLazyCacheItem(messageType);
-                }
-
-                // since the value is created there is nothing to await and thus it is safe to synchronously access the value
-                var topicCacheItem = existingLazyCacheItem.GetAwaiter().GetResult();
-                if (topicCacheItem.Topic == null && topicCacheItem.CreatedOn.Add(@this.notFoundTopicsCacheTTL) < DateTime.UtcNow)
-                {
-                    if (Logger.IsDebugEnabled)
-                    {
-                        Logger.Debug($"Removing topic '<null>' with key '{messageType}' from cache: TTL expired.");
-                    }
-                    return @this.CreateLazyCacheItem(messageType);
-                }
-
-                if (Logger.IsDebugEnabled)
-                {
-                    Logger.Debug($"Returning topic for '{messageType}' from cache. Topic '{topicCacheItem.Topic?.TopicArn ?? "<null>"}'.");
-                }
-                return existingLazyCacheItem;
-            }, this);
-
-            return (await lazyCacheItem.ConfigureAwait(false)).Topic;
+            return GetAndCacheTopicIfFound(eventType, cancellationToken);
         }
 
-        // Deliberately uses a task instead of value task because tasks can be awaited multiple times while value tasks should not be
-        AsyncCacheLazy<TopicCacheItem> CreateLazyCacheItem(Type messageType) =>
-            new(async () =>
+        bool TryGetTopicFromCache(Type messageType, out Topic topic)
+        {
+            if (topicCache.TryGetValue(messageType, out var topicCacheItem))
             {
-                if (Logger.IsDebugEnabled)
+                if (topicCacheItem.Topic == null && topicCacheItem.CreatedOn.Add(notFoundTopicsCacheTTL) < DateTime.UtcNow)
                 {
-                    Logger.Debug($"Topic for '{messageType}' not found in cache.");
+                    Logger.Debug($"Removing topic '<null>' with key '{messageType}' from cache: TTL expired.");
+                    _ = topicCache.TryRemove(messageType, out _);
+                }
+                else
+                {
+                    Logger.Debug($"Returning topic for '{messageType}' from cache. Topic '{topicCacheItem.Topic?.TopicArn ?? "<null>"}'.");
+                    topic = topicCacheItem.Topic;
+                    return true;
+                }
+            }
+
+            topic = null;
+            return false;
+        }
+
+#pragma warning disable PS0004 // A parameter of type CancellationToken on a private delegate or method should be required
+        async Task<Topic> GetAndCacheTopicIfFound(Type messageType, CancellationToken cancellationToken = default)
+#pragma warning restore PS0004 // A parameter of type CancellationToken on a private delegate or method should be required
+        {
+            Logger.Debug($"Performing first Topic cache lookup for '{messageType}'.");
+            if (TryGetTopicFromCache(messageType, out var cachedTopic))
+            {
+                return cachedTopic;
+            }
+
+            Logger.Debug($"Topic for '{messageType}' not found in cache.");
+
+            var foundTopic = await snsListTopicsRateLimiter.Execute(async () =>
+            {
+                /*
+                 * Rate limiter serializes requests, only 1 thread is allowed per
+                 * rate limiter. Before trying to reach out to SNS we do another
+                 * cache lookup
+                 */
+                Logger.Debug($"Performing second Topic cache lookup for '{messageType}'.");
+                if (TryGetTopicFromCache(messageType, out var cachedValue))
+                {
+                    return cachedValue;
                 }
 
                 var topicName = GetTopicName(messageType);
+                Logger.Debug($"Finding topic '{topicName}' using 'ListTopics' SNS API.");
 
-                if (Logger.IsDebugEnabled)
-                {
-                    Logger.Debug($"Finding topic '{topicName}' using 'ListTopics' SNS API.");
-                }
+                return await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
+            }).ConfigureAwait(false);
 
-                var topic = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
-                return new TopicCacheItem { Topic = topic };
-            });
+            //We cache also null/not found topics, they'll be wiped
+            //from the cache at lookup time based on the configured TTL
+            var added = topicCache.TryAdd(messageType, new TopicCacheItem { Topic = foundTopic });
+            if (added)
+            {
+                Logger.Debug($"Added topic '{foundTopic?.TopicArn ?? "<null>"}' to cache. Cache items count: {topicCache.Count}.");
+            }
+            else
+            {
+                Logger.Debug($"Topic already present in cache. Topic '{foundTopic?.TopicArn ?? "<null>"}'. Cache items count: {topicCache.Count}.");
+            }
 
-        readonly IAmazonSimpleNotificationService snsClient;
-        readonly ConcurrentDictionary<Type, AsyncCacheLazy<TopicCacheItem>> topicCache = new();
-        readonly ConcurrentDictionary<Type, string> topicNameCache = new();
+            return foundTopic;
+        }
+
+        IAmazonSimpleNotificationService snsClient;
+        ConcurrentDictionary<Type, TopicCacheItem> topicCache = new ConcurrentDictionary<Type, TopicCacheItem>();
+        ConcurrentDictionary<Type, string> topicNameCache = new ConcurrentDictionary<Type, string>();
+        static ILog Logger = LogManager.GetLogger(typeof(TopicCache));
         readonly Func<Type, string, string> topicNameGenerator;
         readonly string topicNamePrefix;
         readonly TimeSpan notFoundTopicsCacheTTL;
-
-        static readonly ILog Logger = LogManager.GetLogger(typeof(TopicCache));
+        readonly SnsListTopicsRateLimiter snsListTopicsRateLimiter = new SnsListTopicsRateLimiter();
     }
 }

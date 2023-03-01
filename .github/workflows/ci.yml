@@ -22,7 +22,7 @@ jobs:
         os:
           - { platform: windows-2019, name: Windows }
           - { platform: ubuntu-20.04, name: Linux }
-        framework: [ net472, net6.0, net7.0 ]
+        framework: [ net472, net6.0 ]
         exclude:
           - os: { name: Linux }
             framework: net472
