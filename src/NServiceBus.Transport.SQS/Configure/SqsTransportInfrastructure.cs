@@ -24,7 +24,7 @@
             coreSettings = hostSettings.CoreSettings;
             s3Client = s3Settings?.S3Client;
             setupInfrastructure = hostSettings.SetupInfrastructure;
-            shouldDisposeS3Client = s3Settings != null && s3Settings.ShouldDisposeS3Client;
+            shouldDisposeS3Client = s3Settings is { ShouldDisposeS3Client: true };
             Receivers = receiverSettings
                 .Select(receiverSetting => CreateMessagePump(receiverSetting, sqsClient, snsClient, queueCache, topicCache, s3Settings, policySettings, queueDelayTimeSeconds, topicNamePrefix, hostSettings.CriticalErrorAction))
                 .ToDictionary(x => x.Id, x => x);
