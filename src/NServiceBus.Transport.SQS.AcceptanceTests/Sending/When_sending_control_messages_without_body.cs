@@ -1,4 +1,4 @@
-﻿namespace NServiceBus.AcceptanceTests
+﻿namespace NServiceBus.AcceptanceTests.Sending
 {
     using System;
     using System.Collections.Generic;
@@ -38,7 +38,7 @@
                 EndpointSetup<DefaultServer>(cfg => cfg.ConfigureSqsTransport().DoNotWrapOutgoingMessages = true);
             }
 
-            class DispatchControlMessageAtStartup : Features.Feature
+            class DispatchControlMessageAtStartup : Feature
             {
                 public DispatchControlMessageAtStartup()
                 {
@@ -98,7 +98,7 @@
                 EndpointSetup<DefaultServer>();
             }
 
-            public class DoTheThing : Features.Feature
+            public class DoTheThing : Feature
             {
                 public DoTheThing()
                 {
