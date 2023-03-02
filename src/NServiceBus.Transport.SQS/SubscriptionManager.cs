@@ -15,7 +15,7 @@ namespace NServiceBus.Transport.SQS
 
     class SubscriptionManager : ISubscriptionManager
     {
-        public SubscriptionManager(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, TopicCache topicCache, PolicySettings policySettings, string topicNamePrefix)
+        public SubscriptionManager(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, TopicCache topicCache, PolicySettings policySettings, string topicNamePrefix, bool setupInfrastructure = true)
         {
             this.topicCache = topicCache;
             this.policySettings = policySettings;
@@ -24,6 +24,7 @@ namespace NServiceBus.Transport.SQS
             this.sqsClient = sqsClient;
             this.snsClient = snsClient;
             this.queueName = queueName;
+            this.setupInfrastructure = setupInfrastructure;
         }
 
         public async Task SubscribeAll(MessageMetadata[] eventTypes, ContextBag context, CancellationToken cancellationToken = default)
@@ -131,32 +132,39 @@ namespace NServiceBus.Transport.SQS
             {
                 Logger.Debug($"Getting or creating topic '{topicName}' for queue '{queueName}");
             }
-            var createTopicResponse = await snsClient.CreateTopicAsync(topicName, cancellationToken).ConfigureAwait(false);
+
+            string topicArn;
+            if (setupInfrastructure)
+            {
+                var createTopicResponse = await snsClient.CreateTopicAsync(topicName, cancellationToken).ConfigureAwait(false);
+                topicArn = createTopicResponse.TopicArn;
+            }
+            else
+            {
+                var getTopicResponse = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
+                if (!string.IsNullOrEmpty(getTopicResponse?.TopicArn))
+                {
+                    topicArn = getTopicResponse.TopicArn;
+                }
+                else
+                {
+                    throw new Exception($"Topic {topicName} not found. Call endpointConfiguration.EnableInstallers() to create the topic at startup, or create them manually.");
+                }
+            }
 
             if (Logger.IsDebugEnabled)
             {
-                Logger.Debug($"Got or created topic '{topicName}' with arn '{createTopicResponse.TopicArn}' for queue '{queueName}");
+                Logger.Debug($"Got or created topic '{topicName}' with arn '{topicArn}' for queue '{queueName}");
             }
 
-            await SubscribeTo(createTopicResponse.TopicArn, topicName, queueUrl, policyStatementsToBeSettled, cancellationToken).ConfigureAwait(false);
+            await SubscribeTo(topicArn, topicName, queueUrl, policyStatementsToBeSettled, cancellationToken).ConfigureAwait(false);
         }
 
-        async Task CreateTopicAndSubscribe(Type eventType, string queueUrl, ConcurrentBag<PolicyStatement> policyStatementsToBeSettled, CancellationToken cancellationToken)
+        Task CreateTopicAndSubscribe(Type eventType, string queueUrl, ConcurrentBag<PolicyStatement> policyStatementsToBeSettled, CancellationToken cancellationToken)
         {
             var topicName = topicCache.GetTopicName(eventType);
 
-            if (Logger.IsDebugEnabled)
-            {
-                Logger.Debug($"Getting or creating topic '{topicName}' for queue '{queueName}");
-            }
-            var createTopicResponse = await snsClient.CreateTopicAsync(topicName, cancellationToken).ConfigureAwait(false);
-
-            if (Logger.IsDebugEnabled)
-            {
-                Logger.Debug($"Got or created topic '{topicName}' with arn '{createTopicResponse.TopicArn}' for queue '{queueName}");
-            }
-
-            await SubscribeTo(createTopicResponse.TopicArn, topicName, queueUrl, policyStatementsToBeSettled, cancellationToken).ConfigureAwait(false);
+            return CreateTopicAndSubscribe(topicName, queueUrl, policyStatementsToBeSettled, cancellationToken);
         }
 
         async ValueTask SubscribeTo(string topicArn, string topicName, string queueUrl, ConcurrentBag<PolicyStatement> policyStatementsToBeSettled, CancellationToken cancellationToken)
@@ -283,6 +291,8 @@ namespace NServiceBus.Transport.SQS
         readonly IAmazonSQS sqsClient;
         readonly IAmazonSimpleNotificationService snsClient;
         readonly string queueName;
+        readonly bool setupInfrastructure;
+
         readonly TopicCache topicCache;
         readonly PolicySettings policySettings;
         readonly string topicNamePrefix;

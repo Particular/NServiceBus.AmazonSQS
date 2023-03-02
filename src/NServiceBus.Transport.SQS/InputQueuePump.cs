@@ -28,7 +28,8 @@ namespace NServiceBus.Transport.SQS
             S3Settings s3Settings,
             SubscriptionManager subscriptionManager,
             Action<string, Exception, CancellationToken> criticalErrorAction,
-            IReadOnlySettings coreSettings)
+            IReadOnlySettings coreSettings,
+            bool setupInfrastructure = true)
         {
             this.sqsClient = sqsClient;
             this.queueCache = queueCache;
@@ -41,10 +42,29 @@ namespace NServiceBus.Transport.SQS
             Subscriptions = subscriptionManager;
 
             this.coreSettings = coreSettings;
+            this.setupInfrastructure = setupInfrastructure;
         }
 
         public async Task Initialize(PushRuntimeSettings limitations, OnMessage onMessage, OnError onError, CancellationToken cancellationToken = default)
         {
+            try
+            {
+                inputQueueUrl = await queueCache.GetQueueUrl(ReceiveAddress, cancellationToken).ConfigureAwait(false);
+            }
+            catch (QueueDoesNotExistException ex)
+            {
+                var msg = setupInfrastructure
+                    ? $"Queue `{ReceiveAddress}` doesn't exist. Ensure this process has the required permissions to create queues on Amazon SQS."
+                    : $"Queue `{ReceiveAddress}` doesn't exist. Call endpointConfiguration.EnableInstallers() to create the queues at startup, or create them manually.";
+                throw new QueueDoesNotExistException(
+                        msg,
+                        ex,
+                        ex.ErrorType,
+                        ex.ErrorCode,
+                        ex.RequestId,
+                        ex.StatusCode);
+            }
+
             inputQueueUrl = await queueCache.GetQueueUrl(ReceiveAddress, cancellationToken)
                 .ConfigureAwait(false);
             errorQueueUrl = await queueCache.GetQueueUrl(errorQueueAddress, cancellationToken)
@@ -590,6 +610,8 @@ namespace NServiceBus.Transport.SQS
         readonly S3Settings s3Settings;
         readonly Action<string, Exception, CancellationToken> criticalErrorAction;
         readonly IReadOnlySettings coreSettings;
+        readonly bool setupInfrastructure;
+
         readonly JsonSerializerOptions transportMessageSerializerOptions = new()
         {
             TypeInfoResolver = TransportMessageSerializerContext.Default
