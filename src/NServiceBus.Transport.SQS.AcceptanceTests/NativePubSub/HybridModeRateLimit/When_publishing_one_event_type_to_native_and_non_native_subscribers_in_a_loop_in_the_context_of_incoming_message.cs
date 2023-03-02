@@ -11,6 +11,7 @@
     using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
+    using Transport.SQS.Tests;
     using Conventions = AcceptanceTesting.Customization.Conventions;
 
     public class When_publishing_one_event_type_to_native_and_non_native_subscribers_in_a_loop_in_the_context_of_incoming_message : NServiceBusAcceptanceTest
@@ -125,6 +126,13 @@
                 {
                     var subscriptionStorage = new TestingInMemorySubscriptionStorage();
                     c.UsePersistence<TestingInMemoryPersistence, StorageType.Subscriptions>().UseStorage(subscriptionStorage);
+
+#if NET
+                    // the default value is int.MaxValue which can lead to ephemeral port exhaustion due to the massive parallel publish
+                    // .NET Framework doesn't have that problem
+                    c.ConfigureSqsTransport().SqsClient = ClientFactories.CreateSqsClient(cfg => cfg.MaxConnectionsPerServer = 500);
+                    c.ConfigureSqsTransport().SnsClient = ClientFactories.CreateSnsClient(cfg => cfg.MaxConnectionsPerServer = 500);
+#endif
 
                     c.OnEndpointSubscribed<Context>((s, context) =>
                     {
