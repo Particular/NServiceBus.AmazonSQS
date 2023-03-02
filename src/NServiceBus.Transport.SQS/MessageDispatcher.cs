@@ -365,10 +365,19 @@ namespace NServiceBus.Transport.SQS
 
         string GetMessageBodyAndHeaders(OutgoingMessage outgoingMessage, out string headers)
         {
-            // blunt allocation heavy hack for now
-            var body = Encoding.UTF8.GetString(outgoingMessage.Body.ToArray());
             // probably think about how compact this should be?
             headers = SimpleJson.SerializeObject(outgoingMessage.Headers);
+
+            string body;
+            if (outgoingMessage.Body.Length == 0)
+            {
+                body = TransportMessage.EmptyMessage;
+            }
+            else
+            {
+                // blunt allocation heavy hack for now
+                body = Encoding.UTF8.GetString(outgoingMessage.Body.ToArray());
+            }
 
             return body;
         }

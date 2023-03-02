@@ -776,6 +776,44 @@
             Approver.Verify(request);
         }
 
+        [Test]
+        [TestCase(true)]
+        [TestCase(false)]
+        public async Task Should_handle_empty_body_gracefully(bool wrapMessage)
+        {
+            var mockSqsClient = new MockSqsClient();
+            var settings = new SettingsHolder();
+            settings.Set(SettingsKeys.DoNotWrapOutgoingMessages, !wrapMessage);
+
+            var transportConfiguration = new TransportConfiguration(settings);
+
+            var dispatcher = new MessageDispatcher(transportConfiguration, null, mockSqsClient, null, new QueueCache(mockSqsClient, transportConfiguration), null, wrapOutgoingMessages: wrapMessage);
+
+            var messageid = Guid.NewGuid().ToString();
+
+            var transportOperations = new TransportOperations(
+                new TransportOperation(
+                    new OutgoingMessage(
+                        messageid,
+                        new Dictionary<string, string>
+                        {
+                            [Headers.MessageId] = messageid
+                        },
+                        Array.Empty<byte>()
+                        ),
+                    new UnicastAddressTag("Somewhere"))
+                );
+            var transportTransaction = new TransportTransaction();
+
+            await dispatcher.Dispatch(transportOperations, transportTransaction, new ContextBag());
+
+            Assert.IsNotEmpty(mockSqsClient.BatchRequestsSent, "No requests sent");
+            var batch = mockSqsClient.BatchRequestsSent.First();
+            var request = batch.Entries.First();
+
+            Assert.That(request.MessageBody, Is.Not.Null.Or.Empty);
+        }
+
         interface IEvent { }
 
         interface IMyEvent : IEvent { }
