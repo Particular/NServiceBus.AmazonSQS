@@ -14,6 +14,7 @@ namespace NServiceBus.Transport.SQS.Tests
     class MockSnsClient : IAmazonSimpleNotificationService
     {
         public List<string> UnsubscribeRequests = new List<string>();
+        public bool DisposeInvoked { get; private set; }
 
         public Task<UnsubscribeResponse> UnsubscribeAsync(string subscriptionArn, CancellationToken cancellationToken = new CancellationToken())
         {
@@ -103,7 +104,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            DisposeInvoked = true;
         }
 
         public IClientConfig Config { get; }

@@ -15,6 +15,8 @@
 
         public Func<PutObjectRequest, PutObjectResponse> PutObjectRequestResponse = req => new PutObjectResponse();
 
+        public bool DisposeInvoked { get; private set; }
+
         public Task<PutObjectResponse> PutObjectAsync(PutObjectRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             PutObjectRequestsSent.Add(request);
@@ -55,7 +57,7 @@
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            DisposeInvoked = true;
         }
 
         public string GeneratePreSignedURL(string bucketName, string objectKey, DateTime expiration, IDictionary<string, object> additionalProperties)
