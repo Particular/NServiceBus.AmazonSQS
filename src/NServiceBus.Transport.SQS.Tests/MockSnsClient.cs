@@ -74,6 +74,17 @@ namespace NServiceBus.Transport.SQS.Tests
             return Task.FromResult(SubscribeResponse(request));
         }
 
+        public List<PublishBatchRequest> BatchRequestsPublished { get; } = new List<PublishBatchRequest>();
+
+        public Func<PublishBatchRequest, PublishBatchResponse> BatchRequestResponse = req => new PublishBatchResponse();
+
+        public Task<PublishBatchResponse> PublishBatchAsync(PublishBatchRequest request, CancellationToken cancellationToken = default)
+        {
+            BatchRequestsPublished.Add(request);
+            return Task.FromResult(BatchRequestResponse(request));
+        }
+
+
         public bool DisposeInvoked { get; private set; }
 
         public void Dispose() => DisposeInvoked = true;
@@ -647,7 +658,6 @@ namespace NServiceBus.Transport.SQS.Tests
         public VerifySMSSandboxPhoneNumberResponse VerifySMSSandboxPhoneNumber(VerifySMSSandboxPhoneNumberRequest request) => throw new NotImplementedException();
         public Task<VerifySMSSandboxPhoneNumberResponse> VerifySMSSandboxPhoneNumberAsync(VerifySMSSandboxPhoneNumberRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public PublishBatchResponse PublishBatch(PublishBatchRequest request) => throw new NotImplementedException();
-        public Task<PublishBatchResponse> PublishBatchAsync(PublishBatchRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public GetDataProtectionPolicyResponse GetDataProtectionPolicy(GetDataProtectionPolicyRequest request) => throw new NotImplementedException();
         public Task<GetDataProtectionPolicyResponse> GetDataProtectionPolicyAsync(GetDataProtectionPolicyRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public PutDataProtectionPolicyResponse PutDataProtectionPolicy(PutDataProtectionPolicyRequest request) => throw new NotImplementedException();

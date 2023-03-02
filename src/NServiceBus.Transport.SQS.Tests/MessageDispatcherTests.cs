@@ -431,6 +431,37 @@
         }
 
         [Test]
+        public async Task Should_batch_non_isolated_multicast_operations()
+        {
+            var mockSnsClient = new MockSnsClient();
+
+            var dispatcher = new MessageDispatcher(new SettingsHolder(), null, mockSnsClient, new QueueCache(null,
+                dest => QueueCache.GetSqsQueueName(dest, "")),
+                new TopicCache(mockSnsClient, new SettingsHolder(), new EventToTopicsMappings(), new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""), null, 15 * 60, true);
+
+            var transportOperations = new TransportOperations(
+                new TransportOperation(
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new MulticastAddressTag(typeof(Event)),
+                    new DispatchProperties(),
+                    DispatchConsistency.Default),
+                new TransportOperation(
+                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new MulticastAddressTag(typeof(AnotherEvent)),
+                    new DispatchProperties(),
+                    DispatchConsistency.Default));
+
+            var transportTransaction = new TransportTransaction();
+
+            await dispatcher.Dispatch(transportOperations, transportTransaction);
+
+            Assert.IsEmpty(mockSnsClient.PublishedEvents);
+            Assert.AreEqual(2, mockSnsClient.BatchRequestsPublished.Count);
+            Assert.AreEqual("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-MessageDispatcherTests-Event", mockSnsClient.BatchRequestsPublished.ElementAt(0).TopicArn);
+            Assert.AreEqual("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-MessageDispatcherTests-AnotherEvent", mockSnsClient.BatchRequestsPublished.ElementAt(1).TopicArn);
+        }
+
+        [Test]
         public void Should_raise_queue_does_not_exists_for_delayed_delivery_for_non_isolated_dispatch()
         {
             var mockSqsClient = new MockSqsClient

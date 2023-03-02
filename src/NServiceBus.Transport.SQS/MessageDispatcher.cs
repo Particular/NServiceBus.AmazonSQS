@@ -48,11 +48,26 @@
 
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, CancellationToken cancellationToken = default)
         {
-            var concurrentDispatchTasks = new List<Task>(3);
+            var concurrentDispatchTasks = new List<Task>(4);
 
             // in order to not enumerate multi cast operations multiple times this code assumes the hashset is filled on the synchronous path of the async method!
             var multicastEventsMessageIdsToType = new Dictionary<string, Type>();
-            concurrentDispatchTasks.Add(DispatchMulticast(outgoingMessages.MulticastTransportOperations, multicastEventsMessageIdsToType, cancellationToken));
+
+            foreach (var dispatchConsistencyGroup in outgoingMessages.MulticastTransportOperations
+                         .GroupBy(o => o.RequiredDispatchConsistency))
+            {
+                switch (dispatchConsistencyGroup.Key)
+                {
+                    case DispatchConsistency.Isolated:
+                        concurrentDispatchTasks.Add(PublishIsolated(dispatchConsistencyGroup, multicastEventsMessageIdsToType, cancellationToken));
+                        break;
+                    case DispatchConsistency.Default:
+                        concurrentDispatchTasks.Add(PublishBatched(dispatchConsistencyGroup, multicastEventsMessageIdsToType, cancellationToken));
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
 
             foreach (var dispatchConsistencyGroup in outgoingMessages.UnicastTransportOperations
                 .GroupBy(o => o.RequiredDispatchConsistency))
@@ -81,17 +96,40 @@
             }
         }
 
-        Task DispatchMulticast(List<MulticastTransportOperation> multicastTransportOperations, Dictionary<string, Type> multicastEventsMessageIdsToType, CancellationToken cancellationToken)
+        Task PublishIsolated(IEnumerable<MulticastTransportOperation> isolatedTransportOperations, Dictionary<string, Type> multicastEventsMessageIdsToType, CancellationToken cancellationToken)
         {
             List<Task> tasks = null;
-            foreach (var operation in multicastTransportOperations)
+            foreach (var operation in isolatedTransportOperations)
             {
                 multicastEventsMessageIdsToType.Add(operation.Message.MessageId, operation.MessageType);
-                tasks ??= new List<Task>(multicastTransportOperations.Count);
-                tasks.Add(Dispatch(operation, cancellationToken));
+                tasks ??= new List<Task>();
+                tasks.Add(Publish(operation, cancellationToken));
             }
 
             return tasks != null ? Task.WhenAll(tasks) : Task.CompletedTask;
+        }
+
+        async Task PublishBatched(IEnumerable<MulticastTransportOperation> multicastTransportOperations, Dictionary<string, Type> multicastEventsMessageIdsToType, CancellationToken cancellationToken)
+        {
+            var tasks = new List<Task<SnsPreparedMessage>>();
+            foreach (var operation in multicastTransportOperations)
+            {
+                multicastEventsMessageIdsToType.Add(operation.Message.MessageId, operation.MessageType);
+                tasks.Add(PrepareMessage(operation, cancellationToken));
+            }
+
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+
+            var batches = SnsPreparedMessageBatcher.Batch(tasks.Select(x => x.Result).Where(x => x != null));
+
+            var operationCount = batches.Count;
+            var batchTasks = new Task[operationCount];
+            for (var i = 0; i < operationCount; i++)
+            {
+                batchTasks[i] = SendBatch(batches[i], i + 1, operationCount, cancellationToken);
+            }
+
+            await Task.WhenAll(batchTasks).ConfigureAwait(false);
         }
 
         Task DispatchIsolated(IEnumerable<UnicastTransportOperation> isolatedTransportOperations, Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction, CancellationToken cancellationToken)
@@ -189,11 +227,65 @@
             }
         }
 
-        async Task Dispatch(MulticastTransportOperation transportOperation, CancellationToken cancellationToken)
+        async Task SendBatch(SnsBatchEntry batch, int batchNumber, int totalBatches, CancellationToken cancellationToken)
+        {
+            try
+            {
+                if (Logger.IsDebugEnabled)
+                {
+                    var message = batch.PreparedMessagesBydId.Values.First();
+
+                    Logger.Debug($"Publishing batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
+                }
+
+                var result = await snsClient.PublishBatchAsync(batch.BatchRequest, cancellationToken).ConfigureAwait(false);
+
+                if (Logger.IsDebugEnabled)
+                {
+                    var message = batch.PreparedMessagesBydId.Values.First();
+
+                    Logger.Debug($"Published batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
+                }
+
+                List<Task> redispatchTasks = null;
+                foreach (var errorEntry in result.Failed)
+                {
+                    redispatchTasks ??= new List<Task>(result.Failed.Count);
+                    var messageToRetry = batch.PreparedMessagesBydId[errorEntry.Id];
+                    Logger.Info($"Republishing message with MessageId {messageToRetry.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
+                    redispatchTasks.Add(PublishForBatch(messageToRetry, batchNumber, totalBatches, cancellationToken));
+                }
+
+                if (redispatchTasks != null)
+                {
+                    await Task.WhenAll(redispatchTasks).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex) when (!ex.IsCausedBy(cancellationToken))
+            {
+                var message = batch.PreparedMessagesBydId.Values.First();
+
+                Logger.Error($"Error while publishing batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'", ex);
+                throw;
+            }
+        }
+
+        async Task PublishForBatch(SnsPreparedMessage message, int batchNumber, int totalBatches, CancellationToken cancellationToken)
+        {
+            await PublishMessage(message, cancellationToken).ConfigureAwait(false);
+            Logger.Info($"Republished message with MessageId {message.MessageId} that failed in batch '{batchNumber}/{totalBatches}'.");
+        }
+
+        async Task Publish(MulticastTransportOperation transportOperation, CancellationToken cancellationToken)
         {
             var message = await PrepareMessage(transportOperation, cancellationToken)
                 .ConfigureAwait(false);
 
+            await PublishMessage(message, cancellationToken).ConfigureAwait(false);
+        }
+
+        async Task PublishMessage(SnsPreparedMessage message, CancellationToken cancellationToken)
+        {
             if (message == null)
             {
                 return;
@@ -271,7 +363,7 @@
                 return null;
             }
 
-            var preparedMessage = new SqsPreparedMessage() { MessageId = transportOperation.Message.MessageId };
+            var preparedMessage = new SqsPreparedMessage { MessageId = transportOperation.Message.MessageId };
 
             await ApplyUnicastOperationMapping(transportOperation, preparedMessage, CalculateDelayedDeliverySeconds(transportOperation), GetNativeMessageAttributes(transportOperation, transportTransaction), cancellationToken).ConfigureAwait(false);
 
