@@ -35,7 +35,7 @@
         {
             public Sender()
             {
-                EndpointSetup<DefaultServer>();
+                EndpointSetup<DefaultServer>(cfg => cfg.ConfigureSqsTransport().DoNotWrapOutgoingMessages = true);
             }
 
             class DispatchControlMessageAtStartup : Features.Feature
