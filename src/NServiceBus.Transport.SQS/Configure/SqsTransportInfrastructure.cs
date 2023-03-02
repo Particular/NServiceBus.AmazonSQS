@@ -71,11 +71,11 @@
         readonly SqsTransport transportDefinition;
         readonly IAmazonSQS sqsClient;
         readonly IAmazonSimpleNotificationService snsClient;
-        readonly bool shouldDisposeSqsClient;
-        readonly bool shouldDisposeSnsClient;
         readonly IAmazonS3 s3Client;
         readonly IReadOnlySettings coreSettings;
         readonly bool setupInfrastructure;
+        readonly bool shouldDisposeSqsClient;
+        readonly bool shouldDisposeSnsClient;
         readonly bool shouldDisposeS3Client;
     }
 }
