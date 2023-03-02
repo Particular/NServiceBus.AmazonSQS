@@ -371,12 +371,21 @@
 
         (string, string) GetMessageBodyAndHeaders(OutgoingMessage outgoingMessage)
         {
+            string body;
+            if (outgoingMessage.Body.IsEmpty)
+            {
+                body = TransportMessage.EmptyMessage;
+            }
+            else
+            {
 #if NETFRAMEWORK
-            // blunt allocation heavy hack for now
-            var body = Encoding.UTF8.GetString(outgoingMessage.Body.ToArray());
+                // blunt allocation heavy hack for now
+                body = Encoding.UTF8.GetString(outgoingMessage.Body.ToArray());
 #else
-            var body = Encoding.UTF8.GetString(outgoingMessage.Body.Span);
+                body = Encoding.UTF8.GetString(outgoingMessage.Body.Span);
 #endif
+            }
+
             // probably think about how compact this should be?
             var headers = JsonSerializer.Serialize(outgoingMessage.Headers);
 
