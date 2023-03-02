@@ -55,7 +55,7 @@ namespace NServiceBus.Transport.SQS
             {
                 var msg = setupInfrastructure
                     ? $"Queue `{ReceiveAddress}` doesn't exist. Ensure this process has the required permissions to create queues on Amazon SQS."
-                    :  $"Queue `{ReceiveAddress}` doesn't exist. Call endpointConfiguration.EnableInstallers() to create the queues at startup, or create them manually.";
+                    : $"Queue `{ReceiveAddress}` doesn't exist. Call endpointConfiguration.EnableInstallers() to create the queues at startup, or create them manually.";
                 throw new QueueDoesNotExistException(
                         msg,
                         ex,
