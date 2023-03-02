@@ -783,8 +783,7 @@
         {
             var mockSqsClient = new MockSqsClient();
             var settings = new SettingsHolder();
-            settings.Set(SettingsKeys.V1CompatibilityMode, true);
-            settings.Set(SettingsKeys.DoNotWrapOutgoingMessages, wrapMessage);
+            settings.Set(SettingsKeys.DoNotWrapOutgoingMessages, !wrapMessage);
 
             var transportConfiguration = new TransportConfiguration(settings);
 
