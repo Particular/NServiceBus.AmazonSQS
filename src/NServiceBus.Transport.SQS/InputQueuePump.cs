@@ -53,11 +53,9 @@ namespace NServiceBus.Transport.SQS
             }
             catch (QueueDoesNotExistException ex)
             {
-                var msg = $"Queue `{ReceiveAddress}` doesn't exist. Call endpointConfiguration.EnableInstallers() to create the queues at startup, or create them manually.";
-                if (setupInfrastructure)
-                {
-                    msg = $"Queue `{ReceiveAddress}` doesn't exist. Ensure this process has the required permissions to create queues on Amazon SQS.";
-                }
+                var msg = setupInfrastructure
+                    ? $"Queue `{ReceiveAddress}` doesn't exist. Ensure this process has the required permissions to create queues on Amazon SQS."
+                    :  $"Queue `{ReceiveAddress}` doesn't exist. Call endpointConfiguration.EnableInstallers() to create the queues at startup, or create them manually.";
                 throw new QueueDoesNotExistException(
                         msg,
                         ex,
