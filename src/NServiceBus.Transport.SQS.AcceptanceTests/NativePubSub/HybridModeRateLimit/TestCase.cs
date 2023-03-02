@@ -25,7 +25,7 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
         static TimeSpan DefaultSubscriptionCacheTTL = TimeSpan.FromSeconds(5);
         static TimeSpan DefaultTopicCacheTTL = TimeSpan.FromSeconds(5);
         static int DefaultMessageVisibilityTimeout = 30;
-        static int DefaultDeployInfrastructureDelay = 60000;
+        static int DefaultDeployInfrastructureDelay = 65000;
         static bool DefaultPreDeployInfrastructure = true;
     }
 }
