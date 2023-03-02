@@ -14,12 +14,13 @@
     {
         public SqsTransportInfrastructure(SqsTransport transportDefinition, HostSettings hostSettings, ReceiveSettings[] receiverSettings, IAmazonSQS sqsClient,
             IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, S3Settings s3Settings, PolicySettings policySettings, int queueDelayTimeSeconds, string topicNamePrefix, bool v1Compatibility, bool doNotWrapOutgoingMessages,
-            bool shouldDisposeSqsAndSnsClients)
+            bool shouldDisposeSqsClient, bool shouldDisposeSnsClient)
         {
             this.transportDefinition = transportDefinition;
             this.sqsClient = sqsClient;
             this.snsClient = snsClient;
-            this.shouldDisposeSqsAndSnsClients = shouldDisposeSqsAndSnsClients;
+            this.shouldDisposeSqsClient = shouldDisposeSqsClient;
+            this.shouldDisposeSnsClient = shouldDisposeSnsClient;
             coreSettings = hostSettings.CoreSettings;
             s3Client = s3Settings?.S3Client;
             setupInfrastructure = hostSettings.SetupInfrastructure;
@@ -45,9 +46,13 @@
 
         public override Task Shutdown(CancellationToken cancellationToken = default)
         {
-            if (shouldDisposeSqsAndSnsClients)
+            if (shouldDisposeSqsClient)
             {
                 sqsClient.Dispose();
+            }
+
+            if (shouldDisposeSnsClient)
+            {
                 snsClient.Dispose();
             }
 
@@ -66,7 +71,8 @@
         readonly SqsTransport transportDefinition;
         readonly IAmazonSQS sqsClient;
         readonly IAmazonSimpleNotificationService snsClient;
-        readonly bool shouldDisposeSqsAndSnsClients;
+        readonly bool shouldDisposeSqsClient;
+        readonly bool shouldDisposeSnsClient;
         readonly IAmazonS3 s3Client;
         readonly IReadOnlySettings coreSettings;
         readonly bool setupInfrastructure;

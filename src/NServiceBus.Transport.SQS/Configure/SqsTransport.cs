@@ -21,12 +21,30 @@
         /// <summary>
         /// SQS client for the transport.
         /// </summary>
-        public IAmazonSQS SqsClient { get; internal set; } //For legacy API shim
+        public IAmazonSQS SqsClient
+        {
+            get => sqsClient;
+            //For legacy API shim
+            internal set
+            {
+                sqsClient = value;
+                externallyManagedSqsClient = value != null;
+            }
+        }
 
         /// <summary>
         /// SNS client for the transport.
         /// </summary>
-        public IAmazonSimpleNotificationService SnsClient { get; internal set; } //For legacy API shim
+        public IAmazonSimpleNotificationService SnsClient
+        {
+            get => snsClient;
+            //For legacy API shim
+            internal set
+            {
+                snsClient = value;
+                externallyManagedSnsClient = value != null;
+            }
+        }
 
         /// <summary>
         /// Specifies a string value that will be prepended to the name of every SQS queue
@@ -193,9 +211,10 @@
         public SqsTransport(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient)
             : base(TransportTransactionMode.ReceiveOnly, true, true, true)
         {
-            SqsClient = sqsClient;
-            SnsClient = snsClient;
-            externallyManagedSqsSnsClients = true;
+            this.sqsClient = sqsClient;
+            this.snsClient = snsClient;
+            externallyManagedSqsClient = true;
+            externallyManagedSnsClient = true;
         }
 
         /// <summary>
@@ -206,15 +225,15 @@
         public SqsTransport()
             : base(TransportTransactionMode.ReceiveOnly, true, true, true)
         {
-            SqsClient = new AmazonSQSClient(Create<AmazonSQSConfig>());
-            SnsClient = new AmazonSimpleNotificationServiceClient(Create<AmazonSimpleNotificationServiceConfig>());
+            sqsClient = new AmazonSQSClient(Create<AmazonSQSConfig>());
+            snsClient = new AmazonSimpleNotificationServiceClient(Create<AmazonSimpleNotificationServiceConfig>());
         }
 
         internal SqsTransport(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, bool supportsPublishSubscribe)
             : base(TransportTransactionMode.ReceiveOnly, true, supportsPublishSubscribe, true)
         {
-            SqsClient = sqsClient;
-            SnsClient = snsClient;
+            this.sqsClient = sqsClient;
+            this.snsClient = snsClient;
         }
 
         /// <summary>
@@ -226,7 +245,7 @@
         public override async Task<TransportInfrastructure> Initialize(HostSettings hostSettings, ReceiveSettings[] receivers, string[] sendingAddresses, CancellationToken cancellationToken = default)
         {
             var topicCache = new TopicCache(SnsClient, hostSettings.CoreSettings, eventToTopicsMappings, eventToEventsMappings, topicNameGenerator, topicNamePrefix);
-            var infra = new SqsTransportInfrastructure(this, hostSettings, receivers, SqsClient, SnsClient, QueueCache, topicCache, S3, Policies, QueueDelayTime, topicNamePrefix, EnableV1CompatibilityMode, DoNotWrapOutgoingMessages, !externallyManagedSqsSnsClients);
+            var infra = new SqsTransportInfrastructure(this, hostSettings, receivers, SqsClient, SnsClient, QueueCache, topicCache, S3, Policies, QueueDelayTime, topicNamePrefix, EnableV1CompatibilityMode, DoNotWrapOutgoingMessages, !externallyManagedSqsClient, !externallyManagedSnsClient);
 
             if (hostSettings.SetupInfrastructure)
             {
@@ -281,6 +300,9 @@
 
         static readonly TimeSpan MaxTimeToLiveUpperBound = TimeSpan.FromDays(14);
         static readonly TimeSpan MaxTimeToLiveLowerBound = TimeSpan.FromSeconds(60);
-        readonly bool externallyManagedSqsSnsClients;
+        IAmazonSQS sqsClient;
+        IAmazonSimpleNotificationService snsClient;
+        bool externallyManagedSqsClient;
+        bool externallyManagedSnsClient;
     }
 }
