@@ -5,7 +5,6 @@
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Amazon.Runtime;
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
     using Transport;
@@ -223,8 +222,8 @@
         public SqsTransport()
             : base(TransportTransactionMode.ReceiveOnly, true, true, true)
         {
-            sqsClient = new AmazonSQSClient(Create<AmazonSQSConfig>());
-            snsClient = new AmazonSimpleNotificationServiceClient(Create<AmazonSimpleNotificationServiceConfig>());
+            sqsClient = DefaultClientFactories.SqsFactory();
+            snsClient = DefaultClientFactories.SnsFactory();
         }
 
         internal SqsTransport(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, bool supportsPublishSubscribe)
@@ -267,21 +266,7 @@
         /// </summary>
         public override IReadOnlyCollection<TransportTransactionMode> GetSupportedTransactionModes() => SupportedTransactionModes;
 
-        // Can be removed once https://github.com/aws/aws-sdk-net/issues/1929 is addressed by the team
-        // setting the cache size to 1 will significantly improve the throughput on non-windows OSS while
-        // windows had already 1 as the default.
-        // There might be other occurrences of setting this setting explicitly in the code base. Make sure to remove them
-        // consistently once the issue is addressed. 
-        internal static TConfig Create<TConfig>()
-            where TConfig : ClientConfig, new()
-        {
-#if NET
-            var config = new TConfig { HttpClientCacheSize = 1 };
-#else
-            var config = new TConfig();
-#endif
-            return config;
-        }
+
 
         QueueCache queueCache;
         TimeSpan maxTimeToLive = TimeSpan.FromDays(4);

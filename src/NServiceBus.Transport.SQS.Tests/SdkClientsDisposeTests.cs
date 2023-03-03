@@ -3,12 +3,36 @@ namespace NServiceBus.Transport.SQS.Tests
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Amazon.S3;
+    using Amazon.SimpleNotificationService;
+    using Amazon.SQS;
     using Configure;
     using NUnit.Framework;
 
     [TestFixture]
     public class SdkClientsDisposeTests
     {
+        Func<IAmazonSQS> originalSqsFactory;
+        Func<IAmazonSimpleNotificationService> originalSnsFactory;
+        Func<IAmazonS3> originalS3Factory;
+
+        [SetUp]
+        public void Setup()
+        {
+            originalSqsFactory = DefaultClientFactories.SqsFactory;
+            originalSnsFactory = DefaultClientFactories.SnsFactory;
+            originalS3Factory = DefaultClientFactories.S3Factory;
+        }
+
+        [TearDown]
+        public void Teardown()
+        {
+            DefaultClientFactories.SqsFactory = originalSqsFactory;
+            DefaultClientFactories.SnsFactory = originalSnsFactory;
+            DefaultClientFactories.S3Factory = originalS3Factory;
+        }
+
+
         [Test]
         [TestCase(true, true)]
         [TestCase(true, false)]
@@ -75,6 +99,38 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.That(mockSqsClient.DisposeInvoked, Is.False);
             Assert.That(mockSnsClient.DisposeInvoked, Is.False);
             Assert.That(mockS3Client.DisposeInvoked, Is.False);
+        }
+
+        [Test]
+        public async Task Should_dispose_default_clients()
+        {
+            var mockSqsClient = new MockSqsClient();
+            var mockSnsClient = new MockSnsClient();
+            var mockS3Client = new MockS3Client();
+
+            DefaultClientFactories.SqsFactory = () => mockSqsClient;
+            DefaultClientFactories.SnsFactory = () => mockSnsClient;
+            DefaultClientFactories.S3Factory = () => mockS3Client;
+
+            var transport = new SqsTransport() { S3 = new S3Settings("123", "k") };
+
+            var hostSettings = new HostSettings(
+                "Test",
+                "Test",
+                new StartupDiagnosticEntries(),
+                (s, ex, cancel) => { },
+                false
+            );
+            var receivers = Array.Empty<ReceiveSettings>();
+            var sendingAddresses = Array.Empty<string>();
+
+            var infra = await transport.Initialize(hostSettings, receivers, sendingAddresses);
+
+            await infra.Shutdown();
+
+            Assert.That(mockSqsClient.DisposeInvoked, Is.True);
+            Assert.That(mockSnsClient.DisposeInvoked, Is.True);
+            Assert.That(mockS3Client.DisposeInvoked, Is.True);
         }
     }
 }

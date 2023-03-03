@@ -65,7 +65,7 @@ namespace NServiceBus
 
             BucketName = bucketForLargeMessages;
             KeyPrefix = keyPrefix;
-            S3Client = s3Client ?? new AmazonS3Client(SqsTransport.Create<AmazonS3Config>());
+            S3Client = s3Client ?? DefaultClientFactories.S3Factory();
             ShouldDisposeS3Client = s3Client == null;
         }
 
