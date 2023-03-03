@@ -5,7 +5,6 @@
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Amazon.Runtime;
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
     using Transport;
@@ -21,12 +20,34 @@
         /// <summary>
         /// SQS client for the transport.
         /// </summary>
-        public IAmazonSQS SqsClient { get; internal set; } //For legacy API shim
+        public IAmazonSQS SqsClient
+        {
+            get => sqsClient;
+            //For legacy API shim
+            internal set
+            {
+                Guard.ThrowIfNull(value);
+
+                sqsClient = value;
+                externallyManagedSqsClient = true;
+            }
+        }
 
         /// <summary>
         /// SNS client for the transport.
         /// </summary>
-        public IAmazonSimpleNotificationService SnsClient { get; internal set; } //For legacy API shim
+        public IAmazonSimpleNotificationService SnsClient
+        {
+            get => snsClient;
+            //For legacy API shim
+            internal set
+            {
+                Guard.ThrowIfNull(value);
+
+                snsClient = value;
+                externallyManagedSnsClient = true;
+            }
+        }
 
         /// <summary>
         /// Specifies a string value that will be prepended to the name of every SQS queue
@@ -45,7 +66,7 @@
             get => queueNameGenerator;
             set
             {
-                Guard.AgainstNull("value", value);
+                Guard.ThrowIfNull(value);
                 queueNameGenerator = value;
             }
         }
@@ -85,7 +106,7 @@
             get => topicNamePrefix;
             set
             {
-                Guard.AgainstNull("value", value);
+                Guard.ThrowIfNull(value);
                 topicNamePrefix = value;
             }
         }
@@ -99,7 +120,7 @@
             get => topicNameGenerator;
             set
             {
-                Guard.AgainstNull("value", value);
+                Guard.ThrowIfNull(value);
                 topicNameGenerator = value;
             }
         }
@@ -162,7 +183,7 @@
         /// </summary>
         public void MapEvent(Type subscribedEventType, IEnumerable<string> customTopicsNames)
         {
-            Guard.AgainstNull(nameof(customTopicsNames), customTopicsNames);
+            Guard.ThrowIfNull(customTopicsNames);
             eventToTopicsMappings.Add(subscribedEventType, customTopicsNames);
         }
 
@@ -181,8 +202,8 @@
         /// </summary>
         public void MapEvent(Type subscribedEventType, Type publishedEventType)
         {
-            Guard.AgainstNull(nameof(subscribedEventType), subscribedEventType);
-            Guard.AgainstNull(nameof(publishedEventType), publishedEventType);
+            Guard.ThrowIfNull(subscribedEventType);
+            Guard.ThrowIfNull(publishedEventType);
 
             eventToEventsMappings.Add(subscribedEventType, publishedEventType);
         }
@@ -205,15 +226,15 @@
         public SqsTransport()
             : base(TransportTransactionMode.ReceiveOnly, true, true, true)
         {
-            SqsClient = new AmazonSQSClient(Create<AmazonSQSConfig>());
-            SnsClient = new AmazonSimpleNotificationServiceClient(Create<AmazonSimpleNotificationServiceConfig>());
+            sqsClient = DefaultClientFactories.SqsFactory();
+            snsClient = DefaultClientFactories.SnsFactory();
         }
 
         internal SqsTransport(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, bool supportsPublishSubscribe)
             : base(TransportTransactionMode.ReceiveOnly, true, supportsPublishSubscribe, true)
         {
-            SqsClient = sqsClient;
-            SnsClient = snsClient;
+            this.sqsClient = sqsClient;
+            this.snsClient = snsClient;
         }
 
         /// <summary>
@@ -225,7 +246,7 @@
         public override async Task<TransportInfrastructure> Initialize(HostSettings hostSettings, ReceiveSettings[] receivers, string[] sendingAddresses, CancellationToken cancellationToken = default)
         {
             var topicCache = new TopicCache(SnsClient, hostSettings.CoreSettings, eventToTopicsMappings, eventToEventsMappings, topicNameGenerator, topicNamePrefix);
-            var infra = new SqsTransportInfrastructure(this, hostSettings, receivers, SqsClient, SnsClient, QueueCache, topicCache, S3, Policies, QueueDelayTime, topicNamePrefix, EnableV1CompatibilityMode, DoNotWrapOutgoingMessages);
+            var infra = new SqsTransportInfrastructure(this, hostSettings, receivers, SqsClient, SnsClient, QueueCache, topicCache, S3, Policies, QueueDelayTime, topicNamePrefix, EnableV1CompatibilityMode, DoNotWrapOutgoingMessages, !externallyManagedSqsClient, !externallyManagedSnsClient);
 
             if (hostSettings.SetupInfrastructure)
             {
@@ -249,22 +270,6 @@
         /// </summary>
         public override IReadOnlyCollection<TransportTransactionMode> GetSupportedTransactionModes() => SupportedTransactionModes;
 
-        // Can be removed once https://github.com/aws/aws-sdk-net/issues/1929 is addressed by the team
-        // setting the cache size to 1 will significantly improve the throughput on non-windows OSS while
-        // windows had already 1 as the default.
-        // There might be other occurrences of setting this setting explicitly in the code base. Make sure to remove them
-        // consistently once the issue is addressed. 
-        internal static TConfig Create<TConfig>()
-            where TConfig : ClientConfig, new()
-        {
-#if NET
-            var config = new TConfig { HttpClientCacheSize = 1 };
-#else
-            var config = new TConfig();
-#endif
-            return config;
-        }
-
         QueueCache queueCache;
         TimeSpan maxTimeToLive = TimeSpan.FromDays(4);
         string topicNamePrefix;
@@ -280,5 +285,9 @@
 
         static readonly TimeSpan MaxTimeToLiveUpperBound = TimeSpan.FromDays(14);
         static readonly TimeSpan MaxTimeToLiveLowerBound = TimeSpan.FromSeconds(60);
+        IAmazonSQS sqsClient;
+        IAmazonSimpleNotificationService snsClient;
+        bool externallyManagedSqsClient;
+        bool externallyManagedSnsClient;
     }
 }

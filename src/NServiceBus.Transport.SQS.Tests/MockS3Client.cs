@@ -21,6 +21,10 @@
             return Task.FromResult(PutObjectRequestResponse(request));
         }
 
+        public bool DisposeInvoked { get; private set; }
+
+        public void Dispose() => DisposeInvoked = true;
+
         #region NotImplemented
 
         public PutObjectLegalHoldResponse PutObjectLegalHold(PutObjectLegalHoldRequest request)
@@ -49,11 +53,6 @@
         }
 
         public Task<PutObjectRetentionResponse> PutObjectRetentionAsync(PutObjectRetentionRequest request, CancellationToken cancellationToken = new CancellationToken())
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Dispose()
         {
             throw new NotImplementedException();
         }

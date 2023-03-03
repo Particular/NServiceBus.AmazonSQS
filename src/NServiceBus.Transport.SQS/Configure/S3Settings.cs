@@ -11,7 +11,6 @@ namespace NServiceBus
     /// </summary>
     public partial class S3Settings
     {
-
         /// <summary>
         /// Configures the S3 Bucket that will be used to store message bodies
         /// for messages that are larger than 256k in size. If this option is not specified,
@@ -25,9 +24,8 @@ namespace NServiceBus
         /// <param name="s3Client">S3 client to use. If not provided the default client based on environment settings will be used.</param>
         public S3Settings(string bucketForLargeMessages, string keyPrefix, IAmazonS3 s3Client = null)
         {
-            S3Client = s3Client;
-            Guard.AgainstNull(nameof(bucketForLargeMessages), bucketForLargeMessages);
-            Guard.AgainstNullAndEmpty(nameof(keyPrefix), keyPrefix);
+            Guard.ThrowIfNull(bucketForLargeMessages);
+            Guard.ThrowIfNullOrEmpty(keyPrefix);
 
             // https://forums.aws.amazon.com/message.jspa?messageID=315883
             // S3 bucket names have the following restrictions:
@@ -67,7 +65,8 @@ namespace NServiceBus
 
             BucketName = bucketForLargeMessages;
             KeyPrefix = keyPrefix;
-            S3Client = s3Client ?? new AmazonS3Client(SqsTransport.Create<AmazonS3Config>());
+            externallyManagedS3lient = s3Client != null;
+            this.s3Client = s3Client ?? DefaultClientFactories.S3Factory();
         }
 
         /// <summary>
@@ -90,6 +89,22 @@ namespace NServiceBus
         /// <summary>
         /// The S3 client to use.
         /// </summary>
-        public IAmazonS3 S3Client { get; internal set; } //Internal setter for the legacy API shim.
+        public IAmazonS3 S3Client
+        {
+            get => s3Client;
+            //For legacy API shim
+            internal set
+            {
+                Guard.ThrowIfNull(value);
+
+                s3Client = value;
+                externallyManagedS3lient = true;
+            }
+        }
+
+        internal bool ShouldDisposeS3Client => !externallyManagedS3lient;
+
+        IAmazonS3 s3Client;
+        bool externallyManagedS3lient;
     }
 }

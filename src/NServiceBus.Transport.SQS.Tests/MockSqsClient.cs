@@ -170,12 +170,11 @@
             return Task.FromResult(ReceiveMessagesRequestResponse(request, cancellationToken));
         }
 
-        #region NotImplemented
+        public bool DisposeInvoked { get; private set; }
 
-        public void Dispose()
-        {
-            throw new NotImplementedException();
-        }
+        public void Dispose() => DisposeInvoked = true;
+
+        #region NotImplemented
 
         public Dictionary<string, string> GetAttributes(string queueUrl)
         {
