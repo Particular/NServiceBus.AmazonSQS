@@ -15,7 +15,6 @@
             ServiceURL = "http://fakeServiceUrl"
         };
         public List<string> QueueUrlRequestsSent { get; } = new List<string>();
-        public bool DisposeInvoked { get; private set; }
 
         public Task<GetQueueUrlResponse> GetQueueUrlAsync(string queueName, CancellationToken cancellationToken = new CancellationToken())
         {
@@ -171,12 +170,11 @@
             return Task.FromResult(ReceiveMessagesRequestResponse(request, cancellationToken));
         }
 
-        #region NotImplemented
+        public bool DisposeInvoked { get; private set; }
 
-        public void Dispose()
-        {
-            DisposeInvoked = true;
-        }
+        public void Dispose() => DisposeInvoked = true;
+
+        #region NotImplemented
 
         public Dictionary<string, string> GetAttributes(string queueUrl)
         {

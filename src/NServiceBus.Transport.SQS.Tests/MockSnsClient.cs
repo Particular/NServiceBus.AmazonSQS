@@ -14,7 +14,6 @@ namespace NServiceBus.Transport.SQS.Tests
     class MockSnsClient : IAmazonSimpleNotificationService
     {
         public List<string> UnsubscribeRequests = new List<string>();
-        public bool DisposeInvoked { get; private set; }
 
         public Task<UnsubscribeResponse> UnsubscribeAsync(string subscriptionArn, CancellationToken cancellationToken = new CancellationToken())
         {
@@ -75,6 +74,10 @@ namespace NServiceBus.Transport.SQS.Tests
             return Task.FromResult(SubscribeResponse(request));
         }
 
+        public bool DisposeInvoked { get; private set; }
+
+        public void Dispose() => DisposeInvoked = true;
+
         #region NotImplemented
 
         public TagResourceResponse TagResource(TagResourceRequest request)
@@ -100,11 +103,6 @@ namespace NServiceBus.Transport.SQS.Tests
         public Task<PublishResponse> PublishAsync(string topicArn, string message, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
-        }
-
-        public void Dispose()
-        {
-            DisposeInvoked = true;
         }
 
         public IClientConfig Config { get; }

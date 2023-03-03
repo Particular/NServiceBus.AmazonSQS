@@ -15,13 +15,15 @@
 
         public Func<PutObjectRequest, PutObjectResponse> PutObjectRequestResponse = req => new PutObjectResponse();
 
-        public bool DisposeInvoked { get; private set; }
-
         public Task<PutObjectResponse> PutObjectAsync(PutObjectRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             PutObjectRequestsSent.Add(request);
             return Task.FromResult(PutObjectRequestResponse(request));
         }
+
+        public bool DisposeInvoked { get; private set; }
+
+        public void Dispose() => DisposeInvoked = true;
 
         #region NotImplemented
 
@@ -53,11 +55,6 @@
         public Task<PutObjectRetentionResponse> PutObjectRetentionAsync(PutObjectRetentionRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
-        }
-
-        public void Dispose()
-        {
-            DisposeInvoked = true;
         }
 
         public string GeneratePreSignedURL(string bucketName, string objectKey, DateTime expiration, IDictionary<string, object> additionalProperties)
