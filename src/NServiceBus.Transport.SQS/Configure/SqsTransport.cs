@@ -211,10 +211,8 @@
         public SqsTransport(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient)
             : base(TransportTransactionMode.ReceiveOnly, true, true, true)
         {
-            this.sqsClient = sqsClient;
-            this.snsClient = snsClient;
-            externallyManagedSqsClient = true;
-            externallyManagedSnsClient = true;
+            SqsClient = sqsClient;
+            SnsClient = snsClient;
         }
 
         /// <summary>
