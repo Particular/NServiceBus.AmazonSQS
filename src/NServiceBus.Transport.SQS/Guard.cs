@@ -1,31 +1,43 @@
-﻿namespace NServiceBus.Transport.SQS
+﻿#nullable enable
+
+namespace NServiceBus.Transport.SQS
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Runtime.CompilerServices;
 
     static class Guard
     {
-        public static void AgainstNull(string argumentName, object value)
+        public static void ThrowIfNull([NotNull] object? argument, [CallerArgumentExpression("argument")] string? paramName = null)
         {
-            if (value == null)
+            if (argument is null)
             {
-                throw new ArgumentNullException(argumentName);
+                ThrowArgumentNullException(paramName);
             }
         }
 
-        public static void AgainstNullAndEmpty(string argumentName, string value)
+        public static void ThrowIfNullOrEmpty(string argument, [CallerArgumentExpression("argument")] string? paramName = null)
         {
-            if (string.IsNullOrWhiteSpace(value))
+            if (string.IsNullOrWhiteSpace(argument))
             {
-                throw new ArgumentNullException(argumentName);
+                ThrowArgumentNullException(paramName);
             }
         }
 
-        public static void AgainstNegativeAndZero(string argumentName, TimeSpan value)
+        [DoesNotReturn]
+        static void ThrowArgumentNullException(string? paramName)
+            => throw new ArgumentNullException(paramName);
+
+        public static void ThrowIfNegativeOrZero(TimeSpan argument, [CallerArgumentExpression("argument")] string? paramName = null)
         {
-            if (value <= TimeSpan.Zero)
+            if (argument <= TimeSpan.Zero)
             {
-                throw new ArgumentOutOfRangeException(argumentName);
+                ThrowArgumentOutOfRangeException(paramName);
             }
         }
+
+        [DoesNotReturn]
+        static void ThrowArgumentOutOfRangeException(string? paramName)
+            => throw new ArgumentOutOfRangeException(paramName);
     }
 }

@@ -24,8 +24,8 @@ namespace NServiceBus
         /// <param name="s3Client">S3 client to use. If not provided the default client based on environment settings will be used.</param>
         public S3Settings(string bucketForLargeMessages, string keyPrefix, IAmazonS3 s3Client = null)
         {
-            Guard.AgainstNull(nameof(bucketForLargeMessages), bucketForLargeMessages);
-            Guard.AgainstNullAndEmpty(nameof(keyPrefix), keyPrefix);
+            Guard.ThrowIfNull(bucketForLargeMessages);
+            Guard.ThrowIfNullOrEmpty(keyPrefix);
 
             // https://forums.aws.amazon.com/message.jspa?messageID=315883
             // S3 bucket names have the following restrictions:
@@ -65,8 +65,8 @@ namespace NServiceBus
 
             BucketName = bucketForLargeMessages;
             KeyPrefix = keyPrefix;
-            S3Client = s3Client ?? DefaultClientFactories.S3Factory();
-            ShouldDisposeS3Client = s3Client == null;
+            externallyManagedS3lient = s3Client != null;
+            this.s3Client = s3Client ?? DefaultClientFactories.S3Factory();
         }
 
         /// <summary>
@@ -89,8 +89,22 @@ namespace NServiceBus
         /// <summary>
         /// The S3 client to use.
         /// </summary>
-        public IAmazonS3 S3Client { get; internal set; } //Internal setter for the legacy API shim.
+        public IAmazonS3 S3Client
+        {
+            get => s3Client;
+            //For legacy API shim
+            internal set
+            {
+                Guard.ThrowIfNull(value);
 
-        internal bool ShouldDisposeS3Client { get; }
+                s3Client = value;
+                externallyManagedS3lient = true;
+            }
+        }
+
+        internal bool ShouldDisposeS3Client => !externallyManagedS3lient;
+
+        IAmazonS3 s3Client;
+        bool externallyManagedS3lient;
     }
 }

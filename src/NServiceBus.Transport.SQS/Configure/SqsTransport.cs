@@ -26,8 +26,10 @@
             //For legacy API shim
             internal set
             {
+                Guard.ThrowIfNull(value);
+
                 sqsClient = value;
-                externallyManagedSqsClient = value != null;
+                externallyManagedSqsClient = true;
             }
         }
 
@@ -40,8 +42,10 @@
             //For legacy API shim
             internal set
             {
+                Guard.ThrowIfNull(value);
+
                 snsClient = value;
-                externallyManagedSnsClient = value != null;
+                externallyManagedSnsClient = true;
             }
         }
 
@@ -62,7 +66,7 @@
             get => queueNameGenerator;
             set
             {
-                Guard.AgainstNull("value", value);
+                Guard.ThrowIfNull(value);
                 queueNameGenerator = value;
             }
         }
@@ -102,7 +106,7 @@
             get => topicNamePrefix;
             set
             {
-                Guard.AgainstNull("value", value);
+                Guard.ThrowIfNull(value);
                 topicNamePrefix = value;
             }
         }
@@ -116,7 +120,7 @@
             get => topicNameGenerator;
             set
             {
-                Guard.AgainstNull("value", value);
+                Guard.ThrowIfNull(value);
                 topicNameGenerator = value;
             }
         }
@@ -179,7 +183,7 @@
         /// </summary>
         public void MapEvent(Type subscribedEventType, IEnumerable<string> customTopicsNames)
         {
-            Guard.AgainstNull(nameof(customTopicsNames), customTopicsNames);
+            Guard.ThrowIfNull(customTopicsNames);
             eventToTopicsMappings.Add(subscribedEventType, customTopicsNames);
         }
 
@@ -198,8 +202,8 @@
         /// </summary>
         public void MapEvent(Type subscribedEventType, Type publishedEventType)
         {
-            Guard.AgainstNull(nameof(subscribedEventType), subscribedEventType);
-            Guard.AgainstNull(nameof(publishedEventType), publishedEventType);
+            Guard.ThrowIfNull(subscribedEventType);
+            Guard.ThrowIfNull(publishedEventType);
 
             eventToEventsMappings.Add(subscribedEventType, publishedEventType);
         }
@@ -265,8 +269,6 @@
         /// Returns a list of all supported transaction modes of this transport.
         /// </summary>
         public override IReadOnlyCollection<TransportTransactionMode> GetSupportedTransactionModes() => SupportedTransactionModes;
-
-
 
         QueueCache queueCache;
         TimeSpan maxTimeToLive = TimeSpan.FromDays(4);
