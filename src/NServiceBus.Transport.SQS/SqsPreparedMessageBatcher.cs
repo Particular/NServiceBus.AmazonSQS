@@ -1,3 +1,5 @@
+#nullable enable
+
 namespace NServiceBus.Transport.SQS
 {
     using System;
@@ -14,7 +16,7 @@ namespace NServiceBus.Transport.SQS
             var groupByDestination = preparedMessages.GroupBy(m => m.QueueUrl, StringComparer.Ordinal);
             foreach (var group in groupByDestination)
             {
-                SqsPreparedMessage firstMessage = null;
+                SqsPreparedMessage? firstMessage = null;
                 var payloadSize = 0L;
                 foreach (var message in group)
                 {
@@ -46,7 +48,7 @@ namespace NServiceBus.Transport.SQS
 
                 if (currentDestinationBatches.Count > 0)
                 {
-                    allBatches.Add(firstMessage.ToBatchRequest(currentDestinationBatches));
+                    allBatches.Add(firstMessage!.ToBatchRequest(currentDestinationBatches));
                     currentDestinationBatches.Clear();
                 }
             }

@@ -1,4 +1,6 @@
-﻿namespace NServiceBus.Transport.SQS
+﻿#nullable enable
+
+namespace NServiceBus.Transport.SQS
 {
     using System;
     using System.Collections.Generic;
@@ -98,7 +100,7 @@
 
         Task PublishIsolated(IEnumerable<MulticastTransportOperation> isolatedTransportOperations, Dictionary<string, Type> multicastEventsMessageIdsToType, CancellationToken cancellationToken)
         {
-            List<Task> tasks = null;
+            List<Task>? tasks = null;
             foreach (var operation in isolatedTransportOperations)
             {
                 multicastEventsMessageIdsToType.Add(operation.Message.MessageId, operation.MessageType);
@@ -134,7 +136,7 @@
 
         Task DispatchIsolated(IEnumerable<UnicastTransportOperation> isolatedTransportOperations, Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction, CancellationToken cancellationToken)
         {
-            List<Task> tasks = null;
+            List<Task>? tasks = null;
             foreach (var operation in isolatedTransportOperations)
             {
                 tasks ??= new List<Task>();
@@ -149,7 +151,7 @@
             var tasks = new List<Task<SqsPreparedMessage>>();
             foreach (var operation in toBeBatchedTransportOperations)
             {
-                tasks.Add(PrepareMessage(operation, multicastEventsMessageIdsToType, transportTransaction, cancellationToken));
+                tasks.Add(PrepareMessage(operation, multicastEventsMessageIdsToType, transportTransaction, cancellationToken)!);
             }
 
             await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -186,7 +188,7 @@
                     Logger.Debug($"Sent batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
                 }
 
-                List<Task> redispatchTasks = null;
+                List<Task>? redispatchTasks = null;
                 foreach (var errorEntry in result.Failed)
                 {
                     redispatchTasks ??= new List<Task>(result.Failed.Count);
@@ -247,7 +249,7 @@
                     Logger.Debug($"Published batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
                 }
 
-                List<Task> redispatchTasks = null;
+                List<Task>? redispatchTasks = null;
                 foreach (var errorEntry in result.Failed)
                 {
                     redispatchTasks ??= new List<Task>(result.Failed.Count);
@@ -356,7 +358,7 @@
             }
         }
 
-        async Task<SqsPreparedMessage> PrepareMessage(UnicastTransportOperation transportOperation, Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction, CancellationToken cancellationToken)
+        async Task<SqsPreparedMessage?> PrepareMessage(UnicastTransportOperation transportOperation, Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction, CancellationToken cancellationToken)
         {
             if (await hybridPubSubChecker.ThisIsAPublishMessageNotUsingMessageDrivenPubSub(transportOperation, multicastEventsMessageIdsToType, cancellationToken).ConfigureAwait(false))
             {
@@ -367,7 +369,7 @@
 
             await ApplyUnicastOperationMapping(transportOperation, preparedMessage, CalculateDelayedDeliverySeconds(transportOperation), GetNativeMessageAttributes(transportOperation, transportTransaction), cancellationToken).ConfigureAwait(false);
 
-            async Task PrepareSqsMessageBasedOnBodySize(TransportMessage transportMessage)
+            async Task PrepareSqsMessageBasedOnBodySize(TransportMessage? transportMessage)
             {
                 preparedMessage.CalculateSize();
                 if (preparedMessage.Size > TransportConstraints.MaximumMessageSize)
@@ -384,7 +386,7 @@
                 (preparedMessage.Body, var headers) = GetMessageBodyAndHeaders(transportOperation.Message);
                 preparedMessage.MessageAttributes[TransportHeaders.Headers] = new MessageAttributeValue { StringValue = headers, DataType = "String" };
 
-                await PrepareSqsMessageBasedOnBodySize(null).ConfigureAwait(false);
+                await PrepareSqsMessageBasedOnBodySize(default).ConfigureAwait(false);
             }
             else
             {
@@ -402,7 +404,7 @@
 
             await ApplyMulticastOperationMapping(transportOperation, preparedMessage, cancellationToken).ConfigureAwait(false);
 
-            async Task PrepareSnsMessageBasedOnBodySize(TransportMessage transportMessage)
+            async Task PrepareSnsMessageBasedOnBodySize(TransportMessage? transportMessage)
             {
                 preparedMessage.CalculateSize();
                 if (preparedMessage.Size > TransportConstraints.MaximumMessageSize)
@@ -419,7 +421,7 @@
                 (preparedMessage.Body, var headers) = GetMessageBodyAndHeaders(transportOperation.Message);
                 preparedMessage.MessageAttributes[TransportHeaders.Headers] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue() { StringValue = headers, DataType = "String" };
 
-                await PrepareSnsMessageBasedOnBodySize(null).ConfigureAwait(false);
+                await PrepareSnsMessageBasedOnBodySize(default).ConfigureAwait(false);
             }
             else
             {
@@ -450,7 +452,7 @@
             return delaySeconds;
         }
 
-        Dictionary<string, MessageAttributeValue> GetNativeMessageAttributes(UnicastTransportOperation transportOperation, TransportTransaction transportTransaction)
+        Dictionary<string, MessageAttributeValue>? GetNativeMessageAttributes(UnicastTransportOperation transportOperation, TransportTransaction transportTransaction)
         {
             // In case we're handling a message of which the incoming message id equals the outgoing message id, we're essentially handling an error or audit scenario, in which case we want copy over the message attributes
             // from the native message, so we don't lose part of the message
@@ -520,7 +522,7 @@
             snsPreparedMessage.Destination = existingTopicArn;
         }
 
-        async ValueTask ApplyUnicastOperationMapping(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, Dictionary<string, MessageAttributeValue> nativeMessageAttributes, CancellationToken cancellationToken)
+        async ValueTask ApplyUnicastOperationMapping(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, Dictionary<string, MessageAttributeValue>? nativeMessageAttributes, CancellationToken cancellationToken)
         {
             // copy over the message attributes that were set on the incoming message for error/audit scenario's if available
             sqsPreparedMessage.CopyMessageAttributes(nativeMessageAttributes);
@@ -577,8 +579,8 @@
         readonly HybridPubSubChecker hybridPubSubChecker;
         readonly bool wrapOutgoingMessages;
         readonly JsonSerializerOptions transportMessageSerializerOptions;
-        IAmazonSQS sqsClient;
-        QueueCache queueCache;
+        readonly IAmazonSQS sqsClient;
+        readonly QueueCache queueCache;
 
         static readonly ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
     }

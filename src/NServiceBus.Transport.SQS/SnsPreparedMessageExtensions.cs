@@ -1,3 +1,5 @@
+#nullable enable
+
 namespace NServiceBus.Transport.SQS
 {
     using System.Collections.Generic;
