@@ -288,11 +288,6 @@ namespace NServiceBus.Transport.SQS
 
         async Task PublishMessage(SnsPreparedMessage message, CancellationToken cancellationToken)
         {
-            if (message == null)
-            {
-                return;
-            }
-
             if (string.IsNullOrEmpty(message.Destination))
             {
                 return;
