@@ -84,7 +84,6 @@ namespace NServiceBus.Transport.SQS.Tests
             return Task.FromResult(BatchRequestResponse(request));
         }
 
-
         public bool DisposeInvoked { get; private set; }
 
         public void Dispose() => DisposeInvoked = true;
