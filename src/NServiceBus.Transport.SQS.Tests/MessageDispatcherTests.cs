@@ -151,8 +151,11 @@
 
             Assert.IsEmpty(mockSqsClient.BatchRequestsSent);
             Assert.AreEqual(2, mockSqsClient.RequestsSent.Count);
-            Assert.AreEqual("address1", mockSqsClient.RequestsSent.ElementAt(0).QueueUrl);
-            Assert.AreEqual("address2", mockSqsClient.RequestsSent.ElementAt(1).QueueUrl);
+            Assert.That(mockSqsClient.RequestsSent.Select(t => t.QueueUrl), Is.EquivalentTo(new[]
+            {
+                "address1",
+                "address2"
+            }));
         }
 
         [Test]
@@ -183,8 +186,11 @@
 
             Assert.IsEmpty(mockSnsClient.BatchRequestsPublished);
             Assert.AreEqual(2, mockSnsClient.PublishedEvents.Count);
-            Assert.AreEqual("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-MessageDispatcherTests-AnotherEvent", mockSnsClient.PublishedEvents.ElementAt(0).TopicArn);
-            Assert.AreEqual("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-MessageDispatcherTests-Event", mockSnsClient.PublishedEvents.ElementAt(1).TopicArn);
+            Assert.That(mockSnsClient.PublishedEvents.Select(t => t.TopicArn), Is.EquivalentTo(new[]
+            {
+                "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-MessageDispatcherTests-Event",
+                "arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-MessageDispatcherTests-AnotherEvent"
+            }));
         }
 
         [Test]

@@ -398,7 +398,7 @@
 
         async Task<SnsPreparedMessage> PrepareMessage(MulticastTransportOperation transportOperation, CancellationToken cancellationToken)
         {
-            var preparedMessage = new SnsPreparedMessage() { MessageId = transportOperation.Message.MessageId };
+            var preparedMessage = new SnsPreparedMessage { MessageId = transportOperation.Message.MessageId };
 
             await ApplyMulticastOperationMapping(transportOperation, preparedMessage, cancellationToken).ConfigureAwait(false);
 
