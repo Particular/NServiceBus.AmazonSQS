@@ -126,7 +126,7 @@
         }
 
         [Test]
-        public async Task Should_dispatch_isolated_operations()
+        public async Task Should_dispatch_isolated_unicast_operations()
         {
             var mockSqsClient = new MockSqsClient();
 
@@ -156,34 +156,35 @@
         }
 
         [Test]
-        public async Task Should_dispatch_multicast_operations()
+        public async Task Should_dispatch_isolated_multicast_operations()
         {
             var mockSnsClient = new MockSnsClient();
 
-            var dispatcher = new MessageDispatcher(new SettingsHolder(), null, mockSnsClient, new QueueCache(null,
-                dest => QueueCache.GetSqsQueueName(dest, "")),
-                new TopicCache(mockSnsClient, new SettingsHolder(), new EventToTopicsMappings(), new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""),
-                null, 15 * 60, true);
+            var dispatcher = new MessageDispatcher(new SettingsHolder(), null, mockSnsClient, null,
+                new TopicCache(mockSnsClient, new SettingsHolder(), new EventToTopicsMappings(),
+                    new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""), null,
+                15 * 60, true);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
                     new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
-                    new MulticastAddressTag(typeof(Event))),
+                    new MulticastAddressTag(typeof(Event)),
+                    new DispatchProperties(),
+                    DispatchConsistency.Isolated),
                 new TransportOperation(
                     new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
-                    new MulticastAddressTag(typeof(AnotherEvent)))
-                );
+                    new MulticastAddressTag(typeof(AnotherEvent)),
+                    new DispatchProperties(),
+                    DispatchConsistency.Isolated));
 
             var transportTransaction = new TransportTransaction();
 
             await dispatcher.Dispatch(transportOperations, transportTransaction);
 
+            Assert.IsEmpty(mockSnsClient.BatchRequestsPublished);
             Assert.AreEqual(2, mockSnsClient.PublishedEvents.Count);
-
-            var topics = mockSnsClient.PublishedEvents.Select(e => e.TopicArn).ToList();
-
-            Assert.Contains("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-MessageDispatcherTests-Event", topics);
-            Assert.Contains("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-MessageDispatcherTests-AnotherEvent", topics);
+            Assert.AreEqual("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-MessageDispatcherTests-AnotherEvent", mockSnsClient.PublishedEvents.ElementAt(0).TopicArn);
+            Assert.AreEqual("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-MessageDispatcherTests-Event", mockSnsClient.PublishedEvents.ElementAt(1).TopicArn);
         }
 
         [Test]
@@ -224,7 +225,7 @@
 
             await dispatcher.Dispatch(transportOperations, transportTransaction);
 
-            Assert.AreEqual(1, mockSnsClient.PublishedEvents.Count);
+            Assert.AreEqual(1, mockSnsClient.BatchRequestsPublished.Count);
             Assert.IsEmpty(mockSqsClient.RequestsSent);
             Assert.IsEmpty(mockSqsClient.BatchRequestsSent);
         }
@@ -258,7 +259,7 @@
 
             await dispatcher.Dispatch(transportOperations, transportTransaction);
 
-            Assert.AreEqual(1, mockSnsClient.PublishedEvents.Count);
+            Assert.AreEqual(1, mockSnsClient.BatchRequestsPublished.Count);
             Assert.AreEqual(1, mockSqsClient.BatchRequestsSent.Count);
         }
 
@@ -401,7 +402,7 @@
         }
 
         [Test]
-        public async Task Should_batch_non_isolated_operations()
+        public async Task Should_batch_non_isolated_unicast_operations()
         {
             var mockSqsClient = new MockSqsClient();
 
@@ -437,7 +438,9 @@
 
             var dispatcher = new MessageDispatcher(new SettingsHolder(), null, mockSnsClient, new QueueCache(null,
                 dest => QueueCache.GetSqsQueueName(dest, "")),
-                new TopicCache(mockSnsClient, new SettingsHolder(), new EventToTopicsMappings(), new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""), null, 15 * 60, true);
+                new TopicCache(mockSnsClient, new SettingsHolder(), new EventToTopicsMappings(),
+                    new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""), null,
+                15 * 60, true);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -496,7 +499,7 @@
         }
 
         [Test]
-        public async Task Should_dispatch_non_batched_all_messages_that_failed_in_batch()
+        public async Task Should_dispatch_non_batched_all_unicast_operations_that_failed_in_batch()
         {
             var mockSqsClient = new MockSqsClient();
 
@@ -515,7 +518,7 @@
                     {
                         Failed = new List<Amazon.SQS.Model.BatchResultErrorEntry>
                         {
-                            new Amazon.SQS.Model.BatchResultErrorEntry
+                            new()
                             {
                                 Id = firstMessageMatch.Id,
                                 Message = "You know why"
@@ -531,7 +534,7 @@
                     {
                         Failed = new List<Amazon.SQS.Model.BatchResultErrorEntry>
                         {
-                            new Amazon.SQS.Model.BatchResultErrorEntry
+                            new()
                             {
                                 Id = secondMessageMatch.Id,
                                 Message = "You know why"
@@ -579,6 +582,92 @@
             Assert.AreEqual(2, mockSqsClient.BatchRequestsSent.Count);
             CollectionAssert.AreEquivalent(new[] { firstMessageIdThatWillFail, firstMessageThatWillBeSuccessful }, mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue));
             CollectionAssert.AreEquivalent(new[] { secondMessageIdThatWillFail, secondMessageThatWillBeSuccessful }, mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue));
+        }
+
+        [Test]
+        public async Task Should_dispatch_non_batched_all_multicast_operations_that_failed_in_batch()
+        {
+            var mockSnsClient = new MockSnsClient();
+
+            var dispatcher = new MessageDispatcher(new SettingsHolder(), null, mockSnsClient, new QueueCache(null,
+                dest => QueueCache.GetSqsQueueName(dest, "")), new TopicCache(mockSnsClient, new SettingsHolder(), new EventToTopicsMappings(), new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""), null, 15 * 60, true);
+
+            var firstMessageIdThatWillFail = Guid.NewGuid().ToString();
+            var secondMessageIdThatWillFail = Guid.NewGuid().ToString();
+
+            mockSnsClient.BatchRequestResponse = req =>
+            {
+                var firstMessageMatch = req.PublishBatchRequestEntries.SingleOrDefault(x => x.MessageAttributes[Headers.MessageId].StringValue == firstMessageIdThatWillFail);
+                if (firstMessageMatch != null)
+                {
+                    return new PublishBatchResponse
+                    {
+                        Failed = new List<Amazon.SimpleNotificationService.Model.BatchResultErrorEntry>
+                        {
+                            new()
+                            {
+                                Id = firstMessageMatch.Id,
+                                Message = "You know why"
+                            }
+                        }
+                    };
+                }
+
+                var secondMessageMatch = req.PublishBatchRequestEntries.SingleOrDefault(x => x.MessageAttributes[Headers.MessageId].StringValue == secondMessageIdThatWillFail);
+                if (secondMessageMatch != null)
+                {
+                    return new PublishBatchResponse
+                    {
+                        Failed = new List<Amazon.SimpleNotificationService.Model.BatchResultErrorEntry>
+                        {
+                            new()
+                            {
+                                Id = secondMessageMatch.Id,
+                                Message = "You know why"
+                            }
+                        }
+                    };
+                }
+
+                return new PublishBatchResponse();
+            };
+
+            var firstMessageThatWillBeSuccessful = Guid.NewGuid().ToString();
+            var secondMessageThatWillBeSuccessful = Guid.NewGuid().ToString();
+
+            var transportOperations = new TransportOperations(
+                new TransportOperation(
+                    new OutgoingMessage(firstMessageIdThatWillFail, new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new MulticastAddressTag(typeof(Event)),
+                    new DispatchProperties(),
+                    DispatchConsistency.Default),
+                new TransportOperation(
+                    new OutgoingMessage(firstMessageThatWillBeSuccessful, new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new MulticastAddressTag(typeof(Event)),
+                    new DispatchProperties(),
+                    DispatchConsistency.Default),
+                new TransportOperation(
+                    new OutgoingMessage(secondMessageThatWillBeSuccessful, new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new MulticastAddressTag(typeof(AnotherEvent)),
+                    new DispatchProperties(),
+                    DispatchConsistency.Default),
+                new TransportOperation(
+                    new OutgoingMessage(secondMessageIdThatWillFail, new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new MulticastAddressTag(typeof(AnotherEvent)),
+                    new DispatchProperties(),
+                    DispatchConsistency.Default));
+
+            var transportTransaction = new TransportTransaction();
+
+            await dispatcher.Dispatch(transportOperations, transportTransaction);
+
+            Assert.AreEqual(2, mockSnsClient.PublishedEvents.Count);
+            Assert.AreEqual(firstMessageIdThatWillFail, mockSnsClient.PublishedEvents.ElementAt(0).MessageAttributes[Headers.MessageId].StringValue);
+            Assert.AreEqual(secondMessageIdThatWillFail, mockSnsClient.PublishedEvents.ElementAt(1).MessageAttributes[Headers.MessageId].StringValue);
+
+            Assert.AreEqual(2, mockSnsClient.BatchRequestsPublished.Count);
+            CollectionAssert.AreEquivalent(new[] { firstMessageIdThatWillFail, firstMessageThatWillBeSuccessful }, mockSnsClient.BatchRequestsPublished.ElementAt(0).PublishBatchRequestEntries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue));
+            CollectionAssert.AreEquivalent(new[] { secondMessageIdThatWillFail, secondMessageThatWillBeSuccessful }, mockSnsClient.BatchRequestsPublished.ElementAt(1).PublishBatchRequestEntries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue));
         }
 
         [Test]
