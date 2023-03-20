@@ -22,6 +22,25 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
+        public void NotInBatchIfDestinationEmpty()
+        {
+            var preparedMessages = new[]
+            {
+                new SnsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination1" },
+                new SnsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = null },
+                new SnsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = string.Empty },
+                new SnsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination2" }
+            };
+            PrecalculateSize(preparedMessages);
+
+            var batches = SnsPreparedMessageBatcher.Batch(preparedMessages);
+
+            Assert.AreEqual(2, batches.Count);
+            Assert.AreEqual("destination1", batches.ElementAt(0).BatchRequest.TopicArn);
+            Assert.AreEqual("destination2", batches.ElementAt(1).BatchRequest.TopicArn);
+        }
+
+        [Test]
         public void BatchPerDestination()
         {
             var preparedMessages = new[]

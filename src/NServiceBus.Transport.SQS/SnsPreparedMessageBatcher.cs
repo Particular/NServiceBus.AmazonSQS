@@ -20,6 +20,11 @@ namespace NServiceBus.Transport.SQS
                 var payloadSize = 0L;
                 foreach (var message in group)
                 {
+                    if (string.IsNullOrEmpty(message.Destination))
+                    {
+                        continue;
+                    }
+
                     firstMessage ??= message;
 
                     // Assumes the size was already calculated by the dispatcher
