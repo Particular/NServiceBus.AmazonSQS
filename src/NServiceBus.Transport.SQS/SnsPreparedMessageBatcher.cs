@@ -6,20 +6,25 @@ namespace NServiceBus.Transport.SQS
     using System.Collections.Generic;
     using System.Linq;
 
-    static class SqsPreparedMessageBatcher
+    static class SnsPreparedMessageBatcher
     {
-        public static IReadOnlyList<SqsBatchEntry> Batch(IEnumerable<SqsPreparedMessage> preparedMessages)
+        public static IReadOnlyList<SnsBatchEntry> Batch(IEnumerable<SnsPreparedMessage> preparedMessages)
         {
-            var allBatches = new List<SqsBatchEntry>();
-            var currentDestinationBatches = new Dictionary<string, SqsPreparedMessage>(TransportConstraints.MaximumItemsInBatch);
+            var allBatches = new List<SnsBatchEntry>();
+            var currentDestinationBatches = new Dictionary<string, SnsPreparedMessage>(TransportConstraints.MaximumItemsInBatch);
 
-            var groupByDestination = preparedMessages.GroupBy(m => m.QueueUrl, StringComparer.Ordinal);
+            var groupByDestination = preparedMessages.GroupBy(m => m.Destination, StringComparer.Ordinal);
             foreach (var group in groupByDestination)
             {
-                SqsPreparedMessage? firstMessage = null;
+                SnsPreparedMessage? firstMessage = null;
                 var payloadSize = 0L;
                 foreach (var message in group)
                 {
+                    if (string.IsNullOrEmpty(message.Destination))
+                    {
+                        continue;
+                    }
+
                     firstMessage ??= message;
 
                     // Assumes the size was already calculated by the dispatcher
