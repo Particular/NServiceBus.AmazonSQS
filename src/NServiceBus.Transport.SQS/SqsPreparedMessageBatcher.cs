@@ -11,7 +11,7 @@ namespace NServiceBus.Transport.SQS
         public static IReadOnlyList<SqsBatchEntry> Batch(IEnumerable<SqsPreparedMessage> preparedMessages)
         {
             var allBatches = new List<SqsBatchEntry>();
-            var currentDestinationBatches = new Dictionary<string, SqsPreparedMessage>();
+            var currentDestinationBatches = new Dictionary<string, SqsPreparedMessage>(TransportConstraints.MaximumItemsInBatch);
 
             var groupByDestination = preparedMessages.GroupBy(m => m.QueueUrl, StringComparer.Ordinal);
             foreach (var group in groupByDestination)
@@ -38,12 +38,14 @@ namespace NServiceBus.Transport.SQS
                     currentDestinationBatches.Add(Guid.NewGuid().ToString(), message);
 
                     var currentCount = currentDestinationBatches.Count;
-                    if (currentCount != 0 && currentCount % TransportConstraints.MaximumItemsInBatch == 0)
+                    if (currentCount != TransportConstraints.MaximumItemsInBatch)
                     {
-                        allBatches.Add(message.ToBatchRequest(currentDestinationBatches));
-                        currentDestinationBatches.Clear();
-                        payloadSize = 0;
+                        continue;
                     }
+
+                    allBatches.Add(message.ToBatchRequest(currentDestinationBatches));
+                    currentDestinationBatches.Clear();
+                    payloadSize = 0;
                 }
 
                 if (currentDestinationBatches.Count > 0)
