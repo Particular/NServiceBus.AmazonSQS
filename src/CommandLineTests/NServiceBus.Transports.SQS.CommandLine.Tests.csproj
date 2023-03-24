@@ -9,7 +9,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.7.103.33" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.103.35" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.101.34" />
     <PackageReference Include="AWSSDK.SQS" Version="3.7.100.98" />
     <PackageReference Include="BitFaster.Caching" Version="2.1.3" />
