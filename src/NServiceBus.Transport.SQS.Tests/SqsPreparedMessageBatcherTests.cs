@@ -246,12 +246,7 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.AreEqual(10, batches.ElementAt(6).BatchRequest.Entries.Count);
         }
 
-        // ReSharper disable InconsistentNaming
-        static string GenerateBody(int sizeInKB)
-        // ReSharper restore InconsistentNaming
-        {
-            return new string('b', sizeInKB * 1024);
-        }
+        static string GenerateBody(int sizeInKilobytes) => new('b', sizeInKilobytes * 1024);
 
         [Test]
         public void BatchPerDestination_MultipleBatchesForGreaterThan10Entries()

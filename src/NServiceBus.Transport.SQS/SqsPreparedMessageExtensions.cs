@@ -1,3 +1,5 @@
+#nullable enable
+
 namespace NServiceBus.Transport.SQS
 {
     using System.Collections.Generic;
@@ -16,7 +18,7 @@ namespace NServiceBus.Transport.SQS
                 DelaySeconds = message.DelaySeconds
             };
 
-        public static void CopyMessageAttributes(this SqsPreparedMessage message, Dictionary<string, MessageAttributeValue> nativeMessageAttributes)
+        public static void CopyMessageAttributes(this SqsPreparedMessage message, Dictionary<string, MessageAttributeValue>? nativeMessageAttributes)
         {
             foreach (var messageAttribute in nativeMessageAttributes ??
                                              Enumerable.Empty<KeyValuePair<string, MessageAttributeValue>>())
