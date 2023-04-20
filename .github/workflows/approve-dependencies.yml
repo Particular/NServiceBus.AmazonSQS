@@ -1,0 +1,28 @@
+name: Auto-approve AWSSDK dependency updates
+on:
+  pull_request_target:
+    types: [ opened ]
+permissions:
+  pull-requests: write
+  contents: write
+jobs:
+  dependabot:
+    runs-on: ubuntu-latest
+    # Prevent run from failing on non-Dependabot PRs
+    if: ${{ github.event.pull_request.user.login == 'dependabot[bot]' }}
+    steps:
+      - name: Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v1.3.6
+      - name: Approve PR
+        if: ${{contains(steps.metadata.outputs.dependency-names, 'AWSSDK.SQS') || contains(steps.metadata.outputs.dependency-names, 'AWSSDK.SimpleNotificationService') || contains(steps.metadata.outputs.dependency-names, 'AWSSDK.S3}}
+        run: gh pr review --approve "$PR_URL"
+        env:
+          PR_URL: ${{github.event.pull_request.html_url}}
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      - name: Enable auto-merge
+        if: ${{contains(steps.metadata.outputs.dependency-names, 'AWSSDK.SQS') || contains(steps.metadata.outputs.dependency-names, 'AWSSDK.SimpleNotificationService') || contains(steps.metadata.outputs.dependency-names, 'AWSSDK.S3')}}
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{github.event.pull_request.html_url}}
+          GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
