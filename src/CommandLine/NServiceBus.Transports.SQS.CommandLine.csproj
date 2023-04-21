@@ -19,15 +19,15 @@
     <PackageReference Include="Particular.Packaging" Version="2.3.0" PrivateAssets="All" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Label="Separate AWS dependencies so Dependabot PRs don't always have to be rebased">
     <PackageReference Include="AWSSDK.SQS" Version="3.7.100.115" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <!-- Intentional Newline-->
+    <!-- Intentional Newline-->
+    <!-- Intentional Newline-->
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.101.51" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <!-- Intentional Newline-->
+    <!-- Intentional Newline-->
+    <!-- Intentional Newline-->
     <PackageReference Include="AWSSDK.S3" Version="3.7.104" />
   </ItemGroup>
 
