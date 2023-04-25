@@ -25,7 +25,7 @@
     <!-- Intentional Newline-->
     <!-- Intentional Newline-->
     <!-- Intentional Newline-->
-    <PackageReference Include="AWSSDK.S3" Version="3.7.104.2" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.104.4" />
   </ItemGroup>
 
   <ItemGroup>
