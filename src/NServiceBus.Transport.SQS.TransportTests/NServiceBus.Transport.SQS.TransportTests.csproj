@@ -25,7 +25,7 @@
     <!-- Intentional Newline-->
     <!-- Intentional Newline-->
     <!-- Intentional Newline-->
-    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.101.57" />
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.101.59" />
     <!-- Intentional Newline-->
     <!-- Intentional Newline-->
     <!-- Intentional Newline-->
