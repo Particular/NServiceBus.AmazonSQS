@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup Label="Separate AWS dependencies so Dependabot PRs don't always have to be rebased">
-    <PackageReference Include="AWSSDK.SQS" Version="3.7.101" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.102" />
     <!-- Intentional Newline-->
     <!-- Intentional Newline-->
     <!-- Intentional Newline-->
