@@ -14,21 +14,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.102.2" />
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.101.63" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.104.13" />
     <PackageReference Include="BitFaster.Caching" Version="2.2.0" />
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.0.2" />
     <PackageReference Include="Particular.Packaging" Version="2.3.0" PrivateAssets="All" />
-  </ItemGroup>
-
-  <ItemGroup Label="Separate AWS dependencies so Dependabot PRs don't always have to be rebased">
-    <PackageReference Include="AWSSDK.SQS" Version="3.7.102.2" />
-    <!-- Intentional Newline-->
-    <!-- Intentional Newline-->
-    <!-- Intentional Newline-->
-    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.101.63" />
-    <!-- Intentional Newline-->
-    <!-- Intentional Newline-->
-    <!-- Intentional Newline-->
-    <PackageReference Include="AWSSDK.S3" Version="3.7.104.13" />
   </ItemGroup>
 
 </Project>
