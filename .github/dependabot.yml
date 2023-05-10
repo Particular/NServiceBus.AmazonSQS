@@ -5,6 +5,10 @@ updates:
   schedule:
     interval: daily
   open-pull-requests-limit: 1000
+  groups:
+    awssdk:
+      patterns:
+        - "AWSSDK.*"
   ignore:
     # Particular.Analyzers updates are distributed via RepoStandards
     - dependency-name: "Particular.Analyzers"
