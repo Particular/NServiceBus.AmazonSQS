@@ -12,9 +12,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.SQS" Version="3.7.102.3" />
-    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.101.64" />
-    <PackageReference Include="AWSSDK.S3" Version="3.7.104.14" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.102.4" />
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.101.65" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.104.15" />
     <PackageReference Include="BitFaster.Caching" Version="2.2.0" />
     <PackageReference Include="GitHubActionsTestLogger" Version="2.1.0" />
     <PackageReference Include="NServiceBus.AcceptanceTests.Sources" Version="8.0.3" GeneratePathProperty="true" />
