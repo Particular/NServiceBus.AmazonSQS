@@ -216,6 +216,10 @@
             throw new NotImplementedException();
         }
 
+        public CancelMessageMoveTaskResponse CancelMessageMoveTask(CancelMessageMoveTaskRequest request) => throw new NotImplementedException();
+
+        public Task<CancelMessageMoveTaskResponse> CancelMessageMoveTaskAsync(CancelMessageMoveTaskRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
+
         public ChangeMessageVisibilityResponse ChangeMessageVisibility(string queueUrl, string receiptHandle, int visibilityTimeout)
         {
             throw new NotImplementedException();
@@ -356,6 +360,10 @@
             throw new NotImplementedException();
         }
 
+        public ListMessageMoveTasksResponse ListMessageMoveTasks(ListMessageMoveTasksRequest request) => throw new NotImplementedException();
+
+        public Task<ListMessageMoveTasksResponse> ListMessageMoveTasksAsync(ListMessageMoveTasksRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
+
         public ListQueuesResponse ListQueues(string queueNamePrefix)
         {
             throw new NotImplementedException();
@@ -492,6 +500,10 @@
         {
             throw new NotImplementedException();
         }
+
+        public StartMessageMoveTaskResponse StartMessageMoveTask(StartMessageMoveTaskRequest request) => throw new NotImplementedException();
+
+        public Task<StartMessageMoveTaskResponse> StartMessageMoveTaskAsync(StartMessageMoveTaskRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
 
         public TagQueueResponse TagQueue(TagQueueRequest request)
         {
