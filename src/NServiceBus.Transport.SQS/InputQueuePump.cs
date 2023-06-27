@@ -213,7 +213,7 @@ namespace NServiceBus.Transport.SQS
                 catch (Exception ex) when (ex.IsCausedBy(messagePumpCancellationToken))
                 {
                     // private token, pump is being stopped, log exception in case stack trace is ever needed for debugging
-                    Logger.Debug("Operation canceled while stopping input queue pump.", ex);
+                    Logger.Debug("Operation canceled while stopping input queue pump.");
                     break;
                 }
                 catch (Exception ex)
