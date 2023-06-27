@@ -15,13 +15,15 @@
         [TestCase(TransportTransactionMode.TransactionScope)]
         public async Task Should_allow_restarting_receivers(TransportTransactionMode transactionMode)
         {
+            TestTimeout = TimeSpan.FromMinutes(1);
+
             var messageReceived = CreateTaskCompletionSource();
 
             await StartPump((context, token) =>
-            {
-                messageReceived.SetResult();
-                return Task.CompletedTask;
-            },
+                {
+                    messageReceived.SetResult();
+                    return Task.CompletedTask;
+                },
                 (context, token) => Task.FromResult(ErrorHandleResult.Handled), transactionMode);
 
             await receiver.StopReceive();
@@ -37,43 +39,52 @@
         [TestCase(TransportTransactionMode.TransactionScope)]
         public async Task Should_gracefully_restart_processing(TransportTransactionMode transactionMode)
         {
+            TestTimeout = TimeSpan.FromMinutes(1);
+
             var receivedMessages = new ConcurrentQueue<string>();
             var followupMessageReceived = CreateTaskCompletionSource();
+            var stopCalled = CreateTaskCompletionSource();
+
             await StartPump(async (context, token) =>
-            {
-                var messageType = context.Headers["Type"];
-                receivedMessages.Enqueue(messageType);
-                TestContext.WriteLine("Received message " + messageType);
-
-                switch (messageType)
                 {
-                    case "Start":
+                    var messageType = context.Headers["Type"];
+                    receivedMessages.Enqueue(messageType);
+                    TestContext.WriteLine("Received message " + messageType);
 
-                        // run async because the pump might block the return until all inflight messages are processed.
-                        var stopTask = Task.Run(async () =>
-                        {
-                            await receiver.StopReceive(token);
-                            TestContext.WriteLine("Stopped receiver");
-                        }, token);
+                    switch (messageType)
+                    {
+                        case "Start":
 
-                        await SendMessage(InputQueueName, new Dictionary<string, string>() { { "Type", "Followup" } },
-                            context.TransportTransaction, cancellationToken: token);
-                        await Task.Yield();
+                            // run async because the pump might block the return until all inflight messages are processed.
+                            var stopTask = Task.Run(async () =>
+                            {
+                                var stopTask = receiver.StopReceive(token);
+                                stopCalled.SetResult();
+                                await stopTask;
+                                TestContext.WriteLine($"Stopped receiver");
 
-                        _ = stopTask.ContinueWith(async _ =>
-                        {
-                            await receiver.StartReceive(token);
-                            TestContext.WriteLine("Started receiver");
-                        }, token);
+                            }, token);
 
-                        break;
-                    case "Followup":
-                        followupMessageReceived.SetResult();
-                        break;
-                    default:
-                        throw new ArgumentException();
-                }
-            },
+                            await stopCalled.Task;
+                            await SendMessage(InputQueueName,
+                                new Dictionary<string, string>() { { "Type", "Followup" } },
+                                context.TransportTransaction, cancellationToken: token);
+                            await Task.Yield();
+
+                            _ = stopTask.ContinueWith(async _ =>
+                            {
+                                await receiver.StartReceive(token);
+                                TestContext.WriteLine($"Started receiver");
+                            }, token);
+
+                            break;
+                        case "Followup":
+                            followupMessageReceived.SetResult();
+                            break;
+                        default:
+                            throw new ArgumentException();
+                    }
+                },
                 (context, token) =>
                 {
                     Assert.Fail($"Message failed processing: {context.Exception}");
