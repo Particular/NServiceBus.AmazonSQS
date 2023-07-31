@@ -11,9 +11,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.SQS" Version="3.7.200.6" />
-    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.200.5" />
-    <PackageReference Include="AWSSDK.S3" Version="3.7.201.3" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.200.8" />
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.200.7" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.201.5" />
     <PackageReference Include="BitFaster.Caching" Version="2.2.0" />
     <PackageReference Include="GitHubActionsTestLogger" Version="2.3.2" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.3" />
