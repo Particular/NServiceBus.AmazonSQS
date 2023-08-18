@@ -2,6 +2,7 @@
 {
     using System;
     using System.Linq;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.S3;
@@ -12,13 +13,13 @@
 
     class SqsTransportInfrastructure : TransportInfrastructure
     {
-        public SqsTransportInfrastructure(SqsTransport transportDefinition, HostSettings hostSettings, ReceiveSettings[] receiverSettings, IAmazonSQS sqsClient,
+        public SqsTransportInfrastructure(HostSettings hostSettings, ReceiveSettings[] receiverSettings, IAmazonSQS sqsClient,
             IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, S3Settings s3Settings, PolicySettings policySettings, int queueDelayTimeSeconds, string topicNamePrefix, bool v1Compatibility, bool doNotWrapOutgoingMessages,
             bool shouldDisposeSqsClient, bool shouldDisposeSnsClient)
         {
-            this.transportDefinition = transportDefinition;
             this.sqsClient = sqsClient;
             this.snsClient = snsClient;
+            this.queueCache = queueCache;
             this.shouldDisposeSqsClient = shouldDisposeSqsClient;
             this.shouldDisposeSnsClient = shouldDisposeSnsClient;
             coreSettings = hostSettings.CoreSettings;
@@ -64,11 +65,24 @@
             return Task.CompletedTask;
         }
 
-#pragma warning disable CS0618 // Type or member is obsolete
-        public override string ToTransportAddress(QueueAddress address) => transportDefinition.ToTransportAddress(address);
-#pragma warning restore CS0618 // Type or member is obsolete
+        public override string ToTransportAddress(QueueAddress address)
+        {
+            var queueName = address.BaseAddress;
+            var queue = new StringBuilder(queueName);
+            if (address.Discriminator != null)
+            {
+                queue.Append("-" + address.Discriminator);
+            }
 
-        readonly SqsTransport transportDefinition;
+            if (address.Qualifier != null)
+            {
+                queue.Append("-" + address.Qualifier);
+            }
+
+            return queueCache.GetPhysicalQueueName(queue.ToString());
+        }
+
+        readonly QueueCache queueCache;
         readonly IAmazonSQS sqsClient;
         readonly IAmazonSimpleNotificationService snsClient;
         readonly IAmazonS3 s3Client;
