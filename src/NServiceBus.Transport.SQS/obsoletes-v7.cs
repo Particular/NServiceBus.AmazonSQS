@@ -5,68 +5,10 @@ namespace NServiceBus
     using System;
     using System.Text;
     using Amazon.S3;
-    using NServiceBus.Pipeline;
     using NServiceBus.Transport;
 
     public static partial class SqsTransportSettings
     {
-        [ObsoleteEx(
-            Message = @"The compatibility mode is deprecated. Switch to native publish/subscribe mode using SNS instead.",
-            TreatAsErrorFromVersion = "6",
-            RemoveInVersion = "7")]
-        public static SubscriptionMigrationModeSettings EnableMessageDrivenPubSubCompatibilityMode(this TransportExtensions<SqsTransport> transportExtensions)
-        {
-            throw new NotImplementedException();
-        }
-
-        [ObsoleteEx(
-            ReplacementTypeOrMember = "SqsTransport.QueueDelay",
-            Message = "The native delayed delivery is always enabled in version 6.",
-            TreatAsErrorFromVersion = "6",
-            RemoveInVersion = "7")]
-        public static TransportExtensions<SqsTransport> UnrestrictedDurationDelayedDelivery(this TransportExtensions<SqsTransport> transportExtensions)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Configures the transport to use the given func as the connection string.
-        /// </summary>
-        [ObsoleteEx(
-            Message = "The SQS transport does not support a connection string.",
-            TreatAsErrorFromVersion = "6",
-            RemoveInVersion = "7")]
-        public static TransportExtensions<SqsTransport> ConnectionString(this TransportExtensions<SqsTransport> transport, string connectionString)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Configures the transport to use the given func as the connection string.
-        /// </summary>
-        [ObsoleteEx(
-            Message = "The SQS transport does not support a connection string.",
-            TreatAsErrorFromVersion = "6",
-            RemoveInVersion = "7")]
-        public static TransportExtensions<SqsTransport> ConnectionString(this TransportExtensions<SqsTransport> transport, Func<string> connectionString)
-        {
-            throw new NotImplementedException();
-        }
-
-        [ObsoleteEx(
-            Message = "The native delayed delivery is always enabled in version 6.",
-            TreatAsErrorFromVersion = "6",
-            RemoveInVersion = "7")]
-        public static void SubscriptionAuthorizer(this TransportExtensions<SqsTransport> transportExtensions, Func<IIncomingPhysicalMessageContext, bool> authorizer)
-            => throw new NotImplementedException();
-
-        [ObsoleteEx(
-            Message = "The native delayed delivery is always enabled in version 6.",
-            TreatAsErrorFromVersion = "6",
-            RemoveInVersion = "7")]
-        public static void DisablePublishing(this TransportExtensions<SqsTransport> transportExtensions)
-            => throw new NotImplementedException();
-
         /// <summary>
         /// Configures the SQS transport to be compatible with 1.x versions of the transport.
         /// </summary>
@@ -76,9 +18,7 @@ namespace NServiceBus
             RemoveInVersion = "8")]
         public static TransportExtensions<SqsTransport> EnableV1CompatibilityMode(this TransportExtensions<SqsTransport> transportExtensions)
         {
-#pragma warning disable CS0618 // Type or member is obsolete
             transportExtensions.Transport.EnableV1CompatibilityMode = true;
-#pragma warning restore CS0618 // Type or member is obsolete
             return transportExtensions;
         }
     }
