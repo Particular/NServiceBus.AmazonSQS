@@ -32,11 +32,7 @@
 
             if (outgoingMessage.Body.Length != 0)
             {
-#if NETFRAMEWORK
-                Body = Convert.ToBase64String(outgoingMessage.Body.ToArray());
-#else
                 Body = Convert.ToBase64String(outgoingMessage.Body.Span);
-#endif
             }
             else
             {

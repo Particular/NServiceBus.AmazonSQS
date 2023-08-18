@@ -467,12 +467,7 @@ namespace NServiceBus.Transport.SQS
             }
             else
             {
-#if NETFRAMEWORK
-                // blunt allocation heavy hack for now
-                body = Encoding.UTF8.GetString(outgoingMessage.Body.ToArray());
-#else
                 body = Encoding.UTF8.GetString(outgoingMessage.Body.Span);
-#endif
             }
 
             // probably think about how compact this should be?

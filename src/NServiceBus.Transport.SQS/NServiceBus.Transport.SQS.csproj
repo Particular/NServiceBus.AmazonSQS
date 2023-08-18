@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net472;net6.0</TargetFrameworks>
+    <TargetFramework>net8.0</TargetFramework>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>$(SolutionDir)NServiceBus.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
@@ -20,7 +20,6 @@
     <PackageReference Include="Fody" Version="6.7.0" PrivateAssets="All" />
     <PackageReference Include="Obsolete.Fody" Version="5.3.0" PrivateAssets="All" />
     <PackageReference Include="Particular.Packaging" Version="3.0.0" PrivateAssets="All" />
-    <PackageReference Include="PolySharp" Version="1.13.2" PrivateAssets="All" />
     <PackageReference Include="System.Text.Json" Version="7.0.3" />
   </ItemGroup>
 

@@ -2,9 +2,6 @@
 {
     using System;
     using System.Collections.Concurrent;
-#if NETFRAMEWORK
-    using System.Text;
-#endif
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.SQS;
@@ -70,7 +67,7 @@
         {
             var skipCharacters = queueName.EndsWith(".fifo") ? 5 : 0;
             var charactersToProcess = queueName.Length - skipCharacters;
-#if NET
+
             return string.Create(queueName.Length, (queueName, charactersToProcess), static (chars, state) =>
             {
                 var (queueName, charactersToProcess) = state;
@@ -91,21 +88,6 @@
                     }
                 }
             });
-#else
-            var queueNameBuilder = new StringBuilder(queueName);
-            for (var i = 0; i < charactersToProcess; ++i)
-            {
-                var c = queueNameBuilder[i];
-                if (!char.IsLetterOrDigit(c)
-                    && c != '-'
-                    && c != '_')
-                {
-                    queueNameBuilder[i] = '-';
-                }
-            }
-
-            return queueNameBuilder.ToString();
-#endif
         }
 
         // Caching the task to make sure during concurrent operations we are not overwhelming metadata fetching

@@ -4,7 +4,6 @@ namespace NServiceBus.Transport.SQS.Extensions
     using System;
     using System.Buffers;
     using System.IO;
-    using System.Linq;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -58,16 +57,6 @@ namespace NServiceBus.Transport.SQS.Extensions
             }
             else
             {
-#if NETFRAMEWORK
-                try
-                {
-                    return (Convert.FromBase64String(body), null);
-                }
-                catch (FormatException)
-                {
-                    return GetNonEncodedBody(body, arrayPool, null, encoding);
-                }
-#else
                 var buffer = GetBuffer(body, arrayPool, encoding);
                 if (Convert.TryFromBase64String(body, buffer, out var writtenBytes))
                 {
@@ -75,7 +64,6 @@ namespace NServiceBus.Transport.SQS.Extensions
                 }
 
                 return GetNonEncodedBody(body, arrayPool, buffer, encoding);
-#endif
             }
         }
 
