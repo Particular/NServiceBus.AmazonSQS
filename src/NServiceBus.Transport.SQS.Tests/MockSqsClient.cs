@@ -5,6 +5,7 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.Runtime;
+    using Amazon.Runtime.Endpoints;
     using Amazon.SQS;
     using Amazon.SQS.Model;
 
@@ -524,6 +525,8 @@
         {
             throw new NotImplementedException();
         }
+
+        public Endpoint DetermineServiceOperationEndpoint(AmazonWebServiceRequest request) => throw new NotImplementedException();
 
         public ISQSPaginatorFactory Paginators { get; }
 
