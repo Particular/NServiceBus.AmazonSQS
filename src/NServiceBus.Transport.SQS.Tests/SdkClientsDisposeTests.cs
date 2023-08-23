@@ -59,7 +59,6 @@ namespace NServiceBus.Transport.SQS.Tests
                 0,
                 "",
                 false,
-                false,
                 disposeSqs,
                 disposeSns);
 

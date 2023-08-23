@@ -25,7 +25,6 @@ namespace NServiceBus.Transport.SQS
             TopicCache topicCache,
             S3Settings s3,
             int queueDelaySeconds,
-            bool v1Compatibility,
             bool wrapOutgoingMessages = true
             )
         {
@@ -37,13 +36,11 @@ namespace NServiceBus.Transport.SQS
             this.queueCache = queueCache;
             this.wrapOutgoingMessages = wrapOutgoingMessages;
 
-            transportMessageSerializerOptions = v1Compatibility
-                ? new JsonSerializerOptions { TypeInfoResolver = TransportMessageSerializerContext.Default }
-                : new JsonSerializerOptions
-                {
-                    Converters = { new ReducedPayloadSerializerConverter() },
-                    TypeInfoResolver = TransportMessageSerializerContext.Default
-                };
+            transportMessageSerializerOptions = new JsonSerializerOptions
+            {
+                Converters = { new ReducedPayloadSerializerConverter() },
+                TypeInfoResolver = TransportMessageSerializerContext.Default
+            };
 
             hybridPubSubChecker = new HybridPubSubChecker(settings, topicCache, queueCache, snsClient);
         }
