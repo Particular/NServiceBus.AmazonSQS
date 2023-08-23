@@ -10,6 +10,7 @@ namespace NServiceBus.Transport.SQS.Tests
     using Amazon.Runtime.SharedInterfaces;
     using Amazon.SimpleNotificationService;
     using Amazon.SimpleNotificationService.Model;
+    using Endpoint = Amazon.Runtime.Endpoints.Endpoint;
 
     class MockSnsClient : IAmazonSimpleNotificationService
     {
@@ -116,6 +117,8 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         public IClientConfig Config { get; }
+
+        public Endpoint DetermineServiceOperationEndpoint(AmazonWebServiceRequest request) => throw new NotImplementedException();
 
         public ISimpleNotificationServicePaginatorFactory Paginators => throw new NotImplementedException();
 

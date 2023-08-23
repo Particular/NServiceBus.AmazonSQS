@@ -6,6 +6,7 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.Runtime;
+    using Amazon.Runtime.Endpoints;
     using Amazon.S3;
     using Amazon.S3.Model;
 
@@ -1480,6 +1481,8 @@
         public Task<WriteGetObjectResponseResponse> WriteGetObjectResponseAsync(WriteGetObjectResponseRequest request,
             CancellationToken cancellationToken = new CancellationToken()) =>
             throw new NotImplementedException();
+
+        public Endpoint DetermineServiceOperationEndpoint(AmazonWebServiceRequest request) => throw new NotImplementedException();
 
         public WriteGetObjectResponseResponse WriteGetObjectResponse(WriteGetObjectResponseRequest request) =>
             throw new NotImplementedException();
