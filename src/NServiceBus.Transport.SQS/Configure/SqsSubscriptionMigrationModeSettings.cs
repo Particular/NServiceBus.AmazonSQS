@@ -7,7 +7,8 @@
     /// Publish-subscribe migration mode configuration.
     /// </summary>
     [PreObsolete("https://github.com/Particular/NServiceBus/issues/6471",
-        Note = @"The compatibility mode will be deprecated in the next major version of the transport. Switch to native publish/subscribe mode using SNS instead.")]
+        Note = "Hybrid pub/sub support cannot be obsolete until there is a viable migration path to native pub/sub",
+        Message = "Hybrid pub/sub is no longer supported, use native pub/sub instead")]
     public class SqsSubscriptionMigrationModeSettings : SubscriptionMigrationModeSettings
     {
         SettingsHolder settings;

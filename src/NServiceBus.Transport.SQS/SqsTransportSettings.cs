@@ -252,7 +252,8 @@ namespace NServiceBus
         /// </summary>
         /// <param name="transportExtensions">The transport to enable pub-sub compatibility on</param>
         [PreObsolete("https://github.com/Particular/NServiceBus/issues/6471",
-            Note = "Native publish/subscribe is always enabled in version 7. All endpoints must be updated to use native publish/subscribe before updating to this version.")]
+           Note = "Hybrid pub/sub support cannot be obsolete until there is a viable migration path to native pub/sub",
+           Message = "Hybrid pub/sub is no longer supported, use native pub/sub instead")]
         public static SqsSubscriptionMigrationModeSettings EnableMessageDrivenPubSubCompatibilityMode(this TransportExtensions<SqsTransport> transportExtensions)
         {
             var subscriptionMigrationModeSettings = transportExtensions.Routing().EnableMessageDrivenPubSubCompatibilityMode();
@@ -265,7 +266,8 @@ namespace NServiceBus
         /// </summary>
         /// <param name="routingSettings">The transport to enable pub-sub compatibility on</param>
         [PreObsolete("https://github.com/Particular/NServiceBus/issues/6471",
-           Note = "Native publish/subscribe is always enabled in version 7. All endpoints must be updated to use native publish/subscribe before updating to this version.")]
+           Note = "Hybrid pub/sub support cannot be obsolete until there is a viable migration path to native pub/sub",
+           Message = "Hybrid pub/sub is no longer supported, use native pub/sub instead")]
         public static SqsSubscriptionMigrationModeSettings EnableMessageDrivenPubSubCompatibilityMode(
             this RoutingSettings routingSettings)
         {

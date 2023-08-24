@@ -9,7 +9,7 @@ namespace NServiceBus
     public static partial class SqsTransportSettings
     {
         [ObsoleteEx(
-            Message = "Configures the SQS transport to be compatible with 1.x versions of the transport.",
+            Message = "The SQS transport no longer supports 1.x compatibility mode",
             TreatAsErrorFromVersion = "7",
             RemoveInVersion = "8")]
         public static TransportExtensions<SqsTransport> EnableV1CompatibilityMode(this TransportExtensions<SqsTransport> transportExtensions)
@@ -100,7 +100,7 @@ namespace NServiceBus
         }
 
         [ObsoleteEx(
-            Message = "Configures the SQS transport to be compatible with 1.x versions of the transport.",
+            Message = "The SQS transport no longer supports 1.x compatibility mode",
             TreatAsErrorFromVersion = "7",
             RemoveInVersion = "8")]
         public bool EnableV1CompatibilityMode { get; set; }
