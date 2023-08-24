@@ -15,14 +15,17 @@ namespace NServiceBus
         public bool SetupTopicPoliciesWhenSubscribing { get; set; }
         public bool TopicNamePrefixCondition { get; set; }
         public System.Collections.Generic.List<string> TopicNamespaceConditions { get; }
-        [System.Obsolete("Use `AccountCondition` instead. Will be removed in version 8.0.0.", true)]
+        [System.Obsolete("Use `AccountCondition` instead. The member currently throws a NotImplementedExcep" +
+            "tion. Will be removed in version 8.0.0.", true)]
         public void AddAccountCondition() { }
-        [System.Obsolete("Use `TopicNamespaceConditions` instead. Will be removed in version 8.0.0.", true)]
+        [System.Obsolete("Use `TopicNamespaceConditions` instead. The member currently throws a NotImplemen" +
+            "tedException. Will be removed in version 8.0.0.", true)]
         public void AddNamespaceCondition(string topicNamespace) { }
-        [System.Obsolete("Use `TopicNamePrefixCondition` instead. Will be removed in version 8.0.0.", true)]
+        [System.Obsolete("Use `TopicNamePrefixCondition` instead. The member currently throws a NotImplemen" +
+            "tedException. Will be removed in version 8.0.0.", true)]
         public void AddTopicNamePrefixCondition() { }
-        [System.Obsolete("Use `SetupTopicPoliciesWhenSubscribing` instead. Will be removed in version 8.0.0" +
-            ".", true)]
+        [System.Obsolete("Use `SetupTopicPoliciesWhenSubscribing` instead. The member currently throws a No" +
+            "tImplementedException. Will be removed in version 8.0.0.", true)]
         public void AssumePolicyHasAppropriatePermissions() { }
     }
     public abstract class S3EncryptionMethod
@@ -55,12 +58,14 @@ namespace NServiceBus
         public NServiceBus.S3EncryptionMethod Encryption { get; set; }
         public string KeyPrefix { get; }
         public Amazon.S3.IAmazonS3 S3Client { get; }
-        [System.Obsolete("Use `Client or S3Settings constructor` instead. Will be removed in version 8.0.0." +
-            "", true)]
+        [System.Obsolete("Use `Client or S3Settings constructor` instead. The member currently throws a Not" +
+            "ImplementedException. Will be removed in version 8.0.0.", true)]
         public void ClientFactory(System.Func<Amazon.S3.IAmazonS3> factory) { }
-        [System.Obsolete("Use `Encryption` instead. Will be removed in version 8.0.0.", true)]
+        [System.Obsolete("Use `Encryption` instead. The member currently throws a NotImplementedException. " +
+            "Will be removed in version 8.0.0.", true)]
         public void ServerSideCustomerEncryption(Amazon.S3.ServerSideEncryptionCustomerMethod encryptionMethod, string providedKey, string providedKeyMD5 = null) { }
-        [System.Obsolete("Use `Encryption` instead. Will be removed in version 8.0.0.", true)]
+        [System.Obsolete("Use `Encryption` instead. The member currently throws a NotImplementedException. " +
+            "Will be removed in version 8.0.0.", true)]
         public void ServerSideEncryption(Amazon.S3.ServerSideEncryptionMethod encryptionMethod, string keyManagementServiceKeyId = null) { }
     }
     public class SqsTransport : NServiceBus.Transport.TransportDefinition
@@ -68,8 +73,8 @@ namespace NServiceBus
         public SqsTransport() { }
         public SqsTransport(Amazon.SQS.IAmazonSQS sqsClient, Amazon.SimpleNotificationService.IAmazonSimpleNotificationService snsClient) { }
         public bool DoNotWrapOutgoingMessages { get; set; }
-        [System.Obsolete("Configures the SQS transport to be compatible with 1.x versions of the transport." +
-            " Will be removed in version 8.0.0.", true)]
+        [System.Obsolete("The SQS transport no longer supports 1.x compatibility mode. Will be removed in v" +
+            "ersion 8.0.0.", true)]
         public bool EnableV1CompatibilityMode { get; set; }
         public System.TimeSpan MaxTimeToLive { get; set; }
         public NServiceBus.PolicySettings Policies { get; }
@@ -90,7 +95,8 @@ namespace NServiceBus
         public void MapEvent<TSubscribedEvent, TPublishedEvent>() { }
         [System.Obsolete("Inject the ITransportAddressResolver type to access the address translation mecha" +
             "nism at runtime. See the NServiceBus version 8 upgrade guide for further details" +
-            ". Will be removed in version 8.0.0.", true)]
+            ". The member currently throws a NotImplementedException. Will be removed in vers" +
+            "ion 8.0.0.", true)]
         public override string ToTransportAddress(NServiceBus.Transport.QueueAddress address) { }
     }
     public static class SqsTransportSettings
@@ -98,8 +104,8 @@ namespace NServiceBus
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> ClientFactory(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Func<Amazon.SQS.IAmazonSQS> factory) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> ClientFactory(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Func<Amazon.SimpleNotificationService.IAmazonSimpleNotificationService> factory) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> DoNotWrapOutgoingMessages(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
-        [System.Obsolete("Configures the SQS transport to be compatible with 1.x versions of the transport." +
-            " Will be removed in version 8.0.0.", true)]
+        [System.Obsolete("The SQS transport no longer supports 1.x compatibility mode. The member currently" +
+            " throws a NotImplementedException. Will be removed in version 8.0.0.", true)]
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> EnableV1CompatibilityMode(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
         public static void MapEvent(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Type eventType, string customTopicName) { }
         public static void MapEvent(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Type subscribedEventType, System.Collections.Generic.IEnumerable<string> customTopicsNames) { }
