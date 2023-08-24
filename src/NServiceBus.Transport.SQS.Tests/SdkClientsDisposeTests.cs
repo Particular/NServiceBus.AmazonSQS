@@ -48,7 +48,6 @@ namespace NServiceBus.Transport.SQS.Tests
             var topicCache = new TopicCache(mockSnsClient, null, new EventToTopicsMappings(), new EventToEventsMappings(), (type, s) => "", "");
 
             var sut = new SqsTransportInfrastructure(
-                transport,
                 hostSettings,
                 Array.Empty<ReceiveSettings>(),
                 mockSqsClient,
@@ -59,7 +58,6 @@ namespace NServiceBus.Transport.SQS.Tests
                 new PolicySettings(),
                 0,
                 "",
-                false,
                 false,
                 disposeSqs,
                 disposeSns);

@@ -136,12 +136,9 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
                     var subscriptionStorage = new TestingInMemorySubscriptionStorage();
                     c.UsePersistence<TestingInMemoryPersistence, StorageType.Subscriptions>().UseStorage(subscriptionStorage);
 
-#if NET
                     // the default value is int.MaxValue which can lead to ephemeral port exhaustion due to the massive parallel publish
-                    // .NET Framework doesn't have that problem
                     c.ConfigureSqsTransport().SqsClient = ClientFactories.CreateSqsClient(cfg => cfg.MaxConnectionsPerServer = 500);
                     c.ConfigureSqsTransport().SnsClient = ClientFactories.CreateSnsClient(cfg => cfg.MaxConnectionsPerServer = 500);
-#endif
 
                     c.OnEndpointSubscribed<Context>((s, context) =>
                     {

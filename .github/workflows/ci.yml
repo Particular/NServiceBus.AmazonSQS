@@ -15,17 +15,15 @@ env:
   NSERVICEBUS_AMAZONSQS_S3BUCKET: ${{ secrets.NSERVICEBUS_AMAZONSQS_S3BUCKET }}
 jobs:
   build:
-    name: ${{ matrix.os.name }}-${{ matrix.framework }}
-    runs-on: ${{ matrix.os.platform }}
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os:
-          - { platform: windows-2019, name: Windows }
-          - { platform: ubuntu-20.04, name: Linux }
-        framework: [ net472, net6.0, net7.0 ]
-        exclude:
-          - os: { name: Linux }
-            framework: net472
+        include:
+          - os: windows-2022
+            name: Windows
+          - os: ubuntu-22.04
+            name: Linux
       fail-fast: false
     steps:
       - name: Check for secrets
@@ -40,13 +38,12 @@ jobs:
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v3.2.0
         with:
-          dotnet-version: |
-            7.0.x
-            6.0.x
+          dotnet-version: 8.0.x
+          dotnet-quality: 'preview'
       - name: Build
         run: dotnet build src --configuration Release
       - name: Upload packages
-        if: matrix.name == 'Windows' && matrix.framework == 'net6.0'
+        if: matrix.name == 'Windows'
         uses: actions/upload-artifact@v3.1.2
         with:
           name: NuGet packages
@@ -54,5 +51,3 @@ jobs:
           retention-days: 7
       - name: Run tests
         uses: Particular/run-tests-action@v1.6.0
-        with:
-          framework: ${{ matrix.framework }}

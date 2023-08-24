@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net472;net6.0;net7.0</TargetFrameworks>
+    <TargetFramework>net8.0</TargetFramework>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>$(SolutionDir)Test.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
@@ -16,9 +16,9 @@
     <PackageReference Include="AWSSDK.S3" Version="3.7.202.3" />
     <PackageReference Include="BitFaster.Caching" Version="2.2.1" />
     <PackageReference Include="GitHubActionsTestLogger" Version="2.3.2" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.7.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0-preview-23371-04" />
     <PackageReference Include="NUnit" Version="3.13.3" />
-    <PackageReference Include="NServiceBus" Version="8.1.1" />
+    <PackageReference Include="NServiceBus" Version="9.0.0-alpha.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
     <PackageReference Include="Particular.Approvals" Version="0.5.0" />
     <PackageReference Include="PublicApiGenerator" Version="11.0.0" />
