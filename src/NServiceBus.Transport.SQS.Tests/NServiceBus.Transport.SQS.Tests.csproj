@@ -16,7 +16,7 @@
     <PackageReference Include="AWSSDK.S3" Version="3.7.203.2" />
     <PackageReference Include="BitFaster.Caching" Version="2.2.1" />
     <PackageReference Include="GitHubActionsTestLogger" Version="2.3.3" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0-preview-23371-04" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0-preview-23424-02" />
     <PackageReference Include="NUnit" Version="3.13.3" />
     <PackageReference Include="NServiceBus" Version="9.0.0-alpha.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
