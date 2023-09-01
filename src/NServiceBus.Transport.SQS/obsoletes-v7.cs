@@ -4,7 +4,6 @@ namespace NServiceBus
 {
     using System;
     using Amazon.S3;
-    using NServiceBus.Transport;
 
     public static partial class SqsTransportSettings
     {
@@ -89,16 +88,6 @@ namespace NServiceBus
 
     public partial class SqsTransport
     {
-        [ObsoleteEx(Message = "Inject the ITransportAddressResolver type to access the address translation mechanism at runtime. See the NServiceBus version 8 upgrade guide for further details.",
-                    TreatAsErrorFromVersion = "7",
-                    RemoveInVersion = "8")]
-#pragma warning disable CS0672 // Member overrides obsolete member
-        public override string ToTransportAddress(QueueAddress address)
-#pragma warning restore CS0672 // Member overrides obsolete member
-        {
-            throw new NotImplementedException();
-        }
-
         [ObsoleteEx(
             Message = "The SQS transport no longer supports 1.x compatibility mode",
             TreatAsErrorFromVersion = "7",
