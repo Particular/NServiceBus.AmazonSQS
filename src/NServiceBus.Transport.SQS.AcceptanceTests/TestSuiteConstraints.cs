@@ -1,5 +1,6 @@
 namespace NServiceBus.AcceptanceTests
 {
+    using System.Runtime.CompilerServices;
     using AcceptanceTesting.Support;
 
     public class TestSuiteConstraints : ITestSuiteConstraints
@@ -25,5 +26,8 @@ namespace NServiceBus.AcceptanceTests
         {
             return new ConfigureEndpointAcceptanceTestingPersistence();
         }
+
+        [ModuleInitializer]
+        public static void Initialize() => ITestSuiteConstraints.Current = new TestSuiteConstraints();
     }
 }
