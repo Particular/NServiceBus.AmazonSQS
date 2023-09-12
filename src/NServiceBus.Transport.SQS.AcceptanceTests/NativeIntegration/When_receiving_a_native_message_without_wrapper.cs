@@ -8,7 +8,7 @@
     using AcceptanceTesting;
     using Amazon.S3.Model;
     using Amazon.SQS.Model;
-    using EndpointTemplates;
+    using AcceptanceTesting.EndpointTemplates;
     using NUnit.Framework;
     using Transport.SQS.Tests;
 

@@ -4,7 +4,7 @@
     using System.Threading.Tasks;
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
-    using EndpointTemplates;
+    using AcceptanceTesting.EndpointTemplates;
     using NUnit.Framework;
 
     public class SendOnly_Sending_when_sender_not_properly_configured : NServiceBusAcceptanceTest

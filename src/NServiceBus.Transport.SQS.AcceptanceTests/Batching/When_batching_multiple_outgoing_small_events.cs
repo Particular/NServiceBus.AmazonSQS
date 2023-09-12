@@ -8,7 +8,7 @@ namespace NServiceBus.AcceptanceTests.Batching
     using System.Threading.Tasks;
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
-    using EndpointTemplates;
+    using AcceptanceTesting.EndpointTemplates;
     using Logging;
     using NUnit.Framework;
 

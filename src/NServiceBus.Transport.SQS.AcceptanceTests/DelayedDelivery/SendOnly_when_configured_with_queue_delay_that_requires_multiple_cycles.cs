@@ -4,7 +4,7 @@
     using System.Threading.Tasks;
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
-    using EndpointTemplates;
+    using AcceptanceTesting.EndpointTemplates;
     using NUnit.Framework;
 
     public class SendOnly_when_configured_with_queue_delay_that_requires_multiple_cycles : NServiceBusAcceptanceTest

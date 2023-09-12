@@ -5,7 +5,7 @@
     using AcceptanceTesting;
     using Amazon.Runtime;
     using Amazon.SQS.Model;
-    using EndpointTemplates;
+    using AcceptanceTesting.EndpointTemplates;
     using NUnit.Framework;
 
     public class When_trying_to_send_message_to_nonexisting_queue : NServiceBusAcceptanceTest

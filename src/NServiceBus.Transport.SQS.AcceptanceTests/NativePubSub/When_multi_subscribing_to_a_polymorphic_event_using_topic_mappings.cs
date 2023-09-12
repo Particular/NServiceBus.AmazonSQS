@@ -2,7 +2,7 @@
 {
     using System.Threading.Tasks;
     using AcceptanceTesting;
-    using EndpointTemplates;
+    using AcceptanceTesting.EndpointTemplates;
     using NUnit.Framework;
 
     public class When_multi_subscribing_to_a_polymorphic_event_using_topic_mappings : NServiceBusAcceptanceTest

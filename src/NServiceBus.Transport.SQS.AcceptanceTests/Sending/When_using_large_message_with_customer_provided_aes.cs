@@ -6,7 +6,7 @@ namespace NServiceBus.AcceptanceTests.Sending
     using AcceptanceTesting;
     using Amazon.S3;
     using Amazon.S3.Model;
-    using EndpointTemplates;
+    using AcceptanceTesting.EndpointTemplates;
     using NUnit.Framework;
     using Transport.SQS.Tests;
 

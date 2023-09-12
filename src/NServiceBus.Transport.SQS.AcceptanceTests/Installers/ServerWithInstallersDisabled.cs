@@ -2,13 +2,13 @@
 {
     using System;
     using System.Threading.Tasks;
+    using AcceptanceTesting.EndpointTemplates;
     using NServiceBus.AcceptanceTesting.Customization;
     using NServiceBus.AcceptanceTesting.Support;
-    using NServiceBus.AcceptanceTests.EndpointTemplates;
 
     public class ServerWithInstallersDisabled : IEndpointSetupTemplate
     {
-        public IConfigureEndpointTestExecution TransportConfiguration { get; set; } = TestSuiteConstraints.Current.CreateTransportConfiguration();
+        public IConfigureEndpointTestExecution TransportConfiguration { get; set; } = ITestSuiteConstraints.Current.CreateTransportConfiguration();
 
         public virtual async Task<EndpointConfiguration> GetConfiguration(RunDescriptor runDescriptor, EndpointCustomizationConfiguration endpointConfiguration, Func<EndpointConfiguration, Task> configurationBuilderCustomization)
         {

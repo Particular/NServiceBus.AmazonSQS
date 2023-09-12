@@ -1,6 +1,6 @@
 ﻿namespace NServiceBus.AcceptanceTests
 {
-    using NServiceBus.AcceptanceTests.EndpointTemplates;
+    using AcceptanceTesting.EndpointTemplates;
 
     public class CustomizedServer : DefaultServer
     {

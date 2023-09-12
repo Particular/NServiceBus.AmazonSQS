@@ -1,7 +1,7 @@
 ﻿namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
 {
     using AcceptanceTesting;
-    using EndpointTemplates;
+    using AcceptanceTesting.EndpointTemplates;
     using Configuration.AdvancedExtensibility;
     using Features;
     using NServiceBus.Routing.MessageDrivenSubscriptions;

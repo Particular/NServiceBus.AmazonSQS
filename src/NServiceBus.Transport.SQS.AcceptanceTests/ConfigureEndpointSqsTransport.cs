@@ -1,6 +1,6 @@
 ﻿namespace NServiceBus.AcceptanceTests
 {
-    using ScenarioDescriptors;
+    using AcceptanceTesting.ScenarioDescriptors;
     using System;
     using System.Threading.Tasks;
     using AcceptanceTesting.Customization;

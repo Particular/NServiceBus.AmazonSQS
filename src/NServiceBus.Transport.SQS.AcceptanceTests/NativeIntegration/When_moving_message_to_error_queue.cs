@@ -6,7 +6,7 @@
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
     using Amazon.SQS.Model;
-    using EndpointTemplates;
+    using AcceptanceTesting.EndpointTemplates;
     using NUnit.Framework;
 
     public class When_moving_message_to_error_queue : NServiceBusAcceptanceTest

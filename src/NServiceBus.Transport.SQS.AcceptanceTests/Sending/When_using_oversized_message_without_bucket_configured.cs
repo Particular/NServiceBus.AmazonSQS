@@ -2,7 +2,7 @@
 {
     using System;
     using AcceptanceTesting;
-    using EndpointTemplates;
+    using AcceptanceTesting.EndpointTemplates;
     using NUnit.Framework;
 
     public class When_using_oversized_message_without_bucket_configured : NServiceBusAcceptanceTest

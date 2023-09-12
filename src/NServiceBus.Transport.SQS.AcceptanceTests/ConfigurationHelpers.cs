@@ -1,6 +1,6 @@
 ﻿namespace NServiceBus.AcceptanceTests
 {
-    using EndpointTemplates;
+    using AcceptanceTesting.EndpointTemplates;
 
     static class ConfigurationHelpers
     {

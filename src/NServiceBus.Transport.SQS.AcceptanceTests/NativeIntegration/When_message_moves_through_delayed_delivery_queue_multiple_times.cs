@@ -6,7 +6,7 @@
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
     using Amazon.SQS.Model;
-    using EndpointTemplates;
+    using AcceptanceTesting.EndpointTemplates;
     using NUnit.Framework;
 
     public class When_message_moves_through_delayed_delivery_queue_multiple_times : NServiceBusAcceptanceTest

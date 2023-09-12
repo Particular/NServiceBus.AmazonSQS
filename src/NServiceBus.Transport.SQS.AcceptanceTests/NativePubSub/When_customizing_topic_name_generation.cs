@@ -2,7 +2,7 @@
 {
     using System.Threading.Tasks;
     using AcceptanceTesting;
-    using EndpointTemplates;
+    using AcceptanceTesting.EndpointTemplates;
     using NUnit.Framework;
 
     public class When_customizing_topic_name_generation : NServiceBusAcceptanceTest

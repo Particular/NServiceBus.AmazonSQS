@@ -6,7 +6,7 @@
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
     using Configuration.AdvancedExtensibility;
-    using EndpointTemplates;
+    using AcceptanceTesting.EndpointTemplates;
     using Features;
     using NServiceBus.Routing.MessageDrivenSubscriptions;
     using NUnit.Framework;

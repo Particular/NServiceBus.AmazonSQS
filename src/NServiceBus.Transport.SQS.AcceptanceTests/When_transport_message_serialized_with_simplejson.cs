@@ -4,7 +4,7 @@ namespace NServiceBus.AcceptanceTests
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;
     using Amazon.SQS.Model;
-    using EndpointTemplates;
+    using AcceptanceTesting.EndpointTemplates;
     using NUnit.Framework;
     using Transport.SQS.Tests;
 

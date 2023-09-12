@@ -3,7 +3,7 @@
     using System;
     using System.Threading.Tasks;
     using AcceptanceTesting;
-    using EndpointTemplates;
+    using AcceptanceTesting.EndpointTemplates;
     using NUnit.Framework;
 
     // NOTE: This test was copied from core to allow it to run with AutoSubscribe

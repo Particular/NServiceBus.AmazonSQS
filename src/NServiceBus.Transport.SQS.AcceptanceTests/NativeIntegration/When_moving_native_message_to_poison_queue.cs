@@ -7,7 +7,7 @@
     using AcceptanceTesting;
     using Amazon.SQS.Model;
     using Configuration.AdvancedExtensibility;
-    using EndpointTemplates;
+    using AcceptanceTesting.EndpointTemplates;
     using NUnit.Framework;
     using Transport.SQS;
 
