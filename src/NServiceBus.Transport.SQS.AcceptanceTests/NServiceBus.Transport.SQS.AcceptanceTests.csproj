@@ -29,8 +29,8 @@
     <Compile Include="..\NServiceBus.Transport.SQS.Tests\ClientFactories.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(PkgNServiceBus_AcceptanceTests_Sources)' != ''">
-    <Compile Remove="$(PkgNServiceBus_AcceptanceTests_Sources)\**\Routing\When_publishing_an_event_implementing_two_unrelated_interfaces.cs" />
+  <ItemGroup Condition="'$(PkgNServiceBus_AcceptanceTests_Common_Sources)' != ''">
+    <Compile Remove="$(PkgNServiceBus_AcceptanceTests_Common_Sources)\**\Routing\When_publishing_an_event_implementing_two_unrelated_interfaces.cs" />
   </ItemGroup>
 
 </Project>
