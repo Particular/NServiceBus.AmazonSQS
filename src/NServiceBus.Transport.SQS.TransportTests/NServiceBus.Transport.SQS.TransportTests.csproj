@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -26,6 +26,9 @@
   <ItemGroup>
     <Compile Include="..\NServiceBus.Transport.SQS.Tests\Cleanup.cs" />
     <Compile Include="..\NServiceBus.Transport.SQS.Tests\ClientFactories.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PkgNServiceBus_TransportTests_Sources)' != ''">
     <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\ExceptionExtensions.cs" />
   </ItemGroup>
 
