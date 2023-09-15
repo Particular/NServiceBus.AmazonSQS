@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -12,9 +12,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.SQS" Version="3.7.200.37" />
-    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.200.36" />
-    <PackageReference Include="AWSSDK.S3" Version="3.7.203.11" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.200.41" />
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.200.40" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.203.15" />
     <PackageReference Include="BitFaster.Caching" Version="2.2.1" />
     <PackageReference Include="GitHubActionsTestLogger" Version="2.3.3" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0-preview-23424-02" />
