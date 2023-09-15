@@ -10,7 +10,7 @@
         {
             if (!eventsToTopicsMappings.TryGetValue(subscribedEventType, out var mapping))
             {
-                mapping = new HashSet<string>();
+                mapping = [];
                 eventsToTopicsMappings.Add(subscribedEventType, mapping);
             }
 
