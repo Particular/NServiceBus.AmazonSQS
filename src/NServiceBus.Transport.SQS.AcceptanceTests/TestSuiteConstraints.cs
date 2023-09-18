@@ -1,6 +1,7 @@
 namespace NServiceBus.AcceptanceTests
 {
     using System.Runtime.CompilerServices;
+    using AcceptanceTesting;
     using AcceptanceTesting.Support;
 
     public class TestSuiteConstraints : ITestSuiteConstraints
