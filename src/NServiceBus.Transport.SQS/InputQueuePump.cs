@@ -126,7 +126,7 @@ namespace NServiceBus.Transport.SQS
                 QueueUrl = inputQueueUrl,
                 WaitTimeSeconds = 20,
                 AttributeNames = new List<string> { "SentTimestamp" },
-                MessageAttributeNames = new List<string> { ".*" }
+                MessageAttributeNames = new List<string> { "All" }
             };
 
             if (coreSettings != null && coreSettings.TryGet<int>(SettingsKeys.MessageVisibilityTimeout, out var visibilityTimeout))
