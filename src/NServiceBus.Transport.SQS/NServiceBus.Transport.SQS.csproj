@@ -16,7 +16,7 @@
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="[3.7.101.52 , 3.8.0)" />
     <PackageReference Include="AWSSDK.SQS" Version="[3.7.100.116, 3.8.0)" />
     <PackageReference Include="BitFaster.Caching" Version="[2.2.0, 3.0.0)" />
-    <PackageReference Include="NServiceBus" Version="9.0.0-alpha.4" />
+    <PackageReference Include="NServiceBus" Version="9.0.0-alpha.5" />
     <PackageReference Include="Fody" Version="6.8.0" PrivateAssets="All" />
     <PackageReference Include="Obsolete.Fody" Version="5.3.0" PrivateAssets="All" />
     <PackageReference Include="Particular.Packaging" Version="3.0.0" PrivateAssets="All" />    
