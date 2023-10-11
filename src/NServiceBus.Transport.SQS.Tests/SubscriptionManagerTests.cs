@@ -256,11 +256,11 @@ namespace NServiceBus.Transport.SQS.Tests
 
             snsClient.ListSubscriptionsByTopicResponse = topic => new ListSubscriptionsByTopicResponse
             {
-                Subscriptions = new List<Subscription>
-                {
-                    new Subscription {Endpoint = "arn:someOtherQueue", SubscriptionArn = "arn:someOtherSubscription"},
-                    new Subscription {Endpoint = "arn:yetAnotherQueue", SubscriptionArn = "arn:yetAnotherSubscription"}
-                }
+                Subscriptions =
+                [
+                    new Subscription { Endpoint = "arn:someOtherQueue", SubscriptionArn = "arn:someOtherSubscription" },
+                    new Subscription { Endpoint = "arn:yetAnotherQueue", SubscriptionArn = "arn:yetAnotherSubscription" }
+                ]
             };
 
             var eventType = typeof(Event);
@@ -277,11 +277,11 @@ namespace NServiceBus.Transport.SQS.Tests
 
             snsClient.ListSubscriptionsByTopicResponse = topic => new ListSubscriptionsByTopicResponse
             {
-                Subscriptions = new List<Subscription>
-                {
-                    new Subscription {Endpoint = "arn:someOtherQueue", SubscriptionArn = "arn:someOtherSubscription"},
-                    new Subscription {Endpoint = $"arn:{queueName}", SubscriptionArn = "arn:subscription"}
-                }
+                Subscriptions =
+                [
+                    new Subscription { Endpoint = "arn:someOtherQueue", SubscriptionArn = "arn:someOtherSubscription" },
+                    new Subscription { Endpoint = $"arn:{queueName}", SubscriptionArn = "arn:subscription" }
+                ]
             };
 
             var eventType = typeof(Event);
@@ -301,10 +301,10 @@ namespace NServiceBus.Transport.SQS.Tests
 
             snsClient.ListSubscriptionsByTopicResponse = topic => new ListSubscriptionsByTopicResponse
             {
-                Subscriptions = new List<Subscription>
-                {
-                    new Subscription {Endpoint = $"arn:{queueName}", SubscriptionArn = "arn:subscription"}
-                }
+                Subscriptions =
+                [
+                    new Subscription { Endpoint = $"arn:{queueName}", SubscriptionArn = "arn:subscription" }
+                ]
             };
 
             var eventType = typeof(Event);
@@ -329,17 +329,17 @@ namespace NServiceBus.Transport.SQS.Tests
                 {
                     return new ListSubscriptionsByTopicResponse
                     {
-                        Subscriptions = new List<Subscription>
-                        {
-                            new Subscription {Endpoint = "arn:someOtherQueue", SubscriptionArn = "arn:someOtherSubscription"},
-                            new Subscription {Endpoint = $"arn:{queueName}", SubscriptionArn = "arn:subscription"}
-                        }
+                        Subscriptions =
+                        [
+                            new Subscription { Endpoint = "arn:someOtherQueue", SubscriptionArn = "arn:someOtherSubscription" },
+                            new Subscription { Endpoint = $"arn:{queueName}", SubscriptionArn = "arn:subscription" }
+                        ]
                     };
                 }
 
                 return new ListSubscriptionsByTopicResponse
                 {
-                    Subscriptions = new List<Subscription>()
+                    Subscriptions = []
                 };
             };
 
@@ -371,17 +371,17 @@ namespace NServiceBus.Transport.SQS.Tests
                 {
                     return new ListSubscriptionsByTopicResponse
                     {
-                        Subscriptions = new List<Subscription>
-                        {
-                            new Subscription {Endpoint = "arn:someOtherQueue", SubscriptionArn = "arn:someOtherSubscription"},
-                            new Subscription {Endpoint = $"arn:{queueName}", SubscriptionArn = "arn:subscription"}
-                        }
+                        Subscriptions =
+                        [
+                            new Subscription { Endpoint = "arn:someOtherQueue", SubscriptionArn = "arn:someOtherSubscription" },
+                            new Subscription { Endpoint = $"arn:{queueName}", SubscriptionArn = "arn:subscription" }
+                        ]
                     };
                 }
 
                 return new ListSubscriptionsByTopicResponse
                 {
-                    Subscriptions = new List<Subscription>()
+                    Subscriptions = []
                 };
             };
 
@@ -404,17 +404,17 @@ namespace NServiceBus.Transport.SQS.Tests
                 {
                     return new ListSubscriptionsByTopicResponse
                     {
-                        Subscriptions = new List<Subscription>
-                        {
-                            new Subscription {Endpoint = "arn:someOtherQueue", SubscriptionArn = "arn:someOtherSubscription"},
-                            new Subscription {Endpoint = $"arn:{queueName}", SubscriptionArn = "arn:subscription"}
-                        }
+                        Subscriptions =
+                        [
+                            new Subscription { Endpoint = "arn:someOtherQueue", SubscriptionArn = "arn:someOtherSubscription" },
+                            new Subscription { Endpoint = $"arn:{queueName}", SubscriptionArn = "arn:subscription" }
+                        ]
                     };
                 }
 
                 return new ListSubscriptionsByTopicResponse
                 {
-                    Subscriptions = new List<Subscription>()
+                    Subscriptions = []
                 };
             };
 
@@ -445,17 +445,17 @@ namespace NServiceBus.Transport.SQS.Tests
                 {
                     return new ListSubscriptionsByTopicResponse
                     {
-                        Subscriptions = new List<Subscription>
-                        {
-                            new Subscription {Endpoint = "arn:someOtherQueue", SubscriptionArn = "arn:someOtherSubscription"},
-                            new Subscription {Endpoint = $"arn:{queueName}", SubscriptionArn = "arn:subscription"}
-                        }
+                        Subscriptions =
+                        [
+                            new Subscription { Endpoint = "arn:someOtherQueue", SubscriptionArn = "arn:someOtherSubscription" },
+                            new Subscription { Endpoint = $"arn:{queueName}", SubscriptionArn = "arn:subscription" }
+                        ]
                     };
                 }
 
                 return new ListSubscriptionsByTopicResponse
                 {
-                    Subscriptions = new List<Subscription>()
+                    Subscriptions = []
                 };
             };
 
@@ -478,7 +478,7 @@ namespace NServiceBus.Transport.SQS.Tests
             {
             }
 
-            public List<int> Delays { get; } = new List<int>();
+            public List<int> Delays { get; } = [];
 
             protected override Task Delay(int millisecondsDelay, CancellationToken cancellationToken = default)
             {

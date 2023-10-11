@@ -546,7 +546,7 @@
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
             var queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
 
-            var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string> { QueueAttributeName.MessageRetentionPeriod, QueueAttributeName.QueueArn }).ConfigureAwait(false);
+            var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, [QueueAttributeName.MessageRetentionPeriod, QueueAttributeName.QueueArn]).ConfigureAwait(false);
 
             Assert.AreEqual(retentionPeriodInSeconds, queueAttributesResponse.MessageRetentionPeriod);
 
@@ -563,12 +563,12 @@
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}{suffix}");
             var queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
 
-            var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
-            {
+            var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl,
+            [
                 QueueAttributeName.MessageRetentionPeriod,
                 QueueAttributeName.DelaySeconds,
                 QueueAttributeName.QueueArn
-            }).ConfigureAwait(false);
+            ]).ConfigureAwait(false);
 
             Assert.AreEqual(retentionPeriodInSeconds, queueAttributesResponse.MessageRetentionPeriod);
             Assert.AreEqual(delayInSeconds, queueAttributesResponse.DelaySeconds);
@@ -595,10 +595,10 @@
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
             var queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
-            var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
-            {
+            var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl,
+            [
                 QueueAttributeName.Policy
-            }).ConfigureAwait(false);
+            ]).ConfigureAwait(false);
             var policy = Policy.FromJson(queueAttributesResponse.Policy);
 
             var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
@@ -613,10 +613,10 @@
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
             var queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
-            var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
-            {
+            var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl,
+            [
                 QueueAttributeName.Policy
-            }).ConfigureAwait(false);
+            ]).ConfigureAwait(false);
             var policy = Policy.FromJson(queueAttributesResponse.Policy);
 
             var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
@@ -631,11 +631,11 @@
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
             var queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
-            var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
-            {
+            var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl,
+            [
                 QueueAttributeName.QueueArn,
                 QueueAttributeName.Policy
-            }).ConfigureAwait(false);
+            ]).ConfigureAwait(false);
             var policy = Policy.FromJson(queueAttributesResponse.Policy);
 
             var parts = queueAttributesResponse.QueueARN.Split(":", StringSplitOptions.RemoveEmptyEntries);
@@ -650,11 +650,11 @@
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
             var queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
-            var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
-            {
+            var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl,
+            [
                 QueueAttributeName.QueueArn,
                 QueueAttributeName.Policy
-            }).ConfigureAwait(false);
+            ]).ConfigureAwait(false);
             var policy = Policy.FromJson(queueAttributesResponse.Policy);
 
             var parts = queueAttributesResponse.QueueARN.Split(":", StringSplitOptions.RemoveEmptyEntries);
@@ -669,11 +669,11 @@
 
             var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
             var queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
-            var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, new List<string>
-            {
+            var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl,
+            [
                 QueueAttributeName.QueueArn,
                 QueueAttributeName.Policy
-            }).ConfigureAwait(false);
+            ]).ConfigureAwait(false);
             var policy = Policy.FromJson(queueAttributesResponse.Policy);
 
             var parts = queueAttributesResponse.QueueARN.Split(":", StringSplitOptions.RemoveEmptyEntries);

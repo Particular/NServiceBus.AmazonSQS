@@ -20,7 +20,7 @@
         public static async Task<string> GetArn(IAmazonSQS sqs, string prefix, string endpointName)
         {
             var queueUrl = await GetUrl(sqs, prefix, endpointName);
-            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrl, new List<string> { "QueueArn" }).ConfigureAwait(false);
+            var queueAttributesResponse = await sqs.GetQueueAttributesAsync(queueUrl, ["QueueArn"]).ConfigureAwait(false);
             return queueAttributesResponse.QueueARN;
         }
 

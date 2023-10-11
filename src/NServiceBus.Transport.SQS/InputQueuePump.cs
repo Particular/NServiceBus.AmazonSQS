@@ -125,8 +125,8 @@ namespace NServiceBus.Transport.SQS
                 MaxNumberOfMessages = numberOfMessagesToFetch,
                 QueueUrl = inputQueueUrl,
                 WaitTimeSeconds = 20,
-                AttributeNames = new List<string> { "SentTimestamp" },
-                MessageAttributeNames = new List<string> { "All" }
+                AttributeNames = ["SentTimestamp"],
+                MessageAttributeNames = ["All"]
             };
 
             if (coreSettings != null && coreSettings.TryGet<int>(SettingsKeys.MessageVisibilityTimeout, out var visibilityTimeout))
@@ -295,7 +295,7 @@ namespace NServiceBus.Transport.SQS
                     {
                         transportMessage = new TransportMessage
                         {
-                            Headers = JsonSerializer.Deserialize<Dictionary<string, string>>(headersAttribute.StringValue) ?? new Dictionary<string, string>(),
+                            Headers = JsonSerializer.Deserialize<Dictionary<string, string>>(headersAttribute.StringValue) ?? [],
                             Body = receivedMessage.Body
                         };
                         transportMessage.Headers[Headers.MessageId] = messageId;

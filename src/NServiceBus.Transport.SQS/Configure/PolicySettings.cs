@@ -105,6 +105,6 @@
         /// </example>
         /// <remarks>It is possible to use dots in the provided namespace (for example Sales.VipCustomers.). The namespaces will be translated into a compliant format.</remarks>
         /// <remarks>Calling this method will opt-in for wildcard policy and no longer populate the policy with the explicit topic ARNs the endpoint subscribes to.</remarks>
-        public List<string> TopicNamespaceConditions { get; } = new List<string>();
+        public List<string> TopicNamespaceConditions { get; } = [];
     }
 }

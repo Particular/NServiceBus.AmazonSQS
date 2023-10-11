@@ -43,7 +43,7 @@
                         {Headers.MessageId, "093C17C6-D32E-44FE-9134-65C10C1287EB"}
                     }, Encoding.Default.GetBytes("{}")),
                     new UnicastAddressTag("address"),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Isolated));
 
             var transportTransaction = new TransportTransaction();
@@ -82,7 +82,7 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(expectedId, new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(expectedId, [], Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address"),
                     properties,
                     DispatchConsistency.Isolated));
@@ -105,14 +105,14 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Isolated),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Isolated));
 
             var transportTransaction = new TransportTransaction();
@@ -140,14 +140,14 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes("{}")),
                     new MulticastAddressTag(typeof(Event)),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Isolated),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes("{}")),
                     new MulticastAddressTag(typeof(AnotherEvent)),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Isolated));
 
             var transportTransaction = new TransportTransaction();
@@ -176,10 +176,10 @@
 
             mockSnsClient.ListSubscriptionsByTopicResponse = topic => new ListSubscriptionsByTopicResponse
             {
-                Subscriptions = new List<Subscription>
-                {
+                Subscriptions =
+                [
                     new Subscription { Endpoint = "arn:abc", SubscriptionArn = "arn:subscription" }
-                }
+                ]
             };
 
             var messageId = Guid.NewGuid().ToString();
@@ -254,7 +254,7 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes("{}")),
                     new MulticastAddressTag(typeof(Event)))
             );
 
@@ -282,7 +282,7 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes("{}")),
                     new MulticastAddressTag(typeof(object)))
             );
 
@@ -314,14 +314,14 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(longBodyMessageId, new Dictionary<string, string>(), Encoding.UTF8.GetBytes(new string('x', 256 * 1024))),
+                    new OutgoingMessage(longBodyMessageId, [], Encoding.UTF8.GetBytes(new string('x', 256 * 1024))),
                     new MulticastAddressTag(typeof(Event)),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Isolated),
                 new TransportOperation( /* Crazy long message id will cause the message to go over limits because attributes count as well */
-                    new OutgoingMessage(crazyLongMessageId, new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(crazyLongMessageId, [], Encoding.UTF8.GetBytes("{}")),
                     new MulticastAddressTag(typeof(AnotherEvent)),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Isolated));
 
             var transportTransaction = new TransportTransaction();
@@ -366,7 +366,7 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     properties,
                     DispatchConsistency.Isolated));
@@ -387,14 +387,14 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Default));
 
             var transportTransaction = new TransportTransaction();
@@ -420,14 +420,14 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes("{}")),
                     new MulticastAddressTag(typeof(Event)),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes("{}")),
                     new MulticastAddressTag(typeof(AnotherEvent)),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Default));
 
             var transportTransaction = new TransportTransaction();
@@ -458,12 +458,12 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     properties,
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
                     properties,
                     DispatchConsistency.Default));
@@ -492,14 +492,14 @@
                 {
                     return new SendMessageBatchResponse
                     {
-                        Failed = new List<Amazon.SQS.Model.BatchResultErrorEntry>
-                        {
+                        Failed =
+                        [
                             new()
                             {
                                 Id = firstMessageMatch.Id,
                                 Message = "You know why"
                             }
-                        }
+                        ]
                     };
                 }
 
@@ -508,14 +508,14 @@
                 {
                     return new SendMessageBatchResponse
                     {
-                        Failed = new List<Amazon.SQS.Model.BatchResultErrorEntry>
-                        {
+                        Failed =
+                        [
                             new()
                             {
                                 Id = secondMessageMatch.Id,
                                 Message = "You know why"
                             }
-                        }
+                        ]
                     };
                 }
 
@@ -527,24 +527,24 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(firstMessageIdThatWillFail, new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(firstMessageIdThatWillFail, [], Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(firstMessageThatWillBeSuccessful, new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(firstMessageThatWillBeSuccessful, [], Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address1"),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(secondMessageThatWillBeSuccessful, new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(secondMessageThatWillBeSuccessful, [], Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(secondMessageIdThatWillFail, new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(secondMessageIdThatWillFail, [], Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Default));
 
             var transportTransaction = new TransportTransaction();
@@ -578,14 +578,14 @@
                 {
                     return new PublishBatchResponse
                     {
-                        Failed = new List<Amazon.SimpleNotificationService.Model.BatchResultErrorEntry>
-                        {
+                        Failed =
+                        [
                             new()
                             {
                                 Id = firstMessageMatch.Id,
                                 Message = "You know why"
                             }
-                        }
+                        ]
                     };
                 }
 
@@ -594,14 +594,14 @@
                 {
                     return new PublishBatchResponse
                     {
-                        Failed = new List<Amazon.SimpleNotificationService.Model.BatchResultErrorEntry>
-                        {
+                        Failed =
+                        [
                             new()
                             {
                                 Id = secondMessageMatch.Id,
                                 Message = "You know why"
                             }
-                        }
+                        ]
                     };
                 }
 
@@ -613,24 +613,24 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(firstMessageIdThatWillFail, new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(firstMessageIdThatWillFail, [], Encoding.UTF8.GetBytes("{}")),
                     new MulticastAddressTag(typeof(Event)),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(firstMessageThatWillBeSuccessful, new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(firstMessageThatWillBeSuccessful, [], Encoding.UTF8.GetBytes("{}")),
                     new MulticastAddressTag(typeof(Event)),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(secondMessageThatWillBeSuccessful, new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(secondMessageThatWillBeSuccessful, [], Encoding.UTF8.GetBytes("{}")),
                     new MulticastAddressTag(typeof(AnotherEvent)),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(secondMessageIdThatWillFail, new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(secondMessageIdThatWillFail, [], Encoding.UTF8.GetBytes("{}")),
                     new MulticastAddressTag(typeof(AnotherEvent)),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Default));
 
             var transportTransaction = new TransportTransaction();
@@ -660,19 +660,19 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes(new string('x', 256 * 1024))),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes(new string('x', 256 * 1024))),
                     new UnicastAddressTag("address1"),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Default),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes(new string('x', 256 * 1024))),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes(new string('x', 256 * 1024))),
                     new UnicastAddressTag("address2"),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Default),
                 new TransportOperation( /* Crazy long message id will cause the message to go over limits because attributes count as well */
-                    new OutgoingMessage(new string('x', 256 * 1024), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(new string('x', 256 * 1024), [], Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Default));
 
             var transportTransaction = new TransportTransaction();
@@ -717,19 +717,19 @@
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes(new string('x', 256 * 1024))),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes(new string('x', 256 * 1024))),
                     new UnicastAddressTag("address1"),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Isolated),
                 new TransportOperation(
-                    new OutgoingMessage(Guid.NewGuid().ToString(), new Dictionary<string, string>(), Encoding.UTF8.GetBytes(new string('x', 256 * 1024))),
+                    new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes(new string('x', 256 * 1024))),
                     new UnicastAddressTag("address2"),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Isolated),
                 new TransportOperation( /* Crazy long message id will cause the message to go over limits because attributes count as well */
-                    new OutgoingMessage(new string('x', 256 * 1024), new Dictionary<string, string>(), Encoding.UTF8.GetBytes("{}")),
+                    new OutgoingMessage(new string('x', 256 * 1024), [], Encoding.UTF8.GetBytes("{}")),
                     new UnicastAddressTag("address2"),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Isolated));
 
             var transportTransaction = new TransportTransaction();
@@ -779,7 +779,7 @@
                         {Headers.ReplyToAddress, ExpectedReplyToAddress}
                     }, msgBodyByte),
                     new UnicastAddressTag("address"),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Isolated));
 
             var transportTransaction = new TransportTransaction();
@@ -814,7 +814,7 @@
                         {Headers.MessageId, "74d4f8e4-0fc7-4f09-8d46-0b76994e76d6"}
                     }, msgBodyByte),
                     new UnicastAddressTag("address"),
-                    new DispatchProperties(),
+                    [],
                     DispatchConsistency.Isolated));
 
             var transportTransaction = new TransportTransaction();

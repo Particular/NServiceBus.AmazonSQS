@@ -15,7 +15,7 @@
         {
             ServiceURL = "http://fakeServiceUrl"
         };
-        public List<string> QueueUrlRequestsSent { get; } = new List<string>();
+        public List<string> QueueUrlRequestsSent { get; } = [];
 
         public Task<GetQueueUrlResponse> GetQueueUrlAsync(string queueName, CancellationToken cancellationToken = new CancellationToken())
         {
@@ -23,7 +23,7 @@
             return Task.FromResult(new GetQueueUrlResponse { QueueUrl = queueName });
         }
 
-        public List<SendMessageBatchRequest> BatchRequestsSent { get; } = new List<SendMessageBatchRequest>();
+        public List<SendMessageBatchRequest> BatchRequestsSent { get; } = [];
 
         public Func<SendMessageBatchRequest, SendMessageBatchResponse> BatchRequestResponse = req => new SendMessageBatchResponse();
 
@@ -34,7 +34,7 @@
             return Task.FromResult(BatchRequestResponse(request));
         }
 
-        public List<DeleteMessageBatchRequest> DeleteMessageBatchRequestsSent { get; } = new List<DeleteMessageBatchRequest>();
+        public List<DeleteMessageBatchRequest> DeleteMessageBatchRequestsSent { get; } = [];
 
         public Func<DeleteMessageBatchRequest, DeleteMessageBatchResponse> DeleteMessageBatchRequestResponse = req => new DeleteMessageBatchResponse();
 
@@ -44,7 +44,7 @@
             return Task.FromResult(DeleteMessageBatchRequestResponse(request));
         }
 
-        public List<ChangeMessageVisibilityBatchRequest> ChangeMessageVisibilityBatchRequestsSent { get; } = new List<ChangeMessageVisibilityBatchRequest>();
+        public List<ChangeMessageVisibilityBatchRequest> ChangeMessageVisibilityBatchRequestsSent { get; } = [];
 
         public Func<ChangeMessageVisibilityBatchRequest, ChangeMessageVisibilityBatchResponse> ChangeMessageVisibilityBatchRequestResponse = req => new ChangeMessageVisibilityBatchResponse();
 
@@ -54,7 +54,7 @@
             return Task.FromResult(ChangeMessageVisibilityBatchRequestResponse(request));
         }
 
-        public List<(string queueUrl, string receiptHandle)> DeleteMessageRequestsSent { get; } = new List<(string queueUrl, string receiptHandle)>();
+        public List<(string queueUrl, string receiptHandle)> DeleteMessageRequestsSent { get; } = [];
 
         public Func<(string queueUrl, string receiptHandle), DeleteMessageResponse> DeleteMessageRequestResponse = req => new DeleteMessageResponse();
 
@@ -70,7 +70,7 @@
             return Task.FromResult(DeleteMessageRequestResponse((request.QueueUrl, request.ReceiptHandle)));
         }
 
-        public List<SendMessageRequest> RequestsSent { get; } = new List<SendMessageRequest>();
+        public List<SendMessageRequest> RequestsSent { get; } = [];
         public Func<SendMessageRequest, SendMessageResponse> RequestResponse = req => new SendMessageResponse();
 
 
@@ -80,7 +80,7 @@
             return Task.FromResult(RequestResponse(request));
         }
 
-        public List<string> GetAttributeRequestsSent { get; } = new List<string>();
+        public List<string> GetAttributeRequestsSent { get; } = [];
 
         public Func<string, Dictionary<string, string>> GetAttributeRequestsResponse = queueUrl => new Dictionary<string, string>
         {
@@ -93,7 +93,7 @@
             return Task.FromResult(GetAttributeRequestsResponse(queueUrl));
         }
 
-        public List<(string queueUrl, List<string> attributeNames)> GetAttributeNamesRequestsSent { get; } = new List<(string queueUrl, List<string> attributeNames)>();
+        public List<(string queueUrl, List<string> attributeNames)> GetAttributeNamesRequestsSent { get; } = [];
 
         public Func<string, List<string>, GetQueueAttributesResponse> GetAttributeNamesRequestsResponse = (url, attributeNames) => new GetQueueAttributesResponse
         {
@@ -109,9 +109,9 @@
             return Task.FromResult(GetAttributeNamesRequestsResponse(queueUrl, attributeNames));
         }
 
-        public List<(string queueUrl, Dictionary<string, string> attributes)> SetAttributesRequestsSent { get; } = new List<(string queueUrl, Dictionary<string, string> attributes)>();
+        public List<(string queueUrl, Dictionary<string, string> attributes)> SetAttributesRequestsSent { get; } = [];
 
-        public Dictionary<string, Queue<Dictionary<string, string>>> SetAttributesRequestsSentByUrl { get; } = new Dictionary<string, Queue<Dictionary<string, string>>>();
+        public Dictionary<string, Queue<Dictionary<string, string>>> SetAttributesRequestsSentByUrl { get; } = [];
 
 
         public Task SetAttributesAsync(string queueUrl, Dictionary<string, string> attributes)
@@ -158,7 +158,7 @@
             };
         }
 
-        public List<ReceiveMessageRequest> ReceiveMessagesRequestsSent { get; } = new List<ReceiveMessageRequest>();
+        public List<ReceiveMessageRequest> ReceiveMessagesRequestsSent { get; } = [];
         public Func<ReceiveMessageRequest, CancellationToken, ReceiveMessageResponse> ReceiveMessagesRequestResponse = (req, token) =>
         {
             token.ThrowIfCancellationRequested();

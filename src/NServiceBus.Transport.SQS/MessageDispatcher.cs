@@ -101,7 +101,7 @@ namespace NServiceBus.Transport.SQS
             foreach (var operation in isolatedTransportOperations)
             {
                 multicastEventsMessageIdsToType.Add(operation.Message.MessageId, operation.MessageType);
-                tasks ??= new List<Task>();
+                tasks ??= [];
                 tasks.Add(Publish(operation, cancellationToken));
             }
 
@@ -136,7 +136,7 @@ namespace NServiceBus.Transport.SQS
             List<Task>? tasks = null;
             foreach (var operation in isolatedTransportOperations)
             {
-                tasks ??= new List<Task>();
+                tasks ??= [];
                 tasks.Add(Dispatch(operation, multicastEventsMessageIdsToType, transportTransaction, cancellationToken));
             }
 

@@ -43,7 +43,7 @@ namespace NServiceBus.Transport.SQS.Tests
             mockSqsClient.ReceiveMessagesRequestResponse = (req, token) =>
             {
                 token.ThrowIfCancellationRequested();
-                return new ReceiveMessageResponse { Messages = new List<Message>() };
+                return new ReceiveMessageResponse { Messages = [] };
             };
 
             await pump.StartReceive();
