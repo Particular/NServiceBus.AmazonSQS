@@ -81,7 +81,7 @@ namespace NServiceBus.Transport.SQS
                 QueueUrl = inputQueueUrl,
                 WaitTimeSeconds = 20,
                 AttributeNames = new List<string> { "SentTimestamp" },
-                MessageAttributeNames = new List<string> { "*" },
+                MessageAttributeNames = new List<string> { "All" }
             };
             //Set visibilitytimeout only when explicitly set by user configuration, else take the value in the queue
             //users can define a custom visibility timeout only when using message driven pub/sub compatibility mode

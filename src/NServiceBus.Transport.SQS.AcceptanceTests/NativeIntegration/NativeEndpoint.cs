@@ -32,7 +32,7 @@
                     {
                         QueueUrl = getQueueUrlResponse.QueueUrl,
                         WaitTimeSeconds = 5,
-                        MessageAttributeNames = new List<string> { "*" }
+                        MessageAttributeNames = new List<string> { "All" }
                     }, cancellationToken).ConfigureAwait(false);
 
                     foreach (var msg in receiveMessageResponse.Messages)
