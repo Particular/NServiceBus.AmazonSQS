@@ -28,9 +28,9 @@ namespace NServiceBus.Transport.SQS.Tests
         {
             var messageId = Guid.NewGuid().ToString();
             var body = Array.Empty<byte>();
-            var outgoingMessage = new OutgoingMessage(messageId, new Dictionary<string, string>(), body);
+            var outgoingMessage = new OutgoingMessage(messageId, [], body);
 
-            var transportMessage = new TransportMessage(outgoingMessage, new DispatchProperties());
+            var transportMessage = new TransportMessage(outgoingMessage, []);
 
             (var receivedBodyArray, bodyBuffer) = await transportMessage.RetrieveBody(messageId, null, arrayPool);
             var receivedBody = Encoding.UTF8.GetString(receivedBodyArray.ToArray());
@@ -43,9 +43,9 @@ namespace NServiceBus.Transport.SQS.Tests
         public async Task Null_body_is_received_ok()
         {
             var messageId = Guid.NewGuid().ToString();
-            var outgoingMessage = new OutgoingMessage(messageId, new Dictionary<string, string>(), null);
+            var outgoingMessage = new OutgoingMessage(messageId, [], null);
 
-            var transportMessage = new TransportMessage(outgoingMessage, new DispatchProperties());
+            var transportMessage = new TransportMessage(outgoingMessage, []);
 
             (var receivedBodyArray, bodyBuffer) = await transportMessage.RetrieveBody(messageId, null, arrayPool);
             var receivedBody = Encoding.UTF8.GetString(receivedBodyArray.ToArray());

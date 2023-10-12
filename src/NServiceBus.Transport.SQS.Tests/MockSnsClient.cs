@@ -14,7 +14,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
     class MockSnsClient : IAmazonSimpleNotificationService
     {
-        public List<string> UnsubscribeRequests = new List<string>();
+        public List<string> UnsubscribeRequests = [];
 
         public Task<UnsubscribeResponse> UnsubscribeAsync(string subscriptionArn, CancellationToken cancellationToken = new CancellationToken())
         {
@@ -23,7 +23,7 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         public Func<string, Topic> FindTopicAsyncResponse { get; set; } = topic => new Topic { TopicArn = $"arn:aws:sns:us-west-2:123456789012:{topic}" };
-        public List<string> FindTopicRequests { get; } = new List<string>();
+        public List<string> FindTopicRequests { get; } = [];
 
         public Task<Topic> FindTopicAsync(string topicName)
         {
@@ -36,7 +36,7 @@ namespace NServiceBus.Transport.SQS.Tests
             TopicArn = $"arn:aws:sns:us-west-2:123456789012:{topic}"
         };
 
-        public List<string> CreateTopicRequests { get; } = new List<string>();
+        public List<string> CreateTopicRequests { get; } = [];
 
         public Task<CreateTopicResponse> CreateTopicAsync(string name, CancellationToken cancellationToken = new CancellationToken())
         {
@@ -44,7 +44,7 @@ namespace NServiceBus.Transport.SQS.Tests
             return Task.FromResult(CreateTopicResponse(name));
         }
 
-        public List<PublishRequest> PublishedEvents { get; } = new List<PublishRequest>();
+        public List<PublishRequest> PublishedEvents { get; } = [];
 
         public Task<PublishResponse> PublishAsync(PublishRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
@@ -54,10 +54,10 @@ namespace NServiceBus.Transport.SQS.Tests
 
         public Func<string, ListSubscriptionsByTopicResponse> ListSubscriptionsByTopicResponse = topic => new ListSubscriptionsByTopicResponse
         {
-            Subscriptions = new List<Subscription>(),
+            Subscriptions = [],
         };
 
-        public List<string> ListSubscriptionsByTopicRequests { get; } = new List<string>();
+        public List<string> ListSubscriptionsByTopicRequests { get; } = [];
 
         public Task<ListSubscriptionsByTopicResponse> ListSubscriptionsByTopicAsync(string topicArn, string nextToken, CancellationToken cancellationToken = new CancellationToken())
         {
@@ -65,7 +65,7 @@ namespace NServiceBus.Transport.SQS.Tests
             return Task.FromResult(ListSubscriptionsByTopicResponse(topicArn));
         }
 
-        public List<SubscribeRequest> SubscribeRequestsSent = new List<SubscribeRequest>();
+        public List<SubscribeRequest> SubscribeRequestsSent = [];
 
         public Func<SubscribeRequest, SubscribeResponse> SubscribeResponse = req => new SubscribeResponse { SubscriptionArn = "arn:fakeQueue" };
 
@@ -75,7 +75,7 @@ namespace NServiceBus.Transport.SQS.Tests
             return Task.FromResult(SubscribeResponse(request));
         }
 
-        public List<PublishBatchRequest> BatchRequestsPublished { get; } = new List<PublishBatchRequest>();
+        public List<PublishBatchRequest> BatchRequestsPublished { get; } = [];
 
         public Func<PublishBatchRequest, PublishBatchResponse> BatchRequestResponse = req => new PublishBatchResponse();
 

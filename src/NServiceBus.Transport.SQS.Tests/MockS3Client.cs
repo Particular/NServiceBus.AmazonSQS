@@ -12,7 +12,7 @@
 
     public class MockS3Client : IAmazonS3
     {
-        public List<PutObjectRequest> PutObjectRequestsSent { get; } = new List<PutObjectRequest>();
+        public List<PutObjectRequest> PutObjectRequestsSent { get; } = [];
 
         public Func<PutObjectRequest, PutObjectResponse> PutObjectRequestResponse = req => new PutObjectResponse();
 

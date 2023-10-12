@@ -25,6 +25,6 @@
             return eventsToTopicsMappings.ContainsKey(subscribedEventType) ? eventsToTopicsMappings[subscribedEventType] : Enumerable.Empty<string>();
         }
 
-        Dictionary<Type, HashSet<string>> eventsToTopicsMappings = new Dictionary<Type, HashSet<string>>();
+        Dictionary<Type, HashSet<string>> eventsToTopicsMappings = [];
     }
 }

@@ -27,7 +27,7 @@
         public int DelaySeconds { get; set; }
         public string MessageGroupId { get; set; }
         public string MessageDeduplicationId { get; set; }
-        public Dictionary<string, MessageAttributeValue> MessageAttributes { get; } = new();
+        public Dictionary<string, MessageAttributeValue> MessageAttributes { get; } = [];
 
         public void CalculateSize()
         {

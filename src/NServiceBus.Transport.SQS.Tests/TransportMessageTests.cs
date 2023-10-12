@@ -18,9 +18,9 @@
         [Test]
         public void Defaults_TimeToBeReceived_to_TimeSpan_MaxTime_when_DiscardIfNotReceivedBefore_is_not_provided()
         {
-            var outgoingMessage = new OutgoingMessage(string.Empty, new Dictionary<string, string>(), new byte[0]);
+            var outgoingMessage = new OutgoingMessage(string.Empty, [], new byte[0]);
 
-            var transportMessage = new TransportMessage(outgoingMessage, new DispatchProperties());
+            var transportMessage = new TransportMessage(outgoingMessage, []);
 
             Assert.AreEqual(TimeSpan.MaxValue.ToString(), transportMessage.TimeToBeReceived, "TimeToBeReceived is not TimeSpan.MaxValue");
         }
@@ -28,7 +28,7 @@
         [Test]
         public void Populates_TimeToBeReceived_when_DiscardIfNotReceivedBefore_is_provided()
         {
-            var outgoingMessage = new OutgoingMessage(string.Empty, new Dictionary<string, string>(), new byte[0]);
+            var outgoingMessage = new OutgoingMessage(string.Empty, [], new byte[0]);
             var dispatchProperties = new DispatchProperties
             {
                 DiscardIfNotReceivedBefore = new DiscardIfNotReceivedBefore(ExpectedTtbr)
@@ -58,7 +58,7 @@
         {
             var transportMessage = new TransportMessage
             {
-                Headers = new Dictionary<string, string>(),
+                Headers = [],
                 TimeToBeReceived = ExpectedTtbr.ToString()
             };
 
@@ -71,7 +71,7 @@
         {
             var transportMessage = new TransportMessage
             {
-                Headers = new Dictionary<string, string>()
+                Headers = []
             };
 
             Assert.IsFalse(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), "TimeToBeReceived header was populated");
@@ -85,7 +85,7 @@
                 {Headers.ReplyToAddress, ExpectedReplyToAddress}
             }, Array.Empty<byte>());
 
-            var transportMessage = new TransportMessage(outgoingMessage, new DispatchProperties());
+            var transportMessage = new TransportMessage(outgoingMessage, []);
 
             Assert.AreEqual(ExpectedReplyToAddress, transportMessage.ReplyToAddress.Value.Queue, "ReplyToAddress is not the expected value");
         }
@@ -93,9 +93,9 @@
         [Test]
         public void ReplyToAddress_is_null_when_no_ReplyToAddress_header_is_present()
         {
-            var outgoingMessage = new OutgoingMessage(string.Empty, new Dictionary<string, string>(), new byte[0]);
+            var outgoingMessage = new OutgoingMessage(string.Empty, [], new byte[0]);
 
-            var transportMessage = new TransportMessage(outgoingMessage, new DispatchProperties());
+            var transportMessage = new TransportMessage(outgoingMessage, []);
 
             Assert.IsNull(transportMessage.ReplyToAddress, "ReplyToAddress is not null");
         }
@@ -105,7 +105,7 @@
         {
             var transportMessage = new TransportMessage
             {
-                Headers = new Dictionary<string, string>(),
+                Headers = [],
                 ReplyToAddress = new TransportMessage.Address { Queue = ExpectedReplyToAddress }
             };
 
@@ -118,7 +118,7 @@
         {
             var transportMessage = new TransportMessage
             {
-                Headers = new Dictionary<string, string>(),
+                Headers = [],
                 ReplyToAddress = null
             };
 

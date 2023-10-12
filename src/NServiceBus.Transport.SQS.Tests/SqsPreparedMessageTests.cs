@@ -31,9 +31,9 @@ namespace NServiceBus.Transport.SQS.Tests
         {
             var message = new SqsPreparedMessage();
             message.MessageAttributes.Add("Key1", new MessageAttributeValue { DataType = "string", StringValue = "SomeString" });
-            message.MessageAttributes.Add("Key2", new MessageAttributeValue { StringListValues = new List<string> { "SomeString" } });
+            message.MessageAttributes.Add("Key2", new MessageAttributeValue { StringListValues = ["SomeString"] });
             message.MessageAttributes.Add("Key3", new MessageAttributeValue { BinaryValue = new MemoryStream(new byte[1]) });
-            message.MessageAttributes.Add("Key4", new MessageAttributeValue { BinaryListValues = new List<MemoryStream> { new MemoryStream(new byte[2]) } });
+            message.MessageAttributes.Add("Key4", new MessageAttributeValue { BinaryListValues = [new MemoryStream(new byte[2])] });
 
             message.CalculateSize();
 

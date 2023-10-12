@@ -113,7 +113,7 @@ namespace NServiceBus.Transport.SQS.Tests
             mockSqsClient.ReceiveMessagesRequestResponse = (req, token) =>
             {
                 token.ThrowIfCancellationRequested();
-                return new ReceiveMessageResponse { Messages = new List<Message>() };
+                return new ReceiveMessageResponse { Messages = [] };
             };
 
             pump.Start();
@@ -139,7 +139,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             mockSqsClient.ReceiveMessagesRequestResponse = (req, token) => new ReceiveMessageResponse
             {
-                Messages = new List<Message>()
+                Messages = []
             };
 
             Assert.DoesNotThrowAsync(async () => await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token));
@@ -341,8 +341,8 @@ namespace NServiceBus.Transport.SQS.Tests
             {
                 return new ReceiveMessageResponse
                 {
-                    Messages = new List<Message>
-                    {
+                    Messages =
+                    [
                         new Message
                         {
                             Attributes = new Dictionary<string, string>
@@ -357,7 +357,7 @@ namespace NServiceBus.Transport.SQS.Tests
                                 { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "20" }},
                                 { Headers.MessageId, new MessageAttributeValue { StringValue = messageIdOfDueMessage }}
                             },
-                            Body = new string('a', 50*1024),
+                            Body = new string('a', 50 * 1024),
                             ReceiptHandle = "FirstMessage"
                         },
                         new Message
@@ -374,10 +374,10 @@ namespace NServiceBus.Transport.SQS.Tests
                                 { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "1500" }},
                                 { Headers.MessageId, new MessageAttributeValue { StringValue = messageIdOfNotYetDueMessage }}
                             },
-                            Body = new string('a', 50*1024),
+                            Body = new string('a', 50 * 1024),
                             ReceiptHandle = "SecondMessage"
                         }
-                    }
+                    ]
                 };
             };
 
@@ -402,8 +402,8 @@ namespace NServiceBus.Transport.SQS.Tests
             {
                 return new ReceiveMessageResponse
                 {
-                    Messages = new List<Message>
-                    {
+                    Messages =
+                    [
                         new Message
                         {
                             Attributes = new Dictionary<string, string>
@@ -418,10 +418,10 @@ namespace NServiceBus.Transport.SQS.Tests
                                 { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "20" }},
                                 { Headers.MessageId, new MessageAttributeValue { StringValue = messageIdOfDueMessage }}
                             },
-                            Body = new string('a', 50*1024),
+                            Body = new string('a', 50 * 1024),
                             ReceiptHandle = "FirstMessage"
                         }
-                    }
+                    ]
                 };
             };
 
@@ -446,8 +446,8 @@ namespace NServiceBus.Transport.SQS.Tests
             {
                 return new ReceiveMessageResponse
                 {
-                    Messages = new List<Message>
-                    {
+                    Messages =
+                    [
                         new Message
                         {
                             Attributes = new Dictionary<string, string>
@@ -462,10 +462,10 @@ namespace NServiceBus.Transport.SQS.Tests
                                 { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "20" }},
                                 { Headers.MessageId, new MessageAttributeValue { StringValue = messageIdOfDueMessage }}
                             },
-                            Body = new string('a', 50*1024),
+                            Body = new string('a', 50 * 1024),
                             ReceiptHandle = "FirstMessage"
                         }
-                    }
+                    ]
                 };
             };
 
@@ -500,8 +500,8 @@ namespace NServiceBus.Transport.SQS.Tests
             {
                 return new ReceiveMessageResponse
                 {
-                    Messages = new List<Message>
-                    {
+                    Messages =
+                    [
                         new Message
                         {
                             Attributes = new Dictionary<string, string>
@@ -516,10 +516,10 @@ namespace NServiceBus.Transport.SQS.Tests
                                 { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "20" }},
                                 { Headers.MessageId, new MessageAttributeValue { StringValue = messageIdOfDueMessage }}
                             },
-                            Body = new string('a', 50*1024),
+                            Body = new string('a', 50 * 1024),
                             ReceiptHandle = "FirstMessage"
                         }
-                    }
+                    ]
                 };
             };
 
@@ -557,8 +557,8 @@ namespace NServiceBus.Transport.SQS.Tests
             {
                 return new ReceiveMessageResponse
                 {
-                    Messages = new List<Message>
-                    {
+                    Messages =
+                    [
                         new Message
                         {
                             Attributes = new Dictionary<string, string>
@@ -573,10 +573,10 @@ namespace NServiceBus.Transport.SQS.Tests
                                 { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "20" }},
                                 { Headers.MessageId, new MessageAttributeValue { StringValue = messageIdOfDueMessage }}
                             },
-                            Body = new string('a', 50*1024),
+                            Body = new string('a', 50 * 1024),
                             ReceiptHandle = "FirstMessage"
                         }
-                    }
+                    ]
                 };
             };
 
@@ -611,8 +611,8 @@ namespace NServiceBus.Transport.SQS.Tests
             {
                 return new ReceiveMessageResponse
                 {
-                    Messages = new List<Message>
-                    {
+                    Messages =
+                    [
                         new Message
                         {
                             Attributes = new Dictionary<string, string>
@@ -627,7 +627,7 @@ namespace NServiceBus.Transport.SQS.Tests
                                 { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "20" }},
                                 { Headers.MessageId, new MessageAttributeValue { StringValue = Guid.NewGuid().ToString() }}
                             },
-                            Body = new string('a', 50*1024),
+                            Body = new string('a', 50 * 1024),
                             ReceiptHandle = "FirstMessage"
                         },
                         new Message
@@ -644,10 +644,10 @@ namespace NServiceBus.Transport.SQS.Tests
                                 { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "20" }},
                                 { Headers.MessageId, new MessageAttributeValue { StringValue = Guid.NewGuid().ToString() }}
                             },
-                            Body = new string('a', 50*1024),
+                            Body = new string('a', 50 * 1024),
                             ReceiptHandle = "SecondMessage"
                         }
-                    }
+                    ]
                 };
             };
 
@@ -685,8 +685,8 @@ namespace NServiceBus.Transport.SQS.Tests
             {
                 return new ReceiveMessageResponse
                 {
-                    Messages = new List<Message>
-                    {
+                    Messages =
+                    [
                         new Message
                         {
                             Attributes = new Dictionary<string, string>
@@ -701,10 +701,10 @@ namespace NServiceBus.Transport.SQS.Tests
                                 { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "20" }},
                                 { Headers.MessageId, new MessageAttributeValue { StringValue = messageIdOfDueMessage }}
                             },
-                            Body = new string('a', 50*1024),
+                            Body = new string('a', 50 * 1024),
                             ReceiptHandle = "FirstMessage"
                         }
-                    }
+                    ]
                 };
             };
 

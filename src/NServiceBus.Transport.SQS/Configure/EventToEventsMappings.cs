@@ -22,6 +22,6 @@
             return eventsToEventsMappings.ContainsKey(eventType) ? eventsToEventsMappings[eventType] : Enumerable.Empty<Type>();
         }
 
-        Dictionary<Type, HashSet<Type>> eventsToEventsMappings = new Dictionary<Type, HashSet<Type>>();
+        Dictionary<Type, HashSet<Type>> eventsToEventsMappings = [];
     }
 }

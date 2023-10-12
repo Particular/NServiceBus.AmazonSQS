@@ -109,8 +109,8 @@
                                 BucketName = s3Settings.BucketName,
                                 Configuration = new LifecycleConfiguration
                                 {
-                                    Rules = new List<LifecycleRule>
-                                    {
+                                    Rules =
+                                    [
                                             new LifecycleRule
                                             {
                                                 Id = "NServiceBus.SQS.DeleteMessageBodies",
@@ -127,7 +127,7 @@
                                                     Days = (int)Math.Ceiling(maxTimeToLive.TotalDays)
                                                 }
                                             }
-                                    }
+                                    ]
                                 }
                             }, token).ConfigureAwait(false), onRetry: x => { Logger.Warn($"Conflict when setting S3 lifecycle configuration, retrying after {x}ms."); }, cancellationToken: cancellationToken).ConfigureAwait(false);
                 }

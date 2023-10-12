@@ -43,8 +43,8 @@
                             BucketName = bucketName,
                             Configuration = new LifecycleConfiguration
                             {
-                                Rules = new List<LifecycleRule>
-                                {
+                                Rules =
+                                [
                                     new LifecycleRule
                                     {
                                         Id = "NServiceBus.SQS.DeleteMessageBodies",
@@ -61,7 +61,7 @@
                                             Days = expirationInDays
                                         }
                                     }
-                                }
+                                ]
                             }
                         }).ConfigureAwait(false),
                     onRetry: async x => { await Console.Out.WriteLineAsync($"Conflict when setting S3 lifecycle configuration, retrying after {x}ms."); }).ConfigureAwait(false);
