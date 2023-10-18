@@ -73,9 +73,13 @@
             var sendMessageRequest = new SendMessageRequest
             {
                 QueueUrl = getQueueUrlResponse.QueueUrl,
-                MessageAttributes = messageAttributeValues,
                 MessageBody = body
             };
+
+            if (messageAttributeValues != null)
+            {
+                sendMessageRequest.MessageAttributes = messageAttributeValues;
+            }
 
             await sqsClient.SendMessageAsync(sendMessageRequest).ConfigureAwait(false);
         }
