@@ -333,7 +333,25 @@ namespace NServiceBus.Transport.SQS
                         }
                         else
                         {
-                            transportMessage = JsonSerializer.Deserialize<TransportMessage>(receivedMessage.Body, transportMessageSerializerOptions);
+                            try
+                            {
+                                // HINT: There is no way to know if this is a transport message or not without trying to deserialize it
+                                transportMessage = JsonSerializer.Deserialize<TransportMessage>(receivedMessage.Body, transportMessageSerializerOptions);
+                            }
+                            catch (JsonException jsonEx)
+                            {
+                                Logger.Debug($"Message with native id {nativeMessageId} could not be deserialized as an NServiceBus TransportMessage. Treating as pure native message.", jsonEx);
+
+                                transportMessage = new TransportMessage
+                                {
+                                    Body = receivedMessage.Body,
+                                    Headers = new Dictionary<string, string>
+                                    {
+                                        // HINT: Message Id is a required field for InnerProcessMessage
+                                        [Headers.MessageId] = messageId,
+                                    }
+                                };
+                            }
                         }
                     }
 
