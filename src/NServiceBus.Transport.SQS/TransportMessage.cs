@@ -40,6 +40,7 @@
             }
         }
 
+        [System.Text.Json.Serialization.JsonRequired]
         public Dictionary<string, string> Headers { get; set; }
 
         public string Body { get; set; }

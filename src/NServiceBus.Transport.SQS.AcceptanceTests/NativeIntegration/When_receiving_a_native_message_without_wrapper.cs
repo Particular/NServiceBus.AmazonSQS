@@ -79,6 +79,20 @@
         }
 
         [Test]
+        public async Task Should_be_processed_without_nsbheaders_or_messageid_2()
+        {
+            var context = await Scenario.Define<Context>()
+                .WithEndpoint<Receiver>(c => c.When(async _ =>
+                {
+                    await NativeEndpoint.SendTo<Receiver>(null, @"{ ""Headers"": null }", false);
+                }))
+                .Done(c => c.MessageReceived != null)
+                .Run();
+
+            Assert.AreEqual("Hello!", context.MessageReceived);
+        }
+
+        [Test]
         public async Task Should_support_loading_body_from_s3()
         {
             var context = await Scenario.Define<Context>()

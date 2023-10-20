@@ -632,7 +632,8 @@ namespace NServiceBus.Transport.SQS
 
         readonly JsonSerializerOptions transportMessageSerializerOptions = new()
         {
-            TypeInfoResolver = TransportMessageSerializerContext.Default
+            TypeInfoResolver = TransportMessageSerializerContext.Default,
+            UnmappedMemberHandling = System.Text.Json.Serialization.JsonUnmappedMemberHandling.Disallow
         };
 
         int numberOfMessagesToFetch;
