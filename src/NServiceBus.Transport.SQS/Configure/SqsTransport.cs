@@ -67,7 +67,21 @@
             set
             {
                 Guard.ThrowIfNull(value);
+                AssertQueueNameGeneratorIdempotent(value);
                 queueNameGenerator = value;
+            }
+        }
+
+        static void AssertQueueNameGeneratorIdempotent(Func<string, string, string> generator)
+        {
+            const string prefix = "Prefix";
+            const string destination = "Destination";
+
+            var once = generator(destination, prefix);
+            var twice = generator(once, prefix);
+            if (once != twice)
+            {
+                throw new Exception($"Queue name generator is not idempotent. Result of applying twice {twice}");
             }
         }
 
