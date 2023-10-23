@@ -2,19 +2,21 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Text.Json;
     using System.Threading.Tasks;
     using System.Xml.Linq;
     using AcceptanceTesting;
     using Amazon.S3.Model;
     using Amazon.SQS.Model;
     using EndpointTemplates;
+    using global::Newtonsoft.Json;
     using NUnit.Framework;
     using Transport.SQS.Tests;
+    using JsonSerializer = System.Text.Json.JsonSerializer;
 
     public class When_receiving_a_native_message_without_wrapper : NServiceBusAcceptanceTest
     {
         static readonly string MessageToSend = new XDocument(new XElement("NServiceBus.AcceptanceTests.NativeIntegration.NativeMessage", new XElement("ThisIsTheMessage", "Hello!"))).ToString();
+        const string JsonMessageToSend = "{ '$type': 'NServiceBus.AcceptanceTests.NativeIntegration.NativeMessage, NServiceBus.Transport.SQS.AcceptanceTests', 'ThisIsTheMessage': 'Hello!' }";
 
         [Test]
         public async Task Should_be_processed_when_nsbheaders_present_with_messageid()
@@ -79,12 +81,13 @@
         }
 
         [Test]
-        public async Task Should_be_processed_without_nsbheaders_or_messageid_2()
+        public async Task Should_be_processed_without_nsbheaders_or_messageid_using_json()
         {
             var context = await Scenario.Define<Context>()
-                .WithEndpoint<Receiver>(c => c.When(async _ =>
+                .WithEndpoint<JsonReceiver>(c => c.When(async _ =>
                 {
-                    await NativeEndpoint.SendTo<Receiver>(null, @"{ ""Headers"": null }", false);
+                    await NativeEndpoint.SendTo<JsonReceiver>(null, JsonMessageToSend,
+                        false);
                 }))
                 .Done(c => c.MessageReceived != null)
                 .Run();
@@ -149,6 +152,30 @@
         public class Receiver : EndpointConfigurationBuilder
         {
             public Receiver() => EndpointSetup<DefaultServer>();
+
+            class MyHandler : IHandleMessages<NativeMessage>
+            {
+                public MyHandler(Context testContext) => this.testContext = testContext;
+
+                public Task Handle(NativeMessage message, IMessageHandlerContext context)
+                {
+                    testContext.MessageReceived = message.ThisIsTheMessage;
+
+                    return Task.CompletedTask;
+                }
+
+                readonly Context testContext;
+            }
+        }
+
+        public class JsonReceiver : EndpointConfigurationBuilder
+        {
+            public JsonReceiver() => EndpointSetup<DefaultServer>(endpointConfiguration =>
+            {
+                var config = endpointConfiguration.UseSerialization<NewtonsoftJsonSerializer>();
+                // The incoming native message uses the '$type' notation to set the .NET type to deserialize to.
+                config.Settings(new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
+            });
 
             class MyHandler : IHandleMessages<NativeMessage>
             {
