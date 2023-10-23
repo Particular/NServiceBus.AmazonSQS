@@ -282,8 +282,10 @@ namespace NServiceBus.Transport.SQS
             {
                 try
                 {
+                    var nativeHeadersContainNServiceBusMessageIdHeader = false;
                     if (receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
                     {
+                        nativeHeadersContainNServiceBusMessageIdHeader = true;
                         messageId = messageIdAttribute.StringValue;
                     }
                     else
@@ -333,15 +335,16 @@ namespace NServiceBus.Transport.SQS
                         }
                         else
                         {
-                            try
+                            if (nativeHeadersContainNServiceBusMessageIdHeader)
                             {
+                                // Assume sender is an NServiceBus endpoint when there is the NServiceBus.MessageId header in the native SQS message headers
                                 // HINT: There is no way to know if this is a transport message or not without trying to deserialize it
                                 transportMessage = JsonSerializer.Deserialize<TransportMessage>(receivedMessage.Body, transportMessageSerializerOptions);
                             }
-                            catch (JsonException jsonEx)
+                            else
                             {
-                                Logger.Debug($"Message with native id {nativeMessageId} could not be deserialized as an NServiceBus TransportMessage. Treating as pure native message.", jsonEx);
-
+                                // threat as a native message
+                                Logger.Debug($"Message with native id {nativeMessageId} will not be treated as an NServiceBus TransportMessage. Instead it'll be treated as pure native message.");
                                 transportMessage = new TransportMessage
                                 {
                                     Body = receivedMessage.Body,
