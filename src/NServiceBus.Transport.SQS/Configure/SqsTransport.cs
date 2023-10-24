@@ -272,7 +272,7 @@
             var twice = generator(once, prefix);
             if (once != twice)
             {
-                throw new Exception($"Queue name generator is not idempotent. Result of applying twice {twice}");
+                throw new Exception($"The queue name generator function needs to return the same result when it is applied multiple times (idempotent). Result of applying once is {once} and twice -- {twice}.");
             }
         }
 
