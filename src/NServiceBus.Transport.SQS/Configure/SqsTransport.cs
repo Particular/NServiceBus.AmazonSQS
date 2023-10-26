@@ -245,6 +245,8 @@
         /// </summary>
         public override async Task<TransportInfrastructure> Initialize(HostSettings hostSettings, ReceiveSettings[] receivers, string[] sendingAddresses, CancellationToken cancellationToken = default)
         {
+            AssertQueueNameGeneratorIdempotent(queueNameGenerator);
+
             var topicCache = new TopicCache(SnsClient, hostSettings.CoreSettings, eventToTopicsMappings, eventToEventsMappings, topicNameGenerator, topicNamePrefix);
             var infra = new SqsTransportInfrastructure(hostSettings, receivers, SqsClient, SnsClient, QueueCache, topicCache, S3, Policies, QueueDelayTime, topicNamePrefix, DoNotWrapOutgoingMessages, !externallyManagedSqsClient, !externallyManagedSnsClient);
 
@@ -259,6 +261,19 @@
             }
 
             return infra;
+        }
+
+        static void AssertQueueNameGeneratorIdempotent(Func<string, string, string> generator)
+        {
+            const string prefix = "Prefix";
+            const string destination = "Destination";
+
+            var once = generator(destination, prefix);
+            var twice = generator(once, prefix);
+            if (once != twice)
+            {
+                throw new Exception($"The queue name generator function needs to return the same result when it is applied multiple times (idempotent). Result of applying once is {once} and twice -- {twice}.");
+            }
         }
 
         QueueCache QueueCache =>
