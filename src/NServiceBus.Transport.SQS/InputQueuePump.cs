@@ -333,6 +333,7 @@ namespace NServiceBus.Transport.SQS
                         }
                         else
                         {
+                            bool isControlMessage = false;
                             // TODO: is this logic too fragile?
                             // Assume sender is an NServiceBus endpoint, deserialize and check headers for NServiceBus.MessageId and EnclosedMessageTypes
                             // The try/catch is needed to handle the case when the incoming native message is not in json format
@@ -340,6 +341,8 @@ namespace NServiceBus.Transport.SQS
                             {
                                 transportMessage = JsonSerializer.Deserialize<TransportMessage>(receivedMessage.Body,
                                     transportMessageSerializerOptions);
+                                isControlMessage =
+                                    transportMessage.Headers?.TryGetValue(Headers.ControlMessageHeader, out var _) ?? false;
                             }
                             catch (Exception ex)
                             {
@@ -347,22 +350,25 @@ namespace NServiceBus.Transport.SQS
                                              $"It will not be treated as an NServiceBus TransportMessage. Instead it'll be treated as pure native message.", ex);
                             }
 
-                            if (transportMessage?.Headers == null
-                                || !transportMessage.Headers.ContainsKey(Headers.MessageId)
-                                || !transportMessage.Headers.ContainsKey(Headers.EnclosedMessageTypes))
+                            if (!isControlMessage)
                             {
-                                // if no headers or NServiceBus.MessageId or EnclosedMessageTypes are not present, threat as a native message
-                                Logger.Debug($"Message with native id {nativeMessageId} will not be treated as an NServiceBus TransportMessage. " +
-                                             $"Instead it'll be treated as pure native message.");
-                                transportMessage = new TransportMessage
+                                if (transportMessage?.Headers == null
+                                    || !transportMessage.Headers.ContainsKey(Headers.MessageId)
+                                    || !transportMessage.Headers.ContainsKey(Headers.EnclosedMessageTypes))
                                 {
-                                    Body = receivedMessage.Body,
-                                    Headers = new Dictionary<string, string>
+                                    // if no headers or NServiceBus.MessageId or EnclosedMessageTypes are not present, threat as a native message
+                                    Logger.Debug($"Message with native id {nativeMessageId} will not be treated as an NServiceBus TransportMessage. " +
+                                                 $"Instead it'll be treated as pure native message.");
+                                    transportMessage = new TransportMessage
                                     {
-                                        // HINT: Message Id is a required field for InnerProcessMessage
-                                        [Headers.MessageId] = messageId,
-                                    }
-                                };
+                                        Body = receivedMessage.Body,
+                                        Headers = new Dictionary<string, string>
+                                        {
+                                            // HINT: Message Id is a required field for InnerProcessMessage
+                                            [Headers.MessageId] = messageId,
+                                        }
+                                    };
+                                }
                             }
                         }
                     }
