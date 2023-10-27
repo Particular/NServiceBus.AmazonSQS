@@ -333,7 +333,33 @@ namespace NServiceBus.Transport.SQS
                         }
                         else
                         {
-                            bool isControlMessage = false;
+                            bool CouldBeNativeMessage(TransportMessage msg)
+                            {
+                                if (msg == null)
+                                {
+                                    return true;
+                                }
+
+                                if (msg.Headers == null)
+                                {
+                                    return true;
+                                }
+
+                                if (msg.Headers.ContainsKey(Headers.ControlMessageHeader) &&
+                                    msg.Headers[Headers.ControlMessageHeader] == true.ToString())
+                                {
+                                    return false;
+                                }
+
+                                if (!msg.Headers.ContainsKey(Headers.MessageId) &&
+                                    !msg.Headers.ContainsKey(Headers.EnclosedMessageTypes))
+                                {
+                                    return true;
+                                }
+
+                                return false;
+                            }
+
                             // TODO: is this logic too fragile?
                             // Assume sender is an NServiceBus endpoint, deserialize and check headers for NServiceBus.MessageId and EnclosedMessageTypes
                             // The try/catch is needed to handle the case when the incoming native message is not in json format
@@ -341,8 +367,6 @@ namespace NServiceBus.Transport.SQS
                             {
                                 transportMessage = JsonSerializer.Deserialize<TransportMessage>(receivedMessage.Body,
                                     transportMessageSerializerOptions);
-                                isControlMessage =
-                                    transportMessage.Headers?.TryGetValue(Headers.ControlMessageHeader, out var _) ?? false;
                             }
                             catch (Exception ex)
                             {
@@ -350,25 +374,20 @@ namespace NServiceBus.Transport.SQS
                                              $"It will not be treated as an NServiceBus TransportMessage. Instead it'll be treated as pure native message.", ex);
                             }
 
-                            if (!isControlMessage)
+                            if (CouldBeNativeMessage(transportMessage))
                             {
-                                if (transportMessage?.Headers == null
-                                    || !transportMessage.Headers.ContainsKey(Headers.MessageId)
-                                    || !transportMessage.Headers.ContainsKey(Headers.EnclosedMessageTypes))
+                                // if no headers or NServiceBus.MessageId or EnclosedMessageTypes are not present, threat as a native message
+                                Logger.Debug($"Message with native id {nativeMessageId} will not be treated as an NServiceBus TransportMessage. " +
+                                             $"Instead it'll be treated as pure native message.");
+                                transportMessage = new TransportMessage
                                 {
-                                    // if no headers or NServiceBus.MessageId or EnclosedMessageTypes are not present, threat as a native message
-                                    Logger.Debug($"Message with native id {nativeMessageId} will not be treated as an NServiceBus TransportMessage. " +
-                                                 $"Instead it'll be treated as pure native message.");
-                                    transportMessage = new TransportMessage
+                                    Body = receivedMessage.Body,
+                                    Headers = new Dictionary<string, string>
                                     {
-                                        Body = receivedMessage.Body,
-                                        Headers = new Dictionary<string, string>
-                                        {
-                                            // HINT: Message Id is a required field for InnerProcessMessage
-                                            [Headers.MessageId] = messageId,
-                                        }
-                                    };
-                                }
+                                        // HINT: Message Id is a required field for InnerProcessMessage
+                                        [Headers.MessageId] = messageId,
+                                    }
+                                };
                             }
                         }
                     }
