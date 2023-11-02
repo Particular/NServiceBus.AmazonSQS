@@ -334,7 +334,7 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        static (string, TransportMessage) ExtractTransportMessage(string nativeMessageId, Message receivedMessage)
+        internal static (string, TransportMessage) ExtractTransportMessage(string nativeMessageId, Message receivedMessage)
         {
             string messageId;
             TransportMessage transportMessage = null;
