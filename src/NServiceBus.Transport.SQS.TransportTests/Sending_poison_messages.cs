@@ -3,6 +3,7 @@
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Amazon.SQS;
     using Amazon.SQS.Model;
     using Transport;
     using Transport.SQS;
@@ -13,7 +14,7 @@
     {
         [TestCase(TransportTransactionMode.None)]
         [TestCase(TransportTransactionMode.ReceiveOnly)]
-        public async Task Should_move_to_error_queue(TransportTransactionMode transactionMode)
+        public async Task Should_move_to_error_queue_when_unwrapped_and_cannot_deserialize_headers(TransportTransactionMode transactionMode)
         {
             var onMessageCalled = false;
             var onErrorCalled = false;
@@ -33,7 +34,24 @@
                     return Task.FromResult(ErrorHandleResult.Handled);
                 }, transactionMode);
 
-            await SendPoisonMessage(InputQueueName);
+            using var sqsClient = ClientFactories.CreateSqsClient();
+            var queueUrl = await GetQueueUrl(sqsClient, InputQueueName);
+
+            var sendMessageRequest = new SendMessageRequest
+            {
+                QueueUrl = queueUrl,
+                MessageBody = UnwrappedAndNotRelevantPoisonMessageBody,
+                MessageAttributes =
+                {
+                    [TransportHeaders.Headers] = new MessageAttributeValue
+                    {
+                        StringValue = "junk:this.will.fail.deserializing",
+                        DataType = "String"
+                    }
+                }
+            };
+
+            await sqsClient.SendMessageAsync(sendMessageRequest);
 
             await CheckErrorQueue(ErrorQueueName, cancellationTokenSource.Token);
 
@@ -41,21 +59,15 @@
             Assert.False(onMessageCalled, "Poison message should not invoke onMessage");
         }
 
-        string PoisonMessageBody = "this is a poison message that won't deserialize to valid json";
-
-        async Task SendPoisonMessage(string inputQueueName)
+        // string PoisonMessageBody = "this is a poison message that won't deserialize to valid json";
+        static async Task<string> GetQueueUrl(IAmazonSQS sqsClient, string inputQueueName)
         {
-            using var sqsClient = ClientFactories.CreateSqsClient();
             var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
             {
                 QueueName = QueueCache.GetSqsQueueName(inputQueueName, SetupFixture.GetNamePrefix())
             }).ConfigureAwait(false);
 
-            await sqsClient.SendMessageAsync(new SendMessageRequest
-            {
-                QueueUrl = getQueueUrlResponse.QueueUrl,
-                MessageBody = PoisonMessageBody
-            }).ConfigureAwait(false);
+            return getQueueUrlResponse.QueueUrl;
         }
 
         async Task CheckErrorQueue(string errorQueueName, CancellationToken cancellationToken)
@@ -87,7 +99,9 @@
 
             Assert.NotNull(receiveMessageResponse);
             Assert.AreEqual(1, receiveMessageResponse.Messages.Count);
-            Assert.AreEqual(PoisonMessageBody, receiveMessageResponse.Messages.Single().Body);
+            Assert.AreEqual(UnwrappedAndNotRelevantPoisonMessageBody, receiveMessageResponse.Messages.Single().Body);
         }
+
+        const string UnwrappedAndNotRelevantPoisonMessageBody = "The body doesn't matter, this will be treated as an unwrapped message";
     }
 }
