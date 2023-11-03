@@ -68,6 +68,78 @@
                         .WithBody("Message Body")
                 );
 
+                yield return TestCase(
+                    "Serialized Transport message with enclosed message type header",
+                    native => native
+                        .WithBody(
+                            $@"{{
+                                ""Body"": ""Body"",
+                                ""Headers"": {{
+                                    ""{Headers.EnclosedMessageTypes}"": ""SomeType"",
+                                    ""SomeKey"": ""SomeValue""
+                                }}
+                              }}"
+                        ),
+                    transport => transport
+                        .WithHeader("SomeKey", "SomeValue")
+                        .WithHeader(Headers.EnclosedMessageTypes, "SomeType")
+                        .WithBody("Body")
+                );
+
+                yield return TestCase(
+                    "Serialized Transport message with message id header",
+                    native => native
+                        .WithBody(
+                            $@"{{
+                                ""Body"": ""Body"",
+                                ""Headers"": {{
+                                    ""{Headers.MessageId}"": ""{nsbMessageId}"",
+                                    ""SomeKey"": ""SomeValue""
+                                }}
+                              }}"
+                        ),
+                    transport => transport
+                        .WithHeader("SomeKey", "SomeValue")
+                        .WithBody("Body")
+                );
+
+                yield return TestCase(
+                    "Serialized Transport message with control message header",
+                    native => native
+                        // NOTE: The value is case sensitive
+                        // TODO: Should it be?
+                        .WithBody($@"{{
+                            ""Headers"": {{
+                                ""{Headers.ControlMessageHeader}"": ""True""
+                            }}
+                        }}"),
+                    transport => transport
+                        .WithHeader(Headers.ControlMessageHeader, "True")
+                );
+
+                var serializedTransportMessageWithoutHeaders = @"{
+    ""Body"": ""Message Body""
+}";
+                yield return TestCase(
+                    "Serialized transport message without headers",
+                    native => native
+                        .WithBody(serializedTransportMessageWithoutHeaders),
+                    transport => transport
+                        .WithBody(serializedTransportMessageWithoutHeaders)
+                );
+
+
+                var pureNativeBody = @"{
+    ""SomeKey"": ""SomeValue""
+}";
+
+                yield return TestCase(
+                    "Pure native message",
+                    native => native
+                        .WithBody(pureNativeBody),
+                    transport => transport.WithBody(pureNativeBody)
+                );
+
                 TestCaseData TestCase(string name, Action<NativeMessageBuilder> native = null, Action<TransportMessageBuilder> transport = null, string expectedMessageId = null)
                 {
                     var nativeMessageId = Guid.NewGuid().ToString();
