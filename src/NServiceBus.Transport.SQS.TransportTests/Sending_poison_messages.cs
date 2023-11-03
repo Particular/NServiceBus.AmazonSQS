@@ -59,7 +59,6 @@
             Assert.False(onMessageCalled, "Poison message should not invoke onMessage");
         }
 
-        // string PoisonMessageBody = "this is a poison message that won't deserialize to valid json";
         static async Task<string> GetQueueUrl(IAmazonSQS sqsClient, string inputQueueName)
         {
             var getQueueUrlResponse = await sqsClient.GetQueueUrlAsync(new GetQueueUrlRequest
