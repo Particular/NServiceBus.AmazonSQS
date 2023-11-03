@@ -151,9 +151,7 @@
                     transport?.Invoke(transportMessageBuilder);
 
                     return new TestCaseData(
-                        nativeMessageId,
                         messageBuilder.Build(),
-                        expectedMessageId ?? nativeMessageId,
                         transportMessageBuilder.Build()
                     ).SetName(name);
                 }
@@ -161,12 +159,11 @@
         }
 
         [Test, TestCaseSource(nameof(TestCases))]
-        public void ExtractsMessageCorrectly(string nativeMessageId, Message message, string expectedMessageId, TransportMessage expectedTransportMessage)
+        public void ExtractsMessageCorrectly(Message message, TransportMessage expectedTransportMessage)
         {
-            var (messageId, transportMessage) = InputQueuePump.ExtractTransportMessage(nativeMessageId, message);
-
-            Assert.That(messageId, Is.EqualTo(expectedMessageId), "Message Id set incorrectly");
+            var transportMessage = InputQueuePump.ExtractTransportMessage(message);
             Assert.That(transportMessage, Is.Not.Null, "TransportMessage should be set");
+            Assert.That(transportMessage.Headers, Is.Not.Null, "Headers should be set");
 
             Assert.That(transportMessage.Body, Is.EqualTo(expectedTransportMessage.Body), "Body is not set correctly");
             Assert.That(transportMessage.S3BodyKey, Is.EqualTo(expectedTransportMessage.S3BodyKey), "S3 Body Key is not set correctly");
@@ -174,6 +171,7 @@
             //Assert.That(transportMessage.ReplyToAddress)
             //Assert.That(transportMessage.TimeToBeReceived)
             Assert.That(transportMessage.Headers, Is.EquivalentTo(expectedTransportMessage.Headers), "Headers are not set correctly");
+
         }
 
         [Test]
@@ -186,7 +184,7 @@
                 .Build();
 
             Assert.Throws<JsonException>(
-                () => InputQueuePump.ExtractTransportMessage(nativeMessageId, message),
+                () => InputQueuePump.ExtractTransportMessage(message),
                 "Should throw an exception if the header message attribute is not json"
             );
         }

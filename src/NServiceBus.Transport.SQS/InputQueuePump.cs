@@ -282,7 +282,8 @@ namespace NServiceBus.Transport.SQS
             {
                 try
                 {
-                    (messageId, transportMessage) = ExtractTransportMessage(nativeMessageId, receivedMessage);
+                    transportMessage = ExtractTransportMessage(receivedMessage);
+                    messageId = transportMessage.Headers[Headers.MessageId];
                     (messageBody, messageBodyBuffer) = await transportMessage.RetrieveBody(messageId, s3Settings, arrayPool, messageProcessingCancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception ex) when (!ex.IsCausedBy(messageProcessingCancellationToken))
@@ -334,8 +335,9 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        internal static (string, TransportMessage) ExtractTransportMessage(string nativeMessageId, Message receivedMessage)
+        internal static TransportMessage ExtractTransportMessage(Message receivedMessage)
         {
+            string nativeMessageId = receivedMessage.MessageId;
             TransportMessage transportMessage = null;
 
             if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.Headers, out var headersAttribute))
@@ -453,7 +455,7 @@ namespace NServiceBus.Transport.SQS
                 transportMessage.Headers[Headers.MessageId] = messageId;
             }
 
-            return (messageId, transportMessage);
+            return transportMessage;
         }
 
         async Task<bool> InnerProcessMessage(Dictionary<string, string> headers, string nativeMessageId, ReadOnlyMemory<byte> body, Message nativeMessage, CancellationToken messageProcessingCancellationToken)
