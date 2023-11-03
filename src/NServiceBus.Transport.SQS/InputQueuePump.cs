@@ -435,24 +435,12 @@ namespace NServiceBus.Transport.SQS
                 }
             }
 
-            string messageId;
-            if (receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
+            // HINT: Message Id is a required field for InnerProcessMessage
+            if (!transportMessage.Headers.TryGetValue(Headers.MessageId, out var transportMessageId))
             {
-                messageId = messageIdAttribute.StringValue;
-            }
-            else
-            {
-                messageId = nativeMessageId;
-            }
-
-            if (transportMessage.Headers.TryGetValue(Headers.MessageId, out var transportMessageId))
-            {
-                messageId = transportMessageId;
-            }
-            else
-            {
-                // HINT: Message Id is a required field for InnerProcessMessage
-                transportMessage.Headers[Headers.MessageId] = messageId;
+                transportMessage.Headers[Headers.MessageId] = receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute)
+                    ? messageIdAttribute.StringValue
+                    : nativeMessageId;
             }
 
             return transportMessage;
