@@ -336,17 +336,7 @@ namespace NServiceBus.Transport.SQS
 
         internal static (string, TransportMessage) ExtractTransportMessage(string nativeMessageId, Message receivedMessage)
         {
-            string messageId;
             TransportMessage transportMessage = null;
-
-            if (receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
-            {
-                messageId = messageIdAttribute.StringValue;
-            }
-            else
-            {
-                messageId = nativeMessageId;
-            }
 
             if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.Headers, out var headersAttribute))
             {
@@ -355,7 +345,6 @@ namespace NServiceBus.Transport.SQS
                     Headers = JsonSerializer.Deserialize<Dictionary<string, string>>(headersAttribute.StringValue) ?? [],
                     Body = receivedMessage.Body
                 };
-                transportMessage.Headers[Headers.MessageId] = messageId;
                 if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.S3BodyKey, out var s3BodyKey))
                 {
                     transportMessage.Headers[TransportHeaders.S3BodyKey] = s3BodyKey.StringValue;
@@ -369,7 +358,6 @@ namespace NServiceBus.Transport.SQS
                 {
                     var headers = new Dictionary<string, string>
                     {
-                        { Headers.MessageId, messageId },
                         { Headers.EnclosedMessageTypes, enclosedMessageType.StringValue },
                         {
                             TransportHeaders.MessageTypeFullName, enclosedMessageType.StringValue
@@ -439,14 +427,30 @@ namespace NServiceBus.Transport.SQS
                         transportMessage = new TransportMessage
                         {
                             Body = receivedMessage.Body,
-                            Headers = new Dictionary<string, string>
-                            {
-                                // HINT: Message Id is a required field for InnerProcessMessage
-                                [Headers.MessageId] = messageId,
-                            }
+                            Headers = []
                         };
                     }
                 }
+            }
+
+            string messageId;
+            if (receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
+            {
+                messageId = messageIdAttribute.StringValue;
+            }
+            else
+            {
+                messageId = nativeMessageId;
+            }
+
+            if (transportMessage.Headers.TryGetValue(Headers.MessageId, out var transportMessageId))
+            {
+                messageId = transportMessageId;
+            }
+            else
+            {
+                // HINT: Message Id is a required field for InnerProcessMessage
+                transportMessage.Headers[Headers.MessageId] = messageId;
             }
 
             return (messageId, transportMessage);

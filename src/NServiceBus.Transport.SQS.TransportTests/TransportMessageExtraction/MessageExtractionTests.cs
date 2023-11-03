@@ -100,7 +100,8 @@
                         ),
                     transport => transport
                         .WithHeader("SomeKey", "SomeValue")
-                        .WithBody("Body")
+                        .WithBody("Body"),
+                    expectedMessageId: nsbMessageId
                 );
 
                 yield return TestCase(
