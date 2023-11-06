@@ -280,15 +280,7 @@ namespace NServiceBus.Transport.SQS
 
             try
             {
-                string messageId;
-                if (receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
-                {
-                    messageId = messageIdAttribute.StringValue;
-                }
-                else
-                {
-                    messageId = nativeMessageId;
-                }
+                var messageId = ExtractMessageId(receivedMessage);
 
                 try
                 {
@@ -343,6 +335,14 @@ namespace NServiceBus.Transport.SQS
                     arrayPool.Return(messageBodyBuffer, clearArray: true);
                 }
             }
+        }
+
+
+        public static string ExtractMessageId(Message receivedMessage)
+        {
+            return receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute)
+                ? messageIdAttribute.StringValue
+                : receivedMessage.MessageId;
         }
 
         public static TransportMessage ExtractTransportMessage(Message receivedMessage, string messageIdOverride)

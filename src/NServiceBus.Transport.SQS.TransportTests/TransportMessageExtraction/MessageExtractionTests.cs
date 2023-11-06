@@ -173,17 +173,7 @@
         [TestCaseSource(nameof(TestCases))]
         public void ExtractsMessageCorrectly(Message message, TransportMessage expectedTransportMessage, bool considerPoison)
         {
-            //Copy of the logic of ProcessMessage
-            string messageId;
-            if (message.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
-            {
-                messageId = messageIdAttribute.StringValue;
-            }
-            else
-            {
-                messageId = message.MessageId;
-            }
-
+            var messageId = InputQueuePump.ExtractMessageId(message);
             if (considerPoison)
             {
                 Assert.Throws(
