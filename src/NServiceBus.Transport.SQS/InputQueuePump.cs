@@ -284,7 +284,7 @@ namespace NServiceBus.Transport.SQS
                 try
                 {
                     transportMessage = ExtractTransportMessage(receivedMessage);
-
+                    messageId = transportMessage.Headers[Headers.MessageId];
                     (messageBody, messageBodyBuffer) = await transportMessage.RetrieveBody(messageId, s3Settings, arrayPool, messageProcessingCancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception ex) when (!ex.IsCausedBy(messageProcessingCancellationToken))
@@ -393,6 +393,16 @@ namespace NServiceBus.Transport.SQS
                 else
                 {
                     transportMessage = JsonSerializer.Deserialize<TransportMessage>(receivedMessage.Body, transportMessageSerializerOptions);
+                    // HINT: The message cannot be processed without headers and will throw
+                    if (transportMessage?.Headers == null)
+                    {
+                        throw new Exception("Transport message is missing headers element");
+                    }
+                    // HINT: Message Id is the only required header
+                    if (!transportMessage.Headers.ContainsKey(Headers.MessageId))
+                    {
+                        transportMessage.Headers[Headers.MessageId] = messageId;
+                    }
                 }
             }
             return transportMessage;
