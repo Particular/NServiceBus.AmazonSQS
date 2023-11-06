@@ -269,9 +269,8 @@ namespace NServiceBus.Transport.SQS
             byte[] messageBodyBuffer = null;
             TransportMessage transportMessage = null;
             Exception exception = null;
-            var nativeMessageId = receivedMessage.MessageId;
-            string messageId = null;
             var isPoisonMessage = false;
+            var nativeMessageId = receivedMessage.MessageId;
 
             if (messagesToBeDeleted.TryGet(nativeMessageId, out _))
             {
@@ -281,9 +280,19 @@ namespace NServiceBus.Transport.SQS
 
             try
             {
+                string messageId;
+                if (receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
+                {
+                    messageId = messageIdAttribute.StringValue;
+                }
+                else
+                {
+                    messageId = nativeMessageId;
+                }
+
                 try
                 {
-                    transportMessage = ExtractTransportMessage(receivedMessage);
+                    transportMessage = ExtractTransportMessage(receivedMessage, messageId);
                     messageId = transportMessage.Headers[Headers.MessageId];
                     (messageBody, messageBodyBuffer) = await transportMessage.RetrieveBody(messageId, s3Settings, arrayPool, messageProcessingCancellationToken).ConfigureAwait(false);
                 }
@@ -336,20 +345,9 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        public static TransportMessage ExtractTransportMessage(Message receivedMessage)
+        public static TransportMessage ExtractTransportMessage(Message receivedMessage, string messageIdOverride)
         {
             TransportMessage transportMessage;
-            string messageId;
-            var nativeMessageId = receivedMessage.MessageId;
-            if (receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
-            {
-                messageId = messageIdAttribute.StringValue;
-            }
-            else
-            {
-                messageId = nativeMessageId;
-            }
-
             if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.Headers, out var headersAttribute))
             {
                 transportMessage = new TransportMessage
@@ -357,7 +355,7 @@ namespace NServiceBus.Transport.SQS
                     Headers = JsonSerializer.Deserialize<Dictionary<string, string>>(headersAttribute.StringValue) ?? [],
                     Body = receivedMessage.Body
                 };
-                transportMessage.Headers[Headers.MessageId] = messageId;
+                transportMessage.Headers[Headers.MessageId] = messageIdOverride;
                 if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.S3BodyKey, out var s3BodyKey))
                 {
                     transportMessage.Headers[TransportHeaders.S3BodyKey] = s3BodyKey.StringValue;
@@ -371,7 +369,7 @@ namespace NServiceBus.Transport.SQS
                 {
                     var headers = new Dictionary<string, string>
                     {
-                                { Headers.MessageId, messageId },
+                                { Headers.MessageId, messageIdOverride },
                                 { Headers.EnclosedMessageTypes, enclosedMessageType.StringValue },
                                 {
                                     TransportHeaders.MessageTypeFullName, enclosedMessageType.StringValue
@@ -401,7 +399,7 @@ namespace NServiceBus.Transport.SQS
                     // HINT: Message Id is the only required header
                     if (!transportMessage.Headers.ContainsKey(Headers.MessageId))
                     {
-                        transportMessage.Headers[Headers.MessageId] = messageId;
+                        transportMessage.Headers[Headers.MessageId] = messageIdOverride;
                     }
                 }
             }

@@ -173,17 +173,28 @@
         [TestCaseSource(nameof(TestCases))]
         public void ExtractsMessageCorrectly(Message message, TransportMessage expectedTransportMessage, bool considerPoison)
         {
+            //Copy of the logic of ProcessMessage
+            string messageId;
+            if (message.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
+            {
+                messageId = messageIdAttribute.StringValue;
+            }
+            else
+            {
+                messageId = message.MessageId;
+            }
+
             if (considerPoison)
             {
                 Assert.Throws(
                     Is.InstanceOf<Exception>(),
-                    () => InputQueuePump.ExtractTransportMessage(message),
+                    () => InputQueuePump.ExtractTransportMessage(message, messageId),
                     "This case is not supported. Message should be treated as poison."
                 );
                 return;
             }
 
-            var transportMessage = InputQueuePump.ExtractTransportMessage(message);
+            var transportMessage = InputQueuePump.ExtractTransportMessage(message, messageId);
             Assert.That(transportMessage, Is.Not.Null, "TransportMessage should be set");
             Assert.That(transportMessage.Headers, Is.Not.Null, "Headers should be set");
 
