@@ -355,7 +355,6 @@ namespace NServiceBus.Transport.SQS
                     Headers = JsonSerializer.Deserialize<Dictionary<string, string>>(headersAttribute.StringValue) ?? [],
                     Body = receivedMessage.Body
                 };
-                transportMessage.Headers[Headers.MessageId] = messageIdOverride;
                 if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.S3BodyKey, out var s3BodyKey))
                 {
                     transportMessage.Headers[TransportHeaders.S3BodyKey] = s3BodyKey.StringValue;
@@ -396,13 +395,10 @@ namespace NServiceBus.Transport.SQS
                     {
                         throw new Exception("Transport message is missing headers element");
                     }
-                    // HINT: Message Id is the only required header
-                    if (!transportMessage.Headers.ContainsKey(Headers.MessageId))
-                    {
-                        transportMessage.Headers[Headers.MessageId] = messageIdOverride;
-                    }
                 }
             }
+            // HINT: Message Id is the only required header
+            transportMessage.Headers.TryAdd(Headers.MessageId, messageIdOverride);
             return transportMessage;
         }
 

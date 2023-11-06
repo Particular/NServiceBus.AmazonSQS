@@ -63,6 +63,15 @@
                 native => native.WithMessageAttribute(TransportHeaders.Headers, "NOT JSON DICTIONARY"),
                 considerPoison: true);
 
+            yield return TestCase(
+                "Preserve message ID from transport headers in message attribute",
+                native => native
+                    .WithMessageAttribute(TransportHeaders.Headers, JsonSerializer.Serialize(new Dictionary<string, string> { { Headers.MessageId, nsbMessageIdPassedThroughHeaders } }))
+                    .WithBody("Body Contents"),
+                transport => transport
+                    .WithHeader(Headers.MessageId, nsbMessageIdPassedThroughHeaders)
+                    .WithBody("Body Contents")
+            );
             #endregion
 
             #region Message type in message attribute tests
