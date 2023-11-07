@@ -45,13 +45,10 @@
                 native => native
                     .WithMessageAttributeHeader(TransportHeaders.S3BodyKey, "Will be overwritten", condition: pushBodyToS3)
                     .WithMessageAttributeHeader("SomeKey", "SomeValue")
-                    .WithMessageAttributeHeader(Headers.MessageId, "Will be overwritten", condition: passMessageIdInNsbHeaders)
+                    .WithMessageAttributeHeader(Headers.MessageId, nsbMessageIdPassedThroughHeaders, condition: passMessageIdInNsbHeaders)
                     .WithMessageAttribute(TransportHeaders.S3BodyKey, "S3 Body Key", condition: pushBodyToS3)
                     .WithBody("Body Contents", condition: passBodyInMessage),
                 transport => transport
-                    // HINT: Message Id from headers is going to get overwritten no matter what
-                    .WithHeader(Headers.MessageId, nativeMessageId)
-                    .WithHeader(Headers.MessageId, nsbMessageIdPassedThroughMessageAttribute, condition: passMessageIdInMessageAttribute)
                     .WithHeader("SomeKey", "SomeValue")
                     .WithBody("Body Contents", condition: passBodyInMessage)
                     .WithHeader(TransportHeaders.S3BodyKey, "S3 Body Key", condition: pushBodyToS3)
@@ -88,7 +85,9 @@
                     .WithHeader(TransportHeaders.S3BodyKey, "S3 body key", condition: pushBodyToS3)
                     .WithS3BodyKey("S3 body key", condition: pushBodyToS3),
                 // HINT: There is no way to pass this via headers. It should fall back to native message id
-                expectedMessageId: passMessageIdInNsbHeaders && !passMessageIdInMessageAttribute ? nativeMessageId : null
+                expectedMessageId: passMessageIdInMessageAttribute
+                                ? nsbMessageIdPassedThroughMessageAttribute
+                                : nativeMessageId
             );
             #endregion
 
@@ -160,15 +159,15 @@
                 var transportMessageBuilder = new TransportMessageBuilder()
                     // HINT: Last in wins
                     .WithHeader(Headers.MessageId, nativeMessageId)
-                    .WithHeader(Headers.MessageId, nsbMessageIdPassedThroughHeaders, condition: passMessageIdInNsbHeaders)
                     .WithHeader(Headers.MessageId, nsbMessageIdPassedThroughMessageAttribute, condition: passMessageIdInMessageAttribute)
+                    .WithHeader(Headers.MessageId, nsbMessageIdPassedThroughHeaders, condition: passMessageIdInNsbHeaders)
                     .WithHeader(Headers.MessageId, expectedMessageId, condition: expectedMessageId != null);
 
                 transport?.Invoke(transportMessageBuilder);
 
                 var testCaseName = name;
                 testCaseName += passMessageIdInMessageAttribute ? " - Message Id in message attribute" : " - Message Id NOT in message attribute";
-                testCaseName += passMessageIdInNsbHeaders ? " - NSB message Id provided" : " - NSB message Id NOT provided";
+                testCaseName += passMessageIdInNsbHeaders ? " - Message Id in NSB headers" : " - Message Id NOT in NSB headers";
                 testCaseName += pushBodyToS3 ? " - body in S3" : " - body on message";
 
                 return new TestCaseData(
