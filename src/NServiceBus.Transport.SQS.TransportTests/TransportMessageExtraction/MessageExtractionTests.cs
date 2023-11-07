@@ -43,16 +43,21 @@
             yield return TestCase(
                 "Transport headers in message attribute",
                 native => native
-                    .WithMessageAttributeHeader(TransportHeaders.S3BodyKey, "Will be overwritten", condition: pushBodyToS3)
                     .WithMessageAttributeHeader("SomeKey", "SomeValue")
-                    .WithMessageAttributeHeader(Headers.MessageId, nsbMessageIdPassedThroughHeaders, condition: passMessageIdInNsbHeaders)
-                    .WithMessageAttribute(TransportHeaders.S3BodyKey, "S3 Body Key", condition: pushBodyToS3)
-                    .WithBody("Body Contents", condition: passBodyInMessage),
+                    .If(passBodyInMessage, n => n
+                        .WithBody("Body Contents"))
+                    .If(pushBodyToS3, n => n
+                        .WithMessageAttributeHeader(TransportHeaders.S3BodyKey, "Will be overwritten")
+                        .WithMessageAttribute(TransportHeaders.S3BodyKey, "S3 Body Key"))
+                    .If(passMessageIdInNsbHeaders, n => n
+                        .WithMessageAttributeHeader(Headers.MessageId, nsbMessageIdPassedThroughHeaders)),
                 transport => transport
                     .WithHeader("SomeKey", "SomeValue")
-                    .WithBody("Body Contents", condition: passBodyInMessage)
-                    .WithHeader(TransportHeaders.S3BodyKey, "S3 Body Key", condition: pushBodyToS3)
-                    .WithS3BodyKey("S3 Body Key", condition: pushBodyToS3)
+                    .If(passBodyInMessage, t => t
+                        .WithBody("Body Contents"))
+                    .If(pushBodyToS3, t => t
+                        .WithHeader(TransportHeaders.S3BodyKey, "S3 Body Key")
+                        .WithS3BodyKey("S3 Body Key"))
             );
 
             yield return TestCase(
@@ -76,15 +81,19 @@
                 "Message type in message attributes",
                 native => native
                     .WithMessageAttribute(TransportHeaders.MessageTypeFullName, "Message type full name")
-                    .WithMessageAttribute(TransportHeaders.S3BodyKey, "S3 body key", condition: pushBodyToS3)
-                    .WithBody("Body Contents", condition: passBodyInMessage),
+                    .If(passBodyInMessage, n => n
+                        .WithBody("Body Contents"))
+                    .If(pushBodyToS3, n => n
+                        .WithMessageAttribute(TransportHeaders.S3BodyKey, "S3 body key")),
                 transport => transport
                     .WithHeader(TransportHeaders.MessageTypeFullName, "Message type full name")
                     .WithHeader(Headers.EnclosedMessageTypes, "Message type full name")
-                    .WithBody("Body Contents", condition: passBodyInMessage)
-                    .WithHeader(TransportHeaders.S3BodyKey, "S3 body key", condition: pushBodyToS3)
-                    .WithS3BodyKey("S3 body key", condition: pushBodyToS3),
-                // HINT: There is no way to pass this via headers. It should fall back to native message id
+                    .If(passBodyInMessage, t => t
+                        .WithBody("Body Contents"))
+                    .If(pushBodyToS3, t => t
+                        .WithHeader(TransportHeaders.S3BodyKey, "S3 body key")
+                        .WithS3BodyKey("S3 body key")),
+                // HINT: There is no way to pass this via headers. It should fall back to native or message attribute
                 expectedMessageId: passMessageIdInMessageAttribute
                                 ? nsbMessageIdPassedThroughMessageAttribute
                                 : nativeMessageId
@@ -93,9 +102,12 @@
 
             #region Serialized transport message tests
             var senderTransportMessage = new TransportMessageBuilder()
-                .WithHeader(Headers.MessageId, nsbMessageIdPassedThroughHeaders, condition: passMessageIdInNsbHeaders)
-                .WithBody("Body Contents", condition: passBodyInMessage)
-                .WithS3BodyKey("S3 Body Key", condition: pushBodyToS3)
+                .If(passMessageIdInNsbHeaders, t => t
+                    .WithHeader(Headers.MessageId, nsbMessageIdPassedThroughHeaders))
+                .If(passBodyInMessage, t => t
+                    .WithBody("Body Contents"))
+                .If(pushBodyToS3, t => t
+                    .WithS3BodyKey("S3 Body Key"))
                 .Build();
 
             yield return TestCase(
@@ -105,10 +117,10 @@
                 transport => transport
                     // HINT: This is needed here because the serializer reads it and it gets a default (MAX). When it is deserialized it gets included
                     .WithHeader(TransportHeaders.TimeToBeReceived, TimeSpan.MaxValue.ToString())
-                    // HINT: If the message id is passed via headers then it is used, otherwise no message id is set
-                    .WithHeader(Headers.MessageId, nsbMessageIdPassedThroughHeaders, condition: passMessageIdInNsbHeaders)
-                    .WithBody("Body Contents", condition: passBodyInMessage)
-                    .WithS3BodyKey("S3 Body Key", condition: pushBodyToS3)
+                    .If(passBodyInMessage, t => t
+                        .WithBody("Body Contents"))
+                    .If(pushBodyToS3, t => t
+                        .WithS3BodyKey("S3 Body Key"))
             );
 
             #region Corrupted transport message tests
@@ -152,16 +164,20 @@
                 string expectedMessageId = null)
             {
                 var messageBuilder = new NativeMessageBuilder(nativeMessageId)
-                    .WithMessageAttribute(Headers.MessageId, nsbMessageIdPassedThroughMessageAttribute, passMessageIdInMessageAttribute);
+                    .If(passMessageIdInMessageAttribute, n => n
+                        .WithMessageAttribute(Headers.MessageId, nsbMessageIdPassedThroughMessageAttribute));
 
                 native?.Invoke(messageBuilder);
 
                 var transportMessageBuilder = new TransportMessageBuilder()
                     // HINT: Last in wins
                     .WithHeader(Headers.MessageId, nativeMessageId)
-                    .WithHeader(Headers.MessageId, nsbMessageIdPassedThroughMessageAttribute, condition: passMessageIdInMessageAttribute)
-                    .WithHeader(Headers.MessageId, nsbMessageIdPassedThroughHeaders, condition: passMessageIdInNsbHeaders)
-                    .WithHeader(Headers.MessageId, expectedMessageId, condition: expectedMessageId != null);
+                    .If(passMessageIdInMessageAttribute, t => t
+                        .WithHeader(Headers.MessageId, nsbMessageIdPassedThroughMessageAttribute))
+                    .If(passMessageIdInNsbHeaders, t => t
+                        .WithHeader(Headers.MessageId, nsbMessageIdPassedThroughHeaders))
+                    .If(expectedMessageId != null, t => t
+                        .WithHeader(Headers.MessageId, expectedMessageId));
 
                 transport?.Invoke(transportMessageBuilder);
 
@@ -215,30 +231,30 @@
                 message = new Message { MessageId = nativeMessageId };
             }
 
-            public NativeMessageBuilder WithMessageAttributeHeader(string key, string value, bool condition = true)
+            public NativeMessageBuilder If(bool condition, Action<NativeMessageBuilder> action)
             {
                 if (condition)
                 {
-                    headers[key] = value;
+                    action(this);
                 }
                 return this;
             }
 
-            public NativeMessageBuilder WithMessageAttribute(string key, string value, bool condition = true)
+            public NativeMessageBuilder WithMessageAttributeHeader(string key, string value)
             {
-                if (condition)
-                {
-                    message.MessageAttributes[key] = new MessageAttributeValue { StringValue = value };
-                }
+                headers[key] = value;
                 return this;
             }
 
-            public NativeMessageBuilder WithBody(string body, bool condition = true)
+            public NativeMessageBuilder WithMessageAttribute(string key, string value)
             {
-                if (condition)
-                {
-                    message.Body = body;
-                }
+                message.MessageAttributes[key] = new MessageAttributeValue { StringValue = value };
+                return this;
+            }
+
+            public NativeMessageBuilder WithBody(string body)
+            {
+                message.Body = body;
                 return this;
             }
 
@@ -264,30 +280,30 @@
                 Headers = []
             };
 
-            public TransportMessageBuilder WithHeader(string key, string value, bool condition = true)
+            public TransportMessageBuilder If(bool condition, Action<TransportMessageBuilder> action)
             {
                 if (condition)
                 {
-                    message.Headers[key] = value;
+                    action(this);
                 }
                 return this;
             }
 
-            public TransportMessageBuilder WithBody(string body, bool condition = true)
+            public TransportMessageBuilder WithHeader(string key, string value)
             {
-                if (condition)
-                {
-                    message.Body = body;
-                }
+                message.Headers[key] = value;
                 return this;
             }
 
-            public TransportMessageBuilder WithS3BodyKey(string key, bool condition = true)
+            public TransportMessageBuilder WithBody(string body)
             {
-                if (condition)
-                {
-                    message.S3BodyKey = key;
-                }
+                message.Body = body;
+                return this;
+            }
+
+            public TransportMessageBuilder WithS3BodyKey(string key)
+            {
+                message.S3BodyKey = key;
                 return this;
             }
 
