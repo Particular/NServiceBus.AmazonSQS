@@ -41,9 +41,39 @@
 
             #region Raw message with no headers at all
             yield return TestCase(
-                "Raw native message",
+                "Non-JSON message",
                 native => native.WithBody("Body Contents"),
                 transport => transport.WithBody("Body Contents"),
+                expectedMessageId: nativeMessageId);
+
+            yield return TestCase(
+                "JSON without headers",
+                native => native.WithBody("{}"),
+                transport => transport.WithBody("{}"),
+                expectedMessageId: nativeMessageId);
+
+            yield return TestCase(
+                "JSON without headers property with wrong type",
+                native => native.WithBody(@"{ ""Headers"" : 6 }"),
+                transport => transport.WithBody(@"{ ""Headers"" : 6 }"),
+                expectedMessageId: nativeMessageId);
+
+            yield return TestCase(
+                "JSON with additional properties",
+                native => native.WithBody(@"{ ""Headers"" : {}, ""Unexpected"" : null}"),
+                transport => transport.WithBody(@"{ ""Headers"" : {}, ""Unexpected"" : null}"),
+                expectedMessageId: nativeMessageId);
+
+            yield return TestCase(
+                "JSON with empty headers",
+                native => native.WithBody(@"{ ""Headers"" : {} }"),
+                transport => transport.WithBody(@"{ ""Headers"" : {} }"),
+                expectedMessageId: nativeMessageId);
+
+            yield return TestCase(
+                "JSON with unrecognized headers",
+                native => native.WithBody(@"{ ""Headers"" : { ""SomeHeader"" : ""some value""} }"),
+                transport => transport.WithBody(@"{ ""Headers"" : { ""SomeHeader"" : ""some value""} }"),
                 expectedMessageId: nativeMessageId);
             #endregion
 
