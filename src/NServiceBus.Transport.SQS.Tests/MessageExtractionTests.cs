@@ -39,6 +39,14 @@
             var nsbMessageIdPassedThroughHeaders = "NSB Message Id passed via headers";
             bool passBodyInMessage = !pushBodyToS3;
 
+            #region Raw message with no headers at all
+            yield return TestCase(
+                "Raw native message",
+                native => native.WithBody("Body Contents"),
+                transport => transport.WithBody("Body Contents"),
+                expectedMessageId: nativeMessageId);
+            #endregion
+
             #region NSB headers in message attribute tests
             yield return TestCase(
                 "Transport headers in message attribute",
