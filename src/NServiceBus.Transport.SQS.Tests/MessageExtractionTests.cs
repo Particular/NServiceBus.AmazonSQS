@@ -1,4 +1,4 @@
-﻿namespace TransportTests.TransportMessageExtraction
+﻿namespace NServiceBus.Transport.SQS.Tests
 {
     using System;
     using System.Collections.Generic;
