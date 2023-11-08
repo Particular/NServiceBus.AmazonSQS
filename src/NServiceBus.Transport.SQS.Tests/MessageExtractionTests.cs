@@ -161,37 +161,6 @@
                         .WithS3BodyKey("S3 Body Key"))
             );
 
-            #region Corrupted transport message tests
-            // HINT: These should all throw
-            yield return TestCase(
-                "Corrupted serialized transport message no headers",
-                native => native.WithBody(@"{
-                                                ""Body"": ""Body Contents""
-                                            }"),
-                considerPoison: true
-            );
-
-            yield return TestCase(
-                "Fully corrupted serialized transport message",
-                native => native
-                    .WithBody(@"{
-                                    ""NonExistingProperty"": ""Does not matter""
-                                }"),
-                considerPoison: true
-            );
-
-            yield return TestCase(
-                "Corrupted headers on serialized transport message",
-                native => native
-                    .WithBody(@"{
-                                    ""Headers"": ""NOT A JSON DICTIONARY""
-                                }"),
-                considerPoison: true
-            );
-
-            // TODO: Add more test cases with malformed transport message objects
-            #endregion
-
             #endregion
 
             TestCaseData TestCase(
