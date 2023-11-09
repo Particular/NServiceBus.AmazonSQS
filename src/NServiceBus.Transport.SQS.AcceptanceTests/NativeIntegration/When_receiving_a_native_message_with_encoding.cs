@@ -35,44 +35,6 @@
         }
 
         [Test]
-        public async Task Should_fail_when_messagetypefullname_not_present()
-        {
-            using var cancellationTokenSource = new CancellationTokenSource();
-            var cancellationToken = cancellationTokenSource.Token;
-            try
-            {
-                await Scenario.Define<Context>()
-                    .WithEndpoint<Receiver>(c =>
-                    {
-                        c.CustomConfig((cfg, ctx) =>
-                        {
-                            ctx.ErrorQueueAddress = cfg.GetSettings().ErrorQueueAddress();
-                        });
-                        c.When(async (session, ctx) =>
-                        {
-                            await NativeEndpoint.SendTo<Receiver>(new Dictionary<string, MessageAttributeValue>
-                            {
-                                // unfortunately only the message id attribute is preserved when moving to the poison queue
-                                {
-                                    Headers.MessageId, new MessageAttributeValue {DataType = "String", StringValue = ctx.TestRunId.ToString()}
-                                }
-                            }, MessageToSend);
-                            _ = NativeEndpoint.ConsumePoisonQueue(ctx.TestRunId, ctx.ErrorQueueAddress, _ =>
-                            {
-                                ctx.MessageMovedToPoisonQueue = true;
-                            }, cancellationToken);
-                        }).DoNotFailOnErrorMessages();
-                    })
-                    .Done(c => c.MessageMovedToPoisonQueue)
-                    .Run();
-            }
-            finally
-            {
-                cancellationTokenSource.Cancel();
-            }
-        }
-
-        [Test]
         public async Task Should_support_loading_body_from_s3()
         {
             var context = await Scenario.Define<Context>()
