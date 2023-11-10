@@ -142,6 +142,7 @@
             var senderTransportMessage = new TransportMessageBuilder()
                 .If(passMessageIdInNsbHeaders, t => t
                     .WithHeader(Headers.MessageId, nsbMessageIdPassedThroughHeaders))
+                .WithHeader(Headers.EnclosedMessageTypes, "Enclosed message type")
                 .If(passBodyInMessage, t => t
                     .WithBody("Body Contents"))
                 .If(pushBodyToS3, t => t
@@ -155,6 +156,7 @@
                 transport => transport
                     // HINT: This is needed here because the serializer reads it and it gets a default (MAX). When it is deserialized it gets included
                     .WithHeader(TransportHeaders.TimeToBeReceived, TimeSpan.MaxValue.ToString())
+                    .WithHeader(Headers.EnclosedMessageTypes, "Enclosed message type")
                     .If(passBodyInMessage, t => t
                         .WithBody("Body Contents"))
                     .If(pushBodyToS3, t => t
