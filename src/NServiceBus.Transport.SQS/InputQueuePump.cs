@@ -333,7 +333,7 @@ namespace NServiceBus.Transport.SQS
                         }
                         else
                         {
-                            transportMessage = JsonSerializer.Deserialize<TransportMessage>(receivedMessage.Body, transportMessageSerializerOptions);
+                            transportMessage = JsonSerializer.Deserialize<TransportMessage>(receivedMessage.Body, TransportMessageSerializerOptions);
                         }
                     }
 
@@ -386,6 +386,125 @@ namespace NServiceBus.Transport.SQS
                     arrayPool.Return(messageBodyBuffer, clearArray: true);
                 }
             }
+        }
+
+        public static string ExtractMessageId(Message receivedMessage)
+        {
+            return receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute)
+                ? messageIdAttribute.StringValue
+                : receivedMessage.MessageId;
+        }
+
+        public static TransportMessage ExtractTransportMessage(Message receivedMessage, string messageIdOverride)
+        {
+            TransportMessage transportMessage;
+            if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.Headers, out var headersAttribute))
+            {
+                transportMessage = new TransportMessage
+                {
+                    Headers = JsonSerializer.Deserialize<Dictionary<string, string>>(headersAttribute.StringValue) ?? new Dictionary<string, string>(),
+                    Body = receivedMessage.Body
+                };
+                if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.S3BodyKey, out var s3BodyKey))
+                {
+                    transportMessage.Headers[TransportHeaders.S3BodyKey] = s3BodyKey.StringValue;
+                    transportMessage.S3BodyKey = s3BodyKey.StringValue;
+                }
+            }
+            else
+            {
+                // When the MessageTypeFullName attribute is available, we're assuming native integration
+                if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.MessageTypeFullName, out var enclosedMessageType))
+                {
+                    var headers = new Dictionary<string, string>
+                    {
+                                { Headers.MessageId, messageIdOverride },
+                                { Headers.EnclosedMessageTypes, enclosedMessageType.StringValue },
+                                {
+                                    TransportHeaders.MessageTypeFullName, enclosedMessageType.StringValue
+                                } // we're copying over the value of the native message attribute into the headers, converting this into a nsb message
+                            };
+
+                    if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.S3BodyKey, out var s3BodyKey))
+                    {
+                        headers.Add(TransportHeaders.S3BodyKey, s3BodyKey.StringValue);
+                    }
+
+                    transportMessage = new TransportMessage
+                    {
+                        Headers = headers,
+                        S3BodyKey = s3BodyKey?.StringValue,
+                        Body = receivedMessage.Body
+                    };
+                }
+                else
+                {
+                    try
+                    {
+                        transportMessage = JsonSerializer.Deserialize<TransportMessage>(receivedMessage.Body, TransportMessageSerializerOptions);
+
+                        if (CouldBeNativeMessage(transportMessage))
+                        {
+                            Logger.Debug($"Message with native id {receivedMessage.MessageId} does not contain the required information and will not be treated as an NServiceBus TransportMessage. " +
+                                   $"Instead it'll be treated as pure native message.");
+
+                            transportMessage = new TransportMessage
+                            {
+                                Body = receivedMessage.Body,
+                                Headers = new Dictionary<string, string>
+                                {
+                                    // HINT: Message Id is a required field for InnerProcessMessage
+                                    [Headers.MessageId] = receivedMessage.MessageId,
+                                }
+                            };
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        //HINT: Deserialization is best-effort. If it fails, we trat the message as a native message
+                        Logger.Debug($"Failed to deserialize message with native id {receivedMessage.MessageId}. " +
+                                     $"It will not be treated as an NServiceBus TransportMessage. Instead it'll be treated as pure native message.", ex);
+
+                        transportMessage = new TransportMessage
+                        {
+                            Body = receivedMessage.Body,
+                            Headers = new Dictionary<string, string>
+                            {
+                                // HINT: Message Id is a required field for InnerProcessMessage
+                                [Headers.MessageId] = receivedMessage.MessageId,
+                            }
+                        };
+                    }
+                }
+            }
+            // HINT: Message Id is the only required header
+            if (!transportMessage.Headers.ContainsKey(Headers.MessageId))
+            {
+                transportMessage.Headers.Add(Headers.MessageId, messageIdOverride);
+            }
+            return transportMessage;
+        }
+
+        static bool CouldBeNativeMessage(TransportMessage msg)
+        {
+            if (msg.Headers == null)
+            {
+                return true;
+            }
+
+            if (msg.Headers.ContainsKey(Headers.ControlMessageHeader) &&
+                msg.Headers[Headers.ControlMessageHeader] == true.ToString())
+            {
+                return false;
+            }
+
+            if (!msg.Headers.ContainsKey(Headers.MessageId) &&
+                !msg.Headers.ContainsKey(Headers.EnclosedMessageTypes))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         async Task<bool> InnerProcessMessage(Dictionary<string, string> headers, string nativeMessageId, ReadOnlyMemory<byte> body, Message nativeMessage, CancellationToken messageProcessingCancellationToken)
@@ -612,7 +731,7 @@ namespace NServiceBus.Transport.SQS
         readonly IReadOnlySettings coreSettings;
         readonly bool setupInfrastructure;
 
-        readonly JsonSerializerOptions transportMessageSerializerOptions = new()
+        static readonly JsonSerializerOptions TransportMessageSerializerOptions = new()
         {
             TypeInfoResolver = TransportMessageSerializerContext.Default
         };

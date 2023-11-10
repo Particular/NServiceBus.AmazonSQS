@@ -10,6 +10,7 @@
     using Amazon.SQS.Model;
     using Configuration.AdvancedExtensibility;
     using EndpointTemplates;
+    using global::Newtonsoft.Json;
     using NUnit.Framework;
     using Transport.SQS.Tests;
 
@@ -35,41 +36,27 @@
         }
 
         [Test]
-        public async Task Should_fail_when_messagetypefullname_not_present()
+        public async Task Should_be_processed_if_type_metadata_is_embedded()
         {
-            using var cancellationTokenSource = new CancellationTokenSource();
-            var cancellationToken = cancellationTokenSource.Token;
-            try
-            {
-                await Scenario.Define<Context>()
-                    .WithEndpoint<Receiver>(c =>
+            var context = await Scenario.Define<Context>()
+                .WithEndpoint<Receiver>(c => c.CustomConfig(cfg =>
+                {
+                    var serialization = cfg.UseSerialization<NewtonsoftJsonSerializer>();
+                    serialization.Settings(new JsonSerializerSettings()
                     {
-                        c.CustomConfig((cfg, ctx) =>
-                        {
-                            ctx.ErrorQueueAddress = cfg.GetSettings().ErrorQueueAddress();
-                        });
-                        c.When(async (session, ctx) =>
-                        {
-                            await NativeEndpoint.SendTo<Receiver>(new Dictionary<string, MessageAttributeValue>
-                            {
-                                // unfortunately only the message id attribute is preserved when moving to the poison queue
-                                {
-                                    Headers.MessageId, new MessageAttributeValue {DataType = "String", StringValue = ctx.TestRunId.ToString()}
-                                }
-                            }, MessageToSend);
-                            _ = NativeEndpoint.ConsumePoisonQueue(ctx.TestRunId, ctx.ErrorQueueAddress, _ =>
-                            {
-                                ctx.MessageMovedToPoisonQueue = true;
-                            }, cancellationToken);
-                        }).DoNotFailOnErrorMessages();
-                    })
-                    .Done(c => c.MessageMovedToPoisonQueue)
-                    .Run();
-            }
-            finally
-            {
-                cancellationTokenSource.Cancel();
-            }
+                        TypeNameHandling = TypeNameHandling.Auto
+                    });
+                }).When(async _ =>
+                {
+                    await NativeEndpoint.SendTo<Receiver>(new Dictionary<string, MessageAttributeValue>
+                    {
+                        {"SomeAttribute", new MessageAttributeValue {DataType = "String", StringValue = "SomeValue"}}
+                    }, @$"{{ ""$type"": ""{typeof(Message).AssemblyQualifiedName}"", ""ThisIsTheMessage"": ""Hello!""}}");
+                }))
+                .Done(c => c.MessageReceived != null)
+                .Run();
+
+            Assert.AreEqual("Hello!", context.MessageReceived);
         }
 
         [Test]
