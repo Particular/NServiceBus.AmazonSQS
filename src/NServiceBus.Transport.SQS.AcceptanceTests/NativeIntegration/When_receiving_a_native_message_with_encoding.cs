@@ -48,9 +48,8 @@
                     });
                 }).When(async _ =>
                 {
-                    await NativeEndpoint.SendTo<Receiver>(new Dictionary<string, MessageAttributeValue>
-                    {
-                    }, @$"{{ ""$type"": ""{typeof(Message).AssemblyQualifiedName}"", ""ThisIsTheMessage"": ""Hello!""}}");
+                    await NativeEndpoint.SendTo<Receiver>(new Dictionary<string, MessageAttributeValue>(),
+                        @$"{{ ""$type"": ""{typeof(Message).AssemblyQualifiedName}"", ""ThisIsTheMessage"": ""Hello!""}}");
                 }))
                 .Done(c => c.MessageReceived != null)
                 .Run();
