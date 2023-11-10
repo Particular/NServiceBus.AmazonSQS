@@ -1,4 +1,4 @@
-﻿namespace TransportTests.TransportMessageExtraction
+﻿namespace NServiceBus.Transport.SQS.Tests
 {
     using System;
     using System.Collections.Generic;
@@ -38,6 +38,44 @@
             var nsbMessageIdPassedThroughMessageAttribute = "NSB Message Id passed via message attribute";
             var nsbMessageIdPassedThroughHeaders = "NSB Message Id passed via headers";
             bool passBodyInMessage = !pushBodyToS3;
+
+            #region Raw message with no headers at all
+            yield return TestCase(
+                "Non-JSON message",
+                native => native.WithBody("Body Contents"),
+                transport => transport.WithBody("Body Contents"),
+                expectedMessageId: nativeMessageId);
+
+            yield return TestCase(
+                "JSON without headers",
+                native => native.WithBody("{}"),
+                transport => transport.WithBody("{}"),
+                expectedMessageId: nativeMessageId);
+
+            yield return TestCase(
+                "JSON without headers property with wrong type",
+                native => native.WithBody(@"{ ""Headers"" : 6 }"),
+                transport => transport.WithBody(@"{ ""Headers"" : 6 }"),
+                expectedMessageId: nativeMessageId);
+
+            yield return TestCase(
+                "JSON with additional properties",
+                native => native.WithBody(@"{ ""Headers"" : {}, ""Unexpected"" : null}"),
+                transport => transport.WithBody(@"{ ""Headers"" : {}, ""Unexpected"" : null}"),
+                expectedMessageId: nativeMessageId);
+
+            yield return TestCase(
+                "JSON with empty headers",
+                native => native.WithBody(@"{ ""Headers"" : {} }"),
+                transport => transport.WithBody(@"{ ""Headers"" : {} }"),
+                expectedMessageId: nativeMessageId);
+
+            yield return TestCase(
+                "JSON with unrecognized headers",
+                native => native.WithBody(@"{ ""Headers"" : { ""SomeHeader"" : ""some value""} }"),
+                transport => transport.WithBody(@"{ ""Headers"" : { ""SomeHeader"" : ""some value""} }"),
+                expectedMessageId: nativeMessageId);
+            #endregion
 
             #region NSB headers in message attribute tests
             yield return TestCase(
@@ -104,6 +142,7 @@
             var senderTransportMessage = new TransportMessageBuilder()
                 .If(passMessageIdInNsbHeaders, t => t
                     .WithHeader(Headers.MessageId, nsbMessageIdPassedThroughHeaders))
+                .WithHeader(Headers.EnclosedMessageTypes, "Enclosed message type")
                 .If(passBodyInMessage, t => t
                     .WithBody("Body Contents"))
                 .If(pushBodyToS3, t => t
@@ -117,42 +156,12 @@
                 transport => transport
                     // HINT: This is needed here because the serializer reads it and it gets a default (MAX). When it is deserialized it gets included
                     .WithHeader(TransportHeaders.TimeToBeReceived, TimeSpan.MaxValue.ToString())
+                    .WithHeader(Headers.EnclosedMessageTypes, "Enclosed message type")
                     .If(passBodyInMessage, t => t
                         .WithBody("Body Contents"))
                     .If(pushBodyToS3, t => t
                         .WithS3BodyKey("S3 Body Key"))
             );
-
-            #region Corrupted transport message tests
-            // HINT: These should all throw
-            yield return TestCase(
-                "Corrupted serialized transport message no headers",
-                native => native.WithBody(@"{
-                                                ""Body"": ""Body Contents""
-                                            }"),
-                considerPoison: true
-            );
-
-            yield return TestCase(
-                "Fully corrupted serialized transport message",
-                native => native
-                    .WithBody(@"{
-                                    ""NonExistingProperty"": ""Does not matter""
-                                }"),
-                considerPoison: true
-            );
-
-            yield return TestCase(
-                "Corrupted headers on serialized transport message",
-                native => native
-                    .WithBody(@"{
-                                    ""Headers"": ""NOT A JSON DICTIONARY""
-                                }"),
-                considerPoison: true
-            );
-
-            // TODO: Add more test cases with malformed transport message objects
-            #endregion
 
             #endregion
 

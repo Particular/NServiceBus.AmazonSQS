@@ -389,17 +389,69 @@ namespace NServiceBus.Transport.SQS
                 }
                 else
                 {
-                    transportMessage = JsonSerializer.Deserialize<TransportMessage>(receivedMessage.Body, transportMessageSerializerOptions);
-                    // HINT: The message cannot be processed without headers and will throw
-                    if (transportMessage?.Headers == null)
+                    try
                     {
-                        throw new Exception("Transport message is missing headers element");
+                        transportMessage = JsonSerializer.Deserialize<TransportMessage>(receivedMessage.Body, transportMessageSerializerOptions);
+
+                        if (CouldBeNativeMessage(transportMessage))
+                        {
+                            Logger.Debug($"Message with native id {receivedMessage.MessageId} does not contain the required information and will not be treated as an NServiceBus TransportMessage. " +
+                                   $"Instead it'll be treated as pure native message.");
+
+                            transportMessage = new TransportMessage
+                            {
+                                Body = receivedMessage.Body,
+                                Headers = new Dictionary<string, string>
+                                {
+                                    // HINT: Message Id is a required field for InnerProcessMessage
+                                    [Headers.MessageId] = receivedMessage.MessageId,
+                                }
+                            };
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        //HINT: Deserialization is best-effort. If it fails, we trat the message as a native message
+                        Logger.Debug($"Failed to deserialize message with native id {receivedMessage.MessageId}. " +
+                                     $"It will not be treated as an NServiceBus TransportMessage. Instead it'll be treated as pure native message.", ex);
+
+                        transportMessage = new TransportMessage
+                        {
+                            Body = receivedMessage.Body,
+                            Headers = new Dictionary<string, string>
+                            {
+                                // HINT: Message Id is a required field for InnerProcessMessage
+                                [Headers.MessageId] = receivedMessage.MessageId,
+                            }
+                        };
                     }
                 }
             }
             // HINT: Message Id is the only required header
             transportMessage.Headers.TryAdd(Headers.MessageId, messageIdOverride);
             return transportMessage;
+        }
+
+        static bool CouldBeNativeMessage(TransportMessage msg)
+        {
+            if (msg.Headers == null)
+            {
+                return true;
+            }
+
+            if (msg.Headers.ContainsKey(Headers.ControlMessageHeader) &&
+                msg.Headers[Headers.ControlMessageHeader] == true.ToString())
+            {
+                return false;
+            }
+
+            if (!msg.Headers.ContainsKey(Headers.MessageId) &&
+                !msg.Headers.ContainsKey(Headers.EnclosedMessageTypes))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         async Task<bool> InnerProcessMessage(Dictionary<string, string> headers, string nativeMessageId, ReadOnlyMemory<byte> body, Message nativeMessage, CancellationToken messageProcessingCancellationToken)
