@@ -10,6 +10,7 @@
     using Amazon.SQS.Model;
     using Configuration.AdvancedExtensibility;
     using EndpointTemplates;
+    using global::Newtonsoft.Json;
     using NUnit.Framework;
     using Transport.SQS.Tests;
 
@@ -27,6 +28,29 @@
                     {
                         {"MessageTypeFullName", new MessageAttributeValue {DataType = "String", StringValue = typeof(Message).FullName}}
                     }, MessageToSend);
+                }))
+                .Done(c => c.MessageReceived != null)
+                .Run();
+
+            Assert.AreEqual("Hello!", context.MessageReceived);
+        }
+
+        [Test]
+        public async Task Should_be_processed_if_type_metadata_is_embedded()
+        {
+            var context = await Scenario.Define<Context>()
+                .WithEndpoint<Receiver>(c => c.CustomConfig(cfg =>
+                {
+                    var serialization = cfg.UseSerialization<NewtonsoftJsonSerializer>();
+                    serialization.Settings(new JsonSerializerSettings()
+                    {
+                        TypeNameHandling = TypeNameHandling.Auto
+                    });
+                }).When(async _ =>
+                {
+                    await NativeEndpoint.SendTo<Receiver>(new Dictionary<string, MessageAttributeValue>
+                    {
+                    }, @$"{{ ""$type"": ""{typeof(Message).AssemblyQualifiedName}"", ""ThisIsTheMessage"": ""Hello!""}}");
                 }))
                 .Done(c => c.MessageReceived != null)
                 .Run();
