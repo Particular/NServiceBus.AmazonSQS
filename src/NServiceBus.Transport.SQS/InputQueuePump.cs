@@ -298,15 +298,7 @@ namespace NServiceBus.Transport.SQS
                 if (isPoisonMessage)
                 {
                     var logMessage = $"Treating message with {messageId} as a poison message. Moving to error queue.";
-
-                    if (exception != null)
-                    {
-                        Logger.Warn(logMessage, exception);
-                    }
-                    else
-                    {
-                        Logger.Warn(logMessage);
-                    }
+                    Logger.Warn(logMessage, exception);
 
                     await MovePoisonMessageToErrorQueue(receivedMessage, messageProcessingCancellationToken)
                         .ConfigureAwait(false);
