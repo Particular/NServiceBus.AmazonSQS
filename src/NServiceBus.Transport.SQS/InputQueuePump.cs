@@ -295,7 +295,7 @@ namespace NServiceBus.Transport.SQS
                     isPoisonMessage = true;
                 }
 
-                if (isPoisonMessage || transportMessage == null)
+                if (isPoisonMessage)
                 {
                     var logMessage = $"Treating message with {messageId} as a poison message. Moving to error queue.";
 
