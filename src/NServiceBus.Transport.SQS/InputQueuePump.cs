@@ -330,12 +330,10 @@ namespace NServiceBus.Transport.SQS
         }
 
 
-        public static string ExtractMessageId(Message receivedMessage)
-        {
-            return receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute)
+        public static string ExtractMessageId(Message receivedMessage) =>
+            receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute)
                 ? messageIdAttribute.StringValue
                 : receivedMessage.MessageId;
-        }
 
         public static TransportMessage ExtractTransportMessage(Message receivedMessage, string messageIdOverride)
         {
