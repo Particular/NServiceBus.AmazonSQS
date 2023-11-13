@@ -295,18 +295,10 @@ namespace NServiceBus.Transport.SQS
                     isPoisonMessage = true;
                 }
 
-                if (isPoisonMessage || transportMessage == null)
+                if (isPoisonMessage)
                 {
                     var logMessage = $"Treating message with {messageId} as a poison message. Moving to error queue.";
-
-                    if (exception != null)
-                    {
-                        Logger.Warn(logMessage, exception);
-                    }
-                    else
-                    {
-                        Logger.Warn(logMessage);
-                    }
+                    Logger.Warn(logMessage, exception);
 
                     await MovePoisonMessageToErrorQueue(receivedMessage, messageProcessingCancellationToken)
                         .ConfigureAwait(false);
@@ -338,12 +330,10 @@ namespace NServiceBus.Transport.SQS
         }
 
 
-        public static string ExtractMessageId(Message receivedMessage)
-        {
-            return receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute)
+        public static string ExtractMessageId(Message receivedMessage) =>
+            receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute)
                 ? messageIdAttribute.StringValue
                 : receivedMessage.MessageId;
-        }
 
         public static TransportMessage ExtractTransportMessage(Message receivedMessage, string messageIdOverride)
         {
