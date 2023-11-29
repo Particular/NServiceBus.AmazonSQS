@@ -58,6 +58,6 @@ This scheme accomplishes the following goals:
 
 ## Cleanup scheduled task
 
-This repo has a [GitHub action](/actions/workflows/tests-cleanup.yml) that deletes stale AWS objects created when the tests run. It takes care of deleting S3 buckets older than 24 hours with the cli- prefix in the name. The same GitHub action code can be updated to delete any other AWS object created by the tests that fail to be deleted during the tests cleanup phase.
+This repo has a [GitHub action](/.github/workflows/tests-cleanup.yml) that deletes stale AWS objects created when the tests run. It takes care of deleting S3 buckets older than 24 hours with the cli- prefix in the name. The same GitHub action code can be updated to delete any other AWS object created by the tests that fail to be deleted during the tests cleanup phase.
 
 The cleanup workflow requires the same permissions as running the tests.
