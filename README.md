@@ -1,6 +1,6 @@
 # NServiceBus.AmazonSQS
 
-NServiceBus.AmazonSQS is the Amazon SQS transport for NServiceBus.
+NServiceBus.AmazonSQS is the [Amazon SQS](https://docs.aws.amazon.com/sqs/) transport for NServiceBus.
 
 It is part of the [Particular Service Platform](https://particular.net/service-platform), which includes [NServiceBus](https://particular.net/nservicebus) and tools to build, monitor, and debug distributed systems.
 
