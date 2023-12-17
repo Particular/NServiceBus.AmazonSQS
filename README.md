@@ -10,7 +10,7 @@ See the [Amazon SQS Transport documentation](https://docs.particular.net/transpo
 
 The solution contains the [NServiceBus Acceptance Test suite](https://www.nuget.org/packages/NServiceBus.AcceptanceTests.Sources/) and the [NServiceBus Transport Test suite](https://www.nuget.org/packages/NServiceBus.TransportTests.Sources/).
 
-To run the tests, the Access Key ID and Secret Access Key of an AWS IAM account need to be set in environment variables on the machine running the tests. Full details on how to set this up can be found in the [Amazon SQS Transport documentation](https://docs.particular.net/transports/sqs/).
+To run the tests, the Access Key ID and Secret Access Key of an AWS IAM account need to be set in environment variables on the machine running the tests. Full details on how to set this up can be found in the [Amazon SQS Transport documentation](https://docs.particular.net/transports/sqs/#prerequisites).
 
 ## AWS Permissions
 
