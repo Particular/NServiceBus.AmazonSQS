@@ -12,6 +12,8 @@ The solution contains the [NServiceBus Acceptance Test suite](https://www.nuget.
 
 To run the tests, the Access Key ID and Secret Access Key of an AWS IAM account need to be set in environment variables on the machine running the tests. Full details on how to set this up can be found in the [Amazon SQS Transport documentation](https://docs.particular.net/transports/sqs/#prerequisites).
 
+**NSERVICEBUS_AMAZONSQS_S3BUCKET** enables [offloading large messages to S3](https://docs.particular.net/transports/sqs/configuration-options#offload-large-messages-to-s3). This is disabled by default. When enabled, the bucket should not have encryption enabled. For further details review the documentation on [configuration options](https://docs.particular.net/transports/sqs/configuration-options).
+
 ## AWS Permissions
 
 In addition to the [permissions required to run the transport](https://docs.particular.net/transports/sqs/#prerequisites), running the tests also requires:
