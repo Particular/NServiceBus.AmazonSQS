@@ -1,27 +1,18 @@
 # NServiceBus.AmazonSQS
 
-This is an Amazon SQS transport for NServiceBus.
+NServiceBus.AmazonSQS is the [Amazon SQS](https://docs.aws.amazon.com/sqs/) transport for NServiceBus.
 
-Feel free to browse and contribute!
+It is part of the [Particular Service Platform](https://particular.net/service-platform), which includes [NServiceBus](https://particular.net/nservicebus) and tools to build, monitor, and debug distributed systems.
 
-For more information, including a guide on getting started quickly, see the project documentation at [docs.particular.net](https://docs.particular.net/transports/sqs/).
+See the [Amazon SQS Transport documentation](https://docs.particular.net/transports/sqs/) to learn more.
 
-## Running the Acceptance Tests
+## Running tests locally
 
 The solution contains the [NServiceBus Acceptance Test suite](https://www.nuget.org/packages/NServiceBus.AcceptanceTests.Sources/) and the [NServiceBus Transport Test suite](https://www.nuget.org/packages/NServiceBus.TransportTests.Sources/).
-To run the tests, the Access Key ID and Secret Access Key of an AWS IAM account need to be set in environment variables on the machine running the tests. Full details on how to set this up can be found [here](https://docs.particular.net/transports/sqs/#getting-started-set-up-an-aws-account).
 
-The transport can be configured using the following environment variables:
+To run the tests, the Access Key ID and Secret Access Key of an AWS IAM account need to be set in environment variables on the machine running the tests. Full details on how to set this up can be found in the [Amazon SQS Transport documentation](https://docs.particular.net/transports/sqs/#prerequisites).
 
-* **NSERVICEBUS_AMAZONSQS_S3BUCKET** corresponds to the [S3BucketForLargeMessages](https://docs.particular.net/transports/sqs/configuration-options#s3bucketforlargemessages) parameter. Default is no S3 bucket.
-
-The bucket should not have encryption enabled. An additional bucket `{NSERVICEBUS_AMAZONSQS_S3BUCKET}.kms` with AWS KMS encryption enabled is required.
-
-Additional environment variables required for AWS:
-
- * **AWS_ACCESS_KEY_ID** access key ID to sign programmatic requests that you make to AWS. Provisioned via IAM.
- * **AWS_SECRET_ACCESS_KEY** secret access key to sign programmatic requests that you make to AWS. Provisioned via IAM.
- * **AWS_REGION** Valid AWS region.
+**NSERVICEBUS_AMAZONSQS_S3BUCKET** enables [offloading large messages to S3](https://docs.particular.net/transports/sqs/configuration-options#offload-large-messages-to-s3). This is disabled by default. When enabled, the bucket should not have encryption enabled. For further details review the documentation on [configuration options](https://docs.particular.net/transports/sqs/configuration-options).
 
 ## AWS Permissions
 
@@ -58,6 +49,6 @@ This scheme accomplishes the following goals:
 
 ## Cleanup scheduled task
 
-This repo has a [GitHub action](/actions/workflows/tests-cleanup.yml) that deletes stale AWS objects created when the tests run. It takes care of deleting S3 buckets older than 24 hours with the cli- prefix in the name. The same GitHub action code can be updated to delete any other AWS object created by the tests that fail to be deleted during the tests cleanup phase.
+This repo has a [GitHub action](/.github/workflows/tests-cleanup.yml) that deletes stale AWS objects created when the tests run. It takes care of deleting S3 buckets older than 24 hours with the cli- prefix in the name. The same GitHub action code can be updated to delete any other AWS object created by the tests that fail to be deleted during the tests cleanup phase.
 
 The cleanup workflow requires the same permissions as running the tests.
