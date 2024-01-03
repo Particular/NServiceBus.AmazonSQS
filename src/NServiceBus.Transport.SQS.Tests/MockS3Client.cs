@@ -170,6 +170,8 @@
             throw new NotImplementedException();
         }
 
+        public Task<string> GetPreSignedURLAsync(GetPreSignedUrlRequest request) => throw new NotImplementedException();
+
         public AbortMultipartUploadResponse AbortMultipartUpload(string bucketName, string key, string uploadId)
         {
             throw new NotImplementedException();
@@ -259,6 +261,8 @@
         {
             throw new NotImplementedException();
         }
+
+        public Task<CreateSessionResponse> CreateSessionAsync(CreateSessionRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
 
         public DeleteBucketResponse DeleteBucket(string bucketName)
         {
@@ -1001,6 +1005,10 @@
         {
             throw new NotImplementedException();
         }
+
+        public Task<ListDirectoryBucketsResponse> ListDirectoryBucketsAsync(ListDirectoryBucketsRequest request,
+            CancellationToken cancellationToken = new CancellationToken()) =>
+            throw new NotImplementedException();
 
         public ListMultipartUploadsResponse ListMultipartUploads(string bucketName)
         {
