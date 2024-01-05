@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="AWSSDK.SQS" Version="3.7.300.30" />
-    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.300.29" />
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.300.30" />
     <PackageReference Include="AWSSDK.S3" Version="3.7.305.3" />
     <PackageReference Include="BitFaster.Caching" Version="2.4.1" />
     <PackageReference Include="GitHubActionsTestLogger" Version="2.3.3" />
