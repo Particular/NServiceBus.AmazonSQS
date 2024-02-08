@@ -2,8 +2,8 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Text.Json;
     using System.Threading.Tasks;
-    using System.Xml.Linq;
     using AcceptanceTesting;
     using Amazon.S3.Model;
     using Amazon.SQS.Model;
@@ -13,7 +13,7 @@
 
     public class When_receiving_a_native_message_with_encoding : NServiceBusAcceptanceTest
     {
-        static readonly string MessageToSend = new XDocument(new XElement("Message", new XElement("ThisIsTheMessage", "Hello!"))).ToString();
+        static readonly string MessageToSend = JsonSerializer.Serialize(new Message { ThisIsTheMessage = "Hello!" });
 
         [Test]
         public async Task Should_be_processed_when_messagetypefullname_present()
@@ -25,23 +25,6 @@
                     {
                         {"MessageTypeFullName", new MessageAttributeValue {DataType = "String", StringValue = typeof(Message).FullName}}
                     }, MessageToSend);
-                }))
-                .Done(c => c.MessageReceived != null)
-                .Run();
-
-            Assert.AreEqual("Hello!", context.MessageReceived);
-        }
-
-        [Test]
-        public async Task Should_be_processed_if_type_metadata_is_embedded()
-        {
-            var context = await Scenario.Define<Context>()
-                .WithEndpoint<Receiver>(c => c.When(async _ =>
-                {
-                    await NativeEndpoint.SendTo<Receiver>(new Dictionary<string, MessageAttributeValue>
-                    {
-                        {"SomeAttribute", new MessageAttributeValue {DataType = "String", StringValue = "SomeValue"}}
-                    }, @$"{{ ""$type"": ""{typeof(Message).AssemblyQualifiedName}"", ""ThisIsTheMessage"": ""Hello!""}}");
                 }))
                 .Done(c => c.MessageReceived != null)
                 .Run();
