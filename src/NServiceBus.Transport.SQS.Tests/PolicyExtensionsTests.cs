@@ -40,7 +40,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var updated = policy.Update(addPolicyStatements: emptyAddStatements,
                 addAccountConditionForPolicies: false,
                 addTopicNamePrefixConditionForPolicies: false,
-                namespaceConditionsForPolicies: new List<string>(),
+                namespaceConditionsForPolicies: [],
                 topicNamePrefix: string.Empty,
                 sqsQueueArn: "arn:fakeQueue");
 
@@ -62,7 +62,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var updated = policy.Update(addPolicyStatements: addStatements,
                 addAccountConditionForPolicies: false,
                 addTopicNamePrefixConditionForPolicies: false,
-                namespaceConditionsForPolicies: new List<string>(),
+                namespaceConditionsForPolicies: [],
                 topicNamePrefix: string.Empty,
                 sqsQueueArn: "arn:fakeQueue");
 
@@ -84,7 +84,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var updated = policy.Update(addPolicyStatements: addStatements,
                 addAccountConditionForPolicies: true,
                 addTopicNamePrefixConditionForPolicies: false,
-                namespaceConditionsForPolicies: new List<string>(),
+                namespaceConditionsForPolicies: [],
                 topicNamePrefix: string.Empty,
                 sqsQueueArn: "arn:fakeQueue");
 
@@ -106,7 +106,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var updated = policy.Update(addPolicyStatements: addStatements,
                 addAccountConditionForPolicies: false,
                 addTopicNamePrefixConditionForPolicies: true,
-                namespaceConditionsForPolicies: new List<string>(),
+                namespaceConditionsForPolicies: [],
                 topicNamePrefix: "DEV-",
                 sqsQueueArn: "arn:fakeQueue");
 
@@ -128,11 +128,11 @@ namespace NServiceBus.Transport.SQS.Tests
             var updated = policy.Update(addPolicyStatements: addStatements,
                 addAccountConditionForPolicies: false,
                 addTopicNamePrefixConditionForPolicies: false,
-                namespaceConditionsForPolicies: new List<string>
-                {
+                namespaceConditionsForPolicies:
+                [
                     "Shipping.",
                     "Sales.HighValueOrders."
-                },
+                ],
                 topicNamePrefix: string.Empty,
                 sqsQueueArn: "arn:fakeQueue");
 
@@ -154,11 +154,11 @@ namespace NServiceBus.Transport.SQS.Tests
             var updated = policy.Update(addPolicyStatements: addStatements,
                 addAccountConditionForPolicies: false,
                 addTopicNamePrefixConditionForPolicies: false,
-                namespaceConditionsForPolicies: new List<string>
-                {
+                namespaceConditionsForPolicies:
+                [
                     "Shipping.",
                     "Sales.HighValueOrders."
-                },
+                ],
                 topicNamePrefix: "DEV-",
                 sqsQueueArn: "arn:fakeQueue");
 
@@ -180,11 +180,11 @@ namespace NServiceBus.Transport.SQS.Tests
             var updated = policy.Update(addPolicyStatements: addStatements,
                 addAccountConditionForPolicies: true,
                 addTopicNamePrefixConditionForPolicies: true,
-                namespaceConditionsForPolicies: new List<string>
-                {
+                namespaceConditionsForPolicies:
+                [
                     "Shipping.",
                     "Sales.HighValueOrders."
-                },
+                ],
                 topicNamePrefix: "DEV-",
                 sqsQueueArn: "arn:fakeQueue");
 
@@ -212,7 +212,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var updated = policy.Update(addPolicyStatements: addStatements,
                 addAccountConditionForPolicies: true,
                 addTopicNamePrefixConditionForPolicies: false,
-                namespaceConditionsForPolicies: new List<string>(),
+                namespaceConditionsForPolicies: [],
                 topicNamePrefix: "DEV-",
                 sqsQueueArn: "arn:fakeQueue");
 
@@ -236,7 +236,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var updated = policy.Update(addPolicyStatements: addStatements,
                 addAccountConditionForPolicies: false,
                 addTopicNamePrefixConditionForPolicies: false,
-                namespaceConditionsForPolicies: new List<string>(),
+                namespaceConditionsForPolicies: [],
                 topicNamePrefix: string.Empty,
                 sqsQueueArn: "arn:fakeQueue");
 
@@ -264,10 +264,10 @@ namespace NServiceBus.Transport.SQS.Tests
             var updated = policy.Update(addPolicyStatements: addStatements,
                 addAccountConditionForPolicies: true,
                 addTopicNamePrefixConditionForPolicies: true,
-                namespaceConditionsForPolicies: new List<string>
-                {
+                namespaceConditionsForPolicies:
+                [
                     "NServiceBus.Transport.SQS.Tests.SubscriptionManagerTests."
-                },
+                ],
                 topicNamePrefix: "DEV-",
                 sqsQueueArn: "arn:fakeQueue");
 
@@ -296,7 +296,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var updated = policy.Update(addPolicyStatements: addStatements,
                 addAccountConditionForPolicies: false,
                 addTopicNamePrefixConditionForPolicies: false,
-                namespaceConditionsForPolicies: new List<string>(),
+                namespaceConditionsForPolicies: [],
                 topicNamePrefix: string.Empty,
                 sqsQueueArn: "arn:fakeQueue");
 
@@ -320,7 +320,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var updated = policy.Update(addPolicyStatements: emptyStatements,
                 addAccountConditionForPolicies: false,
                 addTopicNamePrefixConditionForPolicies: false,
-                namespaceConditionsForPolicies: new List<string>(),
+                namespaceConditionsForPolicies: [],
                 topicNamePrefix: string.Empty,
                 sqsQueueArn: "arn:fakeQueue");
 
@@ -348,7 +348,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var updated = policy.Update(addPolicyStatements: addStatements,
                 addAccountConditionForPolicies: false,
                 addTopicNamePrefixConditionForPolicies: false,
-                namespaceConditionsForPolicies: new List<string>(),
+                namespaceConditionsForPolicies: [],
                 topicNamePrefix: string.Empty,
                 sqsQueueArn: "arn:fakeQueue");
 
@@ -380,7 +380,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var updated = policy.Update(addPolicyStatements: addStatements,
                 addAccountConditionForPolicies: false,
                 addTopicNamePrefixConditionForPolicies: false,
-                namespaceConditionsForPolicies: new List<string>(),
+                namespaceConditionsForPolicies: [],
                 topicNamePrefix: string.Empty,
                 sqsQueueArn: "arn:fakeQueue");
 
@@ -404,7 +404,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var updated = policy.Update(addPolicyStatements: addStatements,
                 addAccountConditionForPolicies: false,
                 addTopicNamePrefixConditionForPolicies: false,
-                namespaceConditionsForPolicies: new List<string>(),
+                namespaceConditionsForPolicies: [],
                 topicNamePrefix: string.Empty,
                 sqsQueueArn: "arn:fakeQueue");
 
@@ -427,7 +427,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var updated = policy.Update(addPolicyStatements: addStatements,
                 addAccountConditionForPolicies: false,
                 addTopicNamePrefixConditionForPolicies: false,
-                namespaceConditionsForPolicies: new List<string>(),
+                namespaceConditionsForPolicies: [],
                 topicNamePrefix: string.Empty,
                 sqsQueueArn: "arn:fakeQueue");
 
@@ -451,10 +451,10 @@ namespace NServiceBus.Transport.SQS.Tests
             var updated = policy.Update(addPolicyStatements: addStatements,
                 addAccountConditionForPolicies: true,
                 addTopicNamePrefixConditionForPolicies: true,
-                namespaceConditionsForPolicies: new List<string>
-                {
+                namespaceConditionsForPolicies:
+                [
                     "NServiceBus.Transport.SQS.Tests.SubscriptionManagerTests."
-                },
+                ],
                 topicNamePrefix: "DEV-",
                 sqsQueueArn: "arn:fakeQueue");
 
@@ -477,10 +477,10 @@ namespace NServiceBus.Transport.SQS.Tests
             var updated = policy.Update(addPolicyStatements: addStatements,
                 addAccountConditionForPolicies: true,
                 addTopicNamePrefixConditionForPolicies: true,
-                namespaceConditionsForPolicies: new List<string>
-                {
+                namespaceConditionsForPolicies:
+                [
                     "NServiceBus.Transport.SQS.Tests.SubscriptionManagerTests."
-                },
+                ],
                 topicNamePrefix: "DEV-",
                 sqsQueueArn: "arn:fakeQueue");
 
@@ -504,7 +504,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var updated = policy.Update(addPolicyStatements: addStatements,
                 addAccountConditionForPolicies: false,
                 addTopicNamePrefixConditionForPolicies: false,
-                namespaceConditionsForPolicies: new List<string>(),
+                namespaceConditionsForPolicies: [],
                 topicNamePrefix: string.Empty,
                 sqsQueueArn: "arn:fakeQueue");
 
@@ -528,10 +528,10 @@ namespace NServiceBus.Transport.SQS.Tests
             var updated = policy.Update(addPolicyStatements: addStatements,
                 addAccountConditionForPolicies: true,
                 addTopicNamePrefixConditionForPolicies: true,
-                namespaceConditionsForPolicies: new List<string>
-                {
+                namespaceConditionsForPolicies:
+                [
                     "NServiceBus.Transport.SQS.Tests.SubscriptionManagerTests."
-                },
+                ],
                 topicNamePrefix: "DEV-",
                 sqsQueueArn: "arn:fakeQueue");
 
@@ -561,7 +561,7 @@ namespace NServiceBus.Transport.SQS.Tests
             var updated = policy.Update(addPolicyStatements: addStatements,
                 addAccountConditionForPolicies: false,
                 addTopicNamePrefixConditionForPolicies: false,
-                namespaceConditionsForPolicies: new List<string>(),
+                namespaceConditionsForPolicies: [],
                 topicNamePrefix: string.Empty,
                 sqsQueueArn: "arn:fakeQueue");
 
