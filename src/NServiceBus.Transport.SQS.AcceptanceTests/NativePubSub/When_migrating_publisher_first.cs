@@ -38,10 +38,10 @@
                     b.CustomConfig(c =>
                     {
                         c.GetSettings().Set("NServiceBus.AmazonSQS.DisableNativePubSub", true);
-                        c.GetSettings().GetOrCreate<Publishers>().AddOrReplacePublishers("LegacyConfig", new List<PublisherTableEntry>
-                        {
+                        c.GetSettings().GetOrCreate<Publishers>().AddOrReplacePublishers("LegacyConfig",
+                        [
                             new PublisherTableEntry(typeof(MyEvent), PublisherAddress.CreateFromEndpointName(PublisherEndpoint))
-                        });
+                        ]);
                     });
                     b.When(async (session, ctx) =>
                     {
@@ -70,10 +70,10 @@
                     b.CustomConfig(c =>
                     {
                         c.GetSettings().Set("NServiceBus.AmazonSQS.DisableNativePubSub", true);
-                        c.GetSettings().GetOrCreate<Publishers>().AddOrReplacePublishers("LegacyConfig", new List<PublisherTableEntry>
-                        {
+                        c.GetSettings().GetOrCreate<Publishers>().AddOrReplacePublishers("LegacyConfig",
+                        [
                             new PublisherTableEntry(typeof(MyEvent), PublisherAddress.CreateFromEndpointName(PublisherEndpoint))
-                        });
+                        ]);
                     });
                     b.When(async (session, ctx) =>
                     {

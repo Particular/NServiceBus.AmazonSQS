@@ -175,10 +175,10 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
                     {
                         c.DisableFeature<AutoSubscribe>();
                         c.GetSettings().Set("NServiceBus.AmazonSQS.DisableNativePubSub", true);
-                        c.GetSettings().GetOrCreate<Publishers>().AddOrReplacePublishers("LegacyConfig", new List<PublisherTableEntry>
-                        {
+                        c.GetSettings().GetOrCreate<Publishers>().AddOrReplacePublishers("LegacyConfig",
+                        [
                             new PublisherTableEntry(typeof(MyEvent), PublisherAddress.CreateFromEndpointName(Conventions.EndpointNamingConvention(typeof(Publisher))))
-                        });
+                        ]);
                     },
                     metadata => metadata.RegisterPublisherFor<MyEvent>(typeof(Publisher)));
 
