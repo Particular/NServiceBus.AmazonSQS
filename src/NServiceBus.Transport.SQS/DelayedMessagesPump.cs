@@ -104,7 +104,11 @@ namespace NServiceBus.Transport.SQS
             {
                 return; //already stopped
             }
+
+            Logger.Debug("Delayed message pump stopping.");
+
             tokenSource.Cancel();
+
             if (pumpTask != null)
             {
                 await pumpTask.ConfigureAwait(false);
@@ -113,6 +117,8 @@ namespace NServiceBus.Transport.SQS
             pumpTask = null;
             tokenSource.Dispose();
             tokenSource = null;
+
+            Logger.Debug("Delayed message pump stopped.");
         }
 
         async Task ConsumeDelayedMessagesAndSwallowExceptions(ReceiveMessageRequest request, CancellationToken cancellationToken)

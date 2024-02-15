@@ -154,6 +154,8 @@ namespace NServiceBus.Transport.SQS
                 return;
             }
 
+            Logger.Debug("Input queue message pump stopping.");
+
             messagePumpCancellationTokenSource.Cancel();
 
             using (cancellationToken.Register(() => messageProcessingCancellationTokenSource.Cancel()))
@@ -176,6 +178,8 @@ namespace NServiceBus.Transport.SQS
             messageProcessingCancellationTokenSource.Dispose();
             maxConcurrencySemaphore?.Dispose();
             messagePumpCancellationTokenSource = null;
+
+            Logger.Debug("Input queue message pump stopped.");
         }
 
         public async Task ChangeConcurrency(PushRuntimeSettings limitations, CancellationToken cancellationToken = default)
