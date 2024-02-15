@@ -106,6 +106,8 @@ namespace NServiceBus.Transport.SQS
                 return Task.CompletedTask; //Receiver already started.
             }
 
+            Logger.Debug("Input queue message pump starting.");
+
             messagePumpCancellationTokenSource = new CancellationTokenSource();
             messageProcessingCancellationTokenSource = new CancellationTokenSource();
 
@@ -143,6 +145,8 @@ namespace NServiceBus.Transport.SQS
                 // Task.Run() so the call returns immediately instead of waiting for the first await or return down the call stack
                 pumpTasks.Add(Task.Run(() => PumpMessagesAndSwallowExceptions(messagePumpCancellationTokenSource.Token), CancellationToken.None));
             }
+
+            Logger.Debug("Input queue message pump started.");
 
             return Task.CompletedTask;
         }
