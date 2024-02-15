@@ -236,6 +236,8 @@ namespace NServiceBus.Transport.SQS
         {
             try
             {
+                Logger.Debug("Started processing message " + receivedMessage.MessageId);
+
                 try
                 {
                     await ProcessMessage(receivedMessage, messageProcessingCancellationToken).ConfigureAwait(false);
@@ -262,6 +264,8 @@ namespace NServiceBus.Transport.SQS
             finally
             {
                 maxConcurrencySemaphore.Release();
+
+                Logger.Debug("Message processing completed" + receivedMessage.MessageId);
             }
         }
 
