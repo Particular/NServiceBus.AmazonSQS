@@ -37,7 +37,7 @@ public class ConfigureSqsTransportInfrastructure : IConfigureTransportInfrastruc
         string errorQueueName, CancellationToken cancellationToken) =>
         transportDefinition.Initialize(hostSettings, new[]
         {
-            new ReceiveSettings(inputQueueName.ToString(), inputQueueName, true, false, errorQueueName),
+            new ReceiveSettings(inputQueueName.ToString(), inputQueueName, false, false, errorQueueName),
         }, new[]
         {
             errorQueueName
