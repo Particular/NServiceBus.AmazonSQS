@@ -38,10 +38,10 @@ public class ConfigureSqsTransportInfrastructure : IConfigureTransportInfrastruc
         transportDefinition.Initialize(hostSettings, new[]
         {
             new ReceiveSettings(inputQueueName.ToString(), inputQueueName, false, false, errorQueueName),
-        }, new[]
-        {
+        },
+        [
             errorQueueName
-        }, cancellationToken);
+        ], cancellationToken);
 
     public Task Cleanup(CancellationToken cancellationToken) => Task.CompletedTask;
 }
