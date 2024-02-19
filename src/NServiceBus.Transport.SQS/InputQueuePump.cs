@@ -211,6 +211,8 @@ namespace NServiceBus.Transport.SQS
 #pragma warning restore PS0021 // Highlight when a try block passes multiple cancellation tokens
                     var receivedMessages = await sqsClient.ReceiveMessageAsync(receiveMessagesRequest, messagePumpCancellationToken).ConfigureAwait(false);
 
+                    Logger.Debug("Messages received: " + receivedMessages.Messages.Count);
+
                     foreach (var receivedMessage in receivedMessages.Messages)
                     {
                         await maxConcurrencySemaphore.WaitAsync(messagePumpCancellationToken).ConfigureAwait(false);
