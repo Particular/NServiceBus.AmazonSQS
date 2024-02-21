@@ -30,6 +30,7 @@
 
   <ItemGroup Condition="'$(PkgNServiceBus_TransportTests_Sources)' != ''">
     <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\ExceptionExtensions.cs" />
+    <!-- See https://github.com/Particular/NServiceBus.AmazonSQS/issues/2425 -->
     <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\When_starting_again.cs" />
   </ItemGroup>
 
