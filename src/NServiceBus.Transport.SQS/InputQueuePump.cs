@@ -106,8 +106,6 @@ namespace NServiceBus.Transport.SQS
                 return Task.CompletedTask; //Receiver already started.
             }
 
-            Logger.Debug("Input queue message pump starting.");
-
             messagePumpCancellationTokenSource = new CancellationTokenSource();
             messageProcessingCancellationTokenSource = new CancellationTokenSource();
 
@@ -146,8 +144,6 @@ namespace NServiceBus.Transport.SQS
                 pumpTasks.Add(Task.Run(() => PumpMessagesAndSwallowExceptions(messagePumpCancellationTokenSource.Token), CancellationToken.None));
             }
 
-            Logger.Debug("Input queue message pump started.");
-
             return Task.CompletedTask;
         }
 
@@ -157,8 +153,6 @@ namespace NServiceBus.Transport.SQS
             {
                 return;
             }
-
-            Logger.Debug("Input queue message pump stopping.");
 
             messagePumpCancellationTokenSource.Cancel();
 
@@ -182,8 +176,6 @@ namespace NServiceBus.Transport.SQS
             messageProcessingCancellationTokenSource.Dispose();
             maxConcurrencySemaphore?.Dispose();
             messagePumpCancellationTokenSource = null;
-
-            Logger.Debug("Input queue message pump stopped.");
         }
 
         public async Task ChangeConcurrency(PushRuntimeSettings limitations, CancellationToken cancellationToken = default)
@@ -211,8 +203,6 @@ namespace NServiceBus.Transport.SQS
 #pragma warning restore PS0021 // Highlight when a try block passes multiple cancellation tokens
                     var receivedMessages = await sqsClient.ReceiveMessageAsync(receiveMessagesRequest, messagePumpCancellationToken).ConfigureAwait(false);
 
-                    Logger.Debug("Messages received: " + receivedMessages.Messages.Count);
-
                     foreach (var receivedMessage in receivedMessages.Messages)
                     {
                         await maxConcurrencySemaphore.WaitAsync(messagePumpCancellationToken).ConfigureAwait(false);
@@ -238,8 +228,6 @@ namespace NServiceBus.Transport.SQS
         {
             try
             {
-                Logger.Debug("Started processing message " + receivedMessage.MessageId);
-
                 try
                 {
                     await ProcessMessage(receivedMessage, messageProcessingCancellationToken).ConfigureAwait(false);
@@ -266,8 +254,6 @@ namespace NServiceBus.Transport.SQS
             finally
             {
                 maxConcurrencySemaphore.Release();
-
-                Logger.Debug("Message processing completed" + receivedMessage.MessageId);
             }
         }
 

@@ -4,11 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\NServiceBus.snk</AssemblyOriginatorKeyFile>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <PackageId>NServiceBus.AmazonSQS</PackageId>
-    <Description>An Amazon SQS transport implementation for NServiceBus</Description>
   </PropertyGroup>
 
   <ItemGroup>

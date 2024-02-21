@@ -84,8 +84,6 @@ namespace NServiceBus.Transport.SQS
                 return; //already started
             }
 
-            Logger.Debug("Delayed message pump starting.");
-
             tokenSource = new CancellationTokenSource();
 
             var receiveDelayedMessagesRequest = new ReceiveMessageRequest
@@ -99,8 +97,6 @@ namespace NServiceBus.Transport.SQS
 
             // Task.Run() so the call returns immediately instead of waiting for the first await or return down the call stack
             pumpTask = Task.Run(() => ConsumeDelayedMessagesAndSwallowExceptions(receiveDelayedMessagesRequest, tokenSource.Token), CancellationToken.None);
-
-            Logger.Debug("Delayed message pump started.");
         }
 
         public async Task Stop(CancellationToken cancellationToken = default)
@@ -109,8 +105,6 @@ namespace NServiceBus.Transport.SQS
             {
                 return; //already stopped
             }
-
-            Logger.Debug("Delayed message pump stopping.");
 
             tokenSource.Cancel();
 
@@ -122,8 +116,6 @@ namespace NServiceBus.Transport.SQS
             pumpTask = null;
             tokenSource.Dispose();
             tokenSource = null;
-
-            Logger.Debug("Delayed message pump stopped.");
         }
 
         async Task ConsumeDelayedMessagesAndSwallowExceptions(ReceiveMessageRequest request, CancellationToken cancellationToken)
