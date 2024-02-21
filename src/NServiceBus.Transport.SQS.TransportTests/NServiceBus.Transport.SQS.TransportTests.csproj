@@ -30,6 +30,7 @@
 
   <ItemGroup Condition="'$(PkgNServiceBus_TransportTests_Sources)' != ''">
     <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\ExceptionExtensions.cs" />
+    <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\When_starting_again.cs" />
   </ItemGroup>
 
 </Project>
