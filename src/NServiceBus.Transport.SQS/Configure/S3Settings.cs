@@ -3,8 +3,6 @@ namespace NServiceBus
     using System;
     using System.Linq;
     using Amazon.S3;
-    using Transport.SQS;
-
 
     /// <summary>
     /// Exposes settings to configure S3 bucket and client factory.
@@ -24,8 +22,8 @@ namespace NServiceBus
         /// <param name="s3Client">S3 client to use. If not provided the default client based on environment settings will be used.</param>
         public S3Settings(string bucketForLargeMessages, string keyPrefix, IAmazonS3 s3Client = null)
         {
-            Guard.ThrowIfNull(bucketForLargeMessages);
-            Guard.ThrowIfNullOrEmpty(keyPrefix);
+            ArgumentNullException.ThrowIfNull(bucketForLargeMessages);
+            ArgumentException.ThrowIfNullOrWhiteSpace(keyPrefix);
 
             // https://forums.aws.amazon.com/message.jspa?messageID=315883
             // S3 bucket names have the following restrictions:
@@ -95,7 +93,7 @@ namespace NServiceBus
             //For legacy API shim
             internal set
             {
-                Guard.ThrowIfNull(value);
+                ArgumentNullException.ThrowIfNull(value);
 
                 s3Client = value;
                 externallyManagedS3lient = true;
