@@ -66,11 +66,6 @@ namespace NServiceBus.Transport.SQS
                         ex.StatusCode);
             }
 
-            inputQueueUrl = await queueCache.GetQueueUrl(ReceiveAddress, cancellationToken)
-                .ConfigureAwait(false);
-            errorQueueUrl = await queueCache.GetQueueUrl(errorQueueAddress, cancellationToken)
-                .ConfigureAwait(false);
-
             maxConcurrency = limitations.MaxConcurrency;
 
             if (purgeOnStartup)
@@ -597,8 +592,11 @@ namespace NServiceBus.Transport.SQS
 
         async Task MovePoisonMessageToErrorQueue(Message message, CancellationToken messageProcessingCancellationToken)
         {
+            string errorQueueUrl = null;
             try
             {
+                errorQueueUrl = await queueCache.GetQueueUrl(errorQueueAddress, messageProcessingCancellationToken)
+                    .ConfigureAwait(false);
                 // Ok to use LINQ here since this is not really a hot path
                 var messageAttributeValues = message.MessageAttributes
                     .ToDictionary(pair => pair.Key, messageAttribute => messageAttribute.Value);
@@ -654,7 +652,6 @@ namespace NServiceBus.Transport.SQS
         OnMessage onMessage;
         SemaphoreSlim maxConcurrencySemaphore;
         string inputQueueUrl;
-        string errorQueueUrl;
         int maxConcurrency;
 
         readonly FastConcurrentLru<string, int> deliveryAttempts = new(1_000);
