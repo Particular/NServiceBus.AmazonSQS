@@ -2,8 +2,8 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Text;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using AcceptanceTesting.Customization;
@@ -44,20 +44,10 @@
             }
         }
 
-        public static async Task SendTo<TEndpoint, TMessage>(Dictionary<string, MessageAttributeValue> messageAttributeValues,
-            TMessage message)
-            where TMessage : IMessage
+        public static async Task SendTo<TEndpoint, TMessage>(Dictionary<string, MessageAttributeValue> messageAttributeValues, TMessage message) where TMessage : IMessage
         {
-            using var sw = new Utf8StringWriter();
-            var serializer = new System.Xml.Serialization.XmlSerializer(typeof(TMessage));
-            serializer.Serialize(sw, message);
-
-            await SendTo<TEndpoint>(messageAttributeValues, sw.ToString());
-        }
-
-        sealed class Utf8StringWriter : StringWriter
-        {
-            public override Encoding Encoding => Encoding.UTF8;
+            var json = JsonSerializer.Serialize(message);
+            await SendTo<TEndpoint>(messageAttributeValues, json);
         }
 
         public static async Task SendTo<TEndpoint>(Dictionary<string, MessageAttributeValue> messageAttributeValues, string message, bool base64Encode = true)

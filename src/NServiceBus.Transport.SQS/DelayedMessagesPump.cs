@@ -83,6 +83,7 @@ namespace NServiceBus.Transport.SQS
             {
                 return; //already started
             }
+
             tokenSource = new CancellationTokenSource();
 
             var receiveDelayedMessagesRequest = new ReceiveMessageRequest
@@ -104,7 +105,9 @@ namespace NServiceBus.Transport.SQS
             {
                 return; //already stopped
             }
+
             tokenSource.Cancel();
+
             if (pumpTask != null)
             {
                 await pumpTask.ConfigureAwait(false);

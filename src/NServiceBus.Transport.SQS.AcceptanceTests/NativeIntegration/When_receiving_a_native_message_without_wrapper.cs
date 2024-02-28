@@ -4,7 +4,6 @@
     using System.Collections.Generic;
     using System.Text.Json;
     using System.Threading.Tasks;
-    using System.Xml.Linq;
     using AcceptanceTesting;
     using Amazon.S3.Model;
     using Amazon.SQS.Model;
@@ -14,7 +13,7 @@
 
     public class When_receiving_a_native_message_without_wrapper : NServiceBusAcceptanceTest
     {
-        static readonly string MessageToSend = new XDocument(new XElement("NServiceBus.AcceptanceTests.NativeIntegration.NativeMessage", new XElement("ThisIsTheMessage", "Hello!"))).ToString();
+        static readonly string MessageToSend = JsonSerializer.Serialize(new NativeMessage { ThisIsTheMessage = "Hello!" });
 
         [Test]
         public async Task Should_be_processed_when_nsbheaders_present_with_messageid()
@@ -103,6 +102,8 @@
             {
                 nsbHeaders.Add("NServiceBus.MessageId", messageId);
             }
+
+            nsbHeaders.Add("NServiceBus.EnclosedMessageTypes", typeof(NativeMessage).FullName);
 
             return JsonSerializer.Serialize(nsbHeaders);
         }

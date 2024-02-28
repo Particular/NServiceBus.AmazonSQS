@@ -1,9 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>$(SolutionDir)Test.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\NServiceBusTests.snk</AssemblyOriginatorKeyFile>
     <RootNamespace>TransportTests</RootNamespace>
   </PropertyGroup>
 
@@ -12,13 +12,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.SQS" Version="3.7.300.52" />
-    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.301" />
-    <PackageReference Include="AWSSDK.S3" Version="3.7.305.28" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.305.29" />
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.301.1" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.300.53" />
     <PackageReference Include="BitFaster.Caching" Version="2.4.1" />
     <PackageReference Include="GitHubActionsTestLogger" Version="2.3.3" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
-    <PackageReference Include="NServiceBus.TransportTests.Sources" Version="9.0.0-alpha.9" GeneratePathProperty="true" />
+    <PackageReference Include="NServiceBus.TransportTests.Sources" Version="9.0.0" GeneratePathProperty="true" />
     <PackageReference Include="NUnit" Version="3.14.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
   </ItemGroup>
@@ -30,6 +30,8 @@
 
   <ItemGroup Condition="'$(PkgNServiceBus_TransportTests_Sources)' != ''">
     <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\ExceptionExtensions.cs" />
+    <!-- See https://github.com/Particular/NServiceBus.AmazonSQS/issues/2425 -->
+    <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\When_starting_again.cs" />
   </ItemGroup>
 
 </Project>

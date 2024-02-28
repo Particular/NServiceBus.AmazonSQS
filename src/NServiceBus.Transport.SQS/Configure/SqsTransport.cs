@@ -26,7 +26,7 @@
             //For legacy API shim
             internal set
             {
-                Guard.ThrowIfNull(value);
+                ArgumentNullException.ThrowIfNull(value);
 
                 sqsClient = value;
                 externallyManagedSqsClient = true;
@@ -42,7 +42,7 @@
             //For legacy API shim
             internal set
             {
-                Guard.ThrowIfNull(value);
+                ArgumentNullException.ThrowIfNull(value);
 
                 snsClient = value;
                 externallyManagedSnsClient = true;
@@ -66,7 +66,7 @@
             get => queueNameGenerator;
             set
             {
-                Guard.ThrowIfNull(value);
+                ArgumentNullException.ThrowIfNull(value);
                 queueNameGenerator = value;
             }
         }
@@ -106,7 +106,7 @@
             get => topicNamePrefix;
             set
             {
-                Guard.ThrowIfNull(value);
+                ArgumentNullException.ThrowIfNull(value);
                 topicNamePrefix = value;
             }
         }
@@ -120,7 +120,7 @@
             get => topicNameGenerator;
             set
             {
-                Guard.ThrowIfNull(value);
+                ArgumentNullException.ThrowIfNull(value);
                 topicNameGenerator = value;
             }
         }
@@ -137,7 +137,7 @@
 
         /// <summary>
         /// Configures the SQS transport to not use a custom wrapper for outgoing messages.
-        /// NServiceBus headers will be sent as an Amazon message attribute. 
+        /// NServiceBus headers will be sent as an Amazon message attribute.
         /// Only turn this on if all your endpoints are version 6.1.0 or above.
         /// </summary>
         public bool DoNotWrapOutgoingMessages { get; set; }
@@ -183,7 +183,7 @@
         /// </summary>
         public void MapEvent(Type subscribedEventType, IEnumerable<string> customTopicsNames)
         {
-            Guard.ThrowIfNull(customTopicsNames);
+            ArgumentNullException.ThrowIfNull(customTopicsNames);
             eventToTopicsMappings.Add(subscribedEventType, customTopicsNames);
         }
 
@@ -202,8 +202,8 @@
         /// </summary>
         public void MapEvent(Type subscribedEventType, Type publishedEventType)
         {
-            Guard.ThrowIfNull(subscribedEventType);
-            Guard.ThrowIfNull(publishedEventType);
+            ArgumentNullException.ThrowIfNull(subscribedEventType);
+            ArgumentNullException.ThrowIfNull(publishedEventType);
 
             eventToEventsMappings.Add(subscribedEventType, publishedEventType);
         }

@@ -24,7 +24,7 @@
         /// <param name="ttl">Topic cache TTL.</param>
         public SqsSubscriptionMigrationModeSettings TopicCacheTTL(TimeSpan ttl)
         {
-            Guard.ThrowIfNegativeOrZero(ttl);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(ttl, TimeSpan.Zero);
 
             settings.Set(SettingsKeys.NotFoundTopicsCacheTTL, ttl);
 
@@ -37,7 +37,7 @@
         /// <param name="ttl">Subscription cache TTL.</param>
         public SubscriptionMigrationModeSettings SubscriptionsCacheTTL(TimeSpan ttl)
         {
-            Guard.ThrowIfNegativeOrZero(ttl);
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(ttl, TimeSpan.Zero);
 
             settings.Set(SettingsKeys.SubscriptionsCacheTTL, ttl);
 
