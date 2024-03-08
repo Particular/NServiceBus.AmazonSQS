@@ -21,7 +21,7 @@ jobs:
         os:
           - { platform: windows-2019, name: Windows }
           - { platform: ubuntu-20.04, name: Linux }
-        framework: [ net462, net6.0, net7.0 ]
+        framework: [ net462, net6.0, net7.0, net8.0 ]
         exclude:
           - os: { name: Linux }
             framework: net462
@@ -46,7 +46,7 @@ jobs:
       - name: Build
         run: dotnet build src --configuration Release
       - name: Upload packages
-        if: matrix.name == 'Windows' && matrix.framework == 'net6.0'
+        if: matrix.name == 'Windows' && matrix.framework == 'net8.0'
         uses: actions/upload-artifact@v4.3.1
         with:
           name: NuGet packages
