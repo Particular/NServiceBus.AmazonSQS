@@ -13,6 +13,9 @@ env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
   AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
   NSERVICEBUS_AMAZONSQS_S3BUCKET: ${{ secrets.NSERVICEBUS_AMAZONSQS_S3BUCKET }}
+defaults:
+  run:
+    shell: pwsh
 jobs:
   build:
     name: ${{ matrix.os.name }}-${{ matrix.framework }}
@@ -22,16 +25,15 @@ jobs:
         os:
           - { platform: windows-2019, name: Windows }
           - { platform: ubuntu-20.04, name: Linux }
-        framework: [ net472, net6.0, net7.0, net8.0 ]
+        framework: [ net481, net6.0, net7.0, net8.0 ]
         exclude:
           - os: { name: Linux }
-            framework: net472
+            framework: net481
       fail-fast: false
     steps:
       - name: Check for secrets
         env:
           SECRETS_AVAILABLE: ${{ secrets.SECRETS_AVAILABLE }}
-        shell: pwsh
         run: exit $(If ($env:SECRETS_AVAILABLE -eq 'true') { 0 } Else { 1 })
       - name: Checkout
         uses: actions/checkout@v4.1.1
