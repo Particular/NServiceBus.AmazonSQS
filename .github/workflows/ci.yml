@@ -25,10 +25,10 @@ jobs:
         os:
           - { platform: windows-2019, name: Windows }
           - { platform: ubuntu-20.04, name: Linux }
-        framework: [ net472, net6.0, net7.0, net8.0 ]
+        framework: [ net481, net6.0, net7.0, net8.0 ]
         exclude:
           - os: { name: Linux }
-            framework: net472
+            framework: net481
       fail-fast: false
     steps:
       - name: Check for secrets
