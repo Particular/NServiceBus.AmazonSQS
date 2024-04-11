@@ -74,7 +74,7 @@
         public Task<IEnumerable<Subscriber>> GetSubscriberAddressesForMessage(IEnumerable<MessageType> messageTypes, ContextBag context, CancellationToken cancellationToken)
         {
             var subscribers = messageTypes
-                .SelectMany(msgType => storage.TryGetValue(msgType, out var subs) ? subs.Values : [])
+                .SelectMany(msgType => storage.TryGetValue(msgType, out var subs) ? subs.Values : Array.Empty<Subscriber>())
                 .GroupBy(s => new { s.TransportAddress, s.Endpoint }) // Subscriber does not implement IEquatable<T>
                 .Select(g => g.First());
 
