@@ -1,0 +1,4 @@
+ComponentType: Transport
+ComponentPackages:
+  - Name: NServiceBus.AmazonSQS
+  - Name: NServiceBus.AmazonSQS.CommandLine
