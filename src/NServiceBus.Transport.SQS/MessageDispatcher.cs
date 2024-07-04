@@ -376,7 +376,20 @@ namespace NServiceBus.Transport.SQS
             if (!wrapOutgoingMessages)
             {
                 (preparedMessage.Body, var headers) = GetMessageBodyAndHeaders(transportOperation.Message);
-                preparedMessage.MessageAttributes[TransportHeaders.Headers] = new MessageAttributeValue { StringValue = headers, DataType = "String" };
+
+                var flatHeaders = transportOperation.Properties.ContainsKey(Experimental.TransportOperationExt.FlatHeadersKey);
+
+                if (flatHeaders)
+                {
+                    foreach (var i in transportOperation.Message.Headers)
+                    {
+                        preparedMessage.MessageAttributes[i.Key] = new MessageAttributeValue { StringValue = i.Value, DataType = "String" };
+                    }
+                }
+                else
+                {
+                    preparedMessage.MessageAttributes[TransportHeaders.Headers] = new MessageAttributeValue { StringValue = headers, DataType = "String" };
+                }
 
                 await PrepareSqsMessageBasedOnBodySize(default).ConfigureAwait(false);
             }

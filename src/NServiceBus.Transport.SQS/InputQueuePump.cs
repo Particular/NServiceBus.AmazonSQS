@@ -383,14 +383,13 @@ namespace NServiceBus.Transport.SQS
                             Logger.Debug($"Message with native id {receivedMessage.MessageId} does not contain the required information and will not be treated as an NServiceBus TransportMessage. " +
                                    $"Instead it'll be treated as pure native message.");
 
+                            var headersFromAttributes = receivedMessage.MessageAttributes.ToDictionary(k => k.Key, v => v.Value.StringValue);
+                            headersFromAttributes[Headers.MessageId] = receivedMessage.MessageId;
+
                             transportMessage = new TransportMessage
                             {
                                 Body = receivedMessage.Body,
-                                Headers = new Dictionary<string, string>
-                                {
-                                    // HINT: Message Id is a required field for InnerProcessMessage
-                                    [Headers.MessageId] = receivedMessage.MessageId,
-                                }
+                                Headers = headersFromAttributes
                             };
                         }
                     }
