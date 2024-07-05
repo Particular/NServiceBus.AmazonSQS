@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Dependabot metadata
         id: metadata
-        uses: dependabot/fetch-metadata@v2.1.0
+        uses: dependabot/fetch-metadata@v2.2.0
       - name: Approve PR
         if: ${{contains(steps.metadata.outputs.dependency-names, 'AWSSDK.SQS') || contains(steps.metadata.outputs.dependency-names, 'AWSSDK.SimpleNotificationService') || contains(steps.metadata.outputs.dependency-names, 'AWSSDK.S3')}}
         run: gh pr review --approve "$PR_URL"
