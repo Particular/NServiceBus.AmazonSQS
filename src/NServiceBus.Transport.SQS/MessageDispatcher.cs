@@ -477,11 +477,7 @@ namespace NServiceBus.Transport.SQS
             }
             else
             {
-                // TODO: What if the payload is binary???
-                var isText = false;
-                body = isText
-                    ? Encoding.UTF8.GetString(outgoingMessage.Body.Span)
-                    : Convert.ToBase64String(outgoingMessage.Body.Span);
+                body = Encoding.UTF8.GetString(outgoingMessage.Body.Span);
             }
 
             // probably think about how compact this should be?
