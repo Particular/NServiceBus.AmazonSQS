@@ -8,6 +8,7 @@ namespace NServiceBus.Transport.SQS
 
     class MessagePump : IMessageReceiver
     {
+        readonly bool disableDelayedDelivery;
         readonly InputQueuePump inputQueuePump;
         readonly DelayedMessagesPump delayedMessagesPump;
 
@@ -23,27 +24,41 @@ namespace NServiceBus.Transport.SQS
             int queueDelayTimeSeconds,
             Action<string, Exception, CancellationToken> criticalErrorAction,
             IReadOnlySettings coreSettings,
-            bool setupInfrastructure)
+            bool setupInfrastructure,
+            bool disableDelayedDelivery)
         {
+            this.disableDelayedDelivery = disableDelayedDelivery;
             inputQueuePump = new InputQueuePump(receiverId, receiveAddress, errorQueueAddress, purgeOnStartup, sqsClient, queueCache, s3Settings, subscriptionManager, criticalErrorAction, coreSettings, setupInfrastructure);
-            delayedMessagesPump = new DelayedMessagesPump(receiveAddress, sqsClient, queueCache, queueDelayTimeSeconds);
+            if (!disableDelayedDelivery)
+            {
+                delayedMessagesPump =
+                    new DelayedMessagesPump(receiveAddress, sqsClient, queueCache, queueDelayTimeSeconds);
+            }
         }
 
         public async Task Initialize(PushRuntimeSettings limitations, OnMessage onMessage, OnError onError, CancellationToken cancellationToken = default)
         {
             await inputQueuePump.Initialize(limitations, onMessage, onError, cancellationToken).ConfigureAwait(false);
-            await delayedMessagesPump.Initialize(cancellationToken).ConfigureAwait(false);
+            if (!disableDelayedDelivery)
+            {
+                await delayedMessagesPump.Initialize(cancellationToken).ConfigureAwait(false);
+            }
         }
 
         public async Task StartReceive(CancellationToken cancellationToken = default)
         {
             await inputQueuePump.StartReceive(cancellationToken).ConfigureAwait(false);
-            delayedMessagesPump.Start(cancellationToken);
+            if (!disableDelayedDelivery)
+            {
+                delayedMessagesPump.Start(cancellationToken);
+            }
         }
 
         public Task StopReceive(CancellationToken cancellationToken = default)
         {
-            var stopDelayed = delayedMessagesPump.Stop(cancellationToken);
+            var stopDelayed = !disableDelayedDelivery
+                ? delayedMessagesPump.Stop(cancellationToken)
+                : Task.CompletedTask;
             var stopPump = inputQueuePump.StopReceive(cancellationToken);
 
             return Task.WhenAll(stopDelayed, stopPump);
