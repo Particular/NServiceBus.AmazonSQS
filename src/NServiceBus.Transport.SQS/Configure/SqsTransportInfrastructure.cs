@@ -15,13 +15,14 @@
     {
         public SqsTransportInfrastructure(HostSettings hostSettings, ReceiveSettings[] receiverSettings, IAmazonSQS sqsClient,
             IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, S3Settings s3Settings, PolicySettings policySettings, int queueDelayTimeSeconds, string topicNamePrefix, bool doNotWrapOutgoingMessages,
-            bool shouldDisposeSqsClient, bool shouldDisposeSnsClient)
+            bool shouldDisposeSqsClient, bool shouldDisposeSnsClient, bool disableDelayedDelivery)
         {
             this.sqsClient = sqsClient;
             this.snsClient = snsClient;
             this.queueCache = queueCache;
             this.shouldDisposeSqsClient = shouldDisposeSqsClient;
             this.shouldDisposeSnsClient = shouldDisposeSnsClient;
+            this.disableDelayedDelivery = disableDelayedDelivery;
             coreSettings = hostSettings.CoreSettings;
             s3Client = s3Settings?.S3Client;
             setupInfrastructure = hostSettings.SetupInfrastructure;
@@ -42,7 +43,7 @@
             var receiveAddress = ToTransportAddress(receiveSettings.ReceiveAddress);
             var subManager = new SubscriptionManager(sqsClient, snsClient, receiveAddress, queueCache, topicCache, policySettings, topicNamePrefix, setupInfrastructure);
 
-            return new MessagePump(receiveSettings.Id, receiveAddress, receiveSettings.ErrorQueue, receiveSettings.PurgeOnStartup, sqsClient, queueCache, s3Settings, subManager, queueDelayTimeSeconds, criticalErrorAction, coreSettings, setupInfrastructure);
+            return new MessagePump(receiveSettings.Id, receiveAddress, receiveSettings.ErrorQueue, receiveSettings.PurgeOnStartup, sqsClient, queueCache, s3Settings, subManager, queueDelayTimeSeconds, criticalErrorAction, coreSettings, setupInfrastructure, disableDelayedDelivery);
         }
 
         public override Task Shutdown(CancellationToken cancellationToken = default)
@@ -90,6 +91,7 @@
         readonly bool setupInfrastructure;
         readonly bool shouldDisposeSqsClient;
         readonly bool shouldDisposeSnsClient;
+        readonly bool disableDelayedDelivery;
         readonly bool shouldDisposeS3Client;
     }
 }
