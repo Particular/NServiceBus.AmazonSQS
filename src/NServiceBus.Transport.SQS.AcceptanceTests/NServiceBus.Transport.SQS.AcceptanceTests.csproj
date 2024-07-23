@@ -31,6 +31,14 @@
 
   <ItemGroup Condition="'$(PkgNServiceBus_AcceptanceTests_Sources)' != ''">
     <Compile Remove="$(PkgNServiceBus_AcceptanceTests_Sources)\**\Routing\When_publishing_an_event_implementing_two_unrelated_interfaces.cs" />
+    <!--
+    TODO: The following two tests were not meant to be included in the sources. A fix has been merged to Core master and release-9.1 in:
+    - https://github.com/Particular/NServiceBus/pull/7121
+    - https://github.com/Particular/NServiceBus/pull/7122
+    The following two MSBuild elements can be removed once a version of the ATT source package is released
+    -->
+    <Compile Remove="$(PkgNServiceBus_AcceptanceTests_Sources)\**\Core\DependencyInjection\When_resolving_address_translator.cs" />
+    <Compile Remove="$(PkgNServiceBus_AcceptanceTests_Sources)\**\Core\OpenTelemetry\Metrics\When_retrying_messages.cs" />
   </ItemGroup>
 
 </Project>
