@@ -127,7 +127,7 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.IsTrue(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MaxNumberOfMessages == 10), "MaxNumberOfMessages did not match");
             Assert.IsTrue(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.QueueUrl == FakeDelayedMessagesFifoQueueUrl), "QueueUrl did not match");
             Assert.IsTrue(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.WaitTimeSeconds == 20), "WaitTimeSeconds did not match");
-            Assert.IsTrue(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.AttributeNames
+            Assert.IsTrue(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MessageSystemAttributeNames
                 .SequenceEqual(["MessageDeduplicationId", "SentTimestamp", "ApproximateFirstReceiveTimestamp", "ApproximateReceiveCount"])), "AttributeNames did not match");
             Assert.IsTrue(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MessageAttributeNames.SequenceEqual(["All"])), "MessageAttributeNames did not match");
         }
