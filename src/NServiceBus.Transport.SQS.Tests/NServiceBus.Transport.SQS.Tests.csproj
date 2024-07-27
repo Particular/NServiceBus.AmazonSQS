@@ -11,10 +11,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.7.308.4" />
-    <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.300.115" />
-    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.301.43" />
-    <PackageReference Include="AWSSDK.SQS" Version="3.7.300.72" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.400" />
+    <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.400" />
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.400" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.400" />
     <PackageReference Include="BitFaster.Caching" Version="2.5.1" />
     <PackageReference Include="GitHubActionsTestLogger" Version="2.4.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
