@@ -91,7 +91,7 @@ namespace NServiceBus.Transport.SQS
                 MaxNumberOfMessages = 10,
                 QueueUrl = delayedDeliveryQueueUrl,
                 WaitTimeSeconds = 20,
-                AttributeNames = ["MessageDeduplicationId", "SentTimestamp", "ApproximateFirstReceiveTimestamp", "ApproximateReceiveCount"],
+                MessageSystemAttributeNames = ["MessageDeduplicationId", "SentTimestamp", "ApproximateFirstReceiveTimestamp", "ApproximateReceiveCount"],
                 MessageAttributeNames = ["All"]
             };
 
