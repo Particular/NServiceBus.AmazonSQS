@@ -60,7 +60,8 @@ namespace NServiceBus.Transport.SQS.Tests
                 "",
                 false,
                 disposeSqs,
-                disposeSns);
+                disposeSns,
+                false);
 
             await sut.Shutdown(CancellationToken.None);
 

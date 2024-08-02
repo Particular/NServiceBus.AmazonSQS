@@ -121,7 +121,7 @@ namespace NServiceBus.Transport.SQS
                 MaxNumberOfMessages = numberOfMessagesToFetch,
                 QueueUrl = inputQueueUrl,
                 WaitTimeSeconds = 20,
-                AttributeNames = ["SentTimestamp"],
+                MessageSystemAttributeNames = ["SentTimestamp"],
                 MessageAttributeNames = ["All"]
             };
 

@@ -58,6 +58,11 @@
         public string QueueNamePrefix { get; set; }
 
         /// <summary>
+        /// Disable native delayed delivery infrastructure
+        /// </summary>
+        internal bool DisableDelayedDelivery { get; set; } = false;
+
+        /// <summary>
         /// Specifies a lambda function that allows to take control of the queue name generation logic.
         /// This is useful to overcome any limitations imposed by SQS.
         /// </summary>
@@ -248,14 +253,14 @@
             AssertQueueNameGeneratorIdempotent(queueNameGenerator);
 
             var topicCache = new TopicCache(SnsClient, hostSettings.CoreSettings, eventToTopicsMappings, eventToEventsMappings, topicNameGenerator, topicNamePrefix);
-            var infra = new SqsTransportInfrastructure(hostSettings, receivers, SqsClient, SnsClient, QueueCache, topicCache, S3, Policies, QueueDelayTime, topicNamePrefix, DoNotWrapOutgoingMessages, !externallyManagedSqsClient, !externallyManagedSnsClient);
+            var infra = new SqsTransportInfrastructure(hostSettings, receivers, SqsClient, SnsClient, QueueCache, topicCache, S3, Policies, QueueDelayTime, topicNamePrefix, DoNotWrapOutgoingMessages, !externallyManagedSqsClient, !externallyManagedSnsClient, DisableDelayedDelivery);
 
             if (hostSettings.SetupInfrastructure)
             {
                 var queueCreator = new QueueCreator(SqsClient, QueueCache, S3, maxTimeToLive, QueueDelayTime);
 
                 var createQueueTasks = sendingAddresses.Select(x => queueCreator.CreateQueueIfNecessary(x, false, cancellationToken))
-                    .Concat(infra.Receivers.Values.Select(x => queueCreator.CreateQueueIfNecessary(x.ReceiveAddress, true, cancellationToken))).ToArray();
+                    .Concat(infra.Receivers.Values.Select(x => queueCreator.CreateQueueIfNecessary(x.ReceiveAddress, !DisableDelayedDelivery, cancellationToken))).ToArray();
 
                 await Task.WhenAll(createQueueTasks).ConfigureAwait(false);
             }
