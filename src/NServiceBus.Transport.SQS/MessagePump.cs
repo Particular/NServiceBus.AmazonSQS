@@ -58,8 +58,7 @@ namespace NServiceBus.Transport.SQS
             var stopDelayed = delayedMessagesPump.Stop(cancellationToken);
             var stopPump = inputQueuePump.StopReceive(cancellationToken);
 
-            //return Task.WhenAll(stopDelayed, stopPump);
-            return Task.WhenAll(stopPump);
+            return Task.WhenAll(stopDelayed, stopPump);
         }
 
         public Task ChangeConcurrency(PushRuntimeSettings limitations, CancellationToken cancellationToken = default)
