@@ -9,7 +9,8 @@
         public string MessageId
         {
             get => MessageAttributes.ContainsKey(Headers.MessageId) ? MessageAttributes[Headers.MessageId].StringValue : null;
-            set =>
+            set
+            {
                 // because message attributes are part of the content size restriction we want to prevent message size from changing thus we add it
                 // for native delayed deliver as well even though the information is slightly redundant (MessageId is assigned to MessageDeduplicationId for example)
                 MessageAttributes[Headers.MessageId] = new MessageAttributeValue
@@ -17,6 +18,7 @@
                     StringValue = value,
                     DataType = "String"
                 };
+            }
         }
         public string Body { get; set; }
         public string Destination { get; set; }
