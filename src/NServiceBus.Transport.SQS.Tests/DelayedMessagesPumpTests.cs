@@ -124,12 +124,15 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await pump.Stop();
 
-            Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MaxNumberOfMessages == 10), Is.True, "MaxNumberOfMessages did not match");
-            Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.QueueUrl == FakeDelayedMessagesFifoQueueUrl), Is.True, "QueueUrl did not match");
-            Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.WaitTimeSeconds == 20), Is.True, "WaitTimeSeconds did not match");
-            Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MessageSystemAttributeNames
-                .SequenceEqual(["MessageDeduplicationId", "SentTimestamp", "ApproximateFirstReceiveTimestamp", "ApproximateReceiveCount"])), Is.True, "AttributeNames did not match");
-            Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MessageAttributeNames.SequenceEqual(["All"])), Is.True, "MessageAttributeNames did not match");
+            Assert.Multiple(() =>
+            {
+                Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MaxNumberOfMessages == 10), Is.True, "MaxNumberOfMessages did not match");
+                Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.QueueUrl == FakeDelayedMessagesFifoQueueUrl), Is.True, "QueueUrl did not match");
+                Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.WaitTimeSeconds == 20), Is.True, "WaitTimeSeconds did not match");
+                Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MessageSystemAttributeNames
+                    .SequenceEqual(["MessageDeduplicationId", "SentTimestamp", "ApproximateFirstReceiveTimestamp", "ApproximateReceiveCount"])), Is.True, "AttributeNames did not match");
+                Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MessageAttributeNames.SequenceEqual(["All"])), Is.True, "MessageAttributeNames did not match");
+            });
         }
 
         [Test]
@@ -180,11 +183,17 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
 
-            Assert.That(mockSqsClient.RequestsSent, Is.Empty);
-            Assert.That(mockSqsClient.BatchRequestsSent.Count, Is.EqualTo(2));
-            Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Count, Is.EqualTo(5));
-            Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Count, Is.EqualTo(5));
-            Assert.That(mockSqsClient.BatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeInputQueueQueueUrl), Is.True);
+            Assert.Multiple(() =>
+            {
+                Assert.That(mockSqsClient.RequestsSent, Is.Empty);
+                Assert.That(mockSqsClient.BatchRequestsSent.Count, Is.EqualTo(2));
+            });
+            Assert.Multiple(() =>
+            {
+                Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Count, Is.EqualTo(5));
+                Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Count, Is.EqualTo(5));
+                Assert.That(mockSqsClient.BatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeInputQueueQueueUrl), Is.True);
+            });
         }
 
         [Test]
@@ -225,12 +234,18 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
 
-            Assert.That(mockSqsClient.DeleteMessageRequestsSent, Is.Empty);
-            Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.Count, Is.EqualTo(2));
-            Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.Count, Is.EqualTo(5));
-            Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(1).Entries.Count, Is.EqualTo(5));
-            Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.ElementAt(0).ReceiptHandle, Is.EqualTo("Message-0"));
-            Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.ElementAt(4).ReceiptHandle, Is.EqualTo("Message-4"));
+            Assert.Multiple(() =>
+            {
+                Assert.That(mockSqsClient.DeleteMessageRequestsSent, Is.Empty);
+                Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.Count, Is.EqualTo(2));
+            });
+            Assert.Multiple(() =>
+            {
+                Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.Count, Is.EqualTo(5));
+                Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(1).Entries.Count, Is.EqualTo(5));
+                Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.ElementAt(0).ReceiptHandle, Is.EqualTo("Message-0"));
+                Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.ElementAt(4).ReceiptHandle, Is.EqualTo("Message-4"));
+            });
             Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(1).Entries.ElementAt(0).ReceiptHandle, Is.EqualTo("Message-5"));
             Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(1).Entries.ElementAt(4).ReceiptHandle, Is.EqualTo("Message-9"));
             Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeDelayedMessagesFifoQueueUrl), Is.True);
@@ -273,11 +288,17 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
 
-            Assert.That(mockSqsClient.RequestsSent, Is.Empty);
-            Assert.That(mockSqsClient.BatchRequestsSent.Count, Is.EqualTo(2));
-            Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Count, Is.EqualTo(5));
-            Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Count, Is.EqualTo(5));
-            Assert.That(mockSqsClient.BatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeDelayedMessagesFifoQueueUrl), Is.True);
+            Assert.Multiple(() =>
+            {
+                Assert.That(mockSqsClient.RequestsSent, Is.Empty);
+                Assert.That(mockSqsClient.BatchRequestsSent.Count, Is.EqualTo(2));
+            });
+            Assert.Multiple(() =>
+            {
+                Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Count, Is.EqualTo(5));
+                Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Count, Is.EqualTo(5));
+                Assert.That(mockSqsClient.BatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeDelayedMessagesFifoQueueUrl), Is.True);
+            });
         }
 
         [Test]
@@ -318,12 +339,18 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
 
-            Assert.That(mockSqsClient.DeleteMessageRequestsSent, Is.Empty);
-            Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.Count, Is.EqualTo(2));
-            Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.Count, Is.EqualTo(5));
-            Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(1).Entries.Count, Is.EqualTo(5));
-            Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.ElementAt(0).ReceiptHandle, Is.EqualTo("Message-0"));
-            Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.ElementAt(4).ReceiptHandle, Is.EqualTo("Message-4"));
+            Assert.Multiple(() =>
+            {
+                Assert.That(mockSqsClient.DeleteMessageRequestsSent, Is.Empty);
+                Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.Count, Is.EqualTo(2));
+            });
+            Assert.Multiple(() =>
+            {
+                Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.Count, Is.EqualTo(5));
+                Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(1).Entries.Count, Is.EqualTo(5));
+                Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.ElementAt(0).ReceiptHandle, Is.EqualTo("Message-0"));
+                Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.ElementAt(4).ReceiptHandle, Is.EqualTo("Message-4"));
+            });
             Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(1).Entries.ElementAt(0).ReceiptHandle, Is.EqualTo("Message-5"));
             Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(1).Entries.ElementAt(4).ReceiptHandle, Is.EqualTo("Message-9"));
             Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeDelayedMessagesFifoQueueUrl), Is.True);
@@ -383,12 +410,18 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
 
-            Assert.That(mockSqsClient.RequestsSent, Is.Empty);
-            Assert.That(mockSqsClient.BatchRequestsSent.Count, Is.EqualTo(2));
-            Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Count, Is.EqualTo(1));
-            Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(0).QueueUrl, Is.EqualTo(FakeInputQueueQueueUrl));
-            Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Count, Is.EqualTo(1));
-            Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(1).QueueUrl, Is.EqualTo(FakeDelayedMessagesFifoQueueUrl));
+            Assert.Multiple(() =>
+            {
+                Assert.That(mockSqsClient.RequestsSent, Is.Empty);
+                Assert.That(mockSqsClient.BatchRequestsSent.Count, Is.EqualTo(2));
+            });
+            Assert.Multiple(() =>
+            {
+                Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Count, Is.EqualTo(1));
+                Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(0).QueueUrl, Is.EqualTo(FakeInputQueueQueueUrl));
+                Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Count, Is.EqualTo(1));
+                Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(1).QueueUrl, Is.EqualTo(FakeDelayedMessagesFifoQueueUrl));
+            });
         }
 
         [Test]
@@ -484,8 +517,11 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
 
-            Assert.That(mockSqsClient.DeleteMessageRequestsSent.Count, Is.EqualTo(1));
-            Assert.That("FirstMessage", Is.Not.Empty, mockSqsClient.DeleteMessageRequestsSent.ElementAt(0).receiptHandle);
+            Assert.Multiple(() =>
+            {
+                Assert.That(mockSqsClient.DeleteMessageRequestsSent.Count, Is.EqualTo(1));
+                Assert.That("FirstMessage", Is.Not.Empty, mockSqsClient.DeleteMessageRequestsSent.ElementAt(0).receiptHandle);
+            });
             Assert.That("FirstMessage", Is.Not.Empty, mockSqsClient.DeleteMessageRequestsSent.ElementAt(0).queueUrl);
         }
 
@@ -668,10 +704,13 @@ namespace NServiceBus.Transport.SQS.Tests
 
             Assert.That(mockSqsClient.ChangeMessageVisibilityBatchRequestsSent.Count, Is.EqualTo(1));
             Assert.That(mockSqsClient.ChangeMessageVisibilityBatchRequestsSent.ElementAt(0).Entries.Count, Is.EqualTo(2));
-            Assert.That(mockSqsClient.ChangeMessageVisibilityBatchRequestsSent.ElementAt(0).Entries.ElementAt(0).ReceiptHandle, Is.EqualTo("FirstMessage"));
-            Assert.That(mockSqsClient.ChangeMessageVisibilityBatchRequestsSent.ElementAt(0).Entries.ElementAt(0).VisibilityTimeout, Is.EqualTo(0));
-            Assert.That(mockSqsClient.ChangeMessageVisibilityBatchRequestsSent.ElementAt(0).Entries.ElementAt(1).ReceiptHandle, Is.EqualTo("SecondMessage"));
-            Assert.That(mockSqsClient.ChangeMessageVisibilityBatchRequestsSent.ElementAt(0).Entries.ElementAt(1).VisibilityTimeout, Is.EqualTo(0));
+            Assert.Multiple(() =>
+            {
+                Assert.That(mockSqsClient.ChangeMessageVisibilityBatchRequestsSent.ElementAt(0).Entries.ElementAt(0).ReceiptHandle, Is.EqualTo("FirstMessage"));
+                Assert.That(mockSqsClient.ChangeMessageVisibilityBatchRequestsSent.ElementAt(0).Entries.ElementAt(0).VisibilityTimeout, Is.EqualTo(0));
+                Assert.That(mockSqsClient.ChangeMessageVisibilityBatchRequestsSent.ElementAt(0).Entries.ElementAt(1).ReceiptHandle, Is.EqualTo("SecondMessage"));
+                Assert.That(mockSqsClient.ChangeMessageVisibilityBatchRequestsSent.ElementAt(0).Entries.ElementAt(1).VisibilityTimeout, Is.EqualTo(0));
+            });
         }
 
         [Test]

@@ -17,8 +17,11 @@
                 .Done(c => c.MessageReceived)
                 .Run();
 
-            Assert.That(scenario.HandlerHasAccessToNativeSqsMessage, Is.True, "The handler should have access to the native message");
-            Assert.That(scenario.BehaviorHasAccessToNativeSqsMessage, Is.True, "The behavior should have access to the native message");
+            Assert.Multiple(() =>
+            {
+                Assert.That(scenario.HandlerHasAccessToNativeSqsMessage, Is.True, "The handler should have access to the native message");
+                Assert.That(scenario.BehaviorHasAccessToNativeSqsMessage, Is.True, "The behavior should have access to the native message");
+            });
         }
 
         public class Receiver : EndpointConfigurationBuilder

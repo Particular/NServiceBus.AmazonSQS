@@ -67,8 +67,11 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
-            Assert.That(initialSubscribeRequests, Is.Not.Empty);
-            Assert.That(snsClient.SubscribeRequestsSent, Is.Empty);
+            Assert.Multiple(() =>
+            {
+                Assert.That(initialSubscribeRequests, Is.Not.Empty);
+                Assert.That(snsClient.SubscribeRequestsSent, Is.Empty);
+            });
         }
 
         [Test]
@@ -86,8 +89,11 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
-            Assert.That(initialSubscribeRequests, Is.Not.Empty);
-            Assert.That(snsClient.SubscribeRequestsSent, Is.Empty);
+            Assert.Multiple(() =>
+            {
+                Assert.That(initialSubscribeRequests, Is.Not.Empty);
+                Assert.That(snsClient.SubscribeRequestsSent, Is.Empty);
+            });
         }
 
         [Test]
@@ -188,8 +194,11 @@ namespace NServiceBus.Transport.SQS.Tests
 
             Assert.That(snsClient.SubscribeRequestsSent.Count, Is.EqualTo(1));
             var subscribeRequest = snsClient.SubscribeRequestsSent[0];
-            Assert.That(subscribeRequest.Endpoint, Is.EqualTo("arn:fakeQueue"));
-            Assert.That(subscribeRequest.TopicArn, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event"));
+            Assert.Multiple(() =>
+            {
+                Assert.That(subscribeRequest.Endpoint, Is.EqualTo("arn:fakeQueue"));
+                Assert.That(subscribeRequest.TopicArn, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event"));
+            });
             CollectionAssert.AreEquivalent(new Dictionary<string, string>
             {
                 {"RawMessageDelivery", "true"}

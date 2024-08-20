@@ -97,8 +97,11 @@
                            && c.MessageDrivenPubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents)
                 .Run(testCase.TestExecutionTimeout);
 
-            Assert.That(context.MessageDrivenPubSubSubscriberReceivedEventsCount, Is.EqualTo(testCase.NumberOfEvents));
-            Assert.That(context.NativePubSubSubscriberReceivedEventsCount, Is.EqualTo(testCase.NumberOfEvents));
+            Assert.Multiple(() =>
+            {
+                Assert.That(context.MessageDrivenPubSubSubscriberReceivedEventsCount, Is.EqualTo(testCase.NumberOfEvents));
+                Assert.That(context.NativePubSubSubscriberReceivedEventsCount, Is.EqualTo(testCase.NumberOfEvents));
+            });
         }
 
         public class Context : ScenarioContext

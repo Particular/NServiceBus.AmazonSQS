@@ -28,11 +28,14 @@
                     .Run();
             });
 
-            Assert.That(exception.Message, Does.Contain(destination));
-            Assert.That(exception.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-            Assert.That(exception.ErrorType, Is.EqualTo(ErrorType.Sender));
-            Assert.That(exception.ErrorCode, Is.EqualTo("AWS.SimpleQueueService.NonExistentQueue"));
-            Assert.That(exception.RequestId, Is.Not.Null.Or.Empty);
+            Assert.Multiple(() =>
+            {
+                Assert.That(exception.Message, Does.Contain(destination));
+                Assert.That(exception.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+                Assert.That(exception.ErrorType, Is.EqualTo(ErrorType.Sender));
+                Assert.That(exception.ErrorCode, Is.EqualTo("AWS.SimpleQueueService.NonExistentQueue"));
+                Assert.That(exception.RequestId, Is.Not.Null.Or.Empty);
+            });
         }
 
         public class Context : ScenarioContext

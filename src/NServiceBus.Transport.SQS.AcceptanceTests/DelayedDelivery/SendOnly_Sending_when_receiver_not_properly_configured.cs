@@ -35,8 +35,11 @@
                 .Done(c => c.Received)
                 .Run();
 
-            Assert.That(context.ReceivedAt - context.SentAt, Is.GreaterThanOrEqualTo(delay), "The message has been received earlier than expected.");
-            Assert.That(context.Payload, Is.EqualTo(payload), "The received payload doesn't match the sent one.");
+            Assert.Multiple(() =>
+            {
+                Assert.That(context.ReceivedAt - context.SentAt, Is.GreaterThanOrEqualTo(delay), "The message has been received earlier than expected.");
+                Assert.That(context.Payload, Is.EqualTo(payload), "The received payload doesn't match the sent one.");
+            });
         }
 
         [Test]

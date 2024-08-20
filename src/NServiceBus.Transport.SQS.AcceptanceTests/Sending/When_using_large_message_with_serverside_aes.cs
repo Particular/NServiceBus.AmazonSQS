@@ -28,8 +28,11 @@ namespace NServiceBus.AcceptanceTests.Sending
             using var s3Client = ClientFactories.CreateS3Client();
             var getObjectResponse = await s3Client.GetObjectAsync(BucketName, $"{ConfigureEndpointSqsTransport.S3Prefix}/{context.MessageId}");
 
-            Assert.That(getObjectResponse.ServerSideEncryptionMethod, Is.EqualTo(ServerSideEncryptionMethod.AES256));
-            Assert.That(getObjectResponse.ServerSideEncryptionCustomerMethod, Is.EqualTo(ServerSideEncryptionCustomerMethod.None));
+            Assert.Multiple(() =>
+            {
+                Assert.That(getObjectResponse.ServerSideEncryptionMethod, Is.EqualTo(ServerSideEncryptionMethod.AES256));
+                Assert.That(getObjectResponse.ServerSideEncryptionCustomerMethod, Is.EqualTo(ServerSideEncryptionCustomerMethod.None));
+            });
         }
 
         const int PayloadSize = 150 * 1024;

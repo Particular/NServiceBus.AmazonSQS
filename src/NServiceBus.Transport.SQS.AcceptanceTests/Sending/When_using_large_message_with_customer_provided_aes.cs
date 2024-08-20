@@ -37,8 +37,11 @@ namespace NServiceBus.AcceptanceTests.Sending
                 ServerSideEncryptionCustomerProvidedKey = Base64Key,
             });
 
-            Assert.That(getObjectResponse.ServerSideEncryptionCustomerMethod, Is.EqualTo(ServerSideEncryptionCustomerMethod.AES256));
-            Assert.That(getObjectResponse.ServerSideEncryptionMethod, Is.Null);
+            Assert.Multiple(() =>
+            {
+                Assert.That(getObjectResponse.ServerSideEncryptionCustomerMethod, Is.EqualTo(ServerSideEncryptionCustomerMethod.AES256));
+                Assert.That(getObjectResponse.ServerSideEncryptionMethod, Is.Null);
+            });
         }
 
         const int PayloadSize = 150 * 1024;

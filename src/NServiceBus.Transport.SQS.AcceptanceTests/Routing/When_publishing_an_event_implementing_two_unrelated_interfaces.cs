@@ -31,8 +31,11 @@
                 .Done(c => c.GotEventA && c.GotEventB)
                 .Run(TimeSpan.FromSeconds(20));
 
-            Assert.That(context.GotEventA, Is.True);
-            Assert.That(context.GotEventB, Is.True);
+            Assert.Multiple(() =>
+            {
+                Assert.That(context.GotEventA, Is.True);
+                Assert.That(context.GotEventB, Is.True);
+            });
         }
 
         public class Context : ScenarioContext

@@ -55,8 +55,11 @@
 
             await CheckErrorQueue(ErrorQueueName, cancellationTokenSource.Token);
 
-            Assert.That(onErrorCalled, Is.False, "Poison message should not invoke onError");
-            Assert.That(onMessageCalled, Is.False, "Poison message should not invoke onMessage");
+            Assert.Multiple(() =>
+            {
+                Assert.That(onErrorCalled, Is.False, "Poison message should not invoke onError");
+                Assert.That(onMessageCalled, Is.False, "Poison message should not invoke onMessage");
+            });
         }
 
         static async Task<string> GetQueueUrl(IAmazonSQS sqsClient, string inputQueueName)

@@ -54,10 +54,13 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await pump.StopReceive();
 
-            Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MaxNumberOfMessages == 1), Is.True, "MaxNumberOfMessages did not match");
-            Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.QueueUrl == FakeInputQueueQueueUrl), Is.True, "QueueUrl did not match");
-            Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MessageAttributeNames.SequenceEqual(["All"])), Is.True, "MessageAttributeNames did not match");
-            Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MessageSystemAttributeNames.SequenceEqual(["SentTimestamp"])), Is.True, "AttributeNames did not match");
+            Assert.Multiple(() =>
+            {
+                Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MaxNumberOfMessages == 1), Is.True, "MaxNumberOfMessages did not match");
+                Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.QueueUrl == FakeInputQueueQueueUrl), Is.True, "QueueUrl did not match");
+                Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MessageAttributeNames.SequenceEqual(["All"])), Is.True, "MessageAttributeNames did not match");
+                Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MessageSystemAttributeNames.SequenceEqual(["SentTimestamp"])), Is.True, "AttributeNames did not match");
+            });
         }
 
         [Test]
@@ -87,9 +90,12 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await pump.ProcessMessage(message, CancellationToken.None).ConfigureAwait(false);
 
-            Assert.That(processed, Is.False);
-            Assert.That(mockSqsClient.RequestsSent.Count, Is.EqualTo(1));
-            Assert.That(mockSqsClient.DeleteMessageRequestsSent.Count, Is.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(processed, Is.False);
+                Assert.That(mockSqsClient.RequestsSent.Count, Is.EqualTo(1));
+                Assert.That(mockSqsClient.DeleteMessageRequestsSent.Count, Is.EqualTo(1));
+            });
             Assert.That(mockSqsClient.DeleteMessageRequestsSent.Single().receiptHandle, Is.EqualTo(expectedReceiptHandle));
         }
 
@@ -135,8 +141,11 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await pump.ProcessMessage(message, CancellationToken.None).ConfigureAwait(false);
 
-            Assert.That(processed, Is.False);
-            Assert.That(mockSqsClient.DeleteMessageRequestsSent.Count, Is.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(processed, Is.False);
+                Assert.That(mockSqsClient.DeleteMessageRequestsSent.Count, Is.EqualTo(1));
+            });
             Assert.That(mockSqsClient.DeleteMessageRequestsSent.Single().receiptHandle, Is.EqualTo(expectedReceiptHandle));
         }
 
@@ -176,8 +185,11 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await pump.ProcessMessage(message, CancellationToken.None).ConfigureAwait(false);
 
-            Assert.That(processed, Is.True);
-            Assert.That(mockSqsClient.DeleteMessageRequestsSent.Count, Is.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(processed, Is.True);
+                Assert.That(mockSqsClient.DeleteMessageRequestsSent.Count, Is.EqualTo(1));
+            });
             Assert.That(mockSqsClient.DeleteMessageRequestsSent.Single().receiptHandle, Is.EqualTo(expectedReceiptHandle));
         }
 

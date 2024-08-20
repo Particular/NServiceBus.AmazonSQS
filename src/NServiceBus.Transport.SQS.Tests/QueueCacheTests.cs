@@ -32,8 +32,11 @@
             var result = cache.GetPhysicalQueueName(destination);
             var resultIdempotent = cache.GetPhysicalQueueName(result);
 
-            Assert.That(result, Is.EqualTo(expected));
-            Assert.That(resultIdempotent, Is.EqualTo(expected));
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.EqualTo(expected));
+                Assert.That(resultIdempotent, Is.EqualTo(expected));
+            });
         }
 
         [Test]
@@ -48,8 +51,11 @@
             var result = cache.GetPhysicalQueueName(destination);
             var resultIdempotent = cache.GetPhysicalQueueName(result);
 
-            Assert.That(result, Is.EqualTo(expected));
-            Assert.That(resultIdempotent, Is.EqualTo(expected));
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.EqualTo(expected));
+                Assert.That(resultIdempotent, Is.EqualTo(expected));
+            });
         }
 
         [Test]
@@ -64,8 +70,11 @@
             var result = cache.GetPhysicalQueueName(destination);
             var resultIdempotent = cache.GetPhysicalQueueName(result);
 
-            Assert.That(result, Is.EqualTo(expected));
-            Assert.That(resultIdempotent, Is.EqualTo(expected));
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.EqualTo(expected));
+                Assert.That(resultIdempotent, Is.EqualTo(expected));
+            });
         }
 
         [Test]
@@ -87,8 +96,11 @@
             var result = cache.GetPhysicalQueueName(destination);
             var resultIdempotent = cache.GetPhysicalQueueName(result);
 
-            Assert.That(result, Is.EqualTo(expected));
-            Assert.That(resultIdempotent, Is.EqualTo(expected));
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.EqualTo(expected));
+                Assert.That(resultIdempotent, Is.EqualTo(expected));
+            });
         }
 
         [Test]

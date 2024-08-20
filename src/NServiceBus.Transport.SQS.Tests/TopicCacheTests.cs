@@ -49,9 +49,12 @@ namespace NServiceBus.Transport.SQS.Tests
             var result1 = await cache.GetTopicArn(typeof(Event));
             var result2 = await cache.GetTopicArn(typeof(Event));
 
-            Assert.That(result1, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
-            Assert.That(result2, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
-            Assert.That(snsClient.FindTopicRequests, Has.Count.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(result1, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
+                Assert.That(result2, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
+                Assert.That(snsClient.FindTopicRequests, Has.Count.EqualTo(1));
+            });
         }
 
         [Test]
@@ -69,9 +72,12 @@ namespace NServiceBus.Transport.SQS.Tests
             var result1 = await cache.GetTopicArn(typeof(Event));
             var result2 = await cache.GetTopicArn(typeof(Event));
 
-            Assert.That(result1, Is.Null);
-            Assert.That(result2, Is.Null);
-            Assert.That(snsClient.FindTopicRequests, Has.Count.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(result1, Is.Null);
+                Assert.That(result2, Is.Null);
+                Assert.That(snsClient.FindTopicRequests, Has.Count.EqualTo(1));
+            });
             snsClient.FindTopicRequests.Clear();
 
             await Task.Delay(500);
@@ -81,9 +87,12 @@ namespace NServiceBus.Transport.SQS.Tests
             result1 = await cache.GetTopicArn(typeof(Event));
             result2 = await cache.GetTopicArn(typeof(Event));
 
-            Assert.That(result1, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
-            Assert.That(result2, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
-            Assert.That(snsClient.FindTopicRequests, Has.Count.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(result1, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
+                Assert.That(result2, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
+                Assert.That(snsClient.FindTopicRequests, Has.Count.EqualTo(1));
+            });
         }
 
         [Test]
@@ -98,9 +107,12 @@ namespace NServiceBus.Transport.SQS.Tests
             var result1 = await cache.GetTopicArn(typeof(Event));
             var result2 = await cache.GetTopicArn(typeof(Event));
 
-            Assert.That(result1, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
-            Assert.That(result2, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
-            Assert.That(snsClient.FindTopicRequests, Has.Count.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(result1, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
+                Assert.That(result2, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
+                Assert.That(snsClient.FindTopicRequests, Has.Count.EqualTo(1));
+            });
             snsClient.FindTopicRequests.Clear();
 
             await Task.Delay(200);
@@ -108,9 +120,12 @@ namespace NServiceBus.Transport.SQS.Tests
             result1 = await cache.GetTopicArn(typeof(Event));
             result2 = await cache.GetTopicArn(typeof(Event));
 
-            Assert.That(result1, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
-            Assert.That(result2, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
-            Assert.That(snsClient.FindTopicRequests, Has.Count.EqualTo(0));
+            Assert.Multiple(() =>
+            {
+                Assert.That(result1, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
+                Assert.That(result2, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
+                Assert.That(snsClient.FindTopicRequests, Has.Count.EqualTo(0));
+            });
         }
 
         [Test]
@@ -151,9 +166,12 @@ namespace NServiceBus.Transport.SQS.Tests
             var result1 = await cache.GetTopic(typeof(Event));
             var result2 = await cache.GetTopic(typeof(Event));
 
-            Assert.That(result1!.TopicArn, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
-            Assert.That(result2!.TopicArn, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
-            Assert.That(snsClient.FindTopicRequests, Has.Count.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(result1!.TopicArn, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
+                Assert.That(result2!.TopicArn, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
+                Assert.That(snsClient.FindTopicRequests, Has.Count.EqualTo(1));
+            });
         }
 
         [Test]
@@ -171,9 +189,12 @@ namespace NServiceBus.Transport.SQS.Tests
             var result1 = await cache.GetTopic(typeof(Event));
             var result2 = await cache.GetTopic(typeof(Event));
 
-            Assert.That(result1, Is.Null);
-            Assert.That(result2, Is.Null);
-            Assert.That(snsClient.FindTopicRequests, Has.Count.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(result1, Is.Null);
+                Assert.That(result2, Is.Null);
+                Assert.That(snsClient.FindTopicRequests, Has.Count.EqualTo(1));
+            });
             snsClient.FindTopicRequests.Clear();
 
             await Task.Delay(500);
@@ -183,9 +204,12 @@ namespace NServiceBus.Transport.SQS.Tests
             result1 = await cache.GetTopic(typeof(Event));
             result2 = await cache.GetTopic(typeof(Event));
 
-            Assert.That(result1!.TopicArn, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
-            Assert.That(result2!.TopicArn, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
-            Assert.That(snsClient.FindTopicRequests, Has.Count.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(result1!.TopicArn, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
+                Assert.That(result2!.TopicArn, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
+                Assert.That(snsClient.FindTopicRequests, Has.Count.EqualTo(1));
+            });
         }
 
         [Test]
@@ -200,9 +224,12 @@ namespace NServiceBus.Transport.SQS.Tests
             var result1 = await cache.GetTopic(typeof(Event));
             var result2 = await cache.GetTopic(typeof(Event));
 
-            Assert.That(result1!.TopicArn, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
-            Assert.That(result2!.TopicArn, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
-            Assert.That(snsClient.FindTopicRequests, Has.Count.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(result1!.TopicArn, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
+                Assert.That(result2!.TopicArn, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
+                Assert.That(snsClient.FindTopicRequests, Has.Count.EqualTo(1));
+            });
             snsClient.FindTopicRequests.Clear();
 
             await Task.Delay(200);
@@ -210,9 +237,12 @@ namespace NServiceBus.Transport.SQS.Tests
             result1 = await cache.GetTopic(typeof(Event));
             result2 = await cache.GetTopic(typeof(Event));
 
-            Assert.That(result1!.TopicArn, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
-            Assert.That(result2!.TopicArn, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
-            Assert.That(snsClient.FindTopicRequests, Has.Count.EqualTo(0));
+            Assert.Multiple(() =>
+            {
+                Assert.That(result1!.TopicArn, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
+                Assert.That(result2!.TopicArn, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:PREFIXEvent"));
+                Assert.That(snsClient.FindTopicRequests, Has.Count.EqualTo(0));
+            });
         }
 
         [Test]

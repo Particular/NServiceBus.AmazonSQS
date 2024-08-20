@@ -62,8 +62,11 @@
                 TimeToBeReceived = ExpectedTtbr.ToString()
             };
 
-            Assert.That(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), Is.True, "TimeToBeReceived header is missing");
-            Assert.That(transportMessage.Headers[TransportHeaders.TimeToBeReceived], Is.EqualTo(ExpectedTtbr.ToString()), "TimeToBeReceived header does not match expected value.");
+            Assert.Multiple(() =>
+            {
+                Assert.That(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), Is.True, "TimeToBeReceived header is missing");
+                Assert.That(transportMessage.Headers[TransportHeaders.TimeToBeReceived], Is.EqualTo(ExpectedTtbr.ToString()), "TimeToBeReceived header does not match expected value.");
+            });
         }
 
         [Test]
@@ -109,8 +112,11 @@
                 ReplyToAddress = new TransportMessage.Address { Queue = ExpectedReplyToAddress }
             };
 
-            Assert.That(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), Is.True, "ReplyToAddress header is missing");
-            Assert.That(transportMessage.Headers[Headers.ReplyToAddress], Is.EqualTo(ExpectedReplyToAddress), "ReplyToAddress header does not match expected value.");
+            Assert.Multiple(() =>
+            {
+                Assert.That(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), Is.True, "ReplyToAddress header is missing");
+                Assert.That(transportMessage.Headers[Headers.ReplyToAddress], Is.EqualTo(ExpectedReplyToAddress), "ReplyToAddress header does not match expected value.");
+            });
         }
 
         [Test]
@@ -146,10 +152,13 @@
 
             var transportMessage = JsonSerializer.Deserialize<TransportMessage>(json);
 
-            Assert.That(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), Is.True, "TimeToBeReceived header is missing");
-            Assert.That(transportMessage.Headers[TransportHeaders.TimeToBeReceived], Is.EqualTo(ExpectedTtbr.ToString()), "TimeToBeReceived header does not match expected value.");
-            Assert.That(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), Is.True, "ReplyToAddress header is missing");
-            Assert.That(transportMessage.Headers[Headers.ReplyToAddress], Is.EqualTo(ExpectedReplyToAddress), "ReplyToAddress header does not match expected value.");
+            Assert.Multiple(() =>
+            {
+                Assert.That(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), Is.True, "TimeToBeReceived header is missing");
+                Assert.That(transportMessage.Headers[TransportHeaders.TimeToBeReceived], Is.EqualTo(ExpectedTtbr.ToString()), "TimeToBeReceived header does not match expected value.");
+                Assert.That(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), Is.True, "ReplyToAddress header is missing");
+                Assert.That(transportMessage.Headers[Headers.ReplyToAddress], Is.EqualTo(ExpectedReplyToAddress), "ReplyToAddress header does not match expected value.");
+            });
         }
 
         [Test]
@@ -167,10 +176,13 @@
 
             var transportMessage = JsonSerializer.Deserialize<TransportMessage>(json);
 
-            Assert.That(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), Is.False, "TimeToBeReceived header was found");
-            Assert.That(transportMessage.TimeToBeReceived, Is.EqualTo(TimeSpan.MaxValue.ToString()), "TimeToBeReceived does not match expected value.");
-            Assert.That(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), Is.False, "ReplyToAddress header was found");
-            Assert.That(transportMessage.ReplyToAddress, Is.Null, "ReplyToAddress was not null.");
+            Assert.Multiple(() =>
+            {
+                Assert.That(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), Is.False, "TimeToBeReceived header was found");
+                Assert.That(transportMessage.TimeToBeReceived, Is.EqualTo(TimeSpan.MaxValue.ToString()), "TimeToBeReceived does not match expected value.");
+                Assert.That(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), Is.False, "ReplyToAddress header was found");
+                Assert.That(transportMessage.ReplyToAddress, Is.Null, "ReplyToAddress was not null.");
+            });
         }
 
         const string ExpectedReplyToAddress = "TestReplyToAddress";

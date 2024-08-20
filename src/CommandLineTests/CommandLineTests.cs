@@ -28,8 +28,11 @@
 
             var (_, error, exitCode) = await Execute($"endpoint create {endpointName}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             await VerifyQueue(endpointName);
         }
@@ -42,8 +45,11 @@
             await Execute($"endpoint create {endpointName}");
             var (_, error, exitCode) = await Execute($"endpoint create {endpointName}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             await VerifyQueue(endpointName);
         }
@@ -53,8 +59,11 @@
         {
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             await VerifyQueue(EndpointName, prefix);
         }
@@ -65,8 +74,11 @@
             var customRetention = 60000;
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --retention {customRetention} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             await VerifyQueue(EndpointName, prefix, retentionPeriodInSeconds: customRetention);
         }
@@ -78,13 +90,19 @@
 
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.That(error, Is.EqualTo(string.Empty));
-            Assert.That(exitCode, Is.EqualTo(0));
+            Assert.Multiple(() =>
+            {
+                Assert.That(error, Is.EqualTo(string.Empty));
+                Assert.That(exitCode, Is.EqualTo(0));
+            });
 
             (_, error, exitCode) = await Execute($"endpoint add {EndpointName} large-message-support {bucketName}");
 
-            Assert.That(error, Is.EqualTo(string.Empty));
-            Assert.That(exitCode, Is.EqualTo(0));
+            Assert.Multiple(() =>
+            {
+                Assert.That(error, Is.EqualTo(string.Empty));
+                Assert.That(exitCode, Is.EqualTo(0));
+            });
 
             await VerifyBucket(bucketName);
         }
@@ -98,13 +116,19 @@
 
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.That(error, Is.EqualTo(string.Empty));
-            Assert.That(exitCode, Is.EqualTo(0));
+            Assert.Multiple(() =>
+            {
+                Assert.That(error, Is.EqualTo(string.Empty));
+                Assert.That(exitCode, Is.EqualTo(0));
+            });
 
             (_, error, exitCode) = await Execute($"endpoint add {EndpointName} large-message-support {bucketName} --key-prefix {keyPrefix}");
 
-            Assert.That(error, Is.EqualTo(string.Empty));
-            Assert.That(exitCode, Is.EqualTo(0));
+            Assert.Multiple(() =>
+            {
+                Assert.That(error, Is.EqualTo(string.Empty));
+                Assert.That(exitCode, Is.EqualTo(0));
+            });
 
             await VerifyBucket(bucketName);
             await VerifyLifecycleConfiguration(bucketName, keyPrefix: keyPrefix);
@@ -119,13 +143,19 @@
 
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.That(error, Is.EqualTo(string.Empty));
-            Assert.That(exitCode, Is.EqualTo(0));
+            Assert.Multiple(() =>
+            {
+                Assert.That(error, Is.EqualTo(string.Empty));
+                Assert.That(exitCode, Is.EqualTo(0));
+            });
 
             (_, error, exitCode) = await Execute($"endpoint add {EndpointName} large-message-support {bucketName} --expiration {expiration}");
 
-            Assert.That(error, Is.EqualTo(string.Empty));
-            Assert.That(exitCode, Is.EqualTo(0));
+            Assert.Multiple(() =>
+            {
+                Assert.That(error, Is.EqualTo(string.Empty));
+                Assert.That(exitCode, Is.EqualTo(0));
+            });
 
             await VerifyBucket(bucketName);
             await VerifyLifecycleConfiguration(bucketName, expiration: expiration);
@@ -136,13 +166,19 @@
         {
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             (_, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             await VerifyDelayDeliveryQueue(EndpointName, prefix);
         }
@@ -154,13 +190,19 @@
 
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             (_, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --retention {retention} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             await VerifyDelayDeliveryQueue(EndpointName, prefix, retentionPeriodInSeconds: retention);
         }
@@ -170,13 +212,19 @@
         {
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             var queueArn = await VerifyQueue(EndpointName, prefix);
             var topicArn = await VerifyTopic(EventType, prefix);
@@ -188,13 +236,19 @@
         {
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             var queueArn = await VerifyQueue(EndpointName, prefix);
             var topicArn = await VerifyTopic(EventType, prefix);
@@ -211,16 +265,22 @@
         {
             var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.That(output, Is.Not.Null);
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(output, Is.Not.Null);
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             (output, error, exitCode) = await Execute($"endpoint unsubscribe {EndpointName} {EventType} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
 
-            Assert.That(output, Does.Contain($"No topic detected for event type '{EventType}', please subscribe to the event type first."));
+                Assert.That(output, Does.Contain($"No topic detected for event type '{EventType}', please subscribe to the event type first."));
+            });
         }
 
         [Test]
@@ -228,16 +288,22 @@
         {
             var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.That(output, Is.Not.Null);
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(output, Is.Not.Null);
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             (output, error, exitCode) = await Execute($"endpoint list-policy {EndpointName} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
 
-            Assert.That(output, Is.Not.Null);
+                Assert.That(output, Is.Not.Null);
+            });
             Assert.That(output, Does.Contain("Statement"));
         }
 
@@ -246,18 +312,27 @@
         {
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} events --event-type {EventType} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             await VerifyPolicyContainsTopicFor(EndpointName, prefix, EventType);
         }
@@ -267,14 +342,20 @@
         {
             var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.That(output, Is.Not.Null);
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(output, Is.Not.Null);
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             (output, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} events --event-type {EventType} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             StringAssert.Contains($"No topic detected for event type '{EventType}', please subscribe to the event type first.", output);
         }
@@ -284,23 +365,35 @@
         {
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType2} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} events --event-type {EventType} --event-type {EventType2} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             await VerifyPolicyContainsTopicFor(EndpointName, prefix, EventType);
             await VerifyPolicyContainsTopicFor(EndpointName, prefix, EventType2);
@@ -311,13 +404,19 @@
         {
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --account-condition --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             await VerifyPolicyContainsAccountWildCard(EndpointName, prefix);
         }
@@ -327,13 +426,19 @@
         {
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --prefix-condition --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             await VerifyPolicyContainsPrefixWildCard(EndpointName, prefix);
         }
@@ -345,13 +450,19 @@
 
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --namespace-condition {ns} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             await VerifyPolicyContainsNamespaceWildCard(EndpointName, prefix, ns);
         }
@@ -361,28 +472,43 @@
         {
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType2} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} events --event-type {EventType} --event-type {EventType2} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --account-condition --remove-event-type {EventType} --remove-event-type {EventType2} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             await VerifyPolicyDoesNotContainTopicFor(EndpointName, prefix, EventType);
             await VerifyPolicyDoesNotContainTopicFor(EndpointName, prefix, EventType2);
@@ -393,13 +519,19 @@
         {
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             (_, error, exitCode) = await Execute($"endpoint subscribe {EndpointName} {EventType} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             var queueArn = await VerifyQueue(EndpointName, prefix);
             var topicArn = await VerifyTopic(EventType, prefix);
@@ -415,20 +547,29 @@
         {
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             (_, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             await VerifyDelayDeliveryQueue(EndpointName, prefix);
 
             (_, error, exitCode) = await Execute($"endpoint remove {EndpointName} delay-delivery-support --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             await VerifyDelayDeliveryQueueDeleted(EndpointName, prefix);
         }
@@ -440,20 +581,29 @@
 
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.That(error, Is.EqualTo(string.Empty));
-            Assert.That(exitCode, Is.EqualTo(0));
+            Assert.Multiple(() =>
+            {
+                Assert.That(error, Is.EqualTo(string.Empty));
+                Assert.That(exitCode, Is.EqualTo(0));
+            });
 
             (_, error, exitCode) = await Execute($"endpoint add {EndpointName} large-message-support {bucketName}");
 
-            Assert.That(error, Is.EqualTo(string.Empty));
-            Assert.That(exitCode, Is.EqualTo(0));
+            Assert.Multiple(() =>
+            {
+                Assert.That(error, Is.EqualTo(string.Empty));
+                Assert.That(exitCode, Is.EqualTo(0));
+            });
 
             await VerifyBucket(bucketName);
 
             (_, error, exitCode) = await Execute($"endpoint remove {EndpointName} large-message-support {bucketName}");
 
-            Assert.That(error == string.Empty, Is.True);
-            Assert.That(exitCode, Is.EqualTo(0));
+            Assert.Multiple(() =>
+            {
+                Assert.That(error == string.Empty, Is.True);
+                Assert.That(exitCode, Is.EqualTo(0));
+            });
 
             await VerifyBucket(bucketName);
         }
@@ -465,20 +615,29 @@
 
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.That(error, Is.EqualTo(string.Empty));
-            Assert.That(exitCode, Is.EqualTo(0));
+            Assert.Multiple(() =>
+            {
+                Assert.That(error, Is.EqualTo(string.Empty));
+                Assert.That(exitCode, Is.EqualTo(0));
+            });
 
             (_, error, exitCode) = await Execute($"endpoint add {EndpointName} large-message-support {bucketName}");
 
-            Assert.That(error, Is.EqualTo(string.Empty));
-            Assert.That(exitCode, Is.EqualTo(0));
+            Assert.Multiple(() =>
+            {
+                Assert.That(error, Is.EqualTo(string.Empty));
+                Assert.That(exitCode, Is.EqualTo(0));
+            });
 
             await VerifyBucket(bucketName);
 
             (_, error, exitCode) = await Execute($"endpoint remove {EndpointName} large-message-support {bucketName} --remove-shared-resources");
 
-            Assert.That(error == string.Empty, Is.True);
-            Assert.That(exitCode, Is.EqualTo(0));
+            Assert.Multiple(() =>
+            {
+                Assert.That(error == string.Empty, Is.True);
+                Assert.That(exitCode, Is.EqualTo(0));
+            });
 
             await VerifyBucketDeleted(bucketName);
         }
@@ -488,15 +647,21 @@
         {
             var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             await VerifyQueue(EndpointName, prefix);
 
             (_, error, exitCode) = await Execute($"endpoint delete {EndpointName} --prefix {prefix}");
 
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(error, Is.EqualTo(string.Empty));
+            });
 
             await VerifyQueueDeleted(EndpointName, prefix);
         }
@@ -569,8 +734,11 @@
                 QueueAttributeName.QueueArn
             ]).ConfigureAwait(false);
 
-            Assert.That(queueAttributesResponse.MessageRetentionPeriod, Is.EqualTo(retentionPeriodInSeconds));
-            Assert.That(queueAttributesResponse.DelaySeconds, Is.EqualTo(delayInSeconds));
+            Assert.Multiple(() =>
+            {
+                Assert.That(queueAttributesResponse.MessageRetentionPeriod, Is.EqualTo(retentionPeriodInSeconds));
+                Assert.That(queueAttributesResponse.DelaySeconds, Is.EqualTo(delayInSeconds));
+            });
 
             return queueAttributesResponse.QueueARN;
         }
@@ -731,8 +899,11 @@
             while (setLifeCycleConfig == null && backOff < MaximumBackoffInterval);
 
             Assert.That(setLifeCycleConfig, Is.Not.Null);
-            Assert.That(setLifeCycleConfig.Expiration.Days, Is.EqualTo(expiration));
-            Assert.That(((LifecyclePrefixPredicate)setLifeCycleConfig.Filter.LifecycleFilterPredicate).Prefix, Is.EqualTo(keyPrefix));
+            Assert.Multiple(() =>
+            {
+                Assert.That(setLifeCycleConfig.Expiration.Days, Is.EqualTo(expiration));
+                Assert.That(((LifecyclePrefixPredicate)setLifeCycleConfig.Filter.LifecycleFilterPredicate).Prefix, Is.EqualTo(keyPrefix));
+            });
         }
 
         async Task VerifySubscription(string topicArn, string queueArn)

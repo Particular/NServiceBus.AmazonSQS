@@ -84,8 +84,11 @@ namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
                            && c.MessageDrivenPubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents)
                 .Run(testCase.TestExecutionTimeout);
 
-            Assert.That(context.MessageDrivenPubSubSubscriberReceivedEventsCount, Is.EqualTo(testCase.NumberOfEvents));
-            Assert.That(context.NativePubSubSubscriberReceivedEventsCount, Is.EqualTo(testCase.NumberOfEvents));
+            Assert.Multiple(() =>
+            {
+                Assert.That(context.MessageDrivenPubSubSubscriberReceivedEventsCount, Is.EqualTo(testCase.NumberOfEvents));
+                Assert.That(context.NativePubSubSubscriberReceivedEventsCount, Is.EqualTo(testCase.NumberOfEvents));
+            });
         }
 
         static async Task PublishEvents(TestCase testCase, IMessageSession session, Context ctx)
