@@ -25,7 +25,7 @@
                 .Done(c => c.ReceiveCount >= 50)
                 .Run();
 
-            Assert.LessOrEqual(context.MaxConcurrency, 4, "The max concurrency was not used");
+            Assert.That(context.MaxConcurrency, Is.LessThanOrEqualTo(4), "The max concurrency was not used");
         }
 
         public class Context : ScenarioContext
