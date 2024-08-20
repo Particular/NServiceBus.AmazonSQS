@@ -432,7 +432,7 @@ namespace NServiceBus.Transport.SQS.Tests
             {
                 await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
             });
-            Assert.AreSame(amazonSqsException, exception);
+            Assert.That(exception, Is.SameAs(amazonSqsException));
         }
 
         [Test]
@@ -543,7 +543,7 @@ namespace NServiceBus.Transport.SQS.Tests
             {
                 await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
             });
-            Assert.AreSame(amazonSqsException, exception);
+            Assert.That(exception, Is.SameAs(amazonSqsException));
         }
 
         [Test]
