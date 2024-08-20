@@ -38,7 +38,7 @@ namespace NServiceBus.AcceptanceTests.Sending
             });
 
             Assert.That(getObjectResponse.ServerSideEncryptionCustomerMethod, Is.EqualTo(ServerSideEncryptionCustomerMethod.AES256));
-            Assert.IsNull(getObjectResponse.ServerSideEncryptionMethod);
+            Assert.That(getObjectResponse.ServerSideEncryptionMethod, Is.Null);
         }
 
         const int PayloadSize = 150 * 1024;

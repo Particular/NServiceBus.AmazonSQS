@@ -778,7 +778,7 @@
             }
             while (upToAHundredSubscriptions.NextToken != null && upToAHundredSubscriptions.Subscriptions.Count > 0);
 
-            Assert.IsNull(subscription);
+            Assert.That(subscription, Is.Null);
         }
 
         async Task VerifyTopicDeleted(string eventType, string prefix = null)
@@ -789,7 +789,7 @@
 
             var findTopicResponse = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
 
-            Assert.IsNull(findTopicResponse);
+            Assert.That(findTopicResponse, Is.Null);
         }
 
         async Task VerifyDelayDeliveryQueueDeleted(string queueName, string prefix = null, string suffix = null)
@@ -819,7 +819,7 @@
             }
             while (queueUrlResponse != null && backOff < MaximumBackoffInterval);
 
-            Assert.IsNull(queueUrlResponse);
+            Assert.That(queueUrlResponse, Is.Null);
         }
 
         async Task VerifyQueueDeleted(string queueName, string prefix = null)
@@ -848,7 +848,7 @@
             }
             while (queueUrlResponse != null && backOff < MaximumBackoffInterval);
 
-            Assert.IsNull(queueUrlResponse);
+            Assert.That(queueUrlResponse, Is.Null);
         }
 
         async Task VerifyBucketDeleted(string bucketName)

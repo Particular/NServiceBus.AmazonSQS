@@ -348,8 +348,8 @@ namespace NServiceBus.Transport.SQS.Tests
 
             Assert.That(firstEntry.MessageGroupId, Is.EqualTo(messageId));
             Assert.That(firstEntry.MessageDeduplicationId, Is.EqualTo(messageId));
-            Assert.IsNull(secondEntry.MessageGroupId);
-            Assert.IsNull(secondEntry.MessageDeduplicationId);
+            Assert.That(secondEntry.MessageGroupId, Is.Null);
+            Assert.That(secondEntry.MessageDeduplicationId, Is.Null);
         }
 
         [Test]

@@ -97,7 +97,7 @@
 
             var transportMessage = new TransportMessage(outgoingMessage, []);
 
-            Assert.IsNull(transportMessage.ReplyToAddress, "ReplyToAddress is not null");
+            Assert.That(transportMessage.ReplyToAddress, Is.Null, "ReplyToAddress is not null");
         }
 
         [Test]
@@ -170,7 +170,7 @@
             Assert.That(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), Is.False, "TimeToBeReceived header was found");
             Assert.That(transportMessage.TimeToBeReceived, Is.EqualTo(TimeSpan.MaxValue.ToString()), "TimeToBeReceived does not match expected value.");
             Assert.That(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), Is.False, "ReplyToAddress header was found");
-            Assert.IsNull(transportMessage.ReplyToAddress, "ReplyToAddress was not null.");
+            Assert.That(transportMessage.ReplyToAddress, Is.Null, "ReplyToAddress was not null.");
         }
 
         const string ExpectedReplyToAddress = "TestReplyToAddress";
