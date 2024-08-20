@@ -21,6 +21,13 @@ namespace NServiceBus.Transport.SQS.Tests
             mockSqsClient = new MockSqsClient();
         }
 
+        [TearDown]
+        public void TearDown()
+        {
+            cancellationTokenSource.Dispose();
+            mockSqsClient.Dispose();
+        }
+
         [Test]
         public void Initialize_delay_seconds_smaller_than_required_throws()
         {
@@ -520,9 +527,9 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.Multiple(() =>
             {
                 Assert.That(mockSqsClient.DeleteMessageRequestsSent, Has.Count.EqualTo(1));
-                Assert.That("FirstMessage", Is.Not.Empty, mockSqsClient.DeleteMessageRequestsSent.ElementAt(0).receiptHandle);
+                Assert.That(mockSqsClient.DeleteMessageRequestsSent.ElementAt(0).receiptHandle, Is.EqualTo("FirstMessage"));
+                Assert.That(mockSqsClient.DeleteMessageRequestsSent.ElementAt(0).queueUrl, Is.Not.Empty);
             });
-            Assert.That("FirstMessage", Is.Not.Empty, mockSqsClient.DeleteMessageRequestsSent.ElementAt(0).queueUrl);
         }
 
         [Test]

@@ -17,7 +17,7 @@ namespace NServiceBus.AcceptanceTests
             var namePrefixBackup = SetupFixture.NamePrefix;
             SetupFixture.AppendToNamePrefix(customization);
 
-            TestContext.WriteLine($"Customized name prefix: '{SetupFixture.NamePrefix}'");
+            TestContext.Out.WriteLine($"Customized name prefix: '{SetupFixture.NamePrefix}'");
 
             return new NamePrefixHandler(namePrefixBackup);
         }

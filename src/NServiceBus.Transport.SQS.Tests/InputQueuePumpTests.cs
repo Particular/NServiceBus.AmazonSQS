@@ -27,6 +27,13 @@ namespace NServiceBus.Transport.SQS.Tests
                 new SettingsHolder());
         }
 
+        [TearDown]
+        public void TearDown()
+        {
+            cancellationTokenSource.Dispose();
+            mockSqsClient.Dispose();
+        }
+
         async Task SetupInitializedPump(OnMessage onMessage = null)
         {
             await pump.Initialize(
@@ -50,7 +57,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             SpinWait.SpinUntil(() => mockSqsClient.ReceiveMessagesRequestsSent.Count > 0);
 
-            cancellationTokenSource.Cancel();
+            await cancellationTokenSource.CancelAsync();
 
             await pump.StopReceive();
 

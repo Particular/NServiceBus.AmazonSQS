@@ -28,6 +28,13 @@ namespace NServiceBus.Transport.SQS.Tests
             queueName = "fakeQueue";
         }
 
+        [TearDown]
+        public void TearDown()
+        {
+            sqsClient.Dispose();
+            snsClient.Dispose();
+        }
+
         TestableSubscriptionManager CreateNonBatchingSubscriptionManager()
         {
             return new TestableSubscriptionManager(

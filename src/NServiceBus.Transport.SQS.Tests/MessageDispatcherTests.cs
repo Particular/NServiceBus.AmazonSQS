@@ -359,13 +359,19 @@
             });
             if (wrapMessage)
             {
-                Assert.That(mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == longBodyMessageId).Message, Does.Contain($@"""Body"":"""",""S3BodyKey"":""{longBodyMessageUpload.Key}"));
-                Assert.That(mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == crazyLongMessageId).Message, Does.Contain($@"""Body"":"""",""S3BodyKey"":""{crazyLongMessageUpload.Key}"));
+                Assert.Multiple(() =>
+                {
+                    Assert.That(mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == longBodyMessageId).Message, Does.Contain($@"""Body"":"""",""S3BodyKey"":""{longBodyMessageUpload.Key}"));
+                    Assert.That(mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == crazyLongMessageId).Message, Does.Contain($@"""Body"":"""",""S3BodyKey"":""{crazyLongMessageUpload.Key}"));
+                });
             }
             else
             {
-                Assert.That(mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == longBodyMessageId).MessageAttributes[TransportHeaders.S3BodyKey].StringValue, Is.EqualTo(longBodyMessageUpload.Key));
-                Assert.AreEqual(crazyLongMessageUpload.Key, mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == crazyLongMessageId).MessageAttributes[TransportHeaders.S3BodyKey].StringValue);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == longBodyMessageId).MessageAttributes[TransportHeaders.S3BodyKey].StringValue, Is.EqualTo(longBodyMessageUpload.Key));
+                    Assert.That(mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == crazyLongMessageId).MessageAttributes[TransportHeaders.S3BodyKey].StringValue, Is.EqualTo(crazyLongMessageUpload.Key));
+                });
             }
         }
 
@@ -589,11 +595,13 @@
             {
                 Assert.That(mockSqsClient.RequestsSent.ElementAt(0).MessageAttributes[Headers.MessageId].StringValue, Is.EqualTo(firstMessageIdThatWillFail));
                 Assert.That(mockSqsClient.RequestsSent.ElementAt(1).MessageAttributes[Headers.MessageId].StringValue, Is.EqualTo(secondMessageIdThatWillFail));
-
-                Assert.That(mockSqsClient.BatchRequestsSent, Has.Count.EqualTo(2));
             });
-            Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue), Is.EquivalentTo(new[] { firstMessageIdThatWillFail, firstMessageThatWillBeSuccessful }));
-            CollectionAssert.AreEquivalent(new[] { secondMessageIdThatWillFail, secondMessageThatWillBeSuccessful }, mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue));
+            Assert.That(mockSqsClient.BatchRequestsSent, Has.Count.EqualTo(2));
+            Assert.Multiple(() =>
+            {
+                Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue), Is.EquivalentTo(new[] { firstMessageIdThatWillFail, firstMessageThatWillBeSuccessful }));
+                Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue), Is.EquivalentTo(new[] { secondMessageIdThatWillFail, secondMessageThatWillBeSuccessful }));
+            });
         }
 
         [Test]
@@ -678,11 +686,13 @@
             {
                 Assert.That(mockSnsClient.PublishedEvents.ElementAt(0).MessageAttributes[Headers.MessageId].StringValue, Is.EqualTo(firstMessageIdThatWillFail));
                 Assert.That(mockSnsClient.PublishedEvents.ElementAt(1).MessageAttributes[Headers.MessageId].StringValue, Is.EqualTo(secondMessageIdThatWillFail));
-
-                Assert.That(mockSnsClient.BatchRequestsPublished, Has.Count.EqualTo(2));
             });
-            Assert.That(mockSnsClient.BatchRequestsPublished.ElementAt(0).PublishBatchRequestEntries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue), Is.EquivalentTo(new[] { firstMessageIdThatWillFail, firstMessageThatWillBeSuccessful }));
-            CollectionAssert.AreEquivalent(new[] { secondMessageIdThatWillFail, secondMessageThatWillBeSuccessful }, mockSnsClient.BatchRequestsPublished.ElementAt(1).PublishBatchRequestEntries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue));
+            Assert.That(mockSnsClient.BatchRequestsPublished, Has.Count.EqualTo(2));
+            Assert.Multiple(() =>
+            {
+                Assert.That(mockSnsClient.BatchRequestsPublished.ElementAt(0).PublishBatchRequestEntries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue), Is.EquivalentTo(new[] { firstMessageIdThatWillFail, firstMessageThatWillBeSuccessful }));
+                Assert.That(mockSnsClient.BatchRequestsPublished.ElementAt(1).PublishBatchRequestEntries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue), Is.EquivalentTo(new[] { secondMessageIdThatWillFail, secondMessageThatWillBeSuccessful }));
+            });
         }
 
         [Test]
@@ -743,8 +753,8 @@
             else
             {
                 Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.ElementAt(0).MessageAttributes[TransportHeaders.S3BodyKey].StringValue, Is.EqualTo(firstUpload.Key));
-                Assert.AreEqual(secondUpload.Key, mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.ElementAt(0).MessageAttributes[TransportHeaders.S3BodyKey].StringValue);
-                Assert.AreEqual(thirdUpload.Key, mockSqsClient.BatchRequestsSent.ElementAt(2).Entries.ElementAt(0).MessageAttributes[TransportHeaders.S3BodyKey].StringValue);
+                Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.ElementAt(0).MessageAttributes[TransportHeaders.S3BodyKey].StringValue, Is.EqualTo(secondUpload.Key));
+                Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(2).Entries.ElementAt(0).MessageAttributes[TransportHeaders.S3BodyKey].StringValue, Is.EqualTo(thirdUpload.Key));
             }
         }
 
@@ -781,27 +791,36 @@
 
             await dispatcher.Dispatch(transportOperations, transportTransaction);
 
-            Assert.AreEqual(3, mockSqsClient.RequestsSent.Count);
-            Assert.AreEqual(3, mockS3Client.PutObjectRequestsSent.Count);
+            Assert.That(mockSqsClient.RequestsSent.Count, Is.EqualTo(3));
+            Assert.That(mockS3Client.PutObjectRequestsSent.Count, Is.EqualTo(3));
 
             var firstUpload = mockS3Client.PutObjectRequestsSent.ElementAt(0);
             var secondUpload = mockS3Client.PutObjectRequestsSent.ElementAt(1);
             var thirdUpload = mockS3Client.PutObjectRequestsSent.ElementAt(2);
 
-            Assert.AreEqual("someBucket", firstUpload.BucketName);
-            Assert.AreEqual("someBucket", secondUpload.BucketName);
-            Assert.AreEqual("someBucket", thirdUpload.BucketName);
+            Assert.Multiple(() =>
+            {
+                Assert.That(firstUpload.BucketName, Is.EqualTo("someBucket"));
+                Assert.That(secondUpload.BucketName, Is.EqualTo("someBucket"));
+                Assert.That(thirdUpload.BucketName, Is.EqualTo("someBucket"));
+            });
             if (wrapMessage)
             {
-                Assert.That(mockSqsClient.RequestsSent.ElementAt(0).MessageBody, Does.Contain($@"""Body"":"""",""S3BodyKey"":""{firstUpload.Key}"));
-                Assert.That(mockSqsClient.RequestsSent.ElementAt(1).MessageBody, Does.Contain($@"""Body"":"""",""S3BodyKey"":""{secondUpload.Key}"));
-                Assert.That(mockSqsClient.RequestsSent.ElementAt(2).MessageBody, Does.Contain($@"""Body"":"""",""S3BodyKey"":""{thirdUpload.Key}"));
+                Assert.Multiple(() =>
+                {
+                    Assert.That(mockSqsClient.RequestsSent.ElementAt(0).MessageBody, Does.Contain($@"""Body"":"""",""S3BodyKey"":""{firstUpload.Key}"));
+                    Assert.That(mockSqsClient.RequestsSent.ElementAt(1).MessageBody, Does.Contain($@"""Body"":"""",""S3BodyKey"":""{secondUpload.Key}"));
+                    Assert.That(mockSqsClient.RequestsSent.ElementAt(2).MessageBody, Does.Contain($@"""Body"":"""",""S3BodyKey"":""{thirdUpload.Key}"));
+                });
             }
             else
             {
-                Assert.AreEqual(firstUpload.Key, mockSqsClient.RequestsSent.ElementAt(0).MessageAttributes[TransportHeaders.S3BodyKey].StringValue);
-                Assert.AreEqual(secondUpload.Key, mockSqsClient.RequestsSent.ElementAt(1).MessageAttributes[TransportHeaders.S3BodyKey].StringValue);
-                Assert.AreEqual(thirdUpload.Key, mockSqsClient.RequestsSent.ElementAt(2).MessageAttributes[TransportHeaders.S3BodyKey].StringValue);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(mockSqsClient.RequestsSent.ElementAt(0).MessageAttributes[TransportHeaders.S3BodyKey].StringValue, Is.EqualTo(firstUpload.Key));
+                    Assert.That(mockSqsClient.RequestsSent.ElementAt(1).MessageAttributes[TransportHeaders.S3BodyKey].StringValue, Is.EqualTo(secondUpload.Key));
+                    Assert.That(mockSqsClient.RequestsSent.ElementAt(2).MessageAttributes[TransportHeaders.S3BodyKey].StringValue, Is.EqualTo(thirdUpload.Key));
+                });
             }
         }
 

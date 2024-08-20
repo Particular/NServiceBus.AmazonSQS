@@ -1055,11 +1055,15 @@
         [TearDown]
         public async Task TearDown()
         {
-            using (sqsClient)
-            using (snsClient)
-            using (s3Client)
+            try
             {
-                await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, prefix).ConfigureAwait(false);
+                await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, prefix);
+            }
+            finally
+            {
+                sqsClient?.Dispose();
+                snsClient?.Dispose();
+                s3Client?.Dispose();
             }
         }
 
