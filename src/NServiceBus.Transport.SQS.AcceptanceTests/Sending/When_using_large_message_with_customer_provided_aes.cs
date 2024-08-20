@@ -26,7 +26,7 @@ namespace NServiceBus.AcceptanceTests.Sending
                 .Done(c => c.ReceivedPayload != null)
                 .Run();
 
-            Assert.AreEqual(payloadToSend, context.ReceivedPayload, "The large payload should be handled correctly using the kms encrypted S3 bucket");
+            Assert.That(context.ReceivedPayload, Is.EqualTo(payloadToSend), "The large payload should be handled correctly using the kms encrypted S3 bucket");
 
             using var s3Client = ClientFactories.CreateS3Client();
             var getObjectResponse = await s3Client.GetObjectAsync(new GetObjectRequest
@@ -37,7 +37,7 @@ namespace NServiceBus.AcceptanceTests.Sending
                 ServerSideEncryptionCustomerProvidedKey = Base64Key,
             });
 
-            Assert.AreEqual(ServerSideEncryptionCustomerMethod.AES256, getObjectResponse.ServerSideEncryptionCustomerMethod);
+            Assert.That(getObjectResponse.ServerSideEncryptionCustomerMethod, Is.EqualTo(ServerSideEncryptionCustomerMethod.AES256));
             Assert.IsNull(getObjectResponse.ServerSideEncryptionMethod);
         }
 

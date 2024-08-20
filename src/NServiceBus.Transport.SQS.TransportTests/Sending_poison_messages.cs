@@ -97,8 +97,8 @@
             }
 
             Assert.NotNull(receiveMessageResponse);
-            Assert.AreEqual(1, receiveMessageResponse.Messages.Count);
-            Assert.AreEqual(UnwrappedAndNotRelevantPoisonMessageBody, receiveMessageResponse.Messages.Single().Body);
+            Assert.That(receiveMessageResponse.Messages.Count, Is.EqualTo(1));
+            Assert.That(receiveMessageResponse.Messages.Single().Body, Is.EqualTo(UnwrappedAndNotRelevantPoisonMessageBody));
         }
 
         const string UnwrappedAndNotRelevantPoisonMessageBody = "The body doesn't matter, this will be treated as an unwrapped message";

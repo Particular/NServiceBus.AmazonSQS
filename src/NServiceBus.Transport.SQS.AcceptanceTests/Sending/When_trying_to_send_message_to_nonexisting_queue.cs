@@ -29,9 +29,9 @@
             });
 
             Assert.That(exception.Message, Does.Contain(destination));
-            Assert.AreEqual(HttpStatusCode.BadRequest, exception.StatusCode);
-            Assert.AreEqual(ErrorType.Sender, exception.ErrorType);
-            Assert.AreEqual("AWS.SimpleQueueService.NonExistentQueue", exception.ErrorCode);
+            Assert.That(exception.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+            Assert.That(exception.ErrorType, Is.EqualTo(ErrorType.Sender));
+            Assert.That(exception.ErrorCode, Is.EqualTo("AWS.SimpleQueueService.NonExistentQueue"));
             Assert.That(exception.RequestId, Is.Not.Null.Or.Empty);
         }
 

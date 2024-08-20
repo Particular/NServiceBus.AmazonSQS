@@ -230,7 +230,7 @@ namespace NServiceBus.Transport.SQS.Tests
             cache.GetTopicName(typeof(Event));
             cache.GetTopicName(typeof(Event));
 
-            Assert.AreEqual(1, called);
+            Assert.That(called, Is.EqualTo(1));
         }
 
         static string TopicNameGenerator(Type eventType, string prefix) => $"{prefix}{eventType.Name}";

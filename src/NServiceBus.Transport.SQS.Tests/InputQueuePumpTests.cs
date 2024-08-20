@@ -88,9 +88,9 @@ namespace NServiceBus.Transport.SQS.Tests
             await pump.ProcessMessage(message, CancellationToken.None).ConfigureAwait(false);
 
             Assert.That(processed, Is.False);
-            Assert.AreEqual(1, mockSqsClient.RequestsSent.Count);
-            Assert.AreEqual(1, mockSqsClient.DeleteMessageRequestsSent.Count);
-            Assert.AreEqual(expectedReceiptHandle, mockSqsClient.DeleteMessageRequestsSent.Single().receiptHandle);
+            Assert.That(mockSqsClient.RequestsSent.Count, Is.EqualTo(1));
+            Assert.That(mockSqsClient.DeleteMessageRequestsSent.Count, Is.EqualTo(1));
+            Assert.That(mockSqsClient.DeleteMessageRequestsSent.Single().receiptHandle, Is.EqualTo(expectedReceiptHandle));
         }
 
         [Test]
@@ -136,8 +136,8 @@ namespace NServiceBus.Transport.SQS.Tests
             await pump.ProcessMessage(message, CancellationToken.None).ConfigureAwait(false);
 
             Assert.That(processed, Is.False);
-            Assert.AreEqual(1, mockSqsClient.DeleteMessageRequestsSent.Count);
-            Assert.AreEqual(expectedReceiptHandle, mockSqsClient.DeleteMessageRequestsSent.Single().receiptHandle);
+            Assert.That(mockSqsClient.DeleteMessageRequestsSent.Count, Is.EqualTo(1));
+            Assert.That(mockSqsClient.DeleteMessageRequestsSent.Single().receiptHandle, Is.EqualTo(expectedReceiptHandle));
         }
 
         [Test]
@@ -177,8 +177,8 @@ namespace NServiceBus.Transport.SQS.Tests
             await pump.ProcessMessage(message, CancellationToken.None).ConfigureAwait(false);
 
             Assert.That(processed, Is.True);
-            Assert.AreEqual(1, mockSqsClient.DeleteMessageRequestsSent.Count);
-            Assert.AreEqual(expectedReceiptHandle, mockSqsClient.DeleteMessageRequestsSent.Single().receiptHandle);
+            Assert.That(mockSqsClient.DeleteMessageRequestsSent.Count, Is.EqualTo(1));
+            Assert.That(mockSqsClient.DeleteMessageRequestsSent.Single().receiptHandle, Is.EqualTo(expectedReceiptHandle));
         }
 
         InputQueuePump pump;

@@ -22,7 +22,7 @@
                 .Done(c => c.ReceivedPayload != null)
                 .Run();
 
-            Assert.AreEqual(payloadToSend, context.ReceivedPayload, "The large payload should be handled correctly using the unencrypted S3 bucket");
+            Assert.That(context.ReceivedPayload, Is.EqualTo(payloadToSend), "The large payload should be handled correctly using the unencrypted S3 bucket");
 
             using var s3Client = ClientFactories.CreateS3Client();
 

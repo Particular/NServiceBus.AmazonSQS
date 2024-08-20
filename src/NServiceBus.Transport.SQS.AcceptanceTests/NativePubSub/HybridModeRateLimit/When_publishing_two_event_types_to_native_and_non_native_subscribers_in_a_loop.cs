@@ -109,9 +109,9 @@
                            && c.MessageDrivenPubSubSubscriberReceivedMySecondEventCount == testCase.NumberOfEvents)
                 .Run(testCase.TestExecutionTimeout);
 
-            Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedMyEventCount);
-            Assert.AreEqual(testCase.NumberOfEvents, context.NativePubSubSubscriberReceivedMyEventCount);
-            Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedMySecondEventCount);
+            Assert.That(context.MessageDrivenPubSubSubscriberReceivedMyEventCount, Is.EqualTo(testCase.NumberOfEvents));
+            Assert.That(context.NativePubSubSubscriberReceivedMyEventCount, Is.EqualTo(testCase.NumberOfEvents));
+            Assert.That(context.MessageDrivenPubSubSubscriberReceivedMySecondEventCount, Is.EqualTo(testCase.NumberOfEvents));
         }
 
         static async Task PublishEvents(TestCase testCase, IMessageSession session, Context ctx)

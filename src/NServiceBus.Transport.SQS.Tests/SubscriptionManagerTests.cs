@@ -102,7 +102,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
-            Assert.AreEqual(2, snsClient.SubscribeRequestsSent.Count);
+            Assert.That(snsClient.SubscribeRequestsSent.Count, Is.EqualTo(2));
         }
 
         [Test]
@@ -174,7 +174,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.SubscribeAll(new[] { new MessageMetadata(subscribedEventType) }, null);
 
-            Assert.AreEqual(1, sqsClient.SetAttributesRequestsSent.Count);
+            Assert.That(sqsClient.SetAttributesRequestsSent.Count, Is.EqualTo(1));
         }
 
         [Test]
@@ -186,10 +186,10 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
-            Assert.AreEqual(1, snsClient.SubscribeRequestsSent.Count);
+            Assert.That(snsClient.SubscribeRequestsSent.Count, Is.EqualTo(1));
             var subscribeRequest = snsClient.SubscribeRequestsSent[0];
-            Assert.AreEqual("arn:fakeQueue", subscribeRequest.Endpoint);
-            Assert.AreEqual("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event", subscribeRequest.TopicArn);
+            Assert.That(subscribeRequest.Endpoint, Is.EqualTo("arn:fakeQueue"));
+            Assert.That(subscribeRequest.TopicArn, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event"));
             CollectionAssert.AreEquivalent(new Dictionary<string, string>
             {
                 {"RawMessageDelivery", "true"}
@@ -207,8 +207,8 @@ namespace NServiceBus.Transport.SQS.Tests
             };
 
             Assert.DoesNotThrowAsync(async () => await manager.SubscribeAll(new[] { new MessageMetadata(typeof(Event)) }, null));
-            Assert.AreEqual(8, manager.Delays.Count);
-            Assert.AreEqual(44000, manager.Delays.Sum());
+            Assert.That(manager.Delays.Count, Is.EqualTo(8));
+            Assert.That(manager.Delays.Sum(), Is.EqualTo(44000));
         }
 
         [Test]
@@ -233,8 +233,8 @@ namespace NServiceBus.Transport.SQS.Tests
             };
 
             Assert.DoesNotThrowAsync(async () => await manager.SubscribeAll(new[] { new MessageMetadata(typeof(Event)) }, null));
-            Assert.AreEqual(7, manager.Delays.Count);
-            Assert.AreEqual(35000, manager.Delays.Sum());
+            Assert.That(manager.Delays.Count, Is.EqualTo(7));
+            Assert.That(manager.Delays.Sum(), Is.EqualTo(35000));
         }
 
         [Test]
