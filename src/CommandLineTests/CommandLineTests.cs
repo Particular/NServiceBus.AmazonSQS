@@ -211,7 +211,7 @@
         {
             var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.IsNotNull(output);
+            Assert.That(output, Is.Not.Null);
             Assert.That(exitCode, Is.EqualTo(0));
             Assert.That(error, Is.EqualTo(string.Empty));
 
@@ -228,7 +228,7 @@
         {
             var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.IsNotNull(output);
+            Assert.That(output, Is.Not.Null);
             Assert.That(exitCode, Is.EqualTo(0));
             Assert.That(error, Is.EqualTo(string.Empty));
 
@@ -237,7 +237,7 @@
             Assert.That(exitCode, Is.EqualTo(0));
             Assert.That(error, Is.EqualTo(string.Empty));
 
-            Assert.IsNotNull(output);
+            Assert.That(output, Is.Not.Null);
             Assert.That(output, Does.Contain("Statement"));
         }
 
@@ -267,7 +267,7 @@
         {
             var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
-            Assert.IsNotNull(output);
+            Assert.That(output, Is.Not.Null);
             Assert.That(exitCode, Is.EqualTo(0));
             Assert.That(error, Is.EqualTo(string.Empty));
 
@@ -583,7 +583,7 @@
 
             var findTopicResponse = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
 
-            Assert.IsNotNull(findTopicResponse.TopicArn);
+            Assert.That(findTopicResponse.TopicArn, Is.Not.Null);
 
             return findTopicResponse.TopicArn;
         }
@@ -706,7 +706,7 @@
             var listBucketsResponse = await s3Client.ListBucketsAsync(new ListBucketsRequest()).ConfigureAwait(false);
             var bucket = listBucketsResponse.Buckets.FirstOrDefault(x => string.Equals(x.BucketName, bucketName, StringComparison.InvariantCultureIgnoreCase));
 
-            Assert.IsNotNull(bucket);
+            Assert.That(bucket, Is.Not.Null);
 
             return bucket.BucketName;
         }
@@ -730,7 +730,7 @@
             }
             while (setLifeCycleConfig == null && backOff < MaximumBackoffInterval);
 
-            Assert.IsNotNull(setLifeCycleConfig);
+            Assert.That(setLifeCycleConfig, Is.Not.Null);
             Assert.That(setLifeCycleConfig.Expiration.Days, Is.EqualTo(expiration));
             Assert.That(((LifecyclePrefixPredicate)setLifeCycleConfig.Filter.LifecycleFilterPredicate).Prefix, Is.EqualTo(keyPrefix));
         }
@@ -755,7 +755,7 @@
             }
             while (upToAHundredSubscriptions.NextToken != null && upToAHundredSubscriptions.Subscriptions.Count > 0);
 
-            Assert.IsNotNull(subscription);
+            Assert.That(subscription, Is.Not.Null);
         }
 
         async Task VerifySubscriptionDeleted(string topicArn, string queueArn)
