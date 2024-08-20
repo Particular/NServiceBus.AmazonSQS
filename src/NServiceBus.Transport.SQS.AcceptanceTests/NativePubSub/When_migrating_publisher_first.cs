@@ -51,7 +51,7 @@
                 .Done(c => c.GotTheEvent)
                 .Run(TimeSpan.FromSeconds(60));
 
-            Assert.True(beforeMigration.GotTheEvent);
+            Assert.That(beforeMigration.GotTheEvent, Is.True);
 
             //Publisher migrated and in compatibility mode
             var publisherMigrated = await Scenario.Define<Context>()
@@ -83,7 +83,7 @@
                 .Done(c => c.GotTheEvent)
                 .Run(TimeSpan.FromSeconds(60));
 
-            Assert.True(publisherMigrated.GotTheEvent);
+            Assert.That(publisherMigrated.GotTheEvent, Is.True);
 
             //Subscriber migrated and in compatibility mode
             var subscriberMigratedRunSettings = new RunSettings
@@ -120,7 +120,7 @@
                 .Done(c => c.GotTheEvent)
                 .Run(subscriberMigratedRunSettings);
 
-            Assert.True(subscriberMigrated.GotTheEvent);
+            Assert.That(subscriberMigrated.GotTheEvent, Is.True);
 
             //Compatibility mode disabled in both publisher and subscriber
             var compatModeDisabled = await Scenario.Define<Context>()
@@ -132,7 +132,7 @@
                 .Done(c => c.GotTheEvent)
                 .Run(TimeSpan.FromSeconds(60));
 
-            Assert.True(compatModeDisabled.GotTheEvent);
+            Assert.That(compatModeDisabled.GotTheEvent, Is.True);
         }
 
         public class Context : ScenarioContext
