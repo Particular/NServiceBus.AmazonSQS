@@ -96,7 +96,7 @@
                 }
             }
 
-            Assert.NotNull(receiveMessageResponse);
+            Assert.That(receiveMessageResponse, Is.Not.Null);
             Assert.That(receiveMessageResponse.Messages.Count, Is.EqualTo(1));
             Assert.That(receiveMessageResponse.Messages.Single().Body, Is.EqualTo(UnwrappedAndNotRelevantPoisonMessageBody));
         }
