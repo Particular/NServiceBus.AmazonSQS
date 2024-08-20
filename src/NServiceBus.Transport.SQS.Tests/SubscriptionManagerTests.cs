@@ -50,7 +50,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
-            Assert.IsNotEmpty(snsClient.SubscribeRequestsSent);
+            Assert.That(snsClient.SubscribeRequestsSent, Is.Not.Empty);
         }
 
         [Test]
@@ -67,7 +67,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
-            Assert.IsNotEmpty(initialSubscribeRequests);
+            Assert.That(initialSubscribeRequests, Is.Not.Empty);
             Assert.That(snsClient.SubscribeRequestsSent, Is.Empty);
         }
 
@@ -86,7 +86,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
-            Assert.IsNotEmpty(initialSubscribeRequests);
+            Assert.That(initialSubscribeRequests, Is.Not.Empty);
             Assert.That(snsClient.SubscribeRequestsSent, Is.Empty);
         }
 

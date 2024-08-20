@@ -485,8 +485,8 @@ namespace NServiceBus.Transport.SQS.Tests
             await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
 
             Assert.That(mockSqsClient.DeleteMessageRequestsSent.Count, Is.EqualTo(1));
-            Assert.IsNotEmpty("FirstMessage", mockSqsClient.DeleteMessageRequestsSent.ElementAt(0).receiptHandle);
-            Assert.IsNotEmpty("FirstMessage", mockSqsClient.DeleteMessageRequestsSent.ElementAt(0).queueUrl);
+            Assert.That("FirstMessage", Is.Not.Empty, mockSqsClient.DeleteMessageRequestsSent.ElementAt(0).receiptHandle);
+            Assert.That("FirstMessage", Is.Not.Empty, mockSqsClient.DeleteMessageRequestsSent.ElementAt(0).queueUrl);
         }
 
         [Test]

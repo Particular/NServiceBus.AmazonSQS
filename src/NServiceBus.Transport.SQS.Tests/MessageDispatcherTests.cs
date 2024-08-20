@@ -50,7 +50,7 @@
 
             await dispatcher.Dispatch(transportOperations, transportTransaction);
 
-            Assert.IsNotEmpty(mockSqsClient.RequestsSent, "No requests sent");
+            Assert.That(mockSqsClient.RequestsSent, Is.Not.Empty, "No requests sent");
             var request = mockSqsClient.RequestsSent.First();
 
             Approver.Verify(request.MessageBody);
@@ -786,7 +786,7 @@
 
             await dispatcher.Dispatch(transportOperations, transportTransaction);
 
-            Assert.IsNotEmpty(mockSqsClient.RequestsSent, "No requests sent");
+            Assert.That(mockSqsClient.RequestsSent, Is.Not.Empty, "No requests sent");
             var request = mockSqsClient.RequestsSent.First();
 
             var bodyJson = JsonNode.Parse(request.MessageBody);
@@ -821,7 +821,7 @@
 
             await dispatcher.Dispatch(transportOperations, transportTransaction);
 
-            Assert.IsNotEmpty(mockSqsClient.RequestsSent, "No requests sent");
+            Assert.That(mockSqsClient.RequestsSent, Is.Not.Empty, "No requests sent");
             var request = mockSqsClient.RequestsSent.First();
 
             Approver.Verify(request);
@@ -855,7 +855,7 @@
 
             await dispatcher.Dispatch(transportOperations, transportTransaction);
 
-            Assert.IsNotEmpty(mockSqsClient.BatchRequestsSent, "No requests sent");
+            Assert.That(mockSqsClient.BatchRequestsSent, Is.Not.Empty, "No requests sent");
             var batch = mockSqsClient.BatchRequestsSent.First();
             var request = batch.Entries.First();
 
