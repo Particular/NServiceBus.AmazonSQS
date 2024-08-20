@@ -24,8 +24,11 @@
                 .Done(c => c.GotTheEvent)
                 .Run(TimeSpan.FromSeconds(30));
 
-            Assert.True(context.GotTheEvent);
-            Assert.AreEqual(payload, context.ReceivedPayload, "The payload should be handled correctly");
+            Assert.Multiple(() =>
+            {
+                Assert.That(context.GotTheEvent, Is.True);
+                Assert.That(context.ReceivedPayload, Is.EqualTo(payload), "The payload should be handled correctly");
+            });
         }
 
         public class Context : ScenarioContext

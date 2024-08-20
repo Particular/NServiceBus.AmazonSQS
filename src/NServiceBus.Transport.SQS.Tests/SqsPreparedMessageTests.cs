@@ -23,7 +23,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             message.CalculateSize();
 
-            Assert.AreEqual(expectedSize, message.Size);
+            Assert.That(message.Size, Is.EqualTo(expectedSize));
         }
 
         [Test]
@@ -37,7 +37,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             message.CalculateSize();
 
-            Assert.AreEqual(45, message.Size);
+            Assert.That(message.Size, Is.EqualTo(45));
         }
 
         [Test]
@@ -50,7 +50,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 MessageId = expectedMessageId
             };
 
-            Assert.AreEqual(expectedMessageId, message.MessageAttributes[Headers.MessageId].StringValue);
+            Assert.That(message.MessageAttributes[Headers.MessageId].StringValue, Is.EqualTo(expectedMessageId));
         }
     }
 }

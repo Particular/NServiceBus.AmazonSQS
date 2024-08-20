@@ -61,25 +61,25 @@ namespace NServiceBus.AcceptanceTests.Batching
 
             var logoutput = AggregateBatchLogOutput(context);
 
-            StringAssert.Contains("10/10", logoutput, "Should have used 10 batches for the batched message dispatch but didn't");
+            Assert.That(logoutput, Does.Contain("10/10"), "Should have used 10 batches for the batched message dispatch but didn't");
 
             foreach (var messageIdForBatching in listOfMessagesForBatching)
             {
-                StringAssert.Contains(messageIdForBatching, logoutput, $"{messageIdForBatching} not found in any of the batches. Output: {logoutput}");
+                Assert.That(logoutput, Does.Contain(messageIdForBatching), $"{messageIdForBatching} not found in any of the batches. Output: {logoutput}");
             }
 
             foreach (var messageWithCustomMessageId in listOfMessagesForBatchingWithCustomIds)
             {
-                StringAssert.Contains(messageWithCustomMessageId, logoutput, $"{messageWithCustomMessageId} not found in any of the batches. Output: {logoutput}");
+                Assert.That(logoutput, Does.Contain(messageWithCustomMessageId), $"{messageWithCustomMessageId} not found in any of the batches. Output: {logoutput}");
             }
 
             foreach (var messageIdForImmediateDispatch in listOfMessagesForImmediateDispatch)
             {
-                StringAssert.DoesNotContain(messageIdForImmediateDispatch, logoutput, $"{messageIdForImmediateDispatch} should not be included in any of the batches. Output: {logoutput}");
+                Assert.That(logoutput, Does.Not.Contain(messageIdForImmediateDispatch), $"{messageIdForImmediateDispatch} should not be included in any of the batches. Output: {logoutput}");
             }
 
             // let's see how many times this actually happens
-            StringAssert.DoesNotContain("Republished message with MessageId", logoutput, "Messages have been retried but they shouldn't have been");
+            Assert.That(logoutput, Does.Not.Contain("Republished message with MessageId"), "Messages have been retried but they shouldn't have been");
         }
 
         static string AggregateBatchLogOutput(ScenarioContext context)

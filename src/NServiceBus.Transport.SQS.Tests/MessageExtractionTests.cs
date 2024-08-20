@@ -219,10 +219,13 @@
 
             var transportMessage = InputQueuePump.ExtractTransportMessage(message, messageId);
             Assert.That(transportMessage, Is.Not.Null, "TransportMessage should be set");
-            Assert.That(transportMessage.Headers, Is.Not.Null, "Headers should be set");
+            Assert.Multiple(() =>
+            {
+                Assert.That(transportMessage.Headers, Is.Not.Null, "Headers should be set");
 
-            Assert.That(transportMessage.Body, Is.EqualTo(expectedTransportMessage.Body), "Body is not set correctly");
-            Assert.That(transportMessage.S3BodyKey, Is.EqualTo(expectedTransportMessage.S3BodyKey), "S3 Body Key is not set correctly");
+                Assert.That(transportMessage.Body, Is.EqualTo(expectedTransportMessage.Body), "Body is not set correctly");
+                Assert.That(transportMessage.S3BodyKey, Is.EqualTo(expectedTransportMessage.S3BodyKey), "S3 Body Key is not set correctly");
+            });
             // TODO: Handle ReplyToAddress and TimeToBeReceived
             //Assert.That(transportMessage.ReplyToAddress)
             //Assert.That(transportMessage.TimeToBeReceived)

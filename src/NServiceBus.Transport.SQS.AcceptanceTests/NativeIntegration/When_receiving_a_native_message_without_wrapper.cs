@@ -36,7 +36,7 @@
                 .Done(c => c.MessageReceived != null)
                 .Run();
 
-            Assert.AreEqual("Hello!", context.MessageReceived);
+            Assert.That(context.MessageReceived, Is.EqualTo("Hello!"));
         }
 
         [Test]
@@ -60,7 +60,7 @@
                 .Done(c => c.MessageReceived != null)
                 .Run();
 
-            Assert.AreEqual("Hello!", context.MessageReceived);
+            Assert.That(context.MessageReceived, Is.EqualTo("Hello!"));
         }
 
         [Test]
@@ -86,7 +86,7 @@
                 .Done(c => c.MessageReceived != null)
                 .Run();
 
-            Assert.AreEqual("Hello!", context.MessageReceived);
+            Assert.That(context.MessageReceived, Is.EqualTo("Hello!"));
         }
 
         string GetHeaders(string s3Key = null, string messageId = null)

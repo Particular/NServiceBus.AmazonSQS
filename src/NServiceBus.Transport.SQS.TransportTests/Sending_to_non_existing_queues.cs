@@ -18,7 +18,7 @@
 
             var exception = Assert.CatchAsync(async () => await SendMessage(nonExistingQueueName));
 
-            StringAssert.Contains(nonExistingQueueName, exception!.ToString());
+            Assert.That(exception!.ToString(), Does.Contain(nonExistingQueueName));
         }
     }
 }

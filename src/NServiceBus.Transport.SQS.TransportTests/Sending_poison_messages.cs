@@ -55,8 +55,11 @@
 
             await CheckErrorQueue(ErrorQueueName, cancellationTokenSource.Token);
 
-            Assert.False(onErrorCalled, "Poison message should not invoke onError");
-            Assert.False(onMessageCalled, "Poison message should not invoke onMessage");
+            Assert.Multiple(() =>
+            {
+                Assert.That(onErrorCalled, Is.False, "Poison message should not invoke onError");
+                Assert.That(onMessageCalled, Is.False, "Poison message should not invoke onMessage");
+            });
         }
 
         static async Task<string> GetQueueUrl(IAmazonSQS sqsClient, string inputQueueName)
@@ -96,9 +99,9 @@
                 }
             }
 
-            Assert.NotNull(receiveMessageResponse);
-            Assert.AreEqual(1, receiveMessageResponse.Messages.Count);
-            Assert.AreEqual(UnwrappedAndNotRelevantPoisonMessageBody, receiveMessageResponse.Messages.Single().Body);
+            Assert.That(receiveMessageResponse, Is.Not.Null);
+            Assert.That(receiveMessageResponse.Messages, Has.Count.EqualTo(1));
+            Assert.That(receiveMessageResponse.Messages.Single().Body, Is.EqualTo(UnwrappedAndNotRelevantPoisonMessageBody));
         }
 
         const string UnwrappedAndNotRelevantPoisonMessageBody = "The body doesn't matter, this will be treated as an unwrapped message";

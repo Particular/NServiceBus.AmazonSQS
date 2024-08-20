@@ -71,12 +71,12 @@
                 {
                     b.When(async (session, ctx) =>
                     {
-                        TestContext.WriteLine("Sending subscriptions");
+                        await TestContext.Out.WriteLineAsync("Sending subscriptions");
                         await Task.WhenAll(
                             session.Subscribe<MyEvent>(),
                             session.Subscribe<MySecondEvent>()
                         );
-                        TestContext.WriteLine("Subscriptions sent");
+                        await TestContext.Out.WriteLineAsync("Subscriptions sent");
                     });
                 })
                 .WithEndpoint<NativePubSubSubscriber>(b =>
@@ -105,9 +105,12 @@
                            && c.MessageDrivenPubSubSubscriberReceivedMySecondEventCount == testCase.NumberOfEvents)
                 .Run(testCase.TestExecutionTimeout);
 
-            Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedMyEventCount);
-            Assert.AreEqual(testCase.NumberOfEvents, context.NativePubSubSubscriberReceivedMyEventCount);
-            Assert.AreEqual(testCase.NumberOfEvents, context.MessageDrivenPubSubSubscriberReceivedMySecondEventCount);
+            Assert.Multiple(() =>
+            {
+                Assert.That(context.MessageDrivenPubSubSubscriberReceivedMyEventCount, Is.EqualTo(testCase.NumberOfEvents));
+                Assert.That(context.NativePubSubSubscriberReceivedMyEventCount, Is.EqualTo(testCase.NumberOfEvents));
+                Assert.That(context.MessageDrivenPubSubSubscriberReceivedMySecondEventCount, Is.EqualTo(testCase.NumberOfEvents));
+            });
         }
 
         class Context : ScenarioContext
@@ -148,7 +151,7 @@
 
                     c.OnEndpointSubscribed<Context>((s, context) =>
                     {
-                        TestContext.WriteLine($"Received subscription message {s.MessageType} from {s.SubscriberEndpoint}.");
+                        TestContext.Out.WriteLine($"Received subscription message {s.MessageType} from {s.SubscriberEndpoint}.");
                         if (!s.SubscriberEndpoint.Contains(Conventions.EndpointNamingConvention(typeof(MessageDrivenPubSubSubscriber))))
                         {
                             return;
@@ -164,7 +167,7 @@
                             context.SubscribedMessageDrivenToMySecondEvent = true;
                         }
 
-                        TestContext.WriteLine($"Subscription message processed.");
+                        TestContext.Out.WriteLine($"Subscription message processed.");
                     });
                 }).IncludeType<TestingInMemorySubscriptionPersistence>();
 

@@ -29,7 +29,7 @@
                 .Done(c => c.MessageReceived != null)
                 .Run();
 
-            Assert.AreEqual("Hello!", context.MessageReceived);
+            Assert.That(context.MessageReceived, Is.EqualTo("Hello!"));
         }
 
         [Test]
@@ -49,7 +49,7 @@
                 .Done(c => c.MessageReceived != null)
                 .Run();
 
-            Assert.AreEqual("Hello!", context.MessageReceived);
+            Assert.That(context.MessageReceived, Is.EqualTo("Hello!"));
         }
 
         static async Task UploadMessageBodyToS3(string key)

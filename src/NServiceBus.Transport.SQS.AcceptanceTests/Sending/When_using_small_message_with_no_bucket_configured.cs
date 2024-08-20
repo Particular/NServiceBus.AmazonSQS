@@ -22,7 +22,7 @@
                 .Done(c => c.ReceivedPayload != null)
                 .Run();
 
-            Assert.AreEqual(payloadToSend, context.ReceivedPayload, "Payload should be received");
+            Assert.That(context.ReceivedPayload, Is.EqualTo(payloadToSend), "Payload should be received");
         }
 
         public class Context : ScenarioContext

@@ -20,7 +20,7 @@
                 .Done(c => c.GotTheEvent)
                 .Run();
 
-            Assert.True(context.GotTheEvent);
+            Assert.That(context.GotTheEvent, Is.True);
         }
 
         public class Context : ScenarioContext

@@ -32,8 +32,11 @@
             var result = cache.GetPhysicalQueueName(destination);
             var resultIdempotent = cache.GetPhysicalQueueName(result);
 
-            Assert.AreEqual(expected, result);
-            Assert.AreEqual(expected, resultIdempotent);
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.EqualTo(expected));
+                Assert.That(resultIdempotent, Is.EqualTo(expected));
+            });
         }
 
         [Test]
@@ -48,8 +51,11 @@
             var result = cache.GetPhysicalQueueName(destination);
             var resultIdempotent = cache.GetPhysicalQueueName(result);
 
-            Assert.AreEqual(expected, result);
-            Assert.AreEqual(expected, resultIdempotent);
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.EqualTo(expected));
+                Assert.That(resultIdempotent, Is.EqualTo(expected));
+            });
         }
 
         [Test]
@@ -64,8 +70,11 @@
             var result = cache.GetPhysicalQueueName(destination);
             var resultIdempotent = cache.GetPhysicalQueueName(result);
 
-            Assert.AreEqual(expected, result);
-            Assert.AreEqual(expected, resultIdempotent);
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.EqualTo(expected));
+                Assert.That(resultIdempotent, Is.EqualTo(expected));
+            });
         }
 
         [Test]
@@ -87,8 +96,11 @@
             var result = cache.GetPhysicalQueueName(destination);
             var resultIdempotent = cache.GetPhysicalQueueName(result);
 
-            Assert.AreEqual(expected, result);
-            Assert.AreEqual(expected, resultIdempotent);
+            Assert.Multiple(() =>
+            {
+                Assert.That(result, Is.EqualTo(expected));
+                Assert.That(resultIdempotent, Is.EqualTo(expected));
+            });
         }
 
         [Test]
@@ -105,8 +117,8 @@
 
             await cache.GetQueueUrl("fakeQueueName");
 
-            Assert.IsEmpty(sqsClient.QueueUrlRequestsSent);
-            CollectionAssert.AreEqual(new List<string> { "PREFIXfakeQueueName" }, requestsSent);
+            Assert.That(sqsClient.QueueUrlRequestsSent, Is.Empty);
+            Assert.That(requestsSent, Is.EqualTo(new List<string> { "PREFIXfakeQueueName" }).AsCollection);
         }
 
         [Test]
@@ -125,8 +137,8 @@
 
             await cache.GetQueueArn("fakeQueueUrl");
 
-            Assert.IsEmpty(sqsClient.GetAttributeRequestsSent);
-            CollectionAssert.AreEqual(new List<string> { "fakeQueueUrl" }, requestsSent);
+            Assert.That(sqsClient.GetAttributeRequestsSent, Is.Empty);
+            Assert.That(requestsSent, Is.EqualTo(new List<string> { "fakeQueueUrl" }).AsCollection);
         }
 
         [Test]
@@ -140,7 +152,7 @@
 
             await cache.GetQueueUrl("fakeQueueName");
 
-            Assert.IsEmpty(sqsClient.QueueUrlRequestsSent);
+            Assert.That(sqsClient.QueueUrlRequestsSent, Is.Empty);
         }
     }
 }

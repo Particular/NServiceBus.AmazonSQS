@@ -65,8 +65,11 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await sut.Shutdown(CancellationToken.None);
 
-            Assert.That(mockSqsClient.DisposeInvoked, Is.EqualTo(disposeSqs));
-            Assert.That(mockSnsClient.DisposeInvoked, Is.EqualTo(disposeSns));
+            Assert.Multiple(() =>
+            {
+                Assert.That(mockSqsClient.DisposeInvoked, Is.EqualTo(disposeSqs));
+                Assert.That(mockSnsClient.DisposeInvoked, Is.EqualTo(disposeSns));
+            });
         }
 
         [Test]
@@ -95,9 +98,12 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await infra.Shutdown();
 
-            Assert.That(mockSqsClient.DisposeInvoked, Is.False);
-            Assert.That(mockSnsClient.DisposeInvoked, Is.False);
-            Assert.That(mockS3Client.DisposeInvoked, Is.False);
+            Assert.Multiple(() =>
+            {
+                Assert.That(mockSqsClient.DisposeInvoked, Is.False);
+                Assert.That(mockSnsClient.DisposeInvoked, Is.False);
+                Assert.That(mockS3Client.DisposeInvoked, Is.False);
+            });
         }
 
         [Test]
@@ -127,9 +133,12 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await infra.Shutdown();
 
-            Assert.That(mockSqsClient.DisposeInvoked, Is.True);
-            Assert.That(mockSnsClient.DisposeInvoked, Is.True);
-            Assert.That(mockS3Client.DisposeInvoked, Is.True);
+            Assert.Multiple(() =>
+            {
+                Assert.That(mockSqsClient.DisposeInvoked, Is.True);
+                Assert.That(mockSnsClient.DisposeInvoked, Is.True);
+                Assert.That(mockS3Client.DisposeInvoked, Is.True);
+            });
         }
     }
 }

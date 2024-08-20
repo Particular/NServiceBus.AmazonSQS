@@ -23,13 +23,16 @@ namespace NServiceBus.AcceptanceTests.Sending
                 .Done(c => c.ReceivedPayload != null)
                 .Run();
 
-            Assert.AreEqual(payloadToSend, context.ReceivedPayload, "The large payload should be handled correctly using the kms encrypted S3 bucket");
+            Assert.That(context.ReceivedPayload, Is.EqualTo(payloadToSend), "The large payload should be handled correctly using the kms encrypted S3 bucket");
 
             using var s3Client = ClientFactories.CreateS3Client();
             var getObjectResponse = await s3Client.GetObjectAsync(BucketName, $"{ConfigureEndpointSqsTransport.S3Prefix}/{context.MessageId}");
 
-            Assert.AreEqual(ServerSideEncryptionMethod.AES256, getObjectResponse.ServerSideEncryptionMethod);
-            Assert.AreEqual(ServerSideEncryptionCustomerMethod.None, getObjectResponse.ServerSideEncryptionCustomerMethod);
+            Assert.Multiple(() =>
+            {
+                Assert.That(getObjectResponse.ServerSideEncryptionMethod, Is.EqualTo(ServerSideEncryptionMethod.AES256));
+                Assert.That(getObjectResponse.ServerSideEncryptionCustomerMethod, Is.EqualTo(ServerSideEncryptionCustomerMethod.None));
+            });
         }
 
         const int PayloadSize = 150 * 1024;
