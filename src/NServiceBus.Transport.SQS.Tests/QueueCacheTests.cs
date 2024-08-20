@@ -118,7 +118,7 @@
             await cache.GetQueueUrl("fakeQueueName");
 
             Assert.That(sqsClient.QueueUrlRequestsSent, Is.Empty);
-            CollectionAssert.AreEqual(new List<string> { "PREFIXfakeQueueName" }, requestsSent);
+            Assert.That(requestsSent, Is.EqualTo(new List<string> { "PREFIXfakeQueueName" }).AsCollection);
         }
 
         [Test]
@@ -138,7 +138,7 @@
             await cache.GetQueueArn("fakeQueueUrl");
 
             Assert.That(sqsClient.GetAttributeRequestsSent, Is.Empty);
-            CollectionAssert.AreEqual(new List<string> { "fakeQueueUrl" }, requestsSent);
+            Assert.That(requestsSent, Is.EqualTo(new List<string> { "fakeQueueUrl" }).AsCollection);
         }
 
         [Test]

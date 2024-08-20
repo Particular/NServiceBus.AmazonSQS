@@ -35,7 +35,7 @@ namespace NServiceBus.Transport.SQS.Tests
             (var receivedBodyArray, bodyBuffer) = await transportMessage.RetrieveBody(messageId, null, arrayPool);
             var receivedBody = Encoding.UTF8.GetString(receivedBodyArray.ToArray());
 
-            CollectionAssert.AreEqual(receivedBodyArray.ToArray(), body);
+            Assert.That(body, Is.EqualTo(receivedBodyArray.ToArray()).AsCollection);
             Assert.That(receivedBody, Is.Null.Or.Empty);
         }
 

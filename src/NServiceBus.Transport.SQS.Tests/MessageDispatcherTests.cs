@@ -592,7 +592,7 @@
 
                 Assert.That(mockSqsClient.BatchRequestsSent, Has.Count.EqualTo(2));
             });
-            CollectionAssert.AreEquivalent(new[] { firstMessageIdThatWillFail, firstMessageThatWillBeSuccessful }, mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue));
+            Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue), Is.EquivalentTo(new[] { firstMessageIdThatWillFail, firstMessageThatWillBeSuccessful }));
             CollectionAssert.AreEquivalent(new[] { secondMessageIdThatWillFail, secondMessageThatWillBeSuccessful }, mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue));
         }
 
@@ -681,7 +681,7 @@
 
                 Assert.That(mockSnsClient.BatchRequestsPublished, Has.Count.EqualTo(2));
             });
-            CollectionAssert.AreEquivalent(new[] { firstMessageIdThatWillFail, firstMessageThatWillBeSuccessful }, mockSnsClient.BatchRequestsPublished.ElementAt(0).PublishBatchRequestEntries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue));
+            Assert.That(mockSnsClient.BatchRequestsPublished.ElementAt(0).PublishBatchRequestEntries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue), Is.EquivalentTo(new[] { firstMessageIdThatWillFail, firstMessageThatWillBeSuccessful }));
             CollectionAssert.AreEquivalent(new[] { secondMessageIdThatWillFail, secondMessageThatWillBeSuccessful }, mockSnsClient.BatchRequestsPublished.ElementAt(1).PublishBatchRequestEntries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue));
         }
 
