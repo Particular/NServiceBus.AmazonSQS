@@ -18,7 +18,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var batches = SqsPreparedMessageBatcher.Batch(preparedMessages);
 
-            Assert.IsEmpty(batches);
+            Assert.That(batches, Is.Empty);
         }
 
         [Test]

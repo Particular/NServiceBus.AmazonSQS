@@ -68,7 +68,7 @@ namespace NServiceBus.Transport.SQS.Tests
             await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
             Assert.IsNotEmpty(initialSubscribeRequests);
-            Assert.IsEmpty(snsClient.SubscribeRequestsSent);
+            Assert.That(snsClient.SubscribeRequestsSent, Is.Empty);
         }
 
         [Test]
@@ -87,7 +87,7 @@ namespace NServiceBus.Transport.SQS.Tests
             await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
             Assert.IsNotEmpty(initialSubscribeRequests);
-            Assert.IsEmpty(snsClient.SubscribeRequestsSent);
+            Assert.That(snsClient.SubscribeRequestsSent, Is.Empty);
         }
 
         [Test]
@@ -115,7 +115,7 @@ namespace NServiceBus.Transport.SQS.Tests
             await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
             CollectionAssert.AreEquivalent(new List<string> { "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event" }, snsClient.CreateTopicRequests);
-            Assert.IsEmpty(snsClient.FindTopicRequests);
+            Assert.That(snsClient.FindTopicRequests, Is.Empty);
         }
 
         [Test]
@@ -133,7 +133,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 "custom-topic-name",
                 "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event"
             }, snsClient.CreateTopicRequests);
-            Assert.IsEmpty(snsClient.FindTopicRequests);
+            Assert.That(snsClient.FindTopicRequests, Is.Empty);
         }
 
         [Test]
@@ -155,7 +155,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent",
                 "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-IEvent"
             }, snsClient.CreateTopicRequests);
-            Assert.IsEmpty(snsClient.FindTopicRequests);
+            Assert.That(snsClient.FindTopicRequests, Is.Empty);
         }
 
         // it is crucial to settle one consistent topology for all the topics determined when mapping is at play to avoid
@@ -246,7 +246,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.Unsubscribe(new MessageMetadata(eventType), null);
 
-            Assert.IsEmpty(snsClient.UnsubscribeRequests);
+            Assert.That(snsClient.UnsubscribeRequests, Is.Empty);
         }
 
         [Test]
@@ -267,7 +267,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.Unsubscribe(new MessageMetadata(eventType), null);
 
-            Assert.IsEmpty(snsClient.UnsubscribeRequests);
+            Assert.That(snsClient.UnsubscribeRequests, Is.Empty);
         }
 
         [Test]
@@ -311,7 +311,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.Unsubscribe(new MessageMetadata(eventType), null);
 
-            Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
+            Assert.That(sqsClient.SetAttributesRequestsSent, Is.Empty);
         }
 
         [Test]
@@ -387,7 +387,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.Unsubscribe(new MessageMetadata(unsubscribedEvent), null);
 
-            Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
+            Assert.That(sqsClient.SetAttributesRequestsSent, Is.Empty);
         }
 
         [Test]
@@ -461,7 +461,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.Unsubscribe(new MessageMetadata(unsubscribedEvent), null);
 
-            Assert.IsEmpty(sqsClient.SetAttributesRequestsSent);
+            Assert.That(sqsClient.SetAttributesRequestsSent, Is.Empty);
         }
 
         MockSqsClient sqsClient;

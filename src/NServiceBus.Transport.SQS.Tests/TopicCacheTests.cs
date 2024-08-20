@@ -26,7 +26,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await cache.GetTopicArn(typeof(Event));
 
-            Assert.IsEmpty(snsClient.FindTopicRequests);
+            Assert.That(snsClient.FindTopicRequests, Is.Empty);
             CollectionAssert.AreEqual(new List<string> { "PREFIXEvent" }, requestsSent);
         }
 
@@ -128,7 +128,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await cache.GetTopicArn(typeof(Event));
 
-            Assert.IsEmpty(snsClient.FindTopicRequests);
+            Assert.That(snsClient.FindTopicRequests, Is.Empty);
             CollectionAssert.AreEqual(new List<string> { "PREFIXEvent" }, requestsSent);
         }
 

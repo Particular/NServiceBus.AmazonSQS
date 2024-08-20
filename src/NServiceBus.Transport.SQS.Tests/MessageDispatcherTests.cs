@@ -119,7 +119,7 @@
 
             await dispatcher.Dispatch(transportOperations, transportTransaction);
 
-            Assert.IsEmpty(mockSqsClient.BatchRequestsSent);
+            Assert.That(mockSqsClient.BatchRequestsSent, Is.Empty);
             Assert.That(mockSqsClient.RequestsSent.Count, Is.EqualTo(2));
             Assert.That(mockSqsClient.RequestsSent.Select(t => t.QueueUrl), Is.EquivalentTo(new[]
             {
@@ -154,7 +154,7 @@
 
             await dispatcher.Dispatch(transportOperations, transportTransaction);
 
-            Assert.IsEmpty(mockSnsClient.BatchRequestsPublished);
+            Assert.That(mockSnsClient.BatchRequestsPublished, Is.Empty);
             Assert.That(mockSnsClient.PublishedEvents.Count, Is.EqualTo(2));
             Assert.That(mockSnsClient.PublishedEvents.Select(t => t.TopicArn), Is.EquivalentTo(new[]
             {
@@ -202,8 +202,8 @@
             await dispatcher.Dispatch(transportOperations, transportTransaction);
 
             Assert.That(mockSnsClient.BatchRequestsPublished.Count, Is.EqualTo(1));
-            Assert.IsEmpty(mockSqsClient.RequestsSent);
-            Assert.IsEmpty(mockSqsClient.BatchRequestsSent);
+            Assert.That(mockSqsClient.RequestsSent, Is.Empty);
+            Assert.That(mockSqsClient.BatchRequestsSent, Is.Empty);
         }
 
         [Test]
@@ -262,8 +262,8 @@
 
             await dispatcher.Dispatch(transportOperations, transportTransaction);
 
-            Assert.IsEmpty(mockSnsClient.PublishedEvents);
-            Assert.IsEmpty(mockSnsClient.CreateTopicRequests);
+            Assert.That(mockSnsClient.PublishedEvents, Is.Empty);
+            Assert.That(mockSnsClient.CreateTopicRequests, Is.Empty);
         }
 
         [Test]
@@ -290,7 +290,7 @@
 
             await dispatcher.Dispatch(transportOperations, transportTransaction);
 
-            Assert.IsEmpty(mockSnsClient.PublishedEvents);
+            Assert.That(mockSnsClient.PublishedEvents, Is.Empty);
         }
 
         [Test]
@@ -401,7 +401,7 @@
 
             await dispatcher.Dispatch(transportOperations, transportTransaction);
 
-            Assert.IsEmpty(mockSqsClient.RequestsSent);
+            Assert.That(mockSqsClient.RequestsSent, Is.Empty);
             Assert.That(mockSqsClient.BatchRequestsSent.Count, Is.EqualTo(2));
             Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(0).QueueUrl, Is.EqualTo("address1"));
             Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(1).QueueUrl, Is.EqualTo("address2"));
@@ -434,7 +434,7 @@
 
             await dispatcher.Dispatch(transportOperations, transportTransaction);
 
-            Assert.IsEmpty(mockSnsClient.PublishedEvents);
+            Assert.That(mockSnsClient.PublishedEvents, Is.Empty);
             Assert.That(mockSnsClient.BatchRequestsPublished.Count, Is.EqualTo(2));
             Assert.That(mockSnsClient.BatchRequestsPublished.ElementAt(0).TopicArn, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-MessageDispatcherTests-Event"));
             Assert.That(mockSnsClient.BatchRequestsPublished.ElementAt(1).TopicArn, Is.EqualTo("arn:aws:sns:us-west-2:123456789012:NServiceBus-Transport-SQS-Tests-MessageDispatcherTests-AnotherEvent"));

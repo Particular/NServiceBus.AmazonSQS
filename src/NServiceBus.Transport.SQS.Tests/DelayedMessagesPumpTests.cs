@@ -180,7 +180,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
 
-            Assert.IsEmpty(mockSqsClient.RequestsSent);
+            Assert.That(mockSqsClient.RequestsSent, Is.Empty);
             Assert.That(mockSqsClient.BatchRequestsSent.Count, Is.EqualTo(2));
             Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Count, Is.EqualTo(5));
             Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Count, Is.EqualTo(5));
@@ -225,7 +225,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
 
-            Assert.IsEmpty(mockSqsClient.DeleteMessageRequestsSent);
+            Assert.That(mockSqsClient.DeleteMessageRequestsSent, Is.Empty);
             Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.Count, Is.EqualTo(2));
             Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.Count, Is.EqualTo(5));
             Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(1).Entries.Count, Is.EqualTo(5));
@@ -273,7 +273,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
 
-            Assert.IsEmpty(mockSqsClient.RequestsSent);
+            Assert.That(mockSqsClient.RequestsSent, Is.Empty);
             Assert.That(mockSqsClient.BatchRequestsSent.Count, Is.EqualTo(2));
             Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Count, Is.EqualTo(5));
             Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Count, Is.EqualTo(5));
@@ -318,7 +318,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
 
-            Assert.IsEmpty(mockSqsClient.DeleteMessageRequestsSent);
+            Assert.That(mockSqsClient.DeleteMessageRequestsSent, Is.Empty);
             Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.Count, Is.EqualTo(2));
             Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.Count, Is.EqualTo(5));
             Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(1).Entries.Count, Is.EqualTo(5));
@@ -383,7 +383,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
 
-            Assert.IsEmpty(mockSqsClient.RequestsSent);
+            Assert.That(mockSqsClient.RequestsSent, Is.Empty);
             Assert.That(mockSqsClient.BatchRequestsSent.Count, Is.EqualTo(2));
             Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Count, Is.EqualTo(1));
             Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(0).QueueUrl, Is.EqualTo(FakeInputQueueQueueUrl));
