@@ -621,7 +621,7 @@
             var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
             var findTopicResponse = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
 
-            Assert.IsFalse(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(findTopicResponse.TopicArn))));
+            Assert.That(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(findTopicResponse.TopicArn))), Is.False);
         }
 
         async Task VerifyPolicyContainsAccountWildCard(string queueName, string prefix)
@@ -866,7 +866,7 @@
             }
             while (bucketExists && backOff < MaximumBackoffInterval);
 
-            Assert.IsFalse(bucketExists);
+            Assert.That(bucketExists, Is.False);
         }
 
         [SetUp]

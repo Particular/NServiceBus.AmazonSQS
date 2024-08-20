@@ -42,7 +42,7 @@
                 .Run();
 
             Assert.That(testContext.MessageAttributesFoundInNativeMessage, Is.Not.Null);
-            Assert.IsFalse(testContext.MessageAttributesFoundInNativeMessage.ContainsKey("MessageTypeFullName"));
+            Assert.That(testContext.MessageAttributesFoundInNativeMessage.ContainsKey("MessageTypeFullName"), Is.False);
             Assert.That(testContext.MessageAttributesFoundInNativeMessage.ContainsKey("SomethingRandom"));
             testContext.MessageAttributesFoundInNativeMessage.TryGetValue("SomethingRandom", out var randomAttribute);
             Assert.That(randomAttribute, Is.Not.Null);

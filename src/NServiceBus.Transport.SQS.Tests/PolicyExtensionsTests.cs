@@ -44,7 +44,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 topicNamePrefix: string.Empty,
                 sqsQueueArn: "arn:fakeQueue");
 
-            Assert.IsFalse(updated, "Policy was updated but shouldn't have been");
+            Assert.That(updated, Is.False, "Policy was updated but shouldn't have been");
             Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
@@ -324,7 +324,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 topicNamePrefix: string.Empty,
                 sqsQueueArn: "arn:fakeQueue");
 
-            Assert.IsFalse(updated, "Policy was updated but shouldn't have been");
+            Assert.That(updated, Is.False, "Policy was updated but shouldn't have been");
             Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
@@ -352,7 +352,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 topicNamePrefix: string.Empty,
                 sqsQueueArn: "arn:fakeQueue");
 
-            Assert.IsFalse(updated, "Policy was updated but shouldn't have been");
+            Assert.That(updated, Is.False, "Policy was updated but shouldn't have been");
             Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 
@@ -384,7 +384,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 topicNamePrefix: string.Empty,
                 sqsQueueArn: "arn:fakeQueue");
 
-            Assert.IsFalse(updated, "Policy was updated but shouldn't have been");
+            Assert.That(updated, Is.False, "Policy was updated but shouldn't have been");
             Approver.Verify(value: policy.ToJson(), PolicyScrubber.ScrubPolicy);
         }
 

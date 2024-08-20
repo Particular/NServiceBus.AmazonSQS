@@ -74,7 +74,7 @@
                 Headers = []
             };
 
-            Assert.IsFalse(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), "TimeToBeReceived header was populated");
+            Assert.That(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), Is.False, "TimeToBeReceived header was populated");
         }
 
         [Test]
@@ -122,7 +122,7 @@
                 ReplyToAddress = null
             };
 
-            Assert.IsFalse(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), "ReplyToAddress header was created");
+            Assert.That(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), Is.False, "ReplyToAddress header was created");
         }
 
         [Test]
@@ -167,9 +167,9 @@
 
             var transportMessage = JsonSerializer.Deserialize<TransportMessage>(json);
 
-            Assert.IsFalse(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), "TimeToBeReceived header was found");
+            Assert.That(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), Is.False, "TimeToBeReceived header was found");
             Assert.AreEqual(TimeSpan.MaxValue.ToString(), transportMessage.TimeToBeReceived, "TimeToBeReceived does not match expected value.");
-            Assert.IsFalse(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), "ReplyToAddress header was found");
+            Assert.That(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), Is.False, "ReplyToAddress header was found");
             Assert.IsNull(transportMessage.ReplyToAddress, "ReplyToAddress was not null.");
         }
 

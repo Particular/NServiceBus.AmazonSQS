@@ -87,7 +87,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await pump.ProcessMessage(message, CancellationToken.None).ConfigureAwait(false);
 
-            Assert.IsFalse(processed);
+            Assert.That(processed, Is.False);
             Assert.AreEqual(1, mockSqsClient.RequestsSent.Count);
             Assert.AreEqual(1, mockSqsClient.DeleteMessageRequestsSent.Count);
             Assert.AreEqual(expectedReceiptHandle, mockSqsClient.DeleteMessageRequestsSent.Single().receiptHandle);
@@ -135,7 +135,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await pump.ProcessMessage(message, CancellationToken.None).ConfigureAwait(false);
 
-            Assert.IsFalse(processed);
+            Assert.That(processed, Is.False);
             Assert.AreEqual(1, mockSqsClient.DeleteMessageRequestsSent.Count);
             Assert.AreEqual(expectedReceiptHandle, mockSqsClient.DeleteMessageRequestsSent.Single().receiptHandle);
         }
