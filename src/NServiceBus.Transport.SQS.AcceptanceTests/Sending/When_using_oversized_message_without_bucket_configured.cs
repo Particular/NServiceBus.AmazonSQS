@@ -22,7 +22,7 @@
                     .Run();
             });
 
-            Assert.That("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.", Is.EqualTo(exception.Message));
+            Assert.That(exception.Message, Is.EqualTo("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration."));
         }
 
         const int PayloadSize = 150 * 1024;
