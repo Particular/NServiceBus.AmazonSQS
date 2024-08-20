@@ -304,7 +304,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var batches = SqsPreparedMessageBatcher.Batch(preparedMessages);
 
-            Assert.AreNotEqual(messageId, batches.Single().BatchRequest.Entries.Single().Id);
+            Assert.That(batches.Single().BatchRequest.Entries.Single().Id, Is.Not.EqualTo(messageId));
         }
 
         [Test]

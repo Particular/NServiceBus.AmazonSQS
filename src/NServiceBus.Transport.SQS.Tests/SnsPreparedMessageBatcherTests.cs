@@ -322,7 +322,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var batches = SnsPreparedMessageBatcher.Batch(preparedMessages);
 
-            Assert.AreNotEqual(messageId, batches.Single().BatchRequest.PublishBatchRequestEntries.Single().Id);
+            Assert.That(batches.Single().BatchRequest.PublishBatchRequestEntries.Single().Id, Is.Not.EqualTo(messageId));
         }
 
         [Test]
