@@ -220,7 +220,7 @@
             Assert.That(exitCode, Is.EqualTo(0));
             Assert.That(error, Is.EqualTo(string.Empty));
 
-            Assert.That(output.Contains($"No topic detected for event type '{EventType}', please subscribe to the event type first."), Is.True);
+            Assert.That(output, Does.Contain($"No topic detected for event type '{EventType}', please subscribe to the event type first."));
         }
 
         [Test]
@@ -238,7 +238,7 @@
             Assert.That(error, Is.EqualTo(string.Empty));
 
             Assert.IsNotNull(output);
-            Assert.That(output.Contains("Statement"), Is.True);
+            Assert.That(output, Does.Contain("Statement"));
         }
 
         [Test]
