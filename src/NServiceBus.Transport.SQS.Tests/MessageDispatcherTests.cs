@@ -359,8 +359,8 @@
             });
             if (wrapMessage)
             {
-                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{longBodyMessageUpload.Key}", mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == longBodyMessageId).Message);
-                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{crazyLongMessageUpload.Key}", mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == crazyLongMessageId).Message);
+                Assert.That(mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == longBodyMessageId).Message, Does.Contain($@"""Body"":"""",""S3BodyKey"":""{longBodyMessageUpload.Key}"));
+                Assert.That(mockSnsClient.PublishedEvents.Single(pr => pr.MessageAttributes[Headers.MessageId].StringValue == crazyLongMessageId).Message, Does.Contain($@"""Body"":"""",""S3BodyKey"":""{crazyLongMessageUpload.Key}"));
             }
             else
             {
@@ -395,7 +395,7 @@
             var transportTransaction = new TransportTransaction();
 
             var exception = Assert.ThrowsAsync<QueueDoesNotExistException>(async () => await dispatcher.Dispatch(transportOperations, transportTransaction));
-            StringAssert.StartsWith("Destination 'address1' doesn't support delayed messages longer than", exception.Message);
+            Assert.That(exception.Message, Does.StartWith("Destination 'address1' doesn't support delayed messages longer than"));
         }
 
         [Test]
@@ -504,7 +504,7 @@
             var transportTransaction = new TransportTransaction();
 
             var exception = Assert.ThrowsAsync<QueueDoesNotExistException>(async () => await dispatcher.Dispatch(transportOperations, transportTransaction));
-            StringAssert.StartsWith("Unable to send batch '1/1'. Destination 'address1' doesn't support delayed messages longer than", exception.Message);
+            Assert.That(exception.Message, Does.StartWith("Unable to send batch '1/1'. Destination 'address1' doesn't support delayed messages longer than"));
         }
 
         [Test]
@@ -736,9 +736,9 @@
             });
             if (wrapMessage)
             {
-                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{firstUpload.Key}", mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.ElementAt(0).MessageBody);
-                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{secondUpload.Key}", mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.ElementAt(0).MessageBody);
-                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{thirdUpload.Key}", mockSqsClient.BatchRequestsSent.ElementAt(2).Entries.ElementAt(0).MessageBody);
+                Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.ElementAt(0).MessageBody, Does.Contain($@"""Body"":"""",""S3BodyKey"":""{firstUpload.Key}"));
+                Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.ElementAt(0).MessageBody, Does.Contain($@"""Body"":"""",""S3BodyKey"":""{secondUpload.Key}"));
+                Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(2).Entries.ElementAt(0).MessageBody, Does.Contain($@"""Body"":"""",""S3BodyKey"":""{thirdUpload.Key}"));
             }
             else
             {
@@ -793,9 +793,9 @@
             Assert.AreEqual("someBucket", thirdUpload.BucketName);
             if (wrapMessage)
             {
-                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{firstUpload.Key}", mockSqsClient.RequestsSent.ElementAt(0).MessageBody);
-                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{secondUpload.Key}", mockSqsClient.RequestsSent.ElementAt(1).MessageBody);
-                StringAssert.Contains($@"""Body"":"""",""S3BodyKey"":""{thirdUpload.Key}", mockSqsClient.RequestsSent.ElementAt(2).MessageBody);
+                Assert.That(mockSqsClient.RequestsSent.ElementAt(0).MessageBody, Does.Contain($@"""Body"":"""",""S3BodyKey"":""{firstUpload.Key}"));
+                Assert.That(mockSqsClient.RequestsSent.ElementAt(1).MessageBody, Does.Contain($@"""Body"":"""",""S3BodyKey"":""{secondUpload.Key}"));
+                Assert.That(mockSqsClient.RequestsSent.ElementAt(2).MessageBody, Does.Contain($@"""Body"":"""",""S3BodyKey"":""{thirdUpload.Key}"));
             }
             else
             {

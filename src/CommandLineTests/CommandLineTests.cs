@@ -357,7 +357,7 @@
                 Assert.That(error, Is.EqualTo(string.Empty));
             });
 
-            StringAssert.Contains($"No topic detected for event type '{EventType}', please subscribe to the event type first.", output);
+            Assert.That(output, Does.Contain($"No topic detected for event type '{EventType}', please subscribe to the event type first."));
         }
 
         [Test]
