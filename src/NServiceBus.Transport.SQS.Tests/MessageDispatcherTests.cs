@@ -122,7 +122,7 @@
             Assert.Multiple(() =>
             {
                 Assert.That(mockSqsClient.BatchRequestsSent, Is.Empty);
-                Assert.That(mockSqsClient.RequestsSent.Count, Is.EqualTo(2));
+                Assert.That(mockSqsClient.RequestsSent, Has.Count.EqualTo(2));
             });
             Assert.That(mockSqsClient.RequestsSent.Select(t => t.QueueUrl), Is.EquivalentTo(new[]
             {
@@ -160,7 +160,7 @@
             Assert.Multiple(() =>
             {
                 Assert.That(mockSnsClient.BatchRequestsPublished, Is.Empty);
-                Assert.That(mockSnsClient.PublishedEvents.Count, Is.EqualTo(2));
+                Assert.That(mockSnsClient.PublishedEvents, Has.Count.EqualTo(2));
             });
             Assert.That(mockSnsClient.PublishedEvents.Select(t => t.TopicArn), Is.EquivalentTo(new[]
             {
@@ -209,7 +209,7 @@
 
             Assert.Multiple(() =>
             {
-                Assert.That(mockSnsClient.BatchRequestsPublished.Count, Is.EqualTo(1));
+                Assert.That(mockSnsClient.BatchRequestsPublished, Has.Count.EqualTo(1));
                 Assert.That(mockSqsClient.RequestsSent, Is.Empty);
                 Assert.That(mockSqsClient.BatchRequestsSent, Is.Empty);
             });
@@ -246,8 +246,8 @@
 
             Assert.Multiple(() =>
             {
-                Assert.That(mockSnsClient.BatchRequestsPublished.Count, Is.EqualTo(1));
-                Assert.That(mockSqsClient.BatchRequestsSent.Count, Is.EqualTo(1));
+                Assert.That(mockSnsClient.BatchRequestsPublished, Has.Count.EqualTo(1));
+                Assert.That(mockSqsClient.BatchRequestsSent, Has.Count.EqualTo(1));
             });
         }
 
@@ -345,8 +345,8 @@
 
             Assert.Multiple(() =>
             {
-                Assert.That(mockSnsClient.PublishedEvents.Count, Is.EqualTo(2));
-                Assert.That(mockS3Client.PutObjectRequestsSent.Count, Is.EqualTo(2));
+                Assert.That(mockSnsClient.PublishedEvents, Has.Count.EqualTo(2));
+                Assert.That(mockS3Client.PutObjectRequestsSent, Has.Count.EqualTo(2));
             });
 
             var longBodyMessageUpload = mockS3Client.PutObjectRequestsSent.Single(por => por.Key == $"{keyPrefix}/{longBodyMessageId}");
@@ -425,7 +425,7 @@
             Assert.Multiple(() =>
             {
                 Assert.That(mockSqsClient.RequestsSent, Is.Empty);
-                Assert.That(mockSqsClient.BatchRequestsSent.Count, Is.EqualTo(2));
+                Assert.That(mockSqsClient.BatchRequestsSent, Has.Count.EqualTo(2));
             });
             Assert.Multiple(() =>
             {
@@ -464,7 +464,7 @@
             Assert.Multiple(() =>
             {
                 Assert.That(mockSnsClient.PublishedEvents, Is.Empty);
-                Assert.That(mockSnsClient.BatchRequestsPublished.Count, Is.EqualTo(2));
+                Assert.That(mockSnsClient.BatchRequestsPublished, Has.Count.EqualTo(2));
             });
             Assert.Multiple(() =>
             {
@@ -584,13 +584,13 @@
 
             await dispatcher.Dispatch(transportOperations, transportTransaction);
 
-            Assert.That(mockSqsClient.RequestsSent.Count, Is.EqualTo(2));
+            Assert.That(mockSqsClient.RequestsSent, Has.Count.EqualTo(2));
             Assert.Multiple(() =>
             {
                 Assert.That(mockSqsClient.RequestsSent.ElementAt(0).MessageAttributes[Headers.MessageId].StringValue, Is.EqualTo(firstMessageIdThatWillFail));
                 Assert.That(mockSqsClient.RequestsSent.ElementAt(1).MessageAttributes[Headers.MessageId].StringValue, Is.EqualTo(secondMessageIdThatWillFail));
 
-                Assert.That(mockSqsClient.BatchRequestsSent.Count, Is.EqualTo(2));
+                Assert.That(mockSqsClient.BatchRequestsSent, Has.Count.EqualTo(2));
             });
             CollectionAssert.AreEquivalent(new[] { firstMessageIdThatWillFail, firstMessageThatWillBeSuccessful }, mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue));
             CollectionAssert.AreEquivalent(new[] { secondMessageIdThatWillFail, secondMessageThatWillBeSuccessful }, mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue));
@@ -673,13 +673,13 @@
 
             await dispatcher.Dispatch(transportOperations, transportTransaction);
 
-            Assert.That(mockSnsClient.PublishedEvents.Count, Is.EqualTo(2));
+            Assert.That(mockSnsClient.PublishedEvents, Has.Count.EqualTo(2));
             Assert.Multiple(() =>
             {
                 Assert.That(mockSnsClient.PublishedEvents.ElementAt(0).MessageAttributes[Headers.MessageId].StringValue, Is.EqualTo(firstMessageIdThatWillFail));
                 Assert.That(mockSnsClient.PublishedEvents.ElementAt(1).MessageAttributes[Headers.MessageId].StringValue, Is.EqualTo(secondMessageIdThatWillFail));
 
-                Assert.That(mockSnsClient.BatchRequestsPublished.Count, Is.EqualTo(2));
+                Assert.That(mockSnsClient.BatchRequestsPublished, Has.Count.EqualTo(2));
             });
             CollectionAssert.AreEquivalent(new[] { firstMessageIdThatWillFail, firstMessageThatWillBeSuccessful }, mockSnsClient.BatchRequestsPublished.ElementAt(0).PublishBatchRequestEntries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue));
             CollectionAssert.AreEquivalent(new[] { secondMessageIdThatWillFail, secondMessageThatWillBeSuccessful }, mockSnsClient.BatchRequestsPublished.ElementAt(1).PublishBatchRequestEntries.Select(x => x.MessageAttributes[Headers.MessageId].StringValue));
@@ -720,8 +720,8 @@
 
             Assert.Multiple(() =>
             {
-                Assert.That(mockSqsClient.BatchRequestsSent.Count, Is.EqualTo(3));
-                Assert.That(mockS3Client.PutObjectRequestsSent.Count, Is.EqualTo(3));
+                Assert.That(mockSqsClient.BatchRequestsSent, Has.Count.EqualTo(3));
+                Assert.That(mockS3Client.PutObjectRequestsSent, Has.Count.EqualTo(3));
             });
 
             var firstUpload = mockS3Client.PutObjectRequestsSent.ElementAt(0);

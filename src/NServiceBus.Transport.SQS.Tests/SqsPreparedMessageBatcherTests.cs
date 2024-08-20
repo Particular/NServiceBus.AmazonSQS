@@ -86,7 +86,7 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.Multiple(() =>
             {
                 Assert.That(batches.Count(), Is.EqualTo(1));
-                Assert.That(batches.ElementAt(0).BatchRequest.Entries.Count, Is.EqualTo(10));
+                Assert.That(batches.ElementAt(0).BatchRequest.Entries, Has.Count.EqualTo(10));
             });
         }
 
@@ -117,8 +117,8 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.Multiple(() =>
             {
                 Assert.That(batches.Count(), Is.EqualTo(2));
-                Assert.That(batches.ElementAt(0).BatchRequest.Entries.Count, Is.EqualTo(10));
-                Assert.That(batches.ElementAt(1).BatchRequest.Entries.Count, Is.EqualTo(3));
+                Assert.That(batches.ElementAt(0).BatchRequest.Entries, Has.Count.EqualTo(10));
+                Assert.That(batches.ElementAt(1).BatchRequest.Entries, Has.Count.EqualTo(3));
             });
         }
 
@@ -183,13 +183,13 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.Multiple(() =>
             {
                 Assert.That(batches.Count(), Is.EqualTo(7));
-                Assert.That(batches.ElementAt(0).BatchRequest.Entries.Count, Is.EqualTo(1));
-                Assert.That(batches.ElementAt(1).BatchRequest.Entries.Count, Is.EqualTo(1));
-                Assert.That(batches.ElementAt(2).BatchRequest.Entries.Count, Is.EqualTo(4));
-                Assert.That(batches.ElementAt(3).BatchRequest.Entries.Count, Is.EqualTo(6));
-                Assert.That(batches.ElementAt(4).BatchRequest.Entries.Count, Is.EqualTo(10));
-                Assert.That(batches.ElementAt(5).BatchRequest.Entries.Count, Is.EqualTo(10));
-                Assert.That(batches.ElementAt(6).BatchRequest.Entries.Count, Is.EqualTo(10));
+                Assert.That(batches.ElementAt(0).BatchRequest.Entries, Has.Count.EqualTo(1));
+                Assert.That(batches.ElementAt(1).BatchRequest.Entries, Has.Count.EqualTo(1));
+                Assert.That(batches.ElementAt(2).BatchRequest.Entries, Has.Count.EqualTo(4));
+                Assert.That(batches.ElementAt(3).BatchRequest.Entries, Has.Count.EqualTo(6));
+                Assert.That(batches.ElementAt(4).BatchRequest.Entries, Has.Count.EqualTo(10));
+                Assert.That(batches.ElementAt(5).BatchRequest.Entries, Has.Count.EqualTo(10));
+                Assert.That(batches.ElementAt(6).BatchRequest.Entries, Has.Count.EqualTo(10));
             });
         }
 
@@ -254,13 +254,13 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.Multiple(() =>
             {
                 Assert.That(batches.Count(), Is.EqualTo(7));
-                Assert.That(batches.ElementAt(0).BatchRequest.Entries.Count, Is.EqualTo(1));
-                Assert.That(batches.ElementAt(1).BatchRequest.Entries.Count, Is.EqualTo(1));
-                Assert.That(batches.ElementAt(2).BatchRequest.Entries.Count, Is.EqualTo(4));
-                Assert.That(batches.ElementAt(3).BatchRequest.Entries.Count, Is.EqualTo(6));
-                Assert.That(batches.ElementAt(4).BatchRequest.Entries.Count, Is.EqualTo(10));
-                Assert.That(batches.ElementAt(5).BatchRequest.Entries.Count, Is.EqualTo(10));
-                Assert.That(batches.ElementAt(6).BatchRequest.Entries.Count, Is.EqualTo(10));
+                Assert.That(batches.ElementAt(0).BatchRequest.Entries, Has.Count.EqualTo(1));
+                Assert.That(batches.ElementAt(1).BatchRequest.Entries, Has.Count.EqualTo(1));
+                Assert.That(batches.ElementAt(2).BatchRequest.Entries, Has.Count.EqualTo(4));
+                Assert.That(batches.ElementAt(3).BatchRequest.Entries, Has.Count.EqualTo(6));
+                Assert.That(batches.ElementAt(4).BatchRequest.Entries, Has.Count.EqualTo(10));
+                Assert.That(batches.ElementAt(5).BatchRequest.Entries, Has.Count.EqualTo(10));
+                Assert.That(batches.ElementAt(6).BatchRequest.Entries, Has.Count.EqualTo(10));
             });
         }
 
@@ -305,10 +305,10 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.Multiple(() =>
             {
                 Assert.That(batches.Count(), Is.EqualTo(4));
-                Assert.That(batches.ElementAt(0).BatchRequest.Entries.Count, Is.EqualTo(10));
-                Assert.That(batches.ElementAt(1).BatchRequest.Entries.Count, Is.EqualTo(3));
-                Assert.That(batches.ElementAt(2).BatchRequest.Entries.Count, Is.EqualTo(10));
-                Assert.That(batches.ElementAt(3).BatchRequest.Entries.Count, Is.EqualTo(3));
+                Assert.That(batches.ElementAt(0).BatchRequest.Entries, Has.Count.EqualTo(10));
+                Assert.That(batches.ElementAt(1).BatchRequest.Entries, Has.Count.EqualTo(3));
+                Assert.That(batches.ElementAt(2).BatchRequest.Entries, Has.Count.EqualTo(10));
+                Assert.That(batches.ElementAt(3).BatchRequest.Entries, Has.Count.EqualTo(3));
             });
         }
 
@@ -413,11 +413,11 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var batches = SqsPreparedMessageBatcher.Batch(preparedMessages);
 
-            Assert.That(batches.Count, Is.EqualTo(2));
+            Assert.That(batches, Has.Count.EqualTo(2));
             Assert.Multiple(() =>
             {
-                Assert.That(batches[0].BatchRequest.Entries.Count, Is.EqualTo(TransportConstraints.MaximumItemsInBatch));
-                Assert.That(batches[1].BatchRequest.Entries.Count, Is.EqualTo(TransportConstraints.MaximumItemsInBatch));
+                Assert.That(batches[0].BatchRequest.Entries, Has.Count.EqualTo(TransportConstraints.MaximumItemsInBatch));
+                Assert.That(batches[1].BatchRequest.Entries, Has.Count.EqualTo(TransportConstraints.MaximumItemsInBatch));
             });
         }
 
@@ -435,12 +435,12 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var batches = SqsPreparedMessageBatcher.Batch(preparedMessages);
 
-            Assert.That(batches.Count, Is.EqualTo(3));
+            Assert.That(batches, Has.Count.EqualTo(3));
             Assert.Multiple(() =>
             {
-                Assert.That(batches[0].BatchRequest.Entries.Count, Is.EqualTo(TransportConstraints.MaximumItemsInBatch - 1));
-                Assert.That(batches[1].BatchRequest.Entries.Count, Is.EqualTo(TransportConstraints.MaximumItemsInBatch - 1));
-                Assert.That(batches[2].BatchRequest.Entries.Count, Is.EqualTo(2));
+                Assert.That(batches[0].BatchRequest.Entries, Has.Count.EqualTo(TransportConstraints.MaximumItemsInBatch - 1));
+                Assert.That(batches[1].BatchRequest.Entries, Has.Count.EqualTo(TransportConstraints.MaximumItemsInBatch - 1));
+                Assert.That(batches[2].BatchRequest.Entries, Has.Count.EqualTo(2));
             });
         }
 

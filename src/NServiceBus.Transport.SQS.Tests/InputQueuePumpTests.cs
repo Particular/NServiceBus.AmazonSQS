@@ -93,8 +93,8 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.Multiple(() =>
             {
                 Assert.That(processed, Is.False);
-                Assert.That(mockSqsClient.RequestsSent.Count, Is.EqualTo(1));
-                Assert.That(mockSqsClient.DeleteMessageRequestsSent.Count, Is.EqualTo(1));
+                Assert.That(mockSqsClient.RequestsSent, Has.Count.EqualTo(1));
+                Assert.That(mockSqsClient.DeleteMessageRequestsSent, Has.Count.EqualTo(1));
             });
             Assert.That(mockSqsClient.DeleteMessageRequestsSent.Single().receiptHandle, Is.EqualTo(expectedReceiptHandle));
         }
@@ -144,7 +144,7 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.Multiple(() =>
             {
                 Assert.That(processed, Is.False);
-                Assert.That(mockSqsClient.DeleteMessageRequestsSent.Count, Is.EqualTo(1));
+                Assert.That(mockSqsClient.DeleteMessageRequestsSent, Has.Count.EqualTo(1));
             });
             Assert.That(mockSqsClient.DeleteMessageRequestsSent.Single().receiptHandle, Is.EqualTo(expectedReceiptHandle));
         }
@@ -188,7 +188,7 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.Multiple(() =>
             {
                 Assert.That(processed, Is.True);
-                Assert.That(mockSqsClient.DeleteMessageRequestsSent.Count, Is.EqualTo(1));
+                Assert.That(mockSqsClient.DeleteMessageRequestsSent, Has.Count.EqualTo(1));
             });
             Assert.That(mockSqsClient.DeleteMessageRequestsSent.Single().receiptHandle, Is.EqualTo(expectedReceiptHandle));
         }
