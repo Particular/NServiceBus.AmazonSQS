@@ -62,7 +62,7 @@
                 TimeToBeReceived = ExpectedTtbr.ToString()
             };
 
-            Assert.IsTrue(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), "TimeToBeReceived header is missing");
+            Assert.That(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), Is.True, "TimeToBeReceived header is missing");
             Assert.AreEqual(ExpectedTtbr.ToString(), transportMessage.Headers[TransportHeaders.TimeToBeReceived], "TimeToBeReceived header does not match expected value.");
         }
 
@@ -109,7 +109,7 @@
                 ReplyToAddress = new TransportMessage.Address { Queue = ExpectedReplyToAddress }
             };
 
-            Assert.IsTrue(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), "ReplyToAddress header is missing");
+            Assert.That(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), Is.True, "ReplyToAddress header is missing");
             Assert.AreEqual(ExpectedReplyToAddress, transportMessage.Headers[Headers.ReplyToAddress], "ReplyToAddress header does not match expected value.");
         }
 
@@ -146,9 +146,9 @@
 
             var transportMessage = JsonSerializer.Deserialize<TransportMessage>(json);
 
-            Assert.IsTrue(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), "TimeToBeReceived header is missing");
+            Assert.That(transportMessage.Headers.ContainsKey(TransportHeaders.TimeToBeReceived), Is.True, "TimeToBeReceived header is missing");
             Assert.AreEqual(ExpectedTtbr.ToString(), transportMessage.Headers[TransportHeaders.TimeToBeReceived], "TimeToBeReceived header does not match expected value.");
-            Assert.IsTrue(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), "ReplyToAddress header is missing");
+            Assert.That(transportMessage.Headers.ContainsKey(Headers.ReplyToAddress), Is.True, "ReplyToAddress header is missing");
             Assert.AreEqual(ExpectedReplyToAddress, transportMessage.Headers[Headers.ReplyToAddress], "ReplyToAddress header does not match expected value.");
         }
 

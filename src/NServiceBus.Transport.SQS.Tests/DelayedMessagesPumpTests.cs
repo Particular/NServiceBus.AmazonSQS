@@ -124,12 +124,12 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await pump.Stop();
 
-            Assert.IsTrue(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MaxNumberOfMessages == 10), "MaxNumberOfMessages did not match");
-            Assert.IsTrue(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.QueueUrl == FakeDelayedMessagesFifoQueueUrl), "QueueUrl did not match");
-            Assert.IsTrue(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.WaitTimeSeconds == 20), "WaitTimeSeconds did not match");
-            Assert.IsTrue(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MessageSystemAttributeNames
-                .SequenceEqual(["MessageDeduplicationId", "SentTimestamp", "ApproximateFirstReceiveTimestamp", "ApproximateReceiveCount"])), "AttributeNames did not match");
-            Assert.IsTrue(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MessageAttributeNames.SequenceEqual(["All"])), "MessageAttributeNames did not match");
+            Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MaxNumberOfMessages == 10), Is.True, "MaxNumberOfMessages did not match");
+            Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.QueueUrl == FakeDelayedMessagesFifoQueueUrl), Is.True, "QueueUrl did not match");
+            Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.WaitTimeSeconds == 20), Is.True, "WaitTimeSeconds did not match");
+            Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MessageSystemAttributeNames
+                .SequenceEqual(["MessageDeduplicationId", "SentTimestamp", "ApproximateFirstReceiveTimestamp", "ApproximateReceiveCount"])), Is.True, "AttributeNames did not match");
+            Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MessageAttributeNames.SequenceEqual(["All"])), Is.True, "MessageAttributeNames did not match");
         }
 
         [Test]
@@ -184,7 +184,7 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.AreEqual(2, mockSqsClient.BatchRequestsSent.Count);
             Assert.AreEqual(5, mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Count);
             Assert.AreEqual(5, mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Count);
-            Assert.IsTrue(mockSqsClient.BatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeInputQueueQueueUrl));
+            Assert.That(mockSqsClient.BatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeInputQueueQueueUrl), Is.True);
         }
 
         [Test]
@@ -233,7 +233,7 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.AreEqual("Message-4", mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.ElementAt(4).ReceiptHandle);
             Assert.AreEqual("Message-5", mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(1).Entries.ElementAt(0).ReceiptHandle);
             Assert.AreEqual("Message-9", mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(1).Entries.ElementAt(4).ReceiptHandle);
-            Assert.IsTrue(mockSqsClient.DeleteMessageBatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeDelayedMessagesFifoQueueUrl));
+            Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeDelayedMessagesFifoQueueUrl), Is.True);
         }
 
         [Test]
@@ -277,7 +277,7 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.AreEqual(2, mockSqsClient.BatchRequestsSent.Count);
             Assert.AreEqual(5, mockSqsClient.BatchRequestsSent.ElementAt(0).Entries.Count);
             Assert.AreEqual(5, mockSqsClient.BatchRequestsSent.ElementAt(1).Entries.Count);
-            Assert.IsTrue(mockSqsClient.BatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeDelayedMessagesFifoQueueUrl));
+            Assert.That(mockSqsClient.BatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeDelayedMessagesFifoQueueUrl), Is.True);
         }
 
         [Test]
@@ -326,7 +326,7 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.AreEqual("Message-4", mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(0).Entries.ElementAt(4).ReceiptHandle);
             Assert.AreEqual("Message-5", mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(1).Entries.ElementAt(0).ReceiptHandle);
             Assert.AreEqual("Message-9", mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(1).Entries.ElementAt(4).ReceiptHandle);
-            Assert.IsTrue(mockSqsClient.DeleteMessageBatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeDelayedMessagesFifoQueueUrl));
+            Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeDelayedMessagesFifoQueueUrl), Is.True);
         }
 
         [Test]
