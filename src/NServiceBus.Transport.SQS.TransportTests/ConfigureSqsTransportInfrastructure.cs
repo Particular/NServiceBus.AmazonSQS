@@ -2,7 +2,9 @@
 using System.Threading.Tasks;
 using NServiceBus;
 using NServiceBus.AcceptanceTests.ScenarioDescriptors;
+using NServiceBus.Settings;
 using NServiceBus.Transport;
+using NServiceBus.Transport.SQS.Configure;
 using NServiceBus.Transport.SQS.Tests;
 using NServiceBus.TransportTests;
 using TransportTests;
@@ -34,14 +36,20 @@ public class ConfigureSqsTransportInfrastructure : IConfigureTransportInfrastruc
     }
 
     public Task<TransportInfrastructure> Configure(TransportDefinition transportDefinition, HostSettings hostSettings, QueueAddress inputQueueName,
-        string errorQueueName, CancellationToken cancellationToken) =>
-        transportDefinition.Initialize(hostSettings, new[]
-        {
-            new ReceiveSettings(inputQueueName.ToString(), inputQueueName, false, false, errorQueueName),
-        },
-        [
-            errorQueueName
-        ], cancellationToken);
+        string errorQueueName, CancellationToken cancellationToken)
+    {
+        var coreSettings = new SettingsHolder();
+        coreSettings.Set(SettingsKeys.MessageVisibilityTimeout, 2);
+        var settings = new HostSettings(hostSettings.Name, hostSettings.HostDisplayName, hostSettings.StartupDiagnostic,
+            hostSettings.CriticalErrorAction, hostSettings.SetupInfrastructure, coreSettings);
+        return transportDefinition.Initialize(settings, [
+                new ReceiveSettings(inputQueueName.ToString(), inputQueueName, false, false, errorQueueName)
+            ],
+            [
+                errorQueueName
+            ], cancellationToken);
+    }
+
 
     public Task Cleanup(CancellationToken cancellationToken) => Task.CompletedTask;
 }

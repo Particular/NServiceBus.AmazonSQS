@@ -32,12 +32,6 @@
 
   <ItemGroup Condition="'$(PkgNServiceBus_TransportTests_Sources)' != ''">
     <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\ExceptionExtensions.cs" />
-    <!-- See https://github.com/Particular/NServiceBus.AmazonSQS/issues/2425 -->
-    <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\When_starting_again.cs" />
-    <!-- The following tests currently fail on the CI build server. They are being excluded from the sources until they are fixed. -->
-    <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\When_multiple_messages_are_available_and_concurrency_is_increased_after_pump_started.cs" />
-    <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\When_multiple_messages_are_available_and_concurrency_is_increased_and_decreased_after_pump_started.cs" />
-    <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\When_multiple_messages_are_available_and_concurrency_is_lowered_after_pump_started.cs" />
-  </ItemGroup>
+ </ItemGroup>
 
 </Project>
