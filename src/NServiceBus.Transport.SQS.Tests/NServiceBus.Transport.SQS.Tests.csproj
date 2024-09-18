@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.7.402.12" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.403" />
     <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.400.21" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.400.21" />
     <PackageReference Include="AWSSDK.SQS" Version="3.7.400.21" />
