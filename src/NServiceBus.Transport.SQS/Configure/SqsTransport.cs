@@ -244,7 +244,7 @@
         public SqsTransport(bool enableDelayedDelivery)
             : base(TransportTransactionMode.ReceiveOnly, enableDelayedDelivery, true, true)
         {
-            DisableDelayedDelivery = true
+            DisableDelayedDelivery = true;
             sqsClient = DefaultClientFactories.SqsFactory();
             snsClient = DefaultClientFactories.SnsFactory();
         }
