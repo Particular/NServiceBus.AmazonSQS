@@ -1,12 +1,9 @@
 #nullable enable
-namespace NServiceBus.Transport.SQS.Experimental;
+namespace NServiceBus.Transport.SQS;
 
-using System;
-
-[Obsolete("This is an experimental setting")]
 public static class TransportOperationExt
 {
-    internal static string FlatHeadersKey = "FlatHeaders";
+    internal static string FlatHeadersKey = "NServiceBus.Transport.SQS.FlatHeaders";
 
     /// <summary>
     /// Unsupported setting to not wrap headers into a single property for sending native messages

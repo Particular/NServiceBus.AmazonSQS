@@ -377,7 +377,7 @@ namespace NServiceBus.Transport.SQS
             {
                 (preparedMessage.Body, var headers) = GetMessageBodyAndHeaders(transportOperation.Message);
 
-                var flatHeaders = transportOperation.Properties.ContainsKey(Experimental.TransportOperationExt.FlatHeadersKey);
+                var flatHeaders = transportOperation.Properties.ContainsKey(TransportOperationExt.FlatHeadersKey);
 
                 if (flatHeaders)
                 {
