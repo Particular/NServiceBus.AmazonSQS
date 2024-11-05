@@ -1,16 +1,16 @@
 ﻿namespace NServiceBus.AcceptanceTests.NativePubSub.HybridModeRateLimit
 {
-    using AcceptanceTesting;
-    using EndpointTemplates;
-    using Configuration.AdvancedExtensibility;
-    using Features;
-    using NServiceBus.Routing.MessageDrivenSubscriptions;
-    using NUnit.Framework;
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
+    using AcceptanceTesting;
+    using Configuration.AdvancedExtensibility;
+    using EndpointTemplates;
+    using Features;
+    using NServiceBus.Routing.MessageDrivenSubscriptions;
+    using NUnit.Framework;
     using Transport.SQS.Tests;
     using Conventions = AcceptanceTesting.Customization.Conventions;
 

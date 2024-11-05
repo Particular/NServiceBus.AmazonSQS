@@ -1,11 +1,11 @@
 ﻿namespace NServiceBus.AcceptanceTests.Policies
 {
     using System.Threading.Tasks;
+    using A;
     using AcceptanceTesting;
+    using B;
     using EndpointTemplates;
     using NUnit.Framework;
-    using A;
-    using B;
 
     public class When_subscribing_to_multiple_events_with_namespace_policy : NServiceBusAcceptanceTest
     {

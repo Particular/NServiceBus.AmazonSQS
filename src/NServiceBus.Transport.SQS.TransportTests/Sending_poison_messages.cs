@@ -5,9 +5,9 @@
     using System.Threading.Tasks;
     using Amazon.SQS;
     using Amazon.SQS.Model;
+    using NUnit.Framework;
     using Transport;
     using Transport.SQS;
-    using NUnit.Framework;
     using Transport.SQS.Tests;
 
     public class Sending_poison_messages : NServiceBusTransportTest
