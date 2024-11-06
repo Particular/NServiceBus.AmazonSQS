@@ -1,15 +1,13 @@
 #nullable enable
-namespace NServiceBus.Transport.SQS;
+namespace NServiceBus.Transport.SQS.Internal;
 
 using System;
 
 /// <summary>
 /// Extension methods for <see cref="TransportOperation"/>.
 /// </summary>
-public static class TransportOperationExt
+public static class TransportOperationExtensions
 {
-    internal static string FlatHeadersKey = "NServiceBus.Transport.SQS.FlatHeaders";
-
     /// <summary>
     /// Unsupported setting to not wrap headers into a single property for sending native messages
     /// </summary>
@@ -20,6 +18,6 @@ public static class TransportOperationExt
             throw new ArgumentNullException(nameof(instance));
         }
 
-        instance.Properties[FlatHeadersKey] = bool.TrueString;
+        instance.Properties[MessageDispatcher.FlatHeadersKey] = bool.TrueString;
     }
 }

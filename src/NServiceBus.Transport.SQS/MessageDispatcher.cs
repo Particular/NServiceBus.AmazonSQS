@@ -377,7 +377,7 @@ namespace NServiceBus.Transport.SQS
             {
                 (preparedMessage.Body, var headers) = GetMessageBodyAndHeaders(transportOperation.Message);
 
-                var flatHeaders = transportOperation.Properties.ContainsKey(TransportOperationExt.FlatHeadersKey);
+                var flatHeaders = transportOperation.Properties.ContainsKey(FlatHeadersKey);
 
                 if (flatHeaders)
                 {
@@ -583,5 +583,7 @@ namespace NServiceBus.Transport.SQS
         readonly QueueCache queueCache;
 
         static readonly ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
+
+        internal const string FlatHeadersKey = "NServiceBus.Transport.SQS.Internal.FlatHeaders";
     }
 }
