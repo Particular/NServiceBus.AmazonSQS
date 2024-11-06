@@ -1,6 +1,11 @@
 #nullable enable
 namespace NServiceBus.Transport.SQS;
 
+using System;
+
+/// <summary>
+/// Extension methods for <see cref="TransportOperation"/>.
+/// </summary>
 public static class TransportOperationExt
 {
     internal static string FlatHeadersKey = "NServiceBus.Transport.SQS.FlatHeaders";
@@ -10,6 +15,11 @@ public static class TransportOperationExt
     /// </summary>
     public static void UseFlatHeaders(this TransportOperation instance)
     {
+        if (instance == null)
+        {
+            throw new ArgumentNullException(nameof(instance));
+        }
+
         instance.Properties[FlatHeadersKey] = bool.TrueString;
     }
 }
