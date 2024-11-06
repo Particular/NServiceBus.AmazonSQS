@@ -1,6 +1,5 @@
 ﻿namespace NServiceBus.AcceptanceTests
 {
-    using ScenarioDescriptors;
     using System;
     using System.Threading.Tasks;
     using AcceptanceTesting.Customization;
@@ -9,6 +8,7 @@
     using Routing;
     using Routing.NativePublishSubscribe;
     using Sagas;
+    using ScenarioDescriptors;
     using Transport.SQS.Tests;
     using Versioning;
     using MessageDriven = Routing.MessageDrivenSubscriptions;

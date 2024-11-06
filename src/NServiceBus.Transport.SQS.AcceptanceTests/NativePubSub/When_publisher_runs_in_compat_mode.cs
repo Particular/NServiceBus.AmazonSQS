@@ -1,7 +1,6 @@
 ﻿namespace NServiceBus.AcceptanceTests.NativePubSub
 {
     using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
     using AcceptanceTesting;
     using AcceptanceTesting.Customization;

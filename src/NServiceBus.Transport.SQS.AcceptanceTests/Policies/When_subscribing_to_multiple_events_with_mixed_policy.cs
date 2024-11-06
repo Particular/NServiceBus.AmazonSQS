@@ -2,10 +2,10 @@
 {
     using System.Threading.Tasks;
     using AcceptanceTesting;
-    using EndpointTemplates;
-    using NUnit.Framework;
     using C;
     using D;
+    using EndpointTemplates;
+    using NUnit.Framework;
 
     public class When_subscribing_to_multiple_events_with_mixed_policy : NServiceBusAcceptanceTest
     {

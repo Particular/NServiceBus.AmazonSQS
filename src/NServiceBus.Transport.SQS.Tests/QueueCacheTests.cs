@@ -3,9 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
-    using Configure;
     using NUnit.Framework;
-    using Settings;
     using SQS;
 
     [TestFixture]

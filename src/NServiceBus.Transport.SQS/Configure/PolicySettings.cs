@@ -1,8 +1,8 @@
 ﻿namespace NServiceBus
 {
     using System;
-    using System.Linq;
     using System.Collections.Generic;
+    using System.Linq;
 
     /// <summary>
     /// Exposes the settings to configure policy creation
