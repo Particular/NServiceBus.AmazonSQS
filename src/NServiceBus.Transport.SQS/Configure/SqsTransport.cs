@@ -233,7 +233,7 @@
         /// <summary>
         /// Creates a new instance of the SQS transport definition.
         ///
-        /// Uses SQS and SNS clients created using a default constructor (based on the the settings from the environment)
+        /// Uses SQS and SNS clients created using a default constructor (based on the settings from the environment)
         /// </summary>
         /// <param name="enableDelayedDelivery">Should the delayed delivery infrastructure be created by the endpoint</param>
         public SqsTransport(bool enableDelayedDelivery)
@@ -260,8 +260,31 @@
         {
             AssertQueueNameGeneratorIdempotent(queueNameGenerator);
 
-            var topicCache = new TopicCache(SnsClient, hostSettings.CoreSettings, eventToTopicsMappings, eventToEventsMappings, topicNameGenerator, topicNamePrefix);
-            var infra = new SqsTransportInfrastructure(hostSettings, receivers, SqsClient, SnsClient, QueueCache, topicCache, S3, Policies, QueueDelayTime, topicNamePrefix, DoNotWrapOutgoingMessages, !externallyManagedSqsClient, !externallyManagedSnsClient, !SupportsDelayedDelivery);
+            var topicCache = new TopicCache(
+                SnsClient,
+                hostSettings.CoreSettings,
+                eventToTopicsMappings,
+                eventToEventsMappings,
+                topicNameGenerator,
+                topicNamePrefix
+            );
+
+            var infra = new SqsTransportInfrastructure(
+                hostSettings,
+                receivers,
+                SqsClient,
+                SnsClient,
+                QueueCache,
+                topicCache,
+                S3,
+                Policies,
+                QueueDelayTime,
+                topicNamePrefix,
+                DoNotWrapOutgoingMessages,
+                !externallyManagedSqsClient,
+                !externallyManagedSnsClient,
+                !SupportsDelayedDelivery
+            );
 
             if (hostSettings.SetupInfrastructure)
             {
