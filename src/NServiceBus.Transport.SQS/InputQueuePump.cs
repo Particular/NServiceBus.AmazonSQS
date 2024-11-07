@@ -146,12 +146,13 @@ namespace NServiceBus.Transport.SQS
         {
             if (messagePumpCancellationTokenSource == null)
             {
+                // already stopped or not yet started
                 return;
             }
 
-            messagePumpCancellationTokenSource.Cancel();
+            await messagePumpCancellationTokenSource.CancelAsync().ConfigureAwait(false);
 
-            using (cancellationToken.Register(() => messageProcessingCancellationTokenSource.Cancel()))
+            await using (cancellationToken.Register(() => messageProcessingCancellationTokenSource.Cancel()))
             {
                 if (pumpTasks != null)
                 {
@@ -169,7 +170,7 @@ namespace NServiceBus.Transport.SQS
 
             messagePumpCancellationTokenSource.Dispose();
             messageProcessingCancellationTokenSource.Dispose();
-            maxConcurrencySemaphore?.Dispose();
+            maxConcurrencySemaphore.Dispose();
             messagePumpCancellationTokenSource = null;
         }
 
@@ -536,12 +537,11 @@ namespace NServiceBus.Transport.SQS
 
         static bool IsMessageExpired(Message receivedMessage, Dictionary<string, string> headers, string messageId, TimeSpan clockOffset)
         {
-            if (!headers.TryGetValue(TransportHeaders.TimeToBeReceived, out var rawTtbr))
+            if (!headers.Remove(TransportHeaders.TimeToBeReceived, out var rawTtbr))
             {
                 return false;
             }
 
-            headers.Remove(TransportHeaders.TimeToBeReceived);
             var timeToBeReceived = TimeSpan.Parse(rawTtbr);
             if (timeToBeReceived == TimeSpan.MaxValue)
             {

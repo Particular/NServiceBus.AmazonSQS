@@ -73,12 +73,12 @@
             var queue = new StringBuilder(queueName);
             if (address.Discriminator != null)
             {
-                queue.Append("-" + address.Discriminator);
+                queue.Append($"-{address.Discriminator}");
             }
 
             if (address.Qualifier != null)
             {
-                queue.Append("-" + address.Qualifier);
+                queue.Append($"-{address.Qualifier}");
             }
 
             return queueCache.GetPhysicalQueueName(queue.ToString());
