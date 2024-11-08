@@ -15,11 +15,11 @@
     <PackageReference Include="AWSSDK.S3" Version="3.7.103.21" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.101.20" />
     <PackageReference Include="AWSSDK.SQS" Version="3.7.100.83" />
-    <PackageReference Include="BitFaster.Caching" Version="2.1.1" />
+    <PackageReference Include="BitFaster.Caching" Version="2.5.2" />
     <PackageReference Include="NServiceBus" Version="8.2.4" />
-    <PackageReference Include="Fody" Version="6.6.4" PrivateAssets="All" />
+    <PackageReference Include="Fody" Version="6.8.2" PrivateAssets="All" />
     <PackageReference Include="Obsolete.Fody" Version="5.3.0" PrivateAssets="All" />
-    <PackageReference Include="Particular.Packaging" Version="2.3.0" PrivateAssets="All" />
+    <PackageReference Include="Particular.Packaging" Version="4.2.0" PrivateAssets="All" />
     <PackageReference Include="PolySharp" Version="1.12.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
