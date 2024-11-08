@@ -46,8 +46,11 @@
             return new MessagePump(receiveSettings.Id, receiveAddress, receiveSettings.ErrorQueue, receiveSettings.PurgeOnStartup, sqsClient, queueCache, s3Settings, subManager, queueDelayTimeSeconds, criticalErrorAction, coreSettings, setupInfrastructure, disableDelayedDelivery);
         }
 
-        public override Task Shutdown(CancellationToken cancellationToken = default)
+        public override async Task Shutdown(CancellationToken cancellationToken = default)
         {
+            await Task.WhenAll(Receivers.Values.Select(pump => pump.StopReceive(cancellationToken)))
+                .ConfigureAwait(false);
+
             if (shouldDisposeSqsClient)
             {
                 sqsClient.Dispose();
@@ -62,8 +65,6 @@
             {
                 s3Client?.Dispose();
             }
-
-            return Task.CompletedTask;
         }
 
         public override string ToTransportAddress(QueueAddress address)
@@ -72,12 +73,12 @@
             var queue = new StringBuilder(queueName);
             if (address.Discriminator != null)
             {
-                queue.Append("-" + address.Discriminator);
+                queue.Append($"-{address.Discriminator}");
             }
 
             if (address.Qualifier != null)
             {
-                queue.Append("-" + address.Qualifier);
+                queue.Append($"-{address.Qualifier}");
             }
 
             return queueCache.GetPhysicalQueueName(queue.ToString());

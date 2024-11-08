@@ -106,7 +106,7 @@ namespace NServiceBus.Transport.SQS
                 return; //already stopped
             }
 
-            tokenSource.Cancel();
+            await tokenSource.CancelAsync().ConfigureAwait(false);
 
             if (pumpTask != null)
             {
