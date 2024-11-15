@@ -1,0 +1,64 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\NServiceBusTests.snk</AssemblyOriginatorKeyFile>
+    <RootNamespace>TransportTests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NServiceBus.Transport.SQS\NServiceBus.Transport.SQS.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.S3" Version="3.7.405.14" />
+    <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.401" />
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.400.50" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.400.51" />
+    <PackageReference Include="BitFaster.Caching" Version="2.5.2" />
+    <PackageReference Include="GitHubActionsTestLogger" Version="2.4.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="NServiceBus.TransportTests.Sources" Version="9.2.3" GeneratePathProperty="true" />
+    <PackageReference Include="NUnit" Version="4.2.2" />
+    <PackageReference Include="NUnit.Analyzers" Version="4.4.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\NServiceBus.Transport.SQS.Tests\Cleanup.cs" />
+    <Compile Include="..\NServiceBus.Transport.SQS.Tests\ClientFactories.cs" />
+    <Compile Include="..\NServiceBus.Transport.SQS.TransportTests\EnvironmentHelper.cs">
+      <Link>EnvironmentHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\NServiceBus.Transport.SQS.TransportTests\Sending_poison_messages.cs">
+      <Link>Sending_poison_messages.cs</Link>
+    </Compile>
+    <Compile Include="..\NServiceBus.Transport.SQS.TransportTests\Sending_to_non_existing_queues.cs">
+      <Link>Sending_to_non_existing_queues.cs</Link>
+    </Compile>
+    <Compile Include="..\NServiceBus.Transport.SQS.TransportTests\SetupFixture.cs">
+      <Link>SetupFixture.cs</Link>
+    </Compile>
+    <Compile Include="..\NServiceBus.Transport.SQS.TransportTests\TestNameHelper.cs">
+      <Link>TestNameHelper.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PkgNServiceBus_TransportTests_Sources)' != ''">
+    <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\ExceptionExtensions.cs" />
+    <!-- See https://github.com/Particular/NServiceBus.AmazonSQS/issues/2425 -->
+    <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\When_starting_again.cs" />
+    <!-- The following tests currently fail on the CI build server. They are being excluded from the sources until they are fixed. -->
+    <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\When_multiple_messages_are_available_and_concurrency_is_increased_after_pump_started.cs" />
+    <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\When_multiple_messages_are_available_and_concurrency_is_increased_and_decreased_after_pump_started.cs" />
+    <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\When_multiple_messages_are_available_and_concurrency_is_lowered_after_pump_started.cs" />
+  </ItemGroup>
+
+  <!-- The following tests currently fail as we don't support binary serialization in SQS, except for ServiceControl Metrics messages -->
+  <!-- See https://github.com/Particular/NServiceBus.AmazonSQS/issues/2630 -->
+  <ItemGroup Condition="'$(PkgNServiceBus_TransportTests_Sources)' != ''">
+     <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\When_message_is_available.cs" />
+  </ItemGroup>
+
+</Project>
