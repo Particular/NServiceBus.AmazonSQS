@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -236,6 +237,7 @@
         /// Uses SQS and SNS clients created using a default constructor (based on the settings from the environment)
         /// </summary>
         /// <param name="enableDelayedDelivery">Should the delayed delivery infrastructure be created by the endpoint</param>
+        [Experimental(DiagnosticDescriptors.ExperimentalDisableDelayedDelivery)]
         public SqsTransport(bool enableDelayedDelivery)
             : base(TransportTransactionMode.ReceiveOnly, enableDelayedDelivery, true, true)
         {
