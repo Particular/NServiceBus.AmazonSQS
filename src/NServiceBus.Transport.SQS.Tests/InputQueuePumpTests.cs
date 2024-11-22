@@ -9,7 +9,6 @@ namespace NServiceBus.Transport.SQS.Tests
     using Amazon.SQS.Model;
     using NUnit.Framework;
     using Settings;
-    using SimpleJson;
 
     [TestFixture]
     public class InputQueuePumpTests
