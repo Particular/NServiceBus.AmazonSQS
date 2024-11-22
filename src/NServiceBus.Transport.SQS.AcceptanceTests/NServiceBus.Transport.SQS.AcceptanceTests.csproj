@@ -12,11 +12,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.7.407" />
-    <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.401.5" />
-    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.400.56" />
-    <PackageReference Include="AWSSDK.SQS" Version="3.7.400.56" />
-    <PackageReference Include="BitFaster.Caching" Version="2.5.2" />
     <PackageReference Include="GitHubActionsTestLogger" Version="2.4.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="NServiceBus.AcceptanceTests.Sources" Version="9.2.3" GeneratePathProperty="true" />
@@ -32,14 +27,6 @@
 
   <ItemGroup Condition="'$(PkgNServiceBus_AcceptanceTests_Sources)' != ''">
     <Compile Remove="$(PkgNServiceBus_AcceptanceTests_Sources)\**\Routing\When_publishing_an_event_implementing_two_unrelated_interfaces.cs" />
-    <!--
-    TODO: The following two tests were not meant to be included in the sources. A fix has been merged to Core master and release-9.1 in:
-    - https://github.com/Particular/NServiceBus/pull/7121
-    - https://github.com/Particular/NServiceBus/pull/7122
-    The following two MSBuild elements can be removed once a version of the ATT source package is released
-    -->
-    <Compile Remove="$(PkgNServiceBus_AcceptanceTests_Sources)\**\Core\DependencyInjection\When_resolving_address_translator.cs" />
-    <Compile Remove="$(PkgNServiceBus_AcceptanceTests_Sources)\**\Core\OpenTelemetry\Metrics\When_retrying_messages.cs" />
   </ItemGroup>
 
 </Project>
