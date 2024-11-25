@@ -72,6 +72,8 @@ namespace NServiceBus
     {
         public SqsTransport() { }
         public SqsTransport(Amazon.SQS.IAmazonSQS sqsClient, Amazon.SimpleNotificationService.IAmazonSimpleNotificationService snsClient) { }
+        [System.Diagnostics.CodeAnalysis.Experimental("NSBSQSEXP0001")]
+        public SqsTransport(Amazon.SQS.IAmazonSQS sqsClient, Amazon.SimpleNotificationService.IAmazonSimpleNotificationService snsClient, bool enableDelayedDelivery) { }
         public bool DoNotWrapOutgoingMessages { get; set; }
         [System.Obsolete("The SQS transport no longer supports 1.x compatibility mode. Will be removed in v" +
             "ersion 8.0.0.", true)]

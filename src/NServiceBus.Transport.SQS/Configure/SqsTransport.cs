@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -58,11 +59,6 @@
         public string QueueNamePrefix { get; set; }
 
         /// <summary>
-        /// Disable native delayed delivery infrastructure
-        /// </summary>
-        internal bool DisableDelayedDelivery { get; set; } = false;
-
-        /// <summary>
         /// Specifies a lambda function that allows to take control of the queue name generation logic.
         /// This is useful to overcome any limitations imposed by SQS.
         /// </summary>
@@ -96,6 +92,7 @@
                 {
                     throw new ArgumentException($"Max TTL needs to be between {MaxTimeToLiveLowerBound} and {MaxTimeToLiveUpperBound}.");
                 }
+
                 maxTimeToLive = value;
             }
         }
@@ -235,8 +232,38 @@
             snsClient = DefaultClientFactories.SnsFactory();
         }
 
-        internal SqsTransport(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, bool supportsPublishSubscribe)
-            : base(TransportTransactionMode.ReceiveOnly, true, supportsPublishSubscribe, true)
+        /// <summary>
+        /// Creates a new instance of the SQS transport definition.
+        /// </summary>
+        [Experimental(DiagnosticDescriptors.ExperimentalDisableDelayedDelivery)]
+        public SqsTransport(
+            IAmazonSQS sqsClient,
+            IAmazonSimpleNotificationService snsClient,
+            bool enableDelayedDelivery
+        )
+            : this(
+                sqsClient,
+                snsClient,
+                supportsPublishSubscribe: true,
+                enableDelayedDelivery: enableDelayedDelivery
+            )
+        {
+            this.sqsClient = sqsClient;
+            this.snsClient = snsClient;
+        }
+
+        internal SqsTransport(
+            IAmazonSQS sqsClient,
+            IAmazonSimpleNotificationService snsClient,
+            bool supportsPublishSubscribe,
+            bool enableDelayedDelivery = true
+        )
+            : base(
+                TransportTransactionMode.ReceiveOnly,
+                enableDelayedDelivery,
+                supportsPublishSubscribe,
+                supportsTTBR: true
+            )
         {
             this.sqsClient = sqsClient;
             this.snsClient = snsClient;
@@ -252,15 +279,38 @@
         {
             AssertQueueNameGeneratorIdempotent(queueNameGenerator);
 
-            var topicCache = new TopicCache(SnsClient, hostSettings.CoreSettings, eventToTopicsMappings, eventToEventsMappings, topicNameGenerator, topicNamePrefix);
-            var infra = new SqsTransportInfrastructure(hostSettings, receivers, SqsClient, SnsClient, QueueCache, topicCache, S3, Policies, QueueDelayTime, topicNamePrefix, DoNotWrapOutgoingMessages, !externallyManagedSqsClient, !externallyManagedSnsClient, DisableDelayedDelivery);
+            var topicCache = new TopicCache(
+                SnsClient,
+                hostSettings.CoreSettings,
+                eventToTopicsMappings,
+                eventToEventsMappings,
+                topicNameGenerator,
+                topicNamePrefix
+            );
+
+            var infra = new SqsTransportInfrastructure(
+                hostSettings,
+                receivers,
+                SqsClient,
+                SnsClient,
+                QueueCache,
+                topicCache,
+                S3,
+                Policies,
+                QueueDelayTime,
+                topicNamePrefix,
+                DoNotWrapOutgoingMessages,
+                !externallyManagedSqsClient,
+                !externallyManagedSnsClient,
+                !SupportsDelayedDelivery
+            );
 
             if (hostSettings.SetupInfrastructure)
             {
                 var queueCreator = new QueueCreator(SqsClient, QueueCache, S3, maxTimeToLive, QueueDelayTime);
 
                 var createQueueTasks = sendingAddresses.Select(x => queueCreator.CreateQueueIfNecessary(x, false, cancellationToken))
-                    .Concat(infra.Receivers.Values.Select(x => queueCreator.CreateQueueIfNecessary(x.ReceiveAddress, !DisableDelayedDelivery, cancellationToken))).ToArray();
+                    .Concat(infra.Receivers.Values.Select(x => queueCreator.CreateQueueIfNecessary(x.ReceiveAddress, SupportsDelayedDelivery, cancellationToken))).ToArray();
 
                 await Task.WhenAll(createQueueTasks).ConfigureAwait(false);
             }

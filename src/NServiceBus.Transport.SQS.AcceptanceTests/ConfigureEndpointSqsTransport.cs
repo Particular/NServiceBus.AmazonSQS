@@ -43,7 +43,11 @@
 
         public static SqsTransport PrepareSqsTransport(bool supportsPublishSubscribe = true)
         {
-            var transport = new SqsTransport(ClientFactories.CreateSqsClient(), ClientFactories.CreateSnsClient(), supportsPublishSubscribe)
+            var transport = new SqsTransport(
+                ClientFactories.CreateSqsClient(),
+                ClientFactories.CreateSnsClient(),
+                supportsPublishSubscribe: supportsPublishSubscribe
+            )
             {
                 QueueNamePrefix = SetupFixture.NamePrefix,
                 TopicNamePrefix = SetupFixture.NamePrefix,
