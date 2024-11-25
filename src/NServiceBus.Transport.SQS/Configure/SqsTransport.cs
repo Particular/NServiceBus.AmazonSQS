@@ -234,8 +234,6 @@
 
         /// <summary>
         /// Creates a new instance of the SQS transport definition.
-        ///
-        /// Uses SQS and SNS clients created using a default constructor (based on the settings from the environment)
         /// </summary>
         [Experimental(DiagnosticDescriptors.ExperimentalDisableDelayedDelivery)]
         public SqsTransport(
