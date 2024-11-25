@@ -92,6 +92,7 @@
                 {
                     throw new ArgumentException($"Max TTL needs to be between {MaxTimeToLiveLowerBound} and {MaxTimeToLiveUpperBound}.");
                 }
+
                 maxTimeToLive = value;
             }
         }
@@ -239,7 +240,12 @@
         /// <param name="enableDelayedDelivery">Should the delayed delivery infrastructure be created by the endpoint</param>
         [Experimental(DiagnosticDescriptors.ExperimentalDisableDelayedDelivery)]
         public SqsTransport(bool enableDelayedDelivery)
-            : base(TransportTransactionMode.ReceiveOnly, enableDelayedDelivery, true, true)
+            : base(
+                TransportTransactionMode.ReceiveOnly,
+                supportsDelayedDelivery: enableDelayedDelivery,
+                supportsPublishSubscribe: true,
+                supportsTTBR: true
+            )
         {
             sqsClient = DefaultClientFactories.SqsFactory();
             snsClient = DefaultClientFactories.SnsFactory();
