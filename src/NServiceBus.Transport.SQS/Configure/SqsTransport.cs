@@ -237,22 +237,35 @@
         ///
         /// Uses SQS and SNS clients created using a default constructor (based on the settings from the environment)
         /// </summary>
-        /// <param name="enableDelayedDelivery">Should the delayed delivery infrastructure be created by the endpoint</param>
         [Experimental(DiagnosticDescriptors.ExperimentalDisableDelayedDelivery)]
-        public SqsTransport(bool enableDelayedDelivery)
-            : base(
-                TransportTransactionMode.ReceiveOnly,
-                supportsDelayedDelivery: enableDelayedDelivery,
+        public SqsTransport(
+            IAmazonSQS sqsClient,
+            IAmazonSimpleNotificationService snsClient,
+            bool enableDelayedDelivery
+        )
+            : this(
+                sqsClient,
+                snsClient,
                 supportsPublishSubscribe: true,
-                supportsTTBR: true
+                enableDelayedDelivery: enableDelayedDelivery
             )
         {
-            sqsClient = DefaultClientFactories.SqsFactory();
-            snsClient = DefaultClientFactories.SnsFactory();
+            this.sqsClient = sqsClient;
+            this.snsClient = snsClient;
         }
 
-        internal SqsTransport(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, bool supportsPublishSubscribe)
-            : base(TransportTransactionMode.ReceiveOnly, true, supportsPublishSubscribe, true)
+        internal SqsTransport(
+            IAmazonSQS sqsClient,
+            IAmazonSimpleNotificationService snsClient,
+            bool supportsPublishSubscribe,
+            bool enableDelayedDelivery = true
+        )
+            : base(
+                TransportTransactionMode.ReceiveOnly,
+                enableDelayedDelivery,
+                supportsPublishSubscribe,
+                supportsTTBR: true
+            )
         {
             this.sqsClient = sqsClient;
             this.snsClient = snsClient;
