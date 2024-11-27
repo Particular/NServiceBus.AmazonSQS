@@ -39,7 +39,12 @@ namespace NServiceBus
             Message = "The configuration has been moved to SqsTransport class.")]
         public static TransportExtensions<SqsTransport> ClientFactory(this TransportExtensions<SqsTransport> transportExtensions, Func<IAmazonSQS> factory)
         {
-            transportExtensions.Transport.SqsClient = factory();
+            // ===================================
+            // WHEN REMOVING THIS OBSOLETE CODE:
+            //
+            // Refactor "SetupSqsClient"
+            // ===================================
+            transportExtensions.Transport.SetupSqsClient(factory(), true);
             return transportExtensions;
         }
 
@@ -52,7 +57,12 @@ namespace NServiceBus
             Message = "The configuration has been moved to SqsTransport class.")]
         public static TransportExtensions<SqsTransport> ClientFactory(this TransportExtensions<SqsTransport> transportExtensions, Func<IAmazonSimpleNotificationService> factory)
         {
-            transportExtensions.Transport.SnsClient = factory();
+            // ===================================
+            // WHEN REMOVING THIS OBSOLETE CODE:
+            //
+            // Refactor "SetupSnsClient"
+            // ===================================
+            transportExtensions.Transport.SetupSnsClient(factory(), true);
             return transportExtensions;
         }
 

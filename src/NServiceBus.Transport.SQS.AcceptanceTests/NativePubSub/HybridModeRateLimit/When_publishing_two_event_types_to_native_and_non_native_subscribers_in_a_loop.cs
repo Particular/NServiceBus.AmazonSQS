@@ -170,8 +170,8 @@
                     c.UsePersistence<TestingInMemoryPersistence, StorageType.Subscriptions>().UseStorage(subscriptionStorage);
 
                     // the default value is int.MaxValue which can lead to ephemeral port exhaustion due to the massive parallel publish
-                    c.ConfigureSqsTransport().SqsClient = ClientFactories.CreateSqsClient(cfg => cfg.MaxConnectionsPerServer = 500);
-                    c.ConfigureSqsTransport().SnsClient = ClientFactories.CreateSnsClient(cfg => cfg.MaxConnectionsPerServer = 500);
+                    c.ConfigureSqsTransport().SetupSqsClient(ClientFactories.CreateSqsClient(cfg => cfg.MaxConnectionsPerServer = 500), false);
+                    c.ConfigureSqsTransport().SetupSnsClient(ClientFactories.CreateSnsClient(cfg => cfg.MaxConnectionsPerServer = 500), false);
 
                     c.OnEndpointSubscribed<Context>((s, context) =>
                     {
