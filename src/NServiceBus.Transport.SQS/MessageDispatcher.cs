@@ -460,10 +460,19 @@ namespace NServiceBus.Transport.SQS
             string body;
             if (outgoingMessage.Body.IsEmpty)
             {
+                // this could be a control message
                 body = TransportMessage.EmptyMessage;
+            }
+            else if (outgoingMessage.Headers.ContainsKey(Constants.MetricsMessageMetricTypeHeaderKey)
+                     && outgoingMessage.Headers.TryGetValue(Headers.ContentType, out var contentType)
+                     && contentType == Constants.MetricsMessageContentTypeHeaderValue)
+            {
+                // it's a message from the metrics package
+                body = Convert.ToBase64String(outgoingMessage.Body.Span);
             }
             else
             {
+                // this is any payload type
                 body = Encoding.UTF8.GetString(outgoingMessage.Body.Span);
             }
 
