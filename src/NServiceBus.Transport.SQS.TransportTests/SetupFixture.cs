@@ -16,8 +16,7 @@
         public static string GetNamePrefix()
         {
             var ctx = TestContext.CurrentContext;
-            var methodName = ctx.Test.MethodName;
-            var methodHashPositive = Math.Abs(methodName!.GetHashCode());
+            var methodHashPositive = Math.Abs(ctx.Test.ID.GetHashCode());
 
             return NamePrefix + methodHashPositive;
         }
