@@ -73,7 +73,7 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
-        public async Task Should_not_dispose_clients_passed_into_transport_constructor_1()
+        public async Task Should_not_dispose_clients_passed_into_transport_constructor()
         {
             var mockSqsClient = new MockSqsClient();
             var mockSnsClient = new MockSnsClient();
@@ -107,7 +107,7 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
-        public async Task Should_not_dispose_clients_passed_into_transport_constructor_2()
+        public async Task Should_not_dispose_clients_passed_into_transport_constructor_with_delayed_delivery()
         {
             var mockSqsClient = new MockSqsClient();
             var mockSnsClient = new MockSnsClient();
