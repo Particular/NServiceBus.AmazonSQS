@@ -90,17 +90,7 @@ namespace NServiceBus
         /// <summary>
         /// The S3 client to use.
         /// </summary>
-        public IAmazonS3 S3Client
-        {
-            get => s3Client.Instance;
-            //For legacy API shim
-            internal set
-            {
-                ArgumentNullException.ThrowIfNull(value);
-
-                s3Client = (value, true);
-            }
-        }
+        public IAmazonS3 S3Client => s3Client.Instance;
 
         internal bool ShouldDisposeS3Client => !s3Client.ExternallyManaged;
 
