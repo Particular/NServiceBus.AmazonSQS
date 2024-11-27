@@ -384,31 +384,31 @@ namespace NServiceBus.Transport.SQS
                             Logger.Debug($"Message with native id {receivedMessage.MessageId} does not contain the required information and will not be treated as an NServiceBus TransportMessage. " +
                                    $"Instead it'll be treated as pure native message.");
 
+                            var headersFromAttributes = receivedMessage.MessageAttributes.ToDictionary(k => k.Key, v => v.Value.StringValue);
+                            // HINT: Message Id is a required field for InnerProcessMessage
+                            headersFromAttributes[Headers.MessageId] = receivedMessage.MessageId;
+
                             transportMessage = new TransportMessage
                             {
                                 Body = receivedMessage.Body,
-                                Headers = new Dictionary<string, string>
-                                {
-                                    // HINT: Message Id is a required field for InnerProcessMessage
-                                    [Headers.MessageId] = receivedMessage.MessageId,
-                                }
+                                Headers = headersFromAttributes
                             };
                         }
                     }
                     catch (Exception ex)
                     {
-                        //HINT: Deserialization is best-effort. If it fails, we trat the message as a native message
+                        //HINT: Deserialization is best-effort. If it fails, we treat the message as a native message
                         Logger.Debug($"Failed to deserialize message with native id {receivedMessage.MessageId}. " +
                                      $"It will not be treated as an NServiceBus TransportMessage. Instead it'll be treated as pure native message.", ex);
+
+                        var headersFromAttributes = receivedMessage.MessageAttributes.ToDictionary(k => k.Key, v => v.Value.StringValue);
+                        // HINT: Message Id is a required field for InnerProcessMessage
+                        headersFromAttributes[Headers.MessageId] = receivedMessage.MessageId;
 
                         transportMessage = new TransportMessage
                         {
                             Body = receivedMessage.Body,
-                            Headers = new Dictionary<string, string>
-                            {
-                                // HINT: Message Id is a required field for InnerProcessMessage
-                                [Headers.MessageId] = receivedMessage.MessageId,
-                            }
+                            Headers = headersFromAttributes
                         };
                     }
                 }
