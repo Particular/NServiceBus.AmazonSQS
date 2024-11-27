@@ -73,13 +73,49 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
-        public async Task Should_not_dispose_clients_passed_into_transport()
+        public async Task Should_not_dispose_clients_passed_into_transport_constructor_1()
         {
             var mockSqsClient = new MockSqsClient();
             var mockSnsClient = new MockSnsClient();
             var mockS3Client = new MockS3Client();
 
             var transport = new SqsTransport(mockSqsClient, mockSnsClient)
+            {
+                S3 = new S3Settings("123", "k", mockS3Client)
+            };
+
+            var hostSettings = new HostSettings(
+                "Test",
+                "Test",
+                new StartupDiagnosticEntries(),
+                (s, ex, cancel) => { },
+                false
+            );
+            var receivers = Array.Empty<ReceiveSettings>();
+            var sendingAddresses = Array.Empty<string>();
+
+            var infra = await transport.Initialize(hostSettings, receivers, sendingAddresses);
+
+            await infra.Shutdown();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(mockSqsClient.DisposeInvoked, Is.False);
+                Assert.That(mockSnsClient.DisposeInvoked, Is.False);
+                Assert.That(mockS3Client.DisposeInvoked, Is.False);
+            });
+        }
+
+        [Test]
+        public async Task Should_not_dispose_clients_passed_into_transport_constructor_2()
+        {
+            var mockSqsClient = new MockSqsClient();
+            var mockSnsClient = new MockSnsClient();
+            var mockS3Client = new MockS3Client();
+
+#pragma warning disable NSBSQSEXP0001
+            var transport = new SqsTransport(mockSqsClient, mockSnsClient, enableDelayedDelivery: false)
+#pragma warning restore NSBSQSEXP0001
             {
                 S3 = new S3Settings("123", "k", mockS3Client)
             };

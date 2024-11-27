@@ -241,17 +241,19 @@
             IAmazonSimpleNotificationService snsClient,
             bool enableDelayedDelivery
         )
-            : this(
-                sqsClient,
-                snsClient,
+            : base(
+                TransportTransactionMode.ReceiveOnly,
+                supportsDelayedDelivery: enableDelayedDelivery,
                 supportsPublishSubscribe: true,
-                enableDelayedDelivery: enableDelayedDelivery
+                supportsTTBR: true
             )
         {
-            this.sqsClient = sqsClient;
-            this.snsClient = snsClient;
+            // Use properties to ensure `externallyManagedSqsClient` is set
+            SqsClient = sqsClient;
+            SnsClient = snsClient;
         }
 
+        // Only invoke when not using external SQS and SNS clients
         internal SqsTransport(
             IAmazonSQS sqsClient,
             IAmazonSimpleNotificationService snsClient,
