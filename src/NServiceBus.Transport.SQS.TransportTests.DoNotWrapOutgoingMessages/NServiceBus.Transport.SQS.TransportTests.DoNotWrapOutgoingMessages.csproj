@@ -12,13 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.7.405.14" />
-    <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.401" />
-    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.400.50" />
-    <PackageReference Include="AWSSDK.SQS" Version="3.7.400.51" />
-    <PackageReference Include="BitFaster.Caching" Version="2.5.2" />
     <PackageReference Include="GitHubActionsTestLogger" Version="2.4.1" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="NServiceBus.TransportTests.Sources" Version="9.2.3" GeneratePathProperty="true" />
     <PackageReference Include="NUnit" Version="4.2.2" />
     <PackageReference Include="NUnit.Analyzers" Version="4.4.0" />
