@@ -46,6 +46,7 @@
             var transport = new SqsTransport(
                 ClientFactories.CreateSqsClient(),
                 ClientFactories.CreateSnsClient(),
+                externallyManaged: false,
                 supportsPublishSubscribe: supportsPublishSubscribe
             )
             {
