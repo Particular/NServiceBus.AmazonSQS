@@ -33,39 +33,22 @@
 
         class Sender : EndpointConfigurationBuilder
         {
-            public Sender()
-            {
-                EndpointSetup<DefaultServer>(cfg => cfg.ConfigureSqsTransport().DoNotWrapOutgoingMessages = true);
-            }
+            public Sender() => EndpointSetup<DefaultServer>(cfg => cfg.ConfigureSqsTransport().DoNotWrapOutgoingMessages = true);
 
             class DispatchControlMessageAtStartup : Feature
             {
-                public DispatchControlMessageAtStartup()
-                {
-                    EnableByDefault();
-                }
+                public DispatchControlMessageAtStartup() => EnableByDefault();
 
-                protected override void Setup(FeatureConfigurationContext context)
-                {
+                protected override void Setup(FeatureConfigurationContext context) =>
                     context.RegisterStartupTask(sp => new Startup(
                         sp.GetRequiredService<IMessageDispatcher>(),
                         sp.GetRequiredService<MyContext>())
                     );
-                }
 
-                class Startup : FeatureStartupTask
+                class Startup(IMessageDispatcher dispatcher, MyContext context) : FeatureStartupTask
                 {
-                    readonly IMessageDispatcher dispatcher;
-                    readonly MyContext context;
-
-                    public Startup(IMessageDispatcher dispatcher, MyContext context)
-                    {
-                        this.dispatcher = dispatcher;
-                        this.context = context;
-                    }
-
                     protected override Task OnStart(IMessageSession session,
-                        CancellationToken cancellationToken = new CancellationToken())
+                        CancellationToken cancellationToken = default)
                     {
                         var transportOperations = new TransportOperations(
                             new TransportOperation(
@@ -86,57 +69,27 @@
                     }
 
                     protected override Task OnStop(IMessageSession session,
-                        CancellationToken cancellationToken = new CancellationToken()) => Task.CompletedTask;
+                        CancellationToken cancellationToken = default) => Task.CompletedTask;
                 }
             }
         }
 
         class Receiver : EndpointConfigurationBuilder
         {
-            public Receiver()
+            public Receiver() => EndpointSetup<DefaultServer>(c => c.Pipeline.Register("CatchControlMessage", typeof(CatchControlMessageBehavior), "Catches control message"));
+
+            class CatchControlMessageBehavior(MyContext myContext) : Behavior<IIncomingPhysicalMessageContext>
             {
-                EndpointSetup<DefaultServer>();
-            }
-
-            public class DoTheThing : Feature
-            {
-                public DoTheThing()
+                public override Task Invoke(IIncomingPhysicalMessageContext context, Func<Task> next)
                 {
-                    EnableByDefault();
-                }
-
-                protected override void Setup(FeatureConfigurationContext context)
-                {
-                    context.Pipeline.Register<PipelineBehavior.Registration>();
-                }
-
-                class PipelineBehavior : Behavior<IIncomingPhysicalMessageContext>
-                {
-                    readonly MyContext myContext;
-
-                    public PipelineBehavior(MyContext myContext)
+                    if (context.MessageHeaders.ContainsKey("MyControlMessage"))
                     {
-                        this.myContext = myContext;
+                        myContext.ControlMessageBodyLength = context.Message.Body.Length;
+                        myContext.ControlMessageReceived = true;
+                        return Task.CompletedTask;
                     }
 
-                    public override Task Invoke(IIncomingPhysicalMessageContext context, Func<Task> next)
-                    {
-                        if (context.MessageHeaders.ContainsKey("MyControlMessage"))
-                        {
-                            myContext.ControlMessageBodyLength = context.Message.Body.Length;
-                            myContext.ControlMessageReceived = true;
-                            return Task.CompletedTask;
-                        }
-
-                        return next();
-                    }
-
-                    public class Registration : RegisterStep
-                    {
-                        public Registration() : base("CatchControlMessage", typeof(PipelineBehavior), "Catch control message")
-                        {
-                        }
-                    }
+                    return next();
                 }
             }
         }

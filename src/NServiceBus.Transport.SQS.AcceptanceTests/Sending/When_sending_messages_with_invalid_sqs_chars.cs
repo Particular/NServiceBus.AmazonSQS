@@ -114,30 +114,20 @@
 
         class Receiver : EndpointConfigurationBuilder
         {
-            public Receiver() => EndpointSetup<DefaultServer>();
+            public Receiver() => EndpointSetup<DefaultServer>(c => c.Pipeline.Register("CatchControlMessage", typeof(CatchControlMessageBehavior), "Catches control message"));
 
-            public class DoTheThing : Feature
+            class CatchControlMessageBehavior(MyContext myContext) : Behavior<IIncomingPhysicalMessageContext>
             {
-                public DoTheThing() => EnableByDefault();
-
-                protected override void Setup(FeatureConfigurationContext context) => context.Pipeline.Register<PipelineBehavior.Registration>();
-
-                class PipelineBehavior(MyContext myContext) : Behavior<IIncomingPhysicalMessageContext>
+                public override Task Invoke(IIncomingPhysicalMessageContext context, Func<Task> next)
                 {
-                    public override Task Invoke(IIncomingPhysicalMessageContext context, Func<Task> next)
+                    if (context.MessageId == myContext.ControlMessageId)
                     {
-                        if (context.MessageId == myContext.ControlMessageId)
-                        {
-                            myContext.ControlMessageBody = context.Message.Body.ToString();
-                            myContext.ControlMessageReceived = true;
-                            return Task.CompletedTask;
-                        }
-
-                        return next();
+                        myContext.ControlMessageBody = context.Message.Body.ToString();
+                        myContext.ControlMessageReceived = true;
+                        return Task.CompletedTask;
                     }
 
-                    public class Registration() : RegisterStep("CatchControlMessage", typeof(PipelineBehavior),
-                        "Catch control message");
+                    return next();
                 }
             }
         }
