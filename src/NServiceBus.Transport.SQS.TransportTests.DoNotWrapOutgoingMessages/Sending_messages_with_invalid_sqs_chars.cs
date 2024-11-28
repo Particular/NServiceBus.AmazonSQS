@@ -24,12 +24,15 @@
                 { "SomeHeader", "doesn't matter" },
             };
 
-            await SendMessage(InputQueueName, headers, body: "body with invalid chars: \0"u8.ToArray());
+            var body = "body with invalid chars: \0"u8.ToArray();
+
+            await SendMessage(InputQueueName, headers, body: body);
 
             var messageContext = await messageProcessed.Task;
 
             Assert.That(messageContext.Headers, Is.Not.Empty);
             Assert.That(messageContext.Headers, Is.SupersetOf(headers));
+            Assert.That(messageContext.Body.ToArray(), Is.EquivalentTo(body));
         }
     }
 }
