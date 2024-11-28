@@ -7,6 +7,7 @@ namespace NServiceBus.Transport.SQS
     using System.Linq;
     using System.Text;
     using System.Text.Json;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.S3.Model;
@@ -17,7 +18,7 @@ namespace NServiceBus.Transport.SQS
     using Settings;
     using Transport;
 
-    class MessageDispatcher : IMessageDispatcher
+    partial class MessageDispatcher : IMessageDispatcher
     {
         public MessageDispatcher(IReadOnlySettings settings, IAmazonSQS sqsClient,
             IAmazonSimpleNotificationService snsClient,
@@ -463,12 +464,13 @@ namespace NServiceBus.Transport.SQS
                 // this could be a control message
                 body = TransportMessage.EmptyMessage;
             }
-            else if (outgoingMessage.Headers.ContainsKey(Constants.MetricsMessageMetricTypeHeaderKey)
-                     && outgoingMessage.Headers.TryGetValue(Headers.ContentType, out var contentType)
-                     && contentType == Constants.MetricsMessageContentTypeHeaderValue)
+            else if (wrapOutgoingMessages)
             {
-                // it's a message from the metrics package
-                body = Convert.ToBase64String(outgoingMessage.Body.Span);
+                body = Encoding.UTF8.GetString(outgoingMessage.Body.Span);
+                if (!ValidSqsCharacters().IsMatch(body))
+                {
+                    body = Convert.ToBase64String(outgoingMessage.Body.Span);
+                }
             }
             else
             {
@@ -481,6 +483,9 @@ namespace NServiceBus.Transport.SQS
 
             return (body, headers);
         }
+
+        [GeneratedRegex(@"^[\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD\u10000-\u10FFFF]*$", RegexOptions.Singleline)]
+        private static partial Regex ValidSqsCharacters();
 
         async Task<string> UploadToS3(string messageId, IOutgoingTransportOperation transportOperation, CancellationToken cancellationToken)
         {

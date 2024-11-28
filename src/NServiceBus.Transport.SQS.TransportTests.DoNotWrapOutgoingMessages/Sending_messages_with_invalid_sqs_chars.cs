@@ -1,16 +1,15 @@
 ﻿namespace NServiceBus.TransportTests
 {
-    using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using NUnit.Framework;
     using Transport;
 
-    public class Sending_metrics_messages : NServiceBusTransportTest
+    public class Sending_messages_with_invalid_sqs_chars : NServiceBusTransportTest
     {
         [TestCase(TransportTransactionMode.None)]
         [TestCase(TransportTransactionMode.ReceiveOnly)]
-        public async Task Should_not_fail_when_using_do_not_wrap(
+        public async Task Should_receive_message(
             TransportTransactionMode transactionMode)
         {
             var messageProcessed = CreateTaskCompletionSource<MessageContext>();
@@ -22,12 +21,10 @@
 
             var headers = new Dictionary<string, string>
             {
-                { Transport.SQS.Constants.MetricsMessageMetricTypeHeaderKey, "doesn't matter" },
-                { Headers.ContentType, Transport.SQS.Constants.MetricsMessageContentTypeHeaderValue }
+                { "SomeHeader", "doesn't matter" },
             };
-            var body = Guid.NewGuid().ToByteArray();
 
-            await SendMessage(InputQueueName, headers, body: body);
+            await SendMessage(InputQueueName, headers, body: "body with invalid chars: \0"u8.ToArray());
 
             var messageContext = await messageProcessed.Task;
 

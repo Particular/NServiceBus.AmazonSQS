@@ -22,10 +22,7 @@ namespace NServiceBus.Transport.SQS.Extensions
                 }
 
                 var isNativeMessage = transportMessage.Headers.Keys.Contains(TransportHeaders.Headers);
-                var isMetricsMessage = transportMessage.Headers.Keys.Contains(Constants.MetricsMessageMetricTypeHeaderKey)
-                                       && transportMessage.Headers.TryGetValue(Headers.ContentType, out var contentType)
-                                       && contentType == Constants.MetricsMessageContentTypeHeaderValue;
-                return ConvertBody(transportMessage.Body, arrayPool, isNativeMessage, isMetricsMessage);
+                return ConvertBody(transportMessage.Body, arrayPool, isNativeMessage);
             }
 
             if (s3Settings == null)
@@ -51,11 +48,11 @@ namespace NServiceBus.Transport.SQS.Extensions
             return (buffer.AsMemory(0, contentLength), buffer);
         }
 
-        static (ReadOnlyMemory<byte> MessageBody, byte[]? MessageBodyBuffer) ConvertBody(string body, ArrayPool<byte> arrayPool, bool isNativeMessage, bool isMetricsMessage)
+        static (ReadOnlyMemory<byte> MessageBody, byte[]? MessageBodyBuffer) ConvertBody(string body, ArrayPool<byte> arrayPool, bool isNativeMessage)
         {
             var encoding = Encoding.UTF8;
 
-            if (isNativeMessage && !isMetricsMessage)
+            if (isNativeMessage)
             {
                 return GetNonEncodedBody(body, arrayPool, null, encoding);
             }
