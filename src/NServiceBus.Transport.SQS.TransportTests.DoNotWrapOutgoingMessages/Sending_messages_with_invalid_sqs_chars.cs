@@ -31,8 +31,11 @@
             var messageContext = await messageProcessed.Task;
 
             Assert.That(messageContext.Headers, Is.Not.Empty);
-            Assert.That(messageContext.Headers, Is.SupersetOf(headers));
-            Assert.That(messageContext.Body.ToArray(), Is.EquivalentTo(body));
+            Assert.Multiple(() =>
+            {
+                Assert.That(messageContext.Headers, Is.SupersetOf(headers));
+                Assert.That(messageContext.Body.ToArray(), Is.EquivalentTo(body));
+            });
         }
     }
 }
