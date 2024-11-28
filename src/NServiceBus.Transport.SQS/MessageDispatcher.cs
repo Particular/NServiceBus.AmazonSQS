@@ -464,7 +464,7 @@ namespace NServiceBus.Transport.SQS
                 // this could be a control message
                 body = TransportMessage.EmptyMessage;
             }
-            else if (wrapOutgoingMessages)
+            else if (!wrapOutgoingMessages)
             {
                 body = Encoding.UTF8.GetString(outgoingMessage.Body.Span);
                 if (!ValidSqsCharacters().IsMatch(body))
