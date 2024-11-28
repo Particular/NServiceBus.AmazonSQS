@@ -13,9 +13,15 @@
             TransportTransactionMode transactionMode)
         {
             var messageProcessed = CreateTaskCompletionSource<MessageContext>();
+            byte[] copyOfTheBody = null;
 
             await StartPump(
-                (context, _) => messageProcessed.SetCompleted(context),
+                (context, _) =>
+                {
+                    // This is crucial due to internal buffer pooling in SQS transport
+                    copyOfTheBody = context.Body.ToArray();
+                    return messageProcessed.SetCompleted(context);
+                },
                 (_, __) => Task.FromResult(ErrorHandleResult.Handled),
                 TransportTransactionMode.None);
 
@@ -34,7 +40,7 @@
             Assert.Multiple(() =>
             {
                 Assert.That(messageContext.Headers, Is.SupersetOf(headers));
-                Assert.That(messageContext.Body.ToArray(), Is.EquivalentTo(body));
+                Assert.That(copyOfTheBody, Is.EquivalentTo(body));
             });
         }
     }
