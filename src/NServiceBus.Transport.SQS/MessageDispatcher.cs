@@ -3,6 +3,7 @@
 namespace NServiceBus.Transport.SQS
 {
     using System;
+    using System.Buffers;
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
@@ -26,7 +27,7 @@ namespace NServiceBus.Transport.SQS
             S3Settings s3,
             int queueDelaySeconds,
             bool wrapOutgoingMessages = true
-            )
+        )
         {
             this.topicCache = topicCache;
             this.s3 = s3;
@@ -45,7 +46,8 @@ namespace NServiceBus.Transport.SQS
             hybridPubSubChecker = new HybridPubSubChecker(settings, topicCache, queueCache, snsClient);
         }
 
-        public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, CancellationToken cancellationToken = default)
+        public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction,
+            CancellationToken cancellationToken = default)
         {
             var concurrentDispatchTasks = new List<Task>(4);
 
@@ -58,10 +60,12 @@ namespace NServiceBus.Transport.SQS
                 switch (dispatchConsistencyGroup.Key)
                 {
                     case DispatchConsistency.Isolated:
-                        concurrentDispatchTasks.Add(PublishIsolated(dispatchConsistencyGroup, multicastEventsMessageIdsToType, cancellationToken));
+                        concurrentDispatchTasks.Add(PublishIsolated(dispatchConsistencyGroup,
+                            multicastEventsMessageIdsToType, cancellationToken));
                         break;
                     case DispatchConsistency.Default:
-                        concurrentDispatchTasks.Add(PublishBatched(dispatchConsistencyGroup, multicastEventsMessageIdsToType, cancellationToken));
+                        concurrentDispatchTasks.Add(PublishBatched(dispatchConsistencyGroup,
+                            multicastEventsMessageIdsToType, cancellationToken));
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -69,15 +73,17 @@ namespace NServiceBus.Transport.SQS
             }
 
             foreach (var dispatchConsistencyGroup in outgoingMessages.UnicastTransportOperations
-                .GroupBy(o => o.RequiredDispatchConsistency))
+                         .GroupBy(o => o.RequiredDispatchConsistency))
             {
                 switch (dispatchConsistencyGroup.Key)
                 {
                     case DispatchConsistency.Isolated:
-                        concurrentDispatchTasks.Add(DispatchIsolated(dispatchConsistencyGroup, multicastEventsMessageIdsToType, transaction, cancellationToken));
+                        concurrentDispatchTasks.Add(DispatchIsolated(dispatchConsistencyGroup,
+                            multicastEventsMessageIdsToType, transaction, cancellationToken));
                         break;
                     case DispatchConsistency.Default:
-                        concurrentDispatchTasks.Add(DispatchBatched(dispatchConsistencyGroup, multicastEventsMessageIdsToType, transaction, cancellationToken));
+                        concurrentDispatchTasks.Add(DispatchBatched(dispatchConsistencyGroup,
+                            multicastEventsMessageIdsToType, transaction, cancellationToken));
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -95,7 +101,8 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        Task PublishIsolated(IEnumerable<MulticastTransportOperation> isolatedTransportOperations, Dictionary<string, Type> multicastEventsMessageIdsToType, CancellationToken cancellationToken)
+        Task PublishIsolated(IEnumerable<MulticastTransportOperation> isolatedTransportOperations,
+            Dictionary<string, Type> multicastEventsMessageIdsToType, CancellationToken cancellationToken)
         {
             List<Task>? tasks = null;
             foreach (var operation in isolatedTransportOperations)
@@ -108,7 +115,8 @@ namespace NServiceBus.Transport.SQS
             return tasks != null ? Task.WhenAll(tasks) : Task.CompletedTask;
         }
 
-        async Task PublishBatched(IEnumerable<MulticastTransportOperation> multicastTransportOperations, Dictionary<string, Type> multicastEventsMessageIdsToType, CancellationToken cancellationToken)
+        async Task PublishBatched(IEnumerable<MulticastTransportOperation> multicastTransportOperations,
+            Dictionary<string, Type> multicastEventsMessageIdsToType, CancellationToken cancellationToken)
         {
             var tasks = new List<Task<SnsPreparedMessage>>();
             foreach (var operation in multicastTransportOperations)
@@ -131,24 +139,30 @@ namespace NServiceBus.Transport.SQS
             await Task.WhenAll(batchTasks).ConfigureAwait(false);
         }
 
-        Task DispatchIsolated(IEnumerable<UnicastTransportOperation> isolatedTransportOperations, Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction, CancellationToken cancellationToken)
+        Task DispatchIsolated(IEnumerable<UnicastTransportOperation> isolatedTransportOperations,
+            Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction,
+            CancellationToken cancellationToken)
         {
             List<Task>? tasks = null;
             foreach (var operation in isolatedTransportOperations)
             {
                 tasks ??= [];
-                tasks.Add(Dispatch(operation, multicastEventsMessageIdsToType, transportTransaction, cancellationToken));
+                tasks.Add(Dispatch(operation, multicastEventsMessageIdsToType, transportTransaction,
+                    cancellationToken));
             }
 
             return tasks != null ? Task.WhenAll(tasks) : Task.CompletedTask;
         }
 
-        async Task DispatchBatched(IEnumerable<UnicastTransportOperation> toBeBatchedTransportOperations, Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction, CancellationToken cancellationToken)
+        async Task DispatchBatched(IEnumerable<UnicastTransportOperation> toBeBatchedTransportOperations,
+            Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction,
+            CancellationToken cancellationToken)
         {
             var tasks = new List<Task<SqsPreparedMessage>>();
             foreach (var operation in toBeBatchedTransportOperations)
             {
-                tasks.Add(PrepareMessage(operation, multicastEventsMessageIdsToType, transportTransaction, cancellationToken)!);
+                tasks.Add(PrepareMessage(operation, multicastEventsMessageIdsToType, transportTransaction,
+                    cancellationToken)!);
             }
 
             await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -165,7 +179,8 @@ namespace NServiceBus.Transport.SQS
             await Task.WhenAll(batchTasks).ConfigureAwait(false);
         }
 
-        async Task SendBatch(SqsBatchEntry batch, int batchNumber, int totalBatches, CancellationToken cancellationToken)
+        async Task SendBatch(SqsBatchEntry batch, int batchNumber, int totalBatches,
+            CancellationToken cancellationToken)
         {
             try
             {
@@ -173,16 +188,19 @@ namespace NServiceBus.Transport.SQS
                 {
                     var message = batch.PreparedMessagesBydId.Values.First();
 
-                    Logger.Debug($"Sending batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
+                    Logger.Debug(
+                        $"Sending batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
                 }
 
-                var result = await sqsClient.SendMessageBatchAsync(batch.BatchRequest, cancellationToken).ConfigureAwait(false);
+                var result = await sqsClient.SendMessageBatchAsync(batch.BatchRequest, cancellationToken)
+                    .ConfigureAwait(false);
 
                 if (Logger.IsDebugEnabled)
                 {
                     var message = batch.PreparedMessagesBydId.Values.First();
 
-                    Logger.Debug($"Sent batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
+                    Logger.Debug(
+                        $"Sent batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
                 }
 
                 List<Task>? redispatchTasks = null;
@@ -190,8 +208,10 @@ namespace NServiceBus.Transport.SQS
                 {
                     redispatchTasks ??= new List<Task>(result.Failed.Count);
                     var messageToRetry = batch.PreparedMessagesBydId[errorEntry.Id];
-                    Logger.Info($"Retrying message with MessageId {messageToRetry.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
-                    redispatchTasks.Add(SendMessageForBatch(messageToRetry, batchNumber, totalBatches, cancellationToken));
+                    Logger.Info(
+                        $"Retrying message with MessageId {messageToRetry.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
+                    redispatchTasks.Add(SendMessageForBatch(messageToRetry, batchNumber, totalBatches,
+                        cancellationToken));
                 }
 
                 if (redispatchTasks != null)
@@ -214,19 +234,24 @@ namespace NServiceBus.Transport.SQS
                         e.StatusCode);
                 }
 
-                Logger.Error($"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'. The destination does not exist.", e);
+                Logger.Error(
+                    $"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'. The destination does not exist.",
+                    e);
                 throw;
             }
             catch (Exception ex) when (!ex.IsCausedBy(cancellationToken))
             {
                 var message = batch.PreparedMessagesBydId.Values.First();
 
-                Logger.Error($"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'", ex);
+                Logger.Error(
+                    $"Error while sending batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'",
+                    ex);
                 throw;
             }
         }
 
-        async Task SendBatch(SnsBatchEntry batch, int batchNumber, int totalBatches, CancellationToken cancellationToken)
+        async Task SendBatch(SnsBatchEntry batch, int batchNumber, int totalBatches,
+            CancellationToken cancellationToken)
         {
             try
             {
@@ -234,16 +259,19 @@ namespace NServiceBus.Transport.SQS
                 {
                     var message = batch.PreparedMessagesBydId.Values.First();
 
-                    Logger.Debug($"Publishing batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
+                    Logger.Debug(
+                        $"Publishing batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
                 }
 
-                var result = await snsClient.PublishBatchAsync(batch.BatchRequest, cancellationToken).ConfigureAwait(false);
+                var result = await snsClient.PublishBatchAsync(batch.BatchRequest, cancellationToken)
+                    .ConfigureAwait(false);
 
                 if (Logger.IsDebugEnabled)
                 {
                     var message = batch.PreparedMessagesBydId.Values.First();
 
-                    Logger.Debug($"Published batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
+                    Logger.Debug(
+                        $"Published batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
                 }
 
                 List<Task>? redispatchTasks = null;
@@ -251,7 +279,8 @@ namespace NServiceBus.Transport.SQS
                 {
                     redispatchTasks ??= new List<Task>(result.Failed.Count);
                     var messageToRetry = batch.PreparedMessagesBydId[errorEntry.Id];
-                    Logger.Info($"Republishing message with MessageId {messageToRetry.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
+                    Logger.Info(
+                        $"Republishing message with MessageId {messageToRetry.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
                     redispatchTasks.Add(PublishForBatch(messageToRetry, batchNumber, totalBatches, cancellationToken));
                 }
 
@@ -264,15 +293,19 @@ namespace NServiceBus.Transport.SQS
             {
                 var message = batch.PreparedMessagesBydId.Values.First();
 
-                Logger.Error($"Error while publishing batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'", ex);
+                Logger.Error(
+                    $"Error while publishing batch '{batchNumber}/{totalBatches}', with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}', to '{message.Destination}'",
+                    ex);
                 throw;
             }
         }
 
-        async Task PublishForBatch(SnsPreparedMessage message, int batchNumber, int totalBatches, CancellationToken cancellationToken)
+        async Task PublishForBatch(SnsPreparedMessage message, int batchNumber, int totalBatches,
+            CancellationToken cancellationToken)
         {
             await PublishMessage(message, cancellationToken).ConfigureAwait(false);
-            Logger.Info($"Republished message with MessageId {message.MessageId} that failed in batch '{batchNumber}/{totalBatches}'.");
+            Logger.Info(
+                $"Republished message with MessageId {message.MessageId} that failed in batch '{batchNumber}/{totalBatches}'.");
         }
 
         async Task Publish(MulticastTransportOperation transportOperation, CancellationToken cancellationToken)
@@ -306,9 +339,12 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        async Task Dispatch(UnicastTransportOperation transportOperation, Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction, CancellationToken cancellationToken)
+        async Task Dispatch(UnicastTransportOperation transportOperation,
+            Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction,
+            CancellationToken cancellationToken)
         {
-            var message = await PrepareMessage(transportOperation, multicastEventsMessageIdsToType, transportTransaction, cancellationToken)
+            var message = await PrepareMessage(transportOperation, multicastEventsMessageIdsToType,
+                    transportTransaction, cancellationToken)
                 .ConfigureAwait(false);
 
             if (message == null)
@@ -320,10 +356,12 @@ namespace NServiceBus.Transport.SQS
                 .ConfigureAwait(false);
         }
 
-        async Task SendMessageForBatch(SqsPreparedMessage message, int batchNumber, int totalBatches, CancellationToken cancellationToken)
+        async Task SendMessageForBatch(SqsPreparedMessage message, int batchNumber, int totalBatches,
+            CancellationToken cancellationToken)
         {
             await SendMessage(message, cancellationToken).ConfigureAwait(false);
-            Logger.Info($"Retried message with MessageId {message.MessageId} that failed in batch '{batchNumber}/{totalBatches}'.");
+            Logger.Info(
+                $"Retried message with MessageId {message.MessageId} that failed in batch '{batchNumber}/{totalBatches}'.");
         }
 
         async Task SendMessage(SqsPreparedMessage message, CancellationToken cancellationToken)
@@ -345,30 +383,43 @@ namespace NServiceBus.Transport.SQS
             }
             catch (Exception ex) when (!ex.IsCausedBy(cancellationToken))
             {
-                Logger.Error($"Error while sending message, with MessageId '{message.MessageId}', to '{message.Destination}'", ex);
+                Logger.Error(
+                    $"Error while sending message, with MessageId '{message.MessageId}', to '{message.Destination}'",
+                    ex);
                 throw;
             }
         }
 
-        async Task<SqsPreparedMessage?> PrepareMessage(UnicastTransportOperation transportOperation, Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction, CancellationToken cancellationToken)
+        async Task<SqsPreparedMessage?> PrepareMessage(UnicastTransportOperation transportOperation,
+            Dictionary<string, Type> multicastEventsMessageIdsToType, TransportTransaction transportTransaction,
+            CancellationToken cancellationToken)
         {
-            if (await hybridPubSubChecker.ThisIsAPublishMessageNotUsingMessageDrivenPubSub(transportOperation, multicastEventsMessageIdsToType, cancellationToken).ConfigureAwait(false))
+            if (await hybridPubSubChecker
+                    .ThisIsAPublishMessageNotUsingMessageDrivenPubSub(transportOperation,
+                        multicastEventsMessageIdsToType, cancellationToken).ConfigureAwait(false))
             {
                 return null;
             }
 
             var preparedMessage = new SqsPreparedMessage { MessageId = transportOperation.Message.MessageId };
 
-            await ApplyUnicastOperationMapping(transportOperation, preparedMessage, CalculateDelayedDeliverySeconds(transportOperation), GetNativeMessageAttributes(transportOperation, transportTransaction), cancellationToken).ConfigureAwait(false);
+            await ApplyUnicastOperationMapping(transportOperation, preparedMessage,
+                    CalculateDelayedDeliverySeconds(transportOperation),
+                    GetNativeMessageAttributes(transportOperation, transportTransaction), cancellationToken)
+                .ConfigureAwait(false);
 
             async Task PrepareSqsMessageBasedOnBodySize(TransportMessage? transportMessage)
             {
                 preparedMessage.CalculateSize();
                 if (preparedMessage.Size > TransportConstraints.MaximumMessageSize)
                 {
-                    var s3key = await UploadToS3(preparedMessage.MessageId, transportOperation, cancellationToken).ConfigureAwait(false);
-                    preparedMessage.Body = transportMessage != null ? PrepareSerializedS3TransportMessage(transportMessage, s3key) : TransportMessage.EmptyMessage;
-                    preparedMessage.MessageAttributes[TransportHeaders.S3BodyKey] = new MessageAttributeValue { StringValue = s3key, DataType = "String" };
+                    var s3key = await UploadToS3(preparedMessage.MessageId, transportOperation, cancellationToken)
+                        .ConfigureAwait(false);
+                    preparedMessage.Body = transportMessage != null
+                        ? PrepareSerializedS3TransportMessage(transportMessage, s3key)
+                        : TransportMessage.EmptyMessage;
+                    preparedMessage.MessageAttributes[TransportHeaders.S3BodyKey] =
+                        new MessageAttributeValue { StringValue = s3key, DataType = "String" };
                     preparedMessage.CalculateSize();
                 }
             }
@@ -376,13 +427,15 @@ namespace NServiceBus.Transport.SQS
             if (!wrapOutgoingMessages)
             {
                 (preparedMessage.Body, var headers) = GetMessageBodyAndHeaders(transportOperation.Message);
-                preparedMessage.MessageAttributes[TransportHeaders.Headers] = new MessageAttributeValue { StringValue = headers, DataType = "String" };
+                preparedMessage.MessageAttributes[TransportHeaders.Headers] =
+                    new MessageAttributeValue { StringValue = headers, DataType = "String" };
 
                 await PrepareSqsMessageBasedOnBodySize(default).ConfigureAwait(false);
             }
             else
             {
-                var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.Properties);
+                var sqsTransportMessage =
+                    new TransportMessage(transportOperation.Message, transportOperation.Properties);
                 preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
                 await PrepareSqsMessageBasedOnBodySize(sqsTransportMessage).ConfigureAwait(false);
             }
@@ -390,20 +443,30 @@ namespace NServiceBus.Transport.SQS
             return preparedMessage;
         }
 
-        async Task<SnsPreparedMessage> PrepareMessage(MulticastTransportOperation transportOperation, CancellationToken cancellationToken)
+        async Task<SnsPreparedMessage> PrepareMessage(MulticastTransportOperation transportOperation,
+            CancellationToken cancellationToken)
         {
             var preparedMessage = new SnsPreparedMessage { MessageId = transportOperation.Message.MessageId };
 
-            await ApplyMulticastOperationMapping(transportOperation, preparedMessage, cancellationToken).ConfigureAwait(false);
+            await ApplyMulticastOperationMapping(transportOperation, preparedMessage, cancellationToken)
+                .ConfigureAwait(false);
 
             async Task PrepareSnsMessageBasedOnBodySize(TransportMessage? transportMessage)
             {
                 preparedMessage.CalculateSize();
                 if (preparedMessage.Size > TransportConstraints.MaximumMessageSize)
                 {
-                    var s3key = await UploadToS3(preparedMessage.MessageId, transportOperation, cancellationToken).ConfigureAwait(false);
-                    preparedMessage.Body = transportMessage != null ? PrepareSerializedS3TransportMessage(transportMessage, s3key) : TransportMessage.EmptyMessage;
-                    preparedMessage.MessageAttributes[TransportHeaders.S3BodyKey] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue { StringValue = s3key, DataType = "String" };
+                    var s3key = await UploadToS3(preparedMessage.MessageId, transportOperation, cancellationToken)
+                        .ConfigureAwait(false);
+                    preparedMessage.Body = transportMessage != null
+                        ? PrepareSerializedS3TransportMessage(transportMessage, s3key)
+                        : TransportMessage.EmptyMessage;
+                    preparedMessage.MessageAttributes[TransportHeaders.S3BodyKey] =
+                        new Amazon.SimpleNotificationService.Model.MessageAttributeValue
+                        {
+                            StringValue = s3key,
+                            DataType = "String"
+                        };
                     preparedMessage.CalculateSize();
                 }
             }
@@ -411,13 +474,19 @@ namespace NServiceBus.Transport.SQS
             if (!wrapOutgoingMessages)
             {
                 (preparedMessage.Body, var headers) = GetMessageBodyAndHeaders(transportOperation.Message);
-                preparedMessage.MessageAttributes[TransportHeaders.Headers] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue() { StringValue = headers, DataType = "String" };
+                preparedMessage.MessageAttributes[TransportHeaders.Headers] =
+                    new Amazon.SimpleNotificationService.Model.MessageAttributeValue()
+                    {
+                        StringValue = headers,
+                        DataType = "String"
+                    };
 
                 await PrepareSnsMessageBasedOnBodySize(default).ConfigureAwait(false);
             }
             else
             {
-                var snsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.Properties);
+                var snsTransportMessage =
+                    new TransportMessage(transportOperation.Message, transportOperation.Properties);
                 preparedMessage.Body = JsonSerializer.Serialize(snsTransportMessage, transportMessageSerializerOptions);
                 await PrepareSnsMessageBasedOnBodySize(snsTransportMessage).ConfigureAwait(false);
             }
@@ -444,12 +513,14 @@ namespace NServiceBus.Transport.SQS
             return delaySeconds;
         }
 
-        Dictionary<string, MessageAttributeValue>? GetNativeMessageAttributes(UnicastTransportOperation transportOperation, TransportTransaction transportTransaction)
+        Dictionary<string, MessageAttributeValue>? GetNativeMessageAttributes(
+            UnicastTransportOperation transportOperation, TransportTransaction transportTransaction)
         {
             // In case we're handling a message of which the incoming message id equals the outgoing message id, we're essentially handling an error or audit scenario, in which case we want copy over the message attributes
             // from the native message, so we don't lose part of the message
             var forwardingANativeMessage = transportTransaction.TryGet<Message>(out var nativeMessage) &&
-                                           transportTransaction.TryGet<string>("IncomingMessageId", out var incomingMessageId) &&
+                                           transportTransaction.TryGet<string>("IncomingMessageId",
+                                               out var incomingMessageId) &&
                                            incomingMessageId == transportOperation.Message.MessageId;
 
             return forwardingANativeMessage ? nativeMessage.MessageAttributes : null;
@@ -463,11 +534,9 @@ namespace NServiceBus.Transport.SQS
                 // this could be a control message
                 body = TransportMessage.EmptyMessage;
             }
-            else if (outgoingMessage.Headers.ContainsKey(Constants.MetricsMessageMetricTypeHeaderKey)
-                     && outgoingMessage.Headers.TryGetValue(Headers.ContentType, out var contentType)
-                     && contentType == Constants.MetricsMessageContentTypeHeaderValue)
+            else if (wrapOutgoingMessages && ContainsInvalidUtf8OrSqsCharacters(outgoingMessage.Body.Span))
             {
-                // it's a message from the metrics package
+                // it's a message that requires encoding because it contains invalid UTF-8 or SQS characters
                 body = Convert.ToBase64String(outgoingMessage.Body.Span);
             }
             else
@@ -482,11 +551,89 @@ namespace NServiceBus.Transport.SQS
             return (body, headers);
         }
 
-        async Task<string> UploadToS3(string messageId, IOutgoingTransportOperation transportOperation, CancellationToken cancellationToken)
+        static readonly SearchValues<byte> InvalidUtf8FirstBytes = SearchValues.Create(
+            // Invalid first byte values for UTF-8
+            [0xC0, 0xC1, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF]);
+
+        static bool ContainsInvalidUtf8OrSqsCharacters(ReadOnlySpan<byte> bytes)
+        {
+            int index = 0;
+
+            // Check for invalid UTF-8
+            if (bytes.IndexOfAny(InvalidUtf8FirstBytes) != -1)
+            {
+                return true;
+            }
+
+            while (index < bytes.Length)
+            {
+                // Decode UTF-8 character
+                if (!TryDecodeUtf8Character(bytes, ref index, out int codePoint) || !IsValidSqsCharacter(codePoint))
+                {
+                    return true; // Invalid character detected
+                }
+            }
+
+            return false;
+        }
+
+        static bool TryDecodeUtf8Character(ReadOnlySpan<byte> bytes, ref int index, out int codePoint)
+        {
+            codePoint = 0;
+
+            if (index >= bytes.Length)
+            {
+                return false;
+            }
+
+            byte firstByte = bytes[index];
+
+            // Decode based on UTF-8 byte sequence
+            if ((firstByte & 0x80) == 0) // 1-byte sequence (ASCII)
+            {
+                codePoint = firstByte;
+                index++;
+            }
+            else if ((firstByte & 0xE0) == 0xC0 && index + 1 < bytes.Length) // 2-byte sequence
+            {
+                codePoint = ((firstByte & 0x1F) << 6) | (bytes[index + 1] & 0x3F);
+                index += 2;
+            }
+            else if ((firstByte & 0xF0) == 0xE0 && index + 2 < bytes.Length) // 3-byte sequence
+            {
+                codePoint = ((firstByte & 0x0F) << 12) | ((bytes[index + 1] & 0x3F) << 6) | (bytes[index + 2] & 0x3F);
+                index += 3;
+            }
+            else if ((firstByte & 0xF8) == 0xF0 && index + 3 < bytes.Length) // 4-byte sequence
+            {
+                codePoint = ((firstByte & 0x07) << 18) |
+                            ((bytes[index + 1] & 0x3F) << 12) |
+                            ((bytes[index + 2] & 0x3F) << 6) |
+                            (bytes[index + 3] & 0x3F);
+                index += 4;
+            }
+            else
+            {
+                return false; // Invalid UTF-8 sequence
+            }
+
+            return true;
+        }
+
+        static bool IsValidSqsCharacter(int codePoint) =>
+            // Check if the code point falls within the SQS valid range
+            codePoint is 0x09 or 0x0A or 0x0D or
+                (>= 0x20 and <= 0xD7FF) or
+                (>= 0xE000 and <= 0xFFFD) or
+                (>= 0x10000 and <= 0x10FFFF);
+
+        async Task<string> UploadToS3(string messageId, IOutgoingTransportOperation transportOperation,
+            CancellationToken cancellationToken)
         {
             if (s3 == null)
             {
-                throw new Exception("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
+                throw new Exception(
+                    "Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration.");
             }
 
             var key = $"{s3.KeyPrefix}/{messageId}";
@@ -512,13 +659,17 @@ namespace NServiceBus.Transport.SQS
             return JsonSerializer.Serialize(transportMessage, transportMessageSerializerOptions);
         }
 
-        async Task ApplyMulticastOperationMapping(MulticastTransportOperation transportOperation, SnsPreparedMessage snsPreparedMessage, CancellationToken cancellationToken)
+        async Task ApplyMulticastOperationMapping(MulticastTransportOperation transportOperation,
+            SnsPreparedMessage snsPreparedMessage, CancellationToken cancellationToken)
         {
-            var existingTopicArn = await topicCache.GetTopicArn(transportOperation.MessageType, cancellationToken).ConfigureAwait(false);
+            var existingTopicArn = await topicCache.GetTopicArn(transportOperation.MessageType, cancellationToken)
+                .ConfigureAwait(false);
             snsPreparedMessage.Destination = existingTopicArn;
         }
 
-        async ValueTask ApplyUnicastOperationMapping(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, Dictionary<string, MessageAttributeValue>? nativeMessageAttributes, CancellationToken cancellationToken)
+        async ValueTask ApplyUnicastOperationMapping(UnicastTransportOperation transportOperation,
+            SqsPreparedMessage sqsPreparedMessage, long delaySeconds,
+            Dictionary<string, MessageAttributeValue>? nativeMessageAttributes, CancellationToken cancellationToken)
         {
             // copy over the message attributes that were set on the incoming message for error/audit scenario's if available
             sqsPreparedMessage.CopyMessageAttributes(nativeMessageAttributes);
@@ -528,8 +679,10 @@ namespace NServiceBus.Transport.SQS
             if (delayLongerThanConfiguredDelayedDeliveryQueueDelayTime)
             {
                 sqsPreparedMessage.OriginalDestination = transportOperation.Destination;
-                sqsPreparedMessage.Destination = $"{transportOperation.Destination}{TransportConstraints.DelayedDeliveryQueueSuffix}";
-                sqsPreparedMessage.QueueUrl = await queueCache.GetQueueUrl(sqsPreparedMessage.Destination, cancellationToken)
+                sqsPreparedMessage.Destination =
+                    $"{transportOperation.Destination}{TransportConstraints.DelayedDeliveryQueueSuffix}";
+                sqsPreparedMessage.QueueUrl = await queueCache
+                    .GetQueueUrl(sqsPreparedMessage.Destination, cancellationToken)
                     .ConfigureAwait(false);
 
                 sqsPreparedMessage.MessageDeduplicationId = sqsPreparedMessage.MessageId;
@@ -547,7 +700,8 @@ namespace NServiceBus.Transport.SQS
 
                 try
                 {
-                    sqsPreparedMessage.QueueUrl = await queueCache.GetQueueUrl(sqsPreparedMessage.Destination, cancellationToken)
+                    sqsPreparedMessage.QueueUrl = await queueCache
+                        .GetQueueUrl(sqsPreparedMessage.Destination, cancellationToken)
                         .ConfigureAwait(false);
                 }
                 catch (QueueDoesNotExistException ex)
