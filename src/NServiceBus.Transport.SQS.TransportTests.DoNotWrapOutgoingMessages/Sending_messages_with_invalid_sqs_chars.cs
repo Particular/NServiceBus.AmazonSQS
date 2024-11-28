@@ -27,7 +27,7 @@
 
             var headers = new Dictionary<string, string>
             {
-                { "SomeHeader", "doesn't matter" },
+                { "SomeHeader", "header value with invalid chars: \0" },
             };
 
             var body = "body with invalid chars: \0"u8.ToArray();
