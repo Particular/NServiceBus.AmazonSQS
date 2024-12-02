@@ -50,10 +50,4 @@
     <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\When_multiple_messages_are_available_and_concurrency_is_lowered_after_pump_started.cs" />
   </ItemGroup>
 
-  <!-- The following tests currently fail as we don't support binary serialization in SQS, except for ServiceControl Metrics messages -->
-  <!-- See https://github.com/Particular/NServiceBus.AmazonSQS/issues/2630 -->
-  <ItemGroup Condition="'$(PkgNServiceBus_TransportTests_Sources)' != ''">
-     <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\When_message_is_available.cs" />
-  </ItemGroup>
-
 </Project>
