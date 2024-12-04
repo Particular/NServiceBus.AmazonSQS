@@ -262,6 +262,10 @@
             throw new NotImplementedException();
         }
 
+        public Task<CreateBucketMetadataTableConfigurationResponse> CreateBucketMetadataTableConfigurationAsync(CreateBucketMetadataTableConfigurationRequest request,
+            CancellationToken cancellationToken = new CancellationToken()) =>
+            throw new NotImplementedException();
+
         public Task<CreateSessionResponse> CreateSessionAsync(CreateSessionRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
 
         public DeleteBucketResponse DeleteBucket(string bucketName)
@@ -313,6 +317,10 @@
         {
             throw new NotImplementedException();
         }
+
+        public Task<DeleteBucketMetadataTableConfigurationResponse> DeleteBucketMetadataTableConfigurationAsync(DeleteBucketMetadataTableConfigurationRequest request,
+            CancellationToken cancellationToken = new CancellationToken()) =>
+            throw new NotImplementedException();
 
         public DeleteBucketMetricsConfigurationResponse DeleteBucketMetricsConfiguration(DeleteBucketMetricsConfigurationRequest request)
         {
@@ -614,6 +622,10 @@
         {
             throw new NotImplementedException();
         }
+
+        public Task<GetBucketMetadataTableConfigurationResponse> GetBucketMetadataTableConfigurationAsync(GetBucketMetadataTableConfigurationRequest request,
+            CancellationToken cancellationToken = new CancellationToken()) =>
+            throw new NotImplementedException();
 
         public GetBucketMetricsConfigurationResponse GetBucketMetricsConfiguration(GetBucketMetricsConfigurationRequest request)
         {
