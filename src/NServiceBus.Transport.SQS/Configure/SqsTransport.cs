@@ -132,6 +132,8 @@
         /// NServiceBus headers will be sent as an Amazon message attribute.
         /// Only turn this on if all your endpoints are version 6.1.0 or above.
         /// </summary>
+        /// <remarks>In cases when the outgoing message contains characters that are not compliant with the <see href="https://www.w3.org/TR/REC-xml/#charsets">W3C specification
+        /// for characters</see> <see href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html">SQS requires</see> the payload is base64 encoded automatically.</remarks>
         public bool DoNotWrapOutgoingMessages { get; set; }
 
         /// <summary>

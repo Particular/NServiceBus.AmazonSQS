@@ -21,7 +21,8 @@ namespace NServiceBus.Transport.SQS.Extensions
                     return EmptyMessage;
                 }
 
-                return ConvertBody(transportMessage.Body, arrayPool, transportMessage.Headers.Keys.Contains(TransportHeaders.Headers));
+                var isNativeMessage = transportMessage.Headers.Keys.Contains(TransportHeaders.Headers);
+                return ConvertBody(transportMessage.Body, arrayPool, isNativeMessage);
             }
 
             if (s3Settings == null)
@@ -55,16 +56,14 @@ namespace NServiceBus.Transport.SQS.Extensions
             {
                 return GetNonEncodedBody(body, arrayPool, null, encoding);
             }
-            else
-            {
-                var buffer = GetBuffer(body, arrayPool, encoding);
-                if (Convert.TryFromBase64String(body, buffer, out var writtenBytes))
-                {
-                    return (buffer.AsMemory(0, writtenBytes), buffer);
-                }
 
-                return GetNonEncodedBody(body, arrayPool, buffer, encoding);
+            var buffer = GetBuffer(body, arrayPool, encoding);
+            if (Convert.TryFromBase64String(body, buffer, out var writtenBytes))
+            {
+                return (buffer.AsMemory(0, writtenBytes), buffer);
             }
+
+            return GetNonEncodedBody(body, arrayPool, buffer, encoding);
         }
 
         static (ReadOnlyMemory<byte> MessageBody, byte[]? MessageBodyBuffer) GetNonEncodedBody(string body, ArrayPool<byte> arrayPool, byte[]? buffer, Encoding encoding)
