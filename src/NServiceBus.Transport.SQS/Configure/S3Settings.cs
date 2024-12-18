@@ -64,10 +64,10 @@ namespace NServiceBus
             BucketName = bucketForLargeMessages;
             KeyPrefix = keyPrefix;
 
-            var isExternal = s3Client != null;
-            this.s3Client = isExternal
-                ? (s3Client, true)
-                : (DefaultClientFactories.S3Factory(), false);
+            this.s3Client = (
+                Instance: s3Client ?? DefaultClientFactories.S3Factory(),
+                ExternallyManaged: s3Client != null
+            );
         }
 
         /// <summary>
