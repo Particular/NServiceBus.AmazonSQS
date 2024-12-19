@@ -27,7 +27,7 @@ namespace NServiceBus.Transport.SQS.Tests
             await cache.GetTopicArn(typeof(Event));
 
             Assert.That(snsClient.FindTopicRequests, Is.Empty);
-            Assert.That(requestsSent, Is.EqualTo(new List<string> { "PREFIXEvent" }).AsCollection);
+            Assert.That(requestsSent, Is.EqualTo(["PREFIXEvent"]).AsCollection);
         }
 
         [Test]
@@ -144,7 +144,7 @@ namespace NServiceBus.Transport.SQS.Tests
             await cache.GetTopicArn(typeof(Event));
 
             Assert.That(snsClient.FindTopicRequests, Is.Empty);
-            Assert.That(requestsSent, Is.EqualTo(new List<string> { "PREFIXEvent" }).AsCollection);
+            Assert.That(requestsSent, Is.EqualTo(["PREFIXEvent"]).AsCollection);
         }
 
         [Test]
