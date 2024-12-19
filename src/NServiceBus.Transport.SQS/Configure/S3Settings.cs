@@ -63,8 +63,11 @@ namespace NServiceBus
 
             BucketName = bucketForLargeMessages;
             KeyPrefix = keyPrefix;
-            externallyManagedS3lient = s3Client != null;
-            this.s3Client = s3Client ?? DefaultClientFactories.S3Factory();
+
+            this.s3Client = (
+                Instance: s3Client ?? DefaultClientFactories.S3Factory(),
+                ExternallyManaged: s3Client != null
+            );
         }
 
         /// <summary>
@@ -87,22 +90,10 @@ namespace NServiceBus
         /// <summary>
         /// The S3 client to use.
         /// </summary>
-        public IAmazonS3 S3Client
-        {
-            get => s3Client;
-            //For legacy API shim
-            internal set
-            {
-                ArgumentNullException.ThrowIfNull(value);
+        public IAmazonS3 S3Client => s3Client.Instance;
 
-                s3Client = value;
-                externallyManagedS3lient = true;
-            }
-        }
+        internal bool ShouldDisposeS3Client => !s3Client.ExternallyManaged;
 
-        internal bool ShouldDisposeS3Client => !externallyManagedS3lient;
-
-        IAmazonS3 s3Client;
-        bool externallyManagedS3lient;
+        (IAmazonS3 Instance, bool ExternallyManaged) s3Client;
     }
 }

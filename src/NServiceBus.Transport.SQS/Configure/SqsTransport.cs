@@ -21,33 +21,23 @@
         /// <summary>
         /// SQS client for the transport.
         /// </summary>
-        public IAmazonSQS SqsClient
-        {
-            get => sqsClient;
-            //For legacy API shim
-            internal set
-            {
-                ArgumentNullException.ThrowIfNull(value);
-
-                sqsClient = value;
-                externallyManagedSqsClient = true;
-            }
-        }
+        public IAmazonSQS SqsClient => sqsClient.Instance;
 
         /// <summary>
         /// SNS client for the transport.
         /// </summary>
-        public IAmazonSimpleNotificationService SnsClient
-        {
-            get => snsClient;
-            //For legacy API shim
-            internal set
-            {
-                ArgumentNullException.ThrowIfNull(value);
+        public IAmazonSimpleNotificationService SnsClient => snsClient.Instance;
 
-                snsClient = value;
-                externallyManagedSnsClient = true;
-            }
+        internal void SetupSqsClient(IAmazonSQS sqsClient, bool externallyManaged)
+        {
+            ArgumentNullException.ThrowIfNull(sqsClient);
+            this.sqsClient = (sqsClient, externallyManaged);
+        }
+
+        internal void SetupSnsClient(IAmazonSimpleNotificationService snsClient, bool externallyManaged)
+        {
+            ArgumentNullException.ThrowIfNull(snsClient);
+            this.snsClient = (snsClient, externallyManaged);
         }
 
         /// <summary>
@@ -216,10 +206,8 @@
         /// Creates a new instance of the SQS transport definition.
         /// </summary>
         public SqsTransport(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient)
-            : base(TransportTransactionMode.ReceiveOnly, true, true, true)
+            : this(sqsClient, snsClient, externallyManaged: true)
         {
-            SqsClient = sqsClient;
-            SnsClient = snsClient;
         }
 
         /// <summary>
@@ -228,10 +216,8 @@
         /// Uses SQS and SNS clients created using a default constructor (based on the the settings from the environment)
         /// </summary>
         public SqsTransport()
-            : base(TransportTransactionMode.ReceiveOnly, true, true, true)
+            : this(DefaultClientFactories.SqsFactory(), DefaultClientFactories.SnsFactory(), externallyManaged: false)
         {
-            sqsClient = DefaultClientFactories.SqsFactory();
-            snsClient = DefaultClientFactories.SnsFactory();
         }
 
         /// <summary>
@@ -250,16 +236,16 @@
                 supportsTTBR: true
             )
         {
-            // Use properties to ensure `externallyManagedSqsClient` is set
-            SqsClient = sqsClient;
-            SnsClient = snsClient;
+            SetupSqsClient(sqsClient, true);
+            SetupSnsClient(snsClient, true);
         }
 
         // Only invoke when not using external SQS and SNS clients
         internal SqsTransport(
             IAmazonSQS sqsClient,
             IAmazonSimpleNotificationService snsClient,
-            bool supportsPublishSubscribe,
+            bool externallyManaged,
+            bool supportsPublishSubscribe = true,
             bool enableDelayedDelivery = true
         )
             : base(
@@ -269,8 +255,8 @@
                 supportsTTBR: true
             )
         {
-            this.sqsClient = sqsClient;
-            this.snsClient = snsClient;
+            SetupSqsClient(sqsClient, externallyManaged);
+            SetupSnsClient(snsClient, externallyManaged);
         }
 
         /// <summary>
@@ -304,8 +290,8 @@
                 QueueDelayTime,
                 topicNamePrefix,
                 DoNotWrapOutgoingMessages,
-                !externallyManagedSqsClient,
-                !externallyManagedSnsClient,
+                !sqsClient.ExternallyManaged,
+                !snsClient.ExternallyManaged,
                 !SupportsDelayedDelivery
             );
 
@@ -352,16 +338,11 @@
         readonly EventToTopicsMappings eventToTopicsMappings = new EventToTopicsMappings();
         readonly EventToEventsMappings eventToEventsMappings = new EventToEventsMappings();
 
-        static readonly TransportTransactionMode[] SupportedTransactionModes = {
-            TransportTransactionMode.None,
-            TransportTransactionMode.ReceiveOnly
-        };
+        static readonly TransportTransactionMode[] SupportedTransactionModes = { TransportTransactionMode.None, TransportTransactionMode.ReceiveOnly };
 
         static readonly TimeSpan MaxTimeToLiveUpperBound = TimeSpan.FromDays(14);
         static readonly TimeSpan MaxTimeToLiveLowerBound = TimeSpan.FromSeconds(60);
-        IAmazonSQS sqsClient;
-        IAmazonSimpleNotificationService snsClient;
-        bool externallyManagedSqsClient;
-        bool externallyManagedSnsClient;
+        (IAmazonSQS Instance, bool ExternallyManaged) sqsClient;
+        (IAmazonSimpleNotificationService Instance, bool ExternallyManaged) snsClient;
     }
 }
