@@ -127,7 +127,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
-            Assert.That(snsClient.CreateTopicRequests, Is.EquivalentTo(new List<string> { "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event" }));
+            Assert.That(snsClient.CreateTopicRequests, Is.EquivalentTo(["NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event"]));
             Assert.That(snsClient.FindTopicRequests, Is.Empty);
         }
 
@@ -141,11 +141,11 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
-            Assert.That(snsClient.CreateTopicRequests, Is.EquivalentTo(new List<string>
-            {
+            Assert.That(snsClient.CreateTopicRequests, Is.EquivalentTo(
+            [
                 "custom-topic-name",
                 "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event"
-            }));
+            ]));
             Assert.That(snsClient.FindTopicRequests, Is.Empty);
         }
 
@@ -162,12 +162,12 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.SubscribeAll(new[] { new MessageMetadata(subscribedEventType) }, null);
 
-            Assert.That(snsClient.CreateTopicRequests, Is.EquivalentTo(new List<string>
-            {
+            Assert.That(snsClient.CreateTopicRequests, Is.EquivalentTo(
+            [
                 "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event",
                 "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-AnotherEvent",
                 "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-IEvent"
-            }));
+            ]));
             Assert.That(snsClient.FindTopicRequests, Is.Empty);
         }
 
@@ -304,10 +304,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.Unsubscribe(new MessageMetadata(eventType), null);
 
-            Assert.That(snsClient.UnsubscribeRequests, Is.EquivalentTo(new List<string>
-            {
-                "arn:subscription"
-            }));
+            Assert.That(snsClient.UnsubscribeRequests, Is.EquivalentTo(["arn:subscription"]));
         }
 
         [Test]
@@ -361,15 +358,15 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.Unsubscribe(new MessageMetadata(unsubscribedEvent), null);
 
-            Assert.That(snsClient.FindTopicRequests, Is.EquivalentTo(new List<string>
-            {
+            Assert.That(snsClient.FindTopicRequests, Is.EquivalentTo(
+            [
                 "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-Event",
                 "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-IEvent"
-            }));
-            Assert.That(snsClient.UnsubscribeRequests, Is.EquivalentTo(new List<string>
-            {
+            ]));
+            Assert.That(snsClient.UnsubscribeRequests, Is.EquivalentTo(
+            [
                 "arn:subscription"
-            }));
+            ]));
         }
 
         [Test]
@@ -436,15 +433,8 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await manager.Unsubscribe(new MessageMetadata(unsubscribedEvent), null);
 
-            Assert.That(snsClient.FindTopicRequests, Is.EquivalentTo(new List<string>
-            {
-                "custom-topic-name",
-                "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-IEvent"
-            }));
-            Assert.That(snsClient.UnsubscribeRequests, Is.EquivalentTo(new List<string>
-            {
-                "arn:subscription"
-            }));
+            Assert.That(snsClient.FindTopicRequests, Is.EquivalentTo(["custom-topic-name", "NServiceBus-Transport-SQS-Tests-SubscriptionManagerTests-IEvent"]));
+            Assert.That(snsClient.UnsubscribeRequests, Is.EquivalentTo(["arn:subscription"]));
         }
 
         [Test]
