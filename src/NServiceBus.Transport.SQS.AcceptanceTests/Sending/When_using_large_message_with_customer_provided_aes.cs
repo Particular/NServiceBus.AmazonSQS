@@ -39,7 +39,7 @@ namespace NServiceBus.AcceptanceTests.Sending
 
             Assert.Multiple(() =>
             {
-                Assert.That(getObjectResponse.ServerSideEncryptionCustomerMethod.Value, Is.EqualTo(ServerSideEncryptionCustomerMethod.AES256.Value));
+                Assert.That(getObjectResponse.ServerSideEncryptionCustomerMethod, Is.EqualTo(ServerSideEncryptionCustomerMethod.AES256));
                 Assert.That(getObjectResponse.ServerSideEncryptionMethod, Is.Null);
             });
         }
