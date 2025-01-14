@@ -25,8 +25,6 @@
 
         public Task Configure(string endpointName, EndpointConfiguration configuration, RunSettings settings, PublisherMetadata publisherMetadata)
         {
-            PreventInconclusiveTestsFromRunning(endpointName);
-
             var transport = PrepareSqsTransport(supportsPublishSubscribe);
             configuration.UseTransport(transport);
 
@@ -99,13 +97,5 @@
         public Task Cleanup() =>
             // Queues are cleaned up once, globally, in SetupFixture.
             Task.CompletedTask;
-
-        static void PreventInconclusiveTestsFromRunning(string endpointName)
-        {
-            if (endpointName == Conventions.EndpointNamingConvention(typeof(MessageDriven.Pub_from_sendonly.SendOnlyPublisher)))
-            {
-                Assert.Inconclusive("Test is not using endpoint naming conventions in hardcoded subscription storage. Should be fixed in core vNext.");
-            }
-        }
     }
 }
