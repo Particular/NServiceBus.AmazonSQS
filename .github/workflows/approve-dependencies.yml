@@ -5,6 +5,9 @@ on:
 permissions:
   pull-requests: write
   contents: write
+defaults:
+  run:
+    shell: bash
 jobs:
   dependabot:
     runs-on: ubuntu-latest
