@@ -677,7 +677,7 @@
                     WorkingDirectory = TestContext.CurrentContext.TestDirectory,
                     FileName = "dotnet",
                     Arguments =
-                        $"NServiceBus.Transports.SQS.CommandLine.dll {command} -i {accessKeyId} -s {secretAccessKey} -r {region}"
+                        $"--fx-version {Environment.Version} NServiceBus.Transports.SQS.CommandLine.dll {command} -i {accessKeyId} -s {secretAccessKey} -r {region}"
                 }
             };
 
