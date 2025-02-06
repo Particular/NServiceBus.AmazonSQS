@@ -3,6 +3,9 @@ on:
   schedule:
     - cron: '0 0 * * *' # Runs daily at midnight UTC
   workflow_dispatch:
+defaults:
+  run:
+    shell: pwsh
 jobs:
   cleanup:
     runs-on: ubuntu-20.04
