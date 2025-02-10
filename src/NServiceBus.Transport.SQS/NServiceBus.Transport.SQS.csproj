@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net472;net6.0</TargetFrameworks>
     <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>$(SolutionDir)NServiceBus.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\NServiceBus.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -16,16 +16,16 @@
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.101.20" />
     <PackageReference Include="AWSSDK.SQS" Version="3.7.100.83" />
     <PackageReference Include="BitFaster.Caching" Version="2.1.1" />
-    <PackageReference Include="NServiceBus" Version="8.2.4" />
     <PackageReference Include="Fody" Version="6.9.1" PrivateAssets="All" />
+    <PackageReference Include="NServiceBus" Version="8.2.4" />
     <PackageReference Include="Obsolete.Fody" Version="5.3.0" PrivateAssets="All" />
     <PackageReference Include="Particular.Packaging" Version="4.2.0" PrivateAssets="All" />
     <PackageReference Include="PolySharp" Version="1.12.1" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="NServiceBus.Transport.SQS.Tests" Key="$(NServiceBusTestsKey)" />
     <InternalsVisibleTo Include="NServiceBus.Transport.SQS.AcceptanceTests" Key="$(NServiceBusTestsKey)" />
+    <InternalsVisibleTo Include="NServiceBus.Transport.SQS.Tests" Key="$(NServiceBusTestsKey)" />
     <InternalsVisibleTo Include="NServiceBus.Transport.SQS.TransportTests" Key="$(NServiceBusTestsKey)" />
   </ItemGroup>
 
