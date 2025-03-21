@@ -66,7 +66,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MaxNumberOfMessages == 1), Is.True, "MaxNumberOfMessages did not match");
                 Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.QueueUrl == FakeInputQueueQueueUrl), Is.True, "QueueUrl did not match");
                 Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MessageAttributeNames.SequenceEqual(["All"])), Is.True, "MessageAttributeNames did not match");
-                Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MessageSystemAttributeNames.SequenceEqual(["SentTimestamp"])), Is.True, "AttributeNames did not match");
+                Assert.That(mockSqsClient.ReceiveMessagesRequestsSent.All(r => r.MessageSystemAttributeNames.SequenceEqual(["ApproximateReceiveCount", "SentTimestamp"])), Is.True, "AttributeNames did not match");
             });
         }
 
