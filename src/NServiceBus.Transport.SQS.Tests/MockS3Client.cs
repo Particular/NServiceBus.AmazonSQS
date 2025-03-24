@@ -1,6 +1,7 @@
 ﻿namespace NServiceBus.Transport.SQS.Tests
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.IO;
     using System.Threading;
@@ -12,13 +13,13 @@
 
     public class MockS3Client : IAmazonS3
     {
-        public List<PutObjectRequest> PutObjectRequestsSent { get; } = [];
+        public ConcurrentQueue<PutObjectRequest> PutObjectRequestsSent { get; } = [];
 
         public Func<PutObjectRequest, PutObjectResponse> PutObjectRequestResponse = req => new PutObjectResponse();
 
         public Task<PutObjectResponse> PutObjectAsync(PutObjectRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
-            PutObjectRequestsSent.Add(request);
+            PutObjectRequestsSent.Enqueue(request);
             return Task.FromResult(PutObjectRequestResponse(request));
         }
 
