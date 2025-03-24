@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -230,7 +229,6 @@
         /// <summary>
         /// Creates a new instance of the SQS transport definition.
         /// </summary>
-        [Experimental(DiagnosticDescriptors.ExperimentalDisableDelayedDelivery)]
         public SqsTransport(
             IAmazonSQS sqsClient,
             IAmazonSimpleNotificationService snsClient,

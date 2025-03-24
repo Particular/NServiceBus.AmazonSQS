@@ -49,7 +49,7 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var sut = new SqsTransportInfrastructure(
                 hostSettings,
-                Array.Empty<ReceiveSettings>(),
+                [],
                 mockSqsClient,
                 mockSnsClient,
                 queueCache,
@@ -107,16 +107,16 @@ namespace NServiceBus.Transport.SQS.Tests
             });
         }
 
-        [Test]
-        public async Task Should_not_dispose_clients_passed_into_transport_constructor_with_delayed_delivery()
+        [Theory]
+        [TestCase(true)]
+        [TestCase(false)]
+        public async Task Should_not_dispose_clients_passed_into_transport_constructor_accepting_delayed_delivery_settings(bool enableDelayedDelivery)
         {
             var mockSqsClient = new MockSqsClient();
             var mockSnsClient = new MockSnsClient();
             var mockS3Client = new MockS3Client();
 
-#pragma warning disable NSBSQSEXP0001
-            var transport = new SqsTransport(mockSqsClient, mockSnsClient, enableDelayedDelivery: false)
-#pragma warning restore NSBSQSEXP0001
+            var transport = new SqsTransport(mockSqsClient, mockSnsClient, enableDelayedDelivery: true)
             {
                 S3 = new S3Settings("123", "k", mockS3Client)
             };
