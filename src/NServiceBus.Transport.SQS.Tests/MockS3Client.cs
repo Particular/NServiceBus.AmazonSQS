@@ -948,6 +948,8 @@
             throw new NotImplementedException();
         }
 
+        public Task<HeadBucketResponse> HeadBucketAsync(HeadBucketRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
+
         public InitiateMultipartUploadResponse InitiateMultipartUpload(string bucketName, string key)
         {
             throw new NotImplementedException();
