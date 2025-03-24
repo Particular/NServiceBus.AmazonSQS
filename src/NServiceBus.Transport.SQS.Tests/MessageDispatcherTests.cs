@@ -32,7 +32,7 @@
             var mockSqsClient = new MockSqsClient();
 
             var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
-                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60);
+                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, 0);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -76,7 +76,7 @@
             var mockSqsClient = new MockSqsClient();
 
             var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
-                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60);
+                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, 0);
 
             var expectedId = "1234";
 
@@ -101,7 +101,7 @@
             var mockSqsClient = new MockSqsClient();
 
             var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
-                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60);
+                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, 0);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -139,7 +139,7 @@
             var dispatcher = new MessageDispatcher(new SettingsHolder(), null, mockSnsClient, null,
                 new TopicCache(mockSnsClient, new SettingsHolder(), new EventToTopicsMappings(),
                     new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""), null,
-                15 * 60);
+                15 * 60, 0);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -178,7 +178,7 @@
             var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, mockSnsClient, new QueueCache(null,
                     dest => QueueCache.GetSqsQueueName(dest, "")),
                 new TopicCache(mockSnsClient, new SettingsHolder(), new EventToTopicsMappings(), new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""),
-                null, 15 * 60);
+                null, 15 * 60, 0);
 
             mockSnsClient.ListSubscriptionsByTopicResponse = topic => new ListSubscriptionsByTopicResponse
             {
@@ -224,7 +224,7 @@
             var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, mockSnsClient, new QueueCache(mockSqsClient,
                     dest => QueueCache.GetSqsQueueName(dest, "")),
                 new TopicCache(mockSnsClient, new SettingsHolder(), new EventToTopicsMappings(), new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""),
-                null, 15 * 60);
+                null, 15 * 60, 0);
 
             var messageId = Guid.NewGuid().ToString();
             var headers = new Dictionary<string, string>()
@@ -262,7 +262,7 @@
             var dispatcher = new MessageDispatcher(new SettingsHolder(), null, mockSnsClient, new QueueCache(null,
                     dest => QueueCache.GetSqsQueueName(dest, "")),
                 new TopicCache(mockSnsClient, new SettingsHolder(), new EventToTopicsMappings(), new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""),
-                null, 15 * 60);
+                null, 15 * 60, 0);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -293,7 +293,7 @@
             var dispatcher = new MessageDispatcher(new SettingsHolder(), null, mockSnsClient, new QueueCache(null,
                     dest => QueueCache.GetSqsQueueName(dest, "")),
                 new TopicCache(mockSnsClient, new SettingsHolder(), new EventToTopicsMappings(), new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""),
-                null, 15 * 60);
+                null, 15 * 60, 0);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -321,7 +321,7 @@
             var dispatcher = new MessageDispatcher(new SettingsHolder(), null, mockSnsClient, new QueueCache(null,
                     dest => QueueCache.GetSqsQueueName(dest, "")),
                 new TopicCache(mockSnsClient, new SettingsHolder(), new EventToTopicsMappings(), new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""),
-                new S3Settings("someBucket", keyPrefix, mockS3Client), 15 * 60, wrapOutgoingMessages: wrapMessage);
+                new S3Settings("someBucket", keyPrefix, mockS3Client), 15 * 60, 0, wrapOutgoingMessages: wrapMessage);
 
             var longBodyMessageId = Guid.NewGuid().ToString();
             /* Crazy long message id will cause the message to go over limits because attributes count as well */
@@ -384,7 +384,7 @@
             };
 
             var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
-                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60);
+                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, 0);
 
             var properties = new DispatchProperties
             {
@@ -410,7 +410,7 @@
             var mockSqsClient = new MockSqsClient();
 
             var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
-                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60);
+                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, 0);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -449,7 +449,7 @@
                     dest => QueueCache.GetSqsQueueName(dest, "")),
                 new TopicCache(mockSnsClient, new SettingsHolder(), new EventToTopicsMappings(),
                     new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""), null,
-                15 * 60);
+                15 * 60, 0);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -488,7 +488,7 @@
             };
 
             var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
-                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60);
+                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, 0);
 
             var properties = new DispatchProperties
             {
@@ -519,7 +519,7 @@
             var mockSqsClient = new MockSqsClient();
 
             var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
-                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60);
+                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, 0);
 
             var firstMessageIdThatWillFail = Guid.NewGuid().ToString();
             var secondMessageIdThatWillFail = Guid.NewGuid().ToString();
@@ -610,7 +610,7 @@
             var mockSnsClient = new MockSnsClient();
 
             var dispatcher = new MessageDispatcher(new SettingsHolder(), null, mockSnsClient, new QueueCache(null,
-                dest => QueueCache.GetSqsQueueName(dest, "")), new TopicCache(mockSnsClient, new SettingsHolder(), new EventToTopicsMappings(), new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""), null, 15 * 60);
+                dest => QueueCache.GetSqsQueueName(dest, "")), new TopicCache(mockSnsClient, new SettingsHolder(), new EventToTopicsMappings(), new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""), null, 15 * 60, 0);
 
             var firstMessageIdThatWillFail = Guid.NewGuid().ToString();
             var secondMessageIdThatWillFail = Guid.NewGuid().ToString();
@@ -705,7 +705,7 @@
 
             var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
                     dest => QueueCache.GetSqsQueueName(dest, "")), null,
-                new S3Settings("someBucket", "somePrefix", mockS3Client), 15 * 60, wrapOutgoingMessages: wrapMessage);
+                new S3Settings("someBucket", "somePrefix", mockS3Client), 15 * 60, 0, wrapOutgoingMessages: wrapMessage);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -768,7 +768,7 @@
 
             var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
                     dest => QueueCache.GetSqsQueueName(dest, "")), null,
-                new S3Settings("someBucket", "somePrefix", mockS3Client), 15 * 60, wrapOutgoingMessages: wrapMessage);
+                new S3Settings("someBucket", "somePrefix", mockS3Client), 15 * 60, 0, wrapOutgoingMessages: wrapMessage);
 
             var transportOperations = new TransportOperations(
                 new TransportOperation(
@@ -830,7 +830,7 @@
             var mockSqsClient = new MockSqsClient();
 
             var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
-                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60);
+                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, 0);
 
             var msgBody = "my message body";
             var msgBodyByte = Encoding.UTF8.GetBytes(msgBody);
@@ -864,7 +864,7 @@
             var mockSqsClient = new MockSqsClient();
 
             var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
-                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, wrapOutgoingMessages: false);
+                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, 0, wrapOutgoingMessages: false);
 
             var msgBody = "my message body";
             var msgBodyByte = Encoding.UTF8.GetBytes(msgBody);
@@ -899,7 +899,7 @@
             var mockSqsClient = new MockSqsClient();
 
             var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
-                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, wrapOutgoingMessages: wrapMessage);
+                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, 0, wrapOutgoingMessages: wrapMessage);
 
             var messageid = Guid.NewGuid().ToString();
 
