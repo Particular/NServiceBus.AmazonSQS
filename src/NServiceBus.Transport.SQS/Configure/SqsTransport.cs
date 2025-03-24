@@ -49,6 +49,13 @@
         public string QueueNamePrefix { get; set; }
 
         /// <summary>
+        /// Specifies an arbitrary number of bytes that will be added to the calculated payload size
+        /// which is useful to account for any overhead of message attributes determining whether
+        /// the message payload will be stored in S3 or not.
+        /// </summary>
+        public long PayloadPaddingInBytes { get; set; }
+
+        /// <summary>
         /// Specifies a lambda function that allows to take control of the queue name generation logic.
         /// This is useful to overcome any limitations imposed by SQS.
         /// </summary>
@@ -292,7 +299,8 @@
                 DoNotWrapOutgoingMessages,
                 !sqsClient.ExternallyManaged,
                 !snsClient.ExternallyManaged,
-                !SupportsDelayedDelivery
+                !SupportsDelayedDelivery,
+                PayloadPaddingInBytes
             );
 
             if (hostSettings.SetupInfrastructure)

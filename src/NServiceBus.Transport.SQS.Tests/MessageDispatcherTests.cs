@@ -384,7 +384,7 @@
             };
 
             var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
-                    dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60);
+                dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60);
 
             var properties = new DispatchProperties
             {
@@ -446,7 +446,7 @@
             var mockSnsClient = new MockSnsClient();
 
             var dispatcher = new MessageDispatcher(new SettingsHolder(), null, mockSnsClient, new QueueCache(null,
-                dest => QueueCache.GetSqsQueueName(dest, "")),
+                    dest => QueueCache.GetSqsQueueName(dest, "")),
                 new TopicCache(mockSnsClient, new SettingsHolder(), new EventToTopicsMappings(),
                     new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""), null,
                 15 * 60);
@@ -704,7 +704,7 @@
             var mockSqsClient = new MockSqsClient();
 
             var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
-                dest => QueueCache.GetSqsQueueName(dest, "")), null,
+                    dest => QueueCache.GetSqsQueueName(dest, "")), null,
                 new S3Settings("someBucket", "somePrefix", mockS3Client), 15 * 60, wrapOutgoingMessages: wrapMessage);
 
             var transportOperations = new TransportOperations(
@@ -767,7 +767,7 @@
             var mockSqsClient = new MockSqsClient();
 
             var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
-                dest => QueueCache.GetSqsQueueName(dest, "")), null,
+                    dest => QueueCache.GetSqsQueueName(dest, "")), null,
                 new S3Settings("someBucket", "somePrefix", mockS3Client), 15 * 60, wrapOutgoingMessages: wrapMessage);
 
             var transportOperations = new TransportOperations(
@@ -926,8 +926,42 @@
             Assert.That(request.MessageBody, Is.Not.Null.Or.Empty);
         }
 
-        interface IEvent { }
+        [Test]
+        public async Task Does_bump_to_S3_when_payload_padding_is_set()
+        {
+            var mockSqsClient = new MockSqsClient();
+            var mockS3Client = new MockS3Client();
 
+            var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
+                dest => QueueCache.GetSqsQueueName(dest, "")), null, new S3Settings("bucketname", "keyprefix", mockS3Client), 15 * 60, 50);
+
+            var transportOperations = new TransportOperations(
+                new TransportOperation(
+                    new OutgoingMessage("1234", new Dictionary<string, string>
+                    {
+                        {TransportHeaders.TimeToBeReceived, ExpectedTtbr.ToString()},
+                        {Headers.ReplyToAddress, ExpectedReplyToAddress},
+                        {Headers.MessageId, "093C17C6-D32E-44FE-9134-65C10C1287EB"}
+                    }, Encoding.Default.GetBytes(new string('x', 256 * 1024))),
+                    new UnicastAddressTag("address"),
+                    [],
+                    DispatchConsistency.Isolated));
+
+            var transportTransaction = new TransportTransaction();
+
+            await dispatcher.Dispatch(transportOperations, transportTransaction);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(mockSqsClient.RequestsSent, Is.Not.Empty, "No requests sent");
+                Assert.That(mockS3Client.PutObjectRequestsSent, Is.Not.Empty, "No S3 requests sent");
+            });
+
+            var s3Request = mockS3Client.PutObjectRequestsSent.First();
+            Assert.That(s3Request.InputStream.Length, Is.GreaterThan(0));
+        }
+
+        interface IEvent { }
         interface IMyEvent : IEvent { }
         class Event : IMyEvent { }
         class AnotherEvent : IMyEvent { }

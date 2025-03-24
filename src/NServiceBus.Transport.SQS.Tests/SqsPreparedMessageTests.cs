@@ -26,6 +26,22 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
+        public void CalculateSize_BodyAndPaddingTakenIntoAccount()
+        {
+            var expectedSize = 15;
+
+            var message = new SqsPreparedMessage
+            {
+                Body = new string('a', 10),
+                PayloadPaddingInBytes = 5
+            };
+
+            message.CalculateSize();
+
+            Assert.That(message.Size, Is.EqualTo(expectedSize));
+        }
+
+        [Test]
         public void CalculateSize_TakesAttributesIntoAccount()
         {
             var message = new SqsPreparedMessage();
