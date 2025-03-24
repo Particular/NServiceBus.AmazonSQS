@@ -590,12 +590,12 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        async Task MovePoisonMessageToErrorQueue(Message message, CancellationToken messageProcessingCancellationToken)
+        async Task MovePoisonMessageToErrorQueue(Message message, CancellationToken cancellationToken)
         {
             string errorQueueUrl = null;
             try
             {
-                errorQueueUrl = await queueCache.GetQueueUrl(errorQueueAddress, messageProcessingCancellationToken)
+                errorQueueUrl = await queueCache.GetQueueUrl(errorQueueAddress, cancellationToken)
                     .ConfigureAwait(false);
                 // Ok to use LINQ here since this is not really a hot path
                 var messageAttributeValues = message.MessageAttributes
@@ -606,12 +606,12 @@ namespace NServiceBus.Transport.SQS
                     QueueUrl = errorQueueUrl,
                     MessageBody = message.Body,
                     MessageAttributes = messageAttributeValues
-                }, messageProcessingCancellationToken).ConfigureAwait(false);
+                }, cancellationToken).ConfigureAwait(false);
                 // The Attributes on message are read-only attributes provided by SQS
                 // and can't be re-sent. Unfortunately all the SQS metadata
                 // such as SentTimestamp is reset with this send.
             }
-            catch (Exception ex) when (!ex.IsCausedBy(messageProcessingCancellationToken))
+            catch (Exception ex) when (!ex.IsCausedBy(cancellationToken))
             {
                 Logger.Error($"Error moving poison message to error queue at url {errorQueueUrl}. Moving back to input queue.", ex);
                 try
@@ -621,11 +621,11 @@ namespace NServiceBus.Transport.SQS
                         QueueUrl = inputQueueUrl,
                         ReceiptHandle = message.ReceiptHandle,
                         VisibilityTimeout = 0
-                    }, messageProcessingCancellationToken).ConfigureAwait(false);
+                    }, cancellationToken).ConfigureAwait(false);
                 }
-                catch (Exception changeMessageVisibilityEx) when (!changeMessageVisibilityEx.IsCausedBy(messageProcessingCancellationToken))
+                catch (Exception changeMessageVisibilityEx) when (!changeMessageVisibilityEx.IsCausedBy(cancellationToken))
                 {
-                    Logger.Warn($"Error returning poison message back to input queue at url {inputQueueUrl}. Poison message will become available at the input queue again after the visibility timeout expires.", changeMessageVisibilityEx);
+                    Logger.Warn($"Error returning poison message with native ID '{message.MessageId}' back to input queue {inputQueueUrl}. Poison message will become available at the input queue again after the visibility timeout expires.", changeMessageVisibilityEx);
                 }
 
                 return;
@@ -637,14 +637,23 @@ namespace NServiceBus.Transport.SQS
                 {
                     QueueUrl = inputQueueUrl,
                     ReceiptHandle = message.ReceiptHandle
-                }, messageProcessingCancellationToken).ConfigureAwait(false);
+                }, CancellationToken.None) // We don't want the delete to be cancellable to avoid unnecessary duplicates of poison messages
+                    .ConfigureAwait(false);
             }
-            catch (Exception ex) when (!ex.IsCausedBy(messageProcessingCancellationToken))
+            catch (ReceiptHandleIsInvalidException ex)
             {
-                Logger.Warn($"Error removing poison message from input queue {inputQueueUrl}. This may cause duplicate poison messages in the error queue for this endpoint.", ex);
+                Logger.Error($"Error removing poison message with native ID '{message.MessageId}' from input queue {inputQueueUrl} because the visibility timeout expired. Poison message will become available at the input queue again and attempted to be removed on a best-effort basis. This may still cause duplicate poison messages in the error queue for this endpoint", ex);
+
+                messagesToBeDeleted.AddOrUpdate(message.MessageId, true);
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"Error removing poison message with native ID '{message.MessageId}' from input queue {inputQueueUrl}. Poison message will become available at the input queue again and attempted to be removed on a best-effort basis. This may still cause duplicate poison messages in the error queue for this endpoint", ex);
+
+                messagesToBeDeleted.AddOrUpdate(message.MessageId, true);
             }
 
-            // If there is a message body in S3, simply leave it there
+            // If there is a message body in S3, simply leave it there to be aged out by the S3 lifecycle policy when the TTL expires
         }
 
         List<Task> pumpTasks;
