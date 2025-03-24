@@ -80,6 +80,7 @@ namespace NServiceBus
             "ersion 8.0.0.", true)]
         public bool EnableV1CompatibilityMode { get; set; }
         public System.TimeSpan MaxTimeToLive { get; set; }
+        public long PayloadPaddingInBytes { get; set; }
         public NServiceBus.PolicySettings Policies { get; }
         public System.Func<string, string, string> QueueNameGenerator { get; set; }
         public string QueueNamePrefix { get; set; }
