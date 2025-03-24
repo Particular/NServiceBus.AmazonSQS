@@ -200,7 +200,7 @@ namespace NServiceBus.Transport.SQS.Tests
             await manager.SubscribeAll(new[] { new MessageMetadata(eventType) }, null);
 
             Assert.That(snsClient.SubscribeRequestsSent, Has.Count.EqualTo(1));
-            var subscribeRequest = snsClient.SubscribeRequestsSent[0];
+            var subscribeRequest = snsClient.SubscribeRequestsSent.ElementAt(0);
             Assert.Multiple(() =>
             {
                 Assert.That(subscribeRequest.Endpoint, Is.EqualTo("arn:fakeQueue"));

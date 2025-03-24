@@ -160,8 +160,8 @@ namespace NServiceBus.Transport.SQS.Tests
             });
             Assert.Multiple(() =>
             {
-                Assert.That(mockSqsClient.DeleteMessageRequestsSent[0].receiptHandle, Is.EqualTo(expectedFirstReceiptHandle));
-                Assert.That(mockSqsClient.DeleteMessageRequestsSent[1].receiptHandle, Is.EqualTo(expectedSecondReceiptHandle));
+                Assert.That(mockSqsClient.DeleteMessageRequestsSent.ElementAt(0).receiptHandle, Is.EqualTo(expectedFirstReceiptHandle));
+                Assert.That(mockSqsClient.DeleteMessageRequestsSent.ElementAt(1).receiptHandle, Is.EqualTo(expectedSecondReceiptHandle));
             });
         }
 
