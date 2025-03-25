@@ -927,7 +927,7 @@
         }
 
         [Test]
-        public async Task Does_bump_to_S3_when_payload_padding_is_set()
+        public async Task Does_upload_to_S3_when_payload_padding_is_set()
         {
             var mockSqsClient = new MockSqsClient();
             var mockS3Client = new MockS3Client();
