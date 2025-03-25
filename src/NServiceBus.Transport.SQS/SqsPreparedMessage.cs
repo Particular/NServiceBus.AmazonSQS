@@ -28,7 +28,7 @@
         public string MessageGroupId { get; set; }
         public string MessageDeduplicationId { get; set; }
         public Dictionary<string, MessageAttributeValue> MessageAttributes { get; } = [];
-        public long ReserveBytesInMessageSizeCalculation { get; set; }
+        public long ReserveBytesInMessageSizeCalculation { get; init; }
 
         public void CalculateSize()
         {
