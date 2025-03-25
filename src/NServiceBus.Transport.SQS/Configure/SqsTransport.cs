@@ -50,10 +50,10 @@
 
         /// <summary>
         /// Specifies an arbitrary number of bytes that will be added to the calculated payload size
-        /// which is useful to account for any overhead of message attributes determining whether
-        /// the message payload will be stored in S3 or not.
+        /// which is useful to account for any overhead of message attributes added outside the scope of NServiceBus
+        /// to address the SQS service message size limitation by uploading the message payload to S3.
         /// </summary>
-        public long PayloadPaddingInBytes { get; set; }
+        public long ReserveBytesInMessageSizeCalculation { get; set; }
 
         /// <summary>
         /// Specifies a lambda function that allows to take control of the queue name generation logic.
@@ -300,7 +300,7 @@
                 !sqsClient.ExternallyManaged,
                 !snsClient.ExternallyManaged,
                 !SupportsDelayedDelivery,
-                PayloadPaddingInBytes
+                ReserveBytesInMessageSizeCalculation
             );
 
             if (hostSettings.SetupInfrastructure)

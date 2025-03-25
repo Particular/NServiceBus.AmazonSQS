@@ -26,14 +26,14 @@ namespace NServiceBus.Transport.SQS.Tests
         }
 
         [Test]
-        public void CalculateSize_BodyAndPaddingTakenIntoAccount()
+        public void CalculateSize_BodyAndReservedBytesTakenIntoAccount()
         {
             var expectedSize = 15;
 
             var message = new SnsPreparedMessage
             {
                 Body = new string('a', 10),
-                PayloadPaddingInBytes = 5
+                ReserveBytesInMessageSizeCalculation = 5
             };
 
             message.CalculateSize();
