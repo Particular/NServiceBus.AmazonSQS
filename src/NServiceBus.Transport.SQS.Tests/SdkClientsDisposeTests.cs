@@ -110,13 +110,13 @@ namespace NServiceBus.Transport.SQS.Tests
         [Theory]
         [TestCase(true)]
         [TestCase(false)]
-        public async Task Should_not_dispose_clients_passed_into_transport_constructor_accepting_delayed_delivery_settings(bool enableDelayedDelivery)
+        public async Task Should_not_dispose_clients_passed_into_transport_constructor_accepting_delayed_delivery_settings(bool disableUnrestrictedDelayedDelivery)
         {
             var mockSqsClient = new MockSqsClient();
             var mockSnsClient = new MockSnsClient();
             var mockS3Client = new MockS3Client();
 
-            var transport = new SqsTransport(mockSqsClient, mockSnsClient, enableDelayedDelivery: true)
+            var transport = new SqsTransport(mockSqsClient, mockSnsClient, disableUnrestrictedDelayedDelivery: disableUnrestrictedDelayedDelivery)
             {
                 S3 = new S3Settings("123", "k", mockS3Client)
             };

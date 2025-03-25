@@ -211,8 +211,9 @@
         /// <summary>
         /// Creates a new instance of the SQS transport definition.
         /// </summary>
-        public SqsTransport(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient)
-            : this(sqsClient, snsClient, externallyManaged: true)
+        /// <paramref name="disableUnrestrictedDelayedDelivery">If set to <c>true</c> the unrestricted delayed delivery will be disabled which means when trying to send delayed messages for longer than 15 minutes the transport will throw an exception.</paramref>
+        public SqsTransport(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, bool disableUnrestrictedDelayedDelivery = false)
+            : this(sqsClient, snsClient, externallyManaged: true, enableDelayedDelivery: !disableUnrestrictedDelayedDelivery)
         {
         }
 
@@ -221,28 +222,10 @@
         ///
         /// Uses SQS and SNS clients created using a default constructor (based on the the settings from the environment)
         /// </summary>
-        public SqsTransport()
-            : this(DefaultClientFactories.SqsFactory(), DefaultClientFactories.SnsFactory(), externallyManaged: false)
+        /// <paramref name="disableUnrestrictedDelayedDelivery">If set to <c>true</c> the unrestricted delayed delivery will be disabled which means when trying to send delayed messages for longer than 15 minutes the transport will throw an exception.</paramref>
+        public SqsTransport(bool disableUnrestrictedDelayedDelivery = false)
+            : this(DefaultClientFactories.SqsFactory(), DefaultClientFactories.SnsFactory(), externallyManaged: false, enableDelayedDelivery: !disableUnrestrictedDelayedDelivery)
         {
-        }
-
-        /// <summary>
-        /// Creates a new instance of the SQS transport definition.
-        /// </summary>
-        public SqsTransport(
-            IAmazonSQS sqsClient,
-            IAmazonSimpleNotificationService snsClient,
-            bool enableDelayedDelivery
-        )
-            : base(
-                TransportTransactionMode.ReceiveOnly,
-                supportsDelayedDelivery: enableDelayedDelivery,
-                supportsPublishSubscribe: true,
-                supportsTTBR: true
-            )
-        {
-            SetupSqsClient(sqsClient, true);
-            SetupSnsClient(snsClient, true);
         }
 
         // Only invoke when not using external SQS and SNS clients
