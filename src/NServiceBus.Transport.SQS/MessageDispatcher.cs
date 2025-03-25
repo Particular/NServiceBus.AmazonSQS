@@ -26,8 +26,8 @@ namespace NServiceBus.Transport.SQS
             TopicCache topicCache,
             S3Settings s3,
             int queueDelaySeconds,
-            bool wrapOutgoingMessages = true
-            )
+            long reserveBytesInMessageSizeCalculation,
+            bool wrapOutgoingMessages = true)
         {
             this.topicCache = topicCache;
             this.s3 = s3;
@@ -36,6 +36,7 @@ namespace NServiceBus.Transport.SQS
             this.sqsClient = sqsClient;
             this.queueCache = queueCache;
             this.wrapOutgoingMessages = wrapOutgoingMessages;
+            this.reserveBytesInMessageSizeCalculation = reserveBytesInMessageSizeCalculation;
 
             transportMessageSerializerOptions = new JsonSerializerOptions
             {
@@ -358,7 +359,7 @@ namespace NServiceBus.Transport.SQS
                 return null;
             }
 
-            var preparedMessage = new SqsPreparedMessage { MessageId = transportOperation.Message.MessageId };
+            var preparedMessage = new SqsPreparedMessage { MessageId = transportOperation.Message.MessageId, ReserveBytesInMessageSizeCalculation = reserveBytesInMessageSizeCalculation };
 
             await ApplyUnicastOperationMapping(transportOperation, preparedMessage, CalculateDelayedDeliverySeconds(transportOperation), GetNativeMessageAttributes(transportOperation, transportTransaction), cancellationToken).ConfigureAwait(false);
 
@@ -393,7 +394,7 @@ namespace NServiceBus.Transport.SQS
 
         async Task<SnsPreparedMessage> PrepareMessage(MulticastTransportOperation transportOperation, CancellationToken cancellationToken)
         {
-            var preparedMessage = new SnsPreparedMessage { MessageId = transportOperation.Message.MessageId };
+            var preparedMessage = new SnsPreparedMessage { MessageId = transportOperation.Message.MessageId, ReserveBytesInMessageSizeCalculation = reserveBytesInMessageSizeCalculation };
 
             await ApplyMulticastOperationMapping(transportOperation, preparedMessage, cancellationToken).ConfigureAwait(false);
 
@@ -582,6 +583,7 @@ namespace NServiceBus.Transport.SQS
         readonly JsonSerializerOptions transportMessageSerializerOptions;
         readonly IAmazonSQS sqsClient;
         readonly QueueCache queueCache;
+        readonly long reserveBytesInMessageSizeCalculation;
 
         static readonly ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
     }

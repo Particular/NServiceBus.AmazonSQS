@@ -15,7 +15,7 @@
     {
         public SqsTransportInfrastructure(HostSettings hostSettings, ReceiveSettings[] receiverSettings, IAmazonSQS sqsClient,
             IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, S3Settings s3Settings, PolicySettings policySettings, int queueDelayTimeSeconds, string topicNamePrefix, bool doNotWrapOutgoingMessages,
-            bool shouldDisposeSqsClient, bool shouldDisposeSnsClient, bool disableDelayedDelivery)
+            bool shouldDisposeSqsClient, bool shouldDisposeSnsClient, bool disableDelayedDelivery, long reserveBytesInMessageSizeCalculation)
         {
             this.sqsClient = sqsClient;
             this.snsClient = snsClient;
@@ -32,7 +32,7 @@
                 .ToDictionary(x => x.Id, x => x);
 
             Dispatcher = new MessageDispatcher(hostSettings.CoreSettings, sqsClient, snsClient, queueCache, topicCache, s3Settings,
-                queueDelayTimeSeconds, !doNotWrapOutgoingMessages);
+                queueDelayTimeSeconds, reserveBytesInMessageSizeCalculation, !doNotWrapOutgoingMessages);
         }
 
         IMessageReceiver CreateMessagePump(ReceiveSettings receiveSettings, IAmazonSQS sqsClient,

@@ -83,6 +83,7 @@ namespace NServiceBus
         public NServiceBus.PolicySettings Policies { get; }
         public System.Func<string, string, string> QueueNameGenerator { get; set; }
         public string QueueNamePrefix { get; set; }
+        public long ReserveBytesInMessageSizeCalculation { get; set; }
         public NServiceBus.S3Settings S3 { get; set; }
         public Amazon.SimpleNotificationService.IAmazonSimpleNotificationService SnsClient { get; }
         public Amazon.SQS.IAmazonSQS SqsClient { get; }

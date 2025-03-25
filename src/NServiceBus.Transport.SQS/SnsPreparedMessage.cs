@@ -21,6 +21,7 @@
         public string Body { get; set; }
         public string Destination { get; set; }
         public long Size { get; private set; }
+        public long ReserveBytesInMessageSizeCalculation { get; init; }
 
         public Dictionary<string, MessageAttributeValue> MessageAttributes { get; } = [];
 
@@ -28,6 +29,7 @@
         {
             Size = Body?.Length ?? 0;
             Size += CalculateAttributesSize();
+            Size += ReserveBytesInMessageSizeCalculation;
         }
 
         long CalculateAttributesSize()

@@ -28,11 +28,13 @@
         public string MessageGroupId { get; set; }
         public string MessageDeduplicationId { get; set; }
         public Dictionary<string, MessageAttributeValue> MessageAttributes { get; } = [];
+        public long ReserveBytesInMessageSizeCalculation { get; init; }
 
         public void CalculateSize()
         {
             Size = Body?.Length ?? 0;
             Size += CalculateAttributesSize();
+            Size += ReserveBytesInMessageSizeCalculation;
         }
 
         long CalculateAttributesSize()
