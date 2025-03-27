@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -212,8 +211,9 @@
         /// <summary>
         /// Creates a new instance of the SQS transport definition.
         /// </summary>
-        public SqsTransport(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient)
-            : this(sqsClient, snsClient, externallyManaged: true)
+        /// <paramref name="disableUnrestrictedDelayedDelivery">If set to <c>true</c>, the unrestricted delayed delivery will be disabled. This causes the transport to fail with a <see cref="NServiceBus.Unicast.Queuing.QueueNotFoundException"/> when trying to send delayed messages that exceed the <see cref="QueueDelayTime" /> value, which by default is 15 minutes.</paramref>.
+        public SqsTransport(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, bool disableUnrestrictedDelayedDelivery = false)
+            : this(sqsClient, snsClient, externallyManaged: true, enableDelayedDelivery: !disableUnrestrictedDelayedDelivery)
         {
         }
 
@@ -222,29 +222,10 @@
         ///
         /// Uses SQS and SNS clients created using a default constructor (based on the the settings from the environment)
         /// </summary>
-        public SqsTransport()
-            : this(DefaultClientFactories.SqsFactory(), DefaultClientFactories.SnsFactory(), externallyManaged: false)
+        /// <paramref name="disableUnrestrictedDelayedDelivery">If set to <c>true</c>, the unrestricted delayed delivery will be disabled. This causes the transport to fail with a <see cref="NServiceBus.Unicast.Queuing.QueueNotFoundException"/> when trying to send delayed messages that exceed the <see cref="QueueDelayTime" /> value, which by default is 15 minutes.</paramref>.
+        public SqsTransport(bool disableUnrestrictedDelayedDelivery = false)
+            : this(DefaultClientFactories.SqsFactory(), DefaultClientFactories.SnsFactory(), externallyManaged: false, enableDelayedDelivery: !disableUnrestrictedDelayedDelivery)
         {
-        }
-
-        /// <summary>
-        /// Creates a new instance of the SQS transport definition.
-        /// </summary>
-        [Experimental(DiagnosticDescriptors.ExperimentalDisableDelayedDelivery)]
-        public SqsTransport(
-            IAmazonSQS sqsClient,
-            IAmazonSimpleNotificationService snsClient,
-            bool enableDelayedDelivery
-        )
-            : base(
-                TransportTransactionMode.ReceiveOnly,
-                supportsDelayedDelivery: enableDelayedDelivery,
-                supportsPublishSubscribe: true,
-                supportsTTBR: true
-            )
-        {
-            SetupSqsClient(sqsClient, true);
-            SetupSnsClient(snsClient, true);
         }
 
         // Only invoke when not using external SQS and SNS clients
