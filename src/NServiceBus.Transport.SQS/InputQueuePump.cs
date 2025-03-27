@@ -397,7 +397,7 @@ namespace NServiceBus.Transport.SQS
                     }
                     catch (Exception ex)
                     {
-                        //HINT: Deserialization is best-effort. If it fails, we trat the message as a native message
+                        //HINT: Deserialization is best-effort. If it fails, we treat the message as a native message
                         Logger.Debug($"Failed to deserialize message with native id {receivedMessage.MessageId}. " +
                                      $"It will not be treated as an NServiceBus TransportMessage. Instead it'll be treated as pure native message.", ex);
 
