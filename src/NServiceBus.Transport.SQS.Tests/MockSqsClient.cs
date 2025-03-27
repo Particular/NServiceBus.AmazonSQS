@@ -1,7 +1,9 @@
 ﻿namespace NServiceBus.Transport.SQS.Tests
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.Runtime;
@@ -15,72 +17,72 @@
         {
             ServiceURL = "http://fakeServiceUrl"
         };
-        public List<string> QueueUrlRequestsSent { get; } = [];
+        public ConcurrentQueue<string> QueueUrlRequestsSent { get; } = [];
 
         public Task<GetQueueUrlResponse> GetQueueUrlAsync(string queueName, CancellationToken cancellationToken = new CancellationToken())
         {
-            QueueUrlRequestsSent.Add(queueName);
+            QueueUrlRequestsSent.Enqueue(queueName);
             return Task.FromResult(new GetQueueUrlResponse { QueueUrl = queueName });
         }
 
-        public List<SendMessageBatchRequest> BatchRequestsSent { get; } = [];
+        public ConcurrentQueue<SendMessageBatchRequest> BatchRequestsSent { get; } = [];
 
         public Func<SendMessageBatchRequest, SendMessageBatchResponse> BatchRequestResponse = req => new SendMessageBatchResponse();
 
 
         public Task<SendMessageBatchResponse> SendMessageBatchAsync(SendMessageBatchRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
-            BatchRequestsSent.Add(request);
+            BatchRequestsSent.Enqueue(request);
             return Task.FromResult(BatchRequestResponse(request));
         }
 
-        public List<DeleteMessageBatchRequest> DeleteMessageBatchRequestsSent { get; } = [];
+        public ConcurrentQueue<DeleteMessageBatchRequest> DeleteMessageBatchRequestsSent { get; } = [];
 
         public Func<DeleteMessageBatchRequest, DeleteMessageBatchResponse> DeleteMessageBatchRequestResponse = req => new DeleteMessageBatchResponse();
 
         public Task<DeleteMessageBatchResponse> DeleteMessageBatchAsync(DeleteMessageBatchRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
-            DeleteMessageBatchRequestsSent.Add(request);
+            DeleteMessageBatchRequestsSent.Enqueue(request);
             return Task.FromResult(DeleteMessageBatchRequestResponse(request));
         }
 
-        public List<ChangeMessageVisibilityBatchRequest> ChangeMessageVisibilityBatchRequestsSent { get; } = [];
+        public ConcurrentQueue<ChangeMessageVisibilityBatchRequest> ChangeMessageVisibilityBatchRequestsSent { get; } = [];
 
         public Func<ChangeMessageVisibilityBatchRequest, ChangeMessageVisibilityBatchResponse> ChangeMessageVisibilityBatchRequestResponse = req => new ChangeMessageVisibilityBatchResponse();
 
         public Task<ChangeMessageVisibilityBatchResponse> ChangeMessageVisibilityBatchAsync(ChangeMessageVisibilityBatchRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
-            ChangeMessageVisibilityBatchRequestsSent.Add(request);
+            ChangeMessageVisibilityBatchRequestsSent.Enqueue(request);
             return Task.FromResult(ChangeMessageVisibilityBatchRequestResponse(request));
         }
 
-        public List<(string queueUrl, string receiptHandle)> DeleteMessageRequestsSent { get; } = [];
+        public ConcurrentQueue<(string queueUrl, string receiptHandle)> DeleteMessageRequestsSent { get; } = [];
 
         public Func<(string queueUrl, string receiptHandle), DeleteMessageResponse> DeleteMessageRequestResponse = req => new DeleteMessageResponse();
 
         public Task<DeleteMessageResponse> DeleteMessageAsync(string queueUrl, string receiptHandle, CancellationToken cancellationToken = new CancellationToken())
         {
-            DeleteMessageRequestsSent.Add((queueUrl, receiptHandle));
+            DeleteMessageRequestsSent.Enqueue((queueUrl, receiptHandle));
             return Task.FromResult(DeleteMessageRequestResponse((queueUrl, receiptHandle)));
         }
 
         public Task<DeleteMessageResponse> DeleteMessageAsync(DeleteMessageRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
-            DeleteMessageRequestsSent.Add((request.QueueUrl, request.ReceiptHandle));
+            DeleteMessageRequestsSent.Enqueue((request.QueueUrl, request.ReceiptHandle));
             return Task.FromResult(DeleteMessageRequestResponse((request.QueueUrl, request.ReceiptHandle)));
         }
 
-        public List<SendMessageRequest> RequestsSent { get; } = [];
+        public ConcurrentQueue<SendMessageRequest> RequestsSent { get; } = [];
         public Func<SendMessageRequest, SendMessageResponse> RequestResponse = req => new SendMessageResponse();
 
 
         public Task<SendMessageResponse> SendMessageAsync(SendMessageRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
-            RequestsSent.Add(request);
+            RequestsSent.Enqueue(request);
             return Task.FromResult(RequestResponse(request));
         }
 
-        public List<string> GetAttributeRequestsSent { get; } = [];
+        public ConcurrentQueue<string> GetAttributeRequestsSent { get; } = [];
 
         public Func<string, Dictionary<string, string>> GetAttributeRequestsResponse = queueUrl => new Dictionary<string, string>
         {
@@ -89,11 +91,11 @@
 
         public Task<Dictionary<string, string>> GetAttributesAsync(string queueUrl)
         {
-            GetAttributeRequestsSent.Add(queueUrl);
+            GetAttributeRequestsSent.Enqueue(queueUrl);
             return Task.FromResult(GetAttributeRequestsResponse(queueUrl));
         }
 
-        public List<(string queueUrl, List<string> attributeNames)> GetAttributeNamesRequestsSent { get; } = [];
+        public ConcurrentQueue<(string queueUrl, List<string> attributeNames)> GetAttributeNamesRequestsSent { get; } = [];
 
         public Func<string, List<string>, GetQueueAttributesResponse> GetAttributeNamesRequestsResponse = (url, attributeNames) => new GetQueueAttributesResponse
         {
@@ -105,11 +107,11 @@
 
         public Task<GetQueueAttributesResponse> GetQueueAttributesAsync(string queueUrl, List<string> attributeNames, CancellationToken cancellationToken = new CancellationToken())
         {
-            GetAttributeNamesRequestsSent.Add((queueUrl, attributeNames));
+            GetAttributeNamesRequestsSent.Enqueue((queueUrl, attributeNames));
             return Task.FromResult(GetAttributeNamesRequestsResponse(queueUrl, attributeNames));
         }
 
-        public List<(string queueUrl, Dictionary<string, string> attributes)> SetAttributesRequestsSent { get; } = [];
+        public ConcurrentQueue<(string queueUrl, Dictionary<string, string> attributes)> SetAttributesRequestsSent { get; } = [];
 
         public Dictionary<string, Queue<Dictionary<string, string>>> SetAttributesRequestsSentByUrl { get; } = [];
 
@@ -120,7 +122,7 @@
             {
                 attributes.Add("QueueArn", $"arn:{queueUrl}");
             }
-            SetAttributesRequestsSent.Add((queueUrl, attributes));
+            SetAttributesRequestsSent.Enqueue((queueUrl, attributes));
             if (!SetAttributesRequestsSentByUrl.TryGetValue(queueUrl, out var attributeRequestsQueue))
             {
                 var requests = new Queue<Dictionary<string, string>>();
@@ -138,7 +140,7 @@
         {
             GetAttributeRequestsResponse = queueUrl =>
             {
-                if (!SetAttributesRequestsSentByUrl.ContainsKey(queueUrl))
+                if (!SetAttributesRequestsSentByUrl.TryGetValue(queueUrl, out Queue<Dictionary<string, string>> queue))
                 {
                     return new Dictionary<string, string>
                     {
@@ -146,7 +148,6 @@
                     };
                 }
 
-                var queue = SetAttributesRequestsSentByUrl[queueUrl];
                 if (queue.Count == 0)
                 {
                     return new Dictionary<string, string>
@@ -158,7 +159,7 @@
             };
         }
 
-        public List<ReceiveMessageRequest> ReceiveMessagesRequestsSent { get; } = [];
+        public ConcurrentQueue<ReceiveMessageRequest> ReceiveMessagesRequestsSent { get; } = [];
         public Func<ReceiveMessageRequest, CancellationToken, ReceiveMessageResponse> ReceiveMessagesRequestResponse = (req, token) =>
         {
             token.ThrowIfCancellationRequested();
@@ -167,7 +168,7 @@
 
         public Task<ReceiveMessageResponse> ReceiveMessageAsync(ReceiveMessageRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
-            ReceiveMessagesRequestsSent.Add(request);
+            ReceiveMessagesRequestsSent.Enqueue(request);
             return Task.FromResult(ReceiveMessagesRequestResponse(request, cancellationToken));
         }
 

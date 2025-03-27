@@ -3,6 +3,7 @@
 namespace NServiceBus.Transport.SQS.Tests;
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,20 +15,20 @@ using Endpoint = Amazon.Runtime.Endpoints.Endpoint;
 
 class MockSnsClient : IAmazonSimpleNotificationService
 {
-    public List<string> UnsubscribeRequests = [];
+    public ConcurrentQueue<string> UnsubscribeRequests = [];
 
     public Task<UnsubscribeResponse> UnsubscribeAsync(string subscriptionArn, CancellationToken cancellationToken = new CancellationToken())
     {
-        UnsubscribeRequests.Add(subscriptionArn);
+        UnsubscribeRequests.Enqueue(subscriptionArn);
         return Task.FromResult(new UnsubscribeResponse());
     }
 
     public Func<string, Topic> FindTopicAsyncResponse { get; set; } = topic => new Topic { TopicArn = $"arn:aws:sns:us-west-2:123456789012:{topic}" };
-    public List<string> FindTopicRequests { get; } = [];
+    public ConcurrentQueue<string> FindTopicRequests { get; } = [];
 
     public Task<Topic> FindTopicAsync(string topicName)
     {
-        FindTopicRequests.Add(topicName);
+        FindTopicRequests.Enqueue(topicName);
         return Task.FromResult(FindTopicAsyncResponse(topicName));
     }
 
@@ -36,19 +37,19 @@ class MockSnsClient : IAmazonSimpleNotificationService
         TopicArn = $"arn:aws:sns:us-west-2:123456789012:{topic}"
     };
 
-    public List<string> CreateTopicRequests { get; } = [];
+    public ConcurrentQueue<string> CreateTopicRequests { get; } = [];
 
     public Task<CreateTopicResponse> CreateTopicAsync(string name, CancellationToken cancellationToken = new CancellationToken())
     {
-        CreateTopicRequests.Add(name);
+        CreateTopicRequests.Enqueue(name);
         return Task.FromResult(CreateTopicResponse(name));
     }
 
-    public List<PublishRequest> PublishedEvents { get; } = [];
+    public ConcurrentQueue<PublishRequest> PublishedEvents { get; } = [];
 
     public Task<PublishResponse> PublishAsync(PublishRequest request, CancellationToken cancellationToken = new CancellationToken())
     {
-        PublishedEvents.Add(request);
+        PublishedEvents.Enqueue(request);
         return Task.FromResult(new PublishResponse());
     }
 
@@ -57,31 +58,31 @@ class MockSnsClient : IAmazonSimpleNotificationService
         Subscriptions = [],
     };
 
-    public List<string> ListSubscriptionsByTopicRequests { get; } = [];
+    public ConcurrentQueue<string> ListSubscriptionsByTopicRequests { get; } = [];
 
     public Task<ListSubscriptionsByTopicResponse> ListSubscriptionsByTopicAsync(string topicArn, string nextToken, CancellationToken cancellationToken = new CancellationToken())
     {
-        ListSubscriptionsByTopicRequests.Add(topicArn);
+        ListSubscriptionsByTopicRequests.Enqueue(topicArn);
         return Task.FromResult(ListSubscriptionsByTopicResponse(topicArn));
     }
 
-    public List<SubscribeRequest> SubscribeRequestsSent = [];
+    public ConcurrentQueue<SubscribeRequest> SubscribeRequestsSent = [];
 
     public Func<SubscribeRequest, SubscribeResponse> SubscribeResponse = req => new SubscribeResponse { SubscriptionArn = "arn:fakeQueue" };
 
     public Task<SubscribeResponse> SubscribeAsync(SubscribeRequest request, CancellationToken cancellationToken = new CancellationToken())
     {
-        SubscribeRequestsSent.Add(request);
+        SubscribeRequestsSent.Enqueue(request);
         return Task.FromResult(SubscribeResponse(request));
     }
 
-    public List<PublishBatchRequest> BatchRequestsPublished { get; } = [];
+    public ConcurrentQueue<PublishBatchRequest> BatchRequestsPublished { get; } = [];
 
     public Func<PublishBatchRequest, PublishBatchResponse> BatchRequestResponse = req => new PublishBatchResponse();
 
     public Task<PublishBatchResponse> PublishBatchAsync(PublishBatchRequest request, CancellationToken cancellationToken = default)
     {
-        BatchRequestsPublished.Add(request);
+        BatchRequestsPublished.Enqueue(request);
         return Task.FromResult(BatchRequestResponse(request));
     }
 

@@ -121,7 +121,7 @@ namespace NServiceBus.Transport.SQS
                 MaxNumberOfMessages = numberOfMessagesToFetch,
                 QueueUrl = inputQueueUrl,
                 WaitTimeSeconds = 20,
-                MessageSystemAttributeNames = ["SentTimestamp"],
+                MessageSystemAttributeNames = ["ApproximateReceiveCount", "SentTimestamp"],
                 MessageAttributeNames = ["All"]
             };
 
@@ -464,7 +464,7 @@ namespace NServiceBus.Transport.SQS
             }
             catch (Exception ex) when (!ex.IsCausedBy(messageProcessingCancellationToken))
             {
-                var deliveryAttempts = GetDeliveryAttempts(nativeMessageId);
+                var deliveryAttempts = GetDeliveryAttempts(nativeMessageId, nativeMessage);
 
                 try
                 {
@@ -526,12 +526,19 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        int GetDeliveryAttempts(string nativeMessageId)
+        int GetDeliveryAttempts(string nativeMessageId, Message message)
         {
             var attempts = deliveryAttempts.GetOrAdd(nativeMessageId, k => 0);
-            attempts++;
-            deliveryAttempts.AddOrUpdate(nativeMessageId, attempts);
 
+            attempts++;
+
+            if (message.Attributes.TryGetValue("ApproximateReceiveCount", out var countStr) &&
+                int.TryParse(countStr, out var count))
+            {
+                attempts = Math.Max(attempts, count);
+            }
+
+            deliveryAttempts.AddOrUpdate(nativeMessageId, attempts);
             return attempts;
         }
 
