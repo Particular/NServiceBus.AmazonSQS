@@ -17,35 +17,21 @@ namespace NServiceBus.Transport.SQS
     using Settings;
     using Message = Amazon.SQS.Model.Message;
 
-    class InputQueuePump : IMessageReceiver
+    class InputQueuePump(
+        string receiverId,
+        string receiveAddress,
+        string errorQueueAddress,
+        bool purgeOnStartup,
+        IAmazonSQS sqsClient,
+        QueueCache queueCache,
+        S3Settings s3Settings,
+        SubscriptionManager subscriptionManager,
+        Action<string, Exception, CancellationToken> criticalErrorAction,
+        IReadOnlySettings coreSettings,
+        TimeSpan visibilityTimeout,
+        bool setupInfrastructure = true)
+        : IMessageReceiver
     {
-        public InputQueuePump(
-            string receiverId,
-            string receiveAddress,
-            string errorQueueAddress,
-            bool purgeOnStartup,
-            IAmazonSQS sqsClient,
-            QueueCache queueCache,
-            S3Settings s3Settings,
-            SubscriptionManager subscriptionManager,
-            Action<string, Exception, CancellationToken> criticalErrorAction,
-            IReadOnlySettings coreSettings,
-            bool setupInfrastructure = true)
-        {
-            this.sqsClient = sqsClient;
-            this.queueCache = queueCache;
-            this.s3Settings = s3Settings;
-            this.criticalErrorAction = criticalErrorAction;
-            this.errorQueueAddress = errorQueueAddress;
-            this.purgeOnStartup = purgeOnStartup;
-            Id = receiverId;
-            ReceiveAddress = receiveAddress;
-            Subscriptions = subscriptionManager;
-
-            this.coreSettings = coreSettings;
-            this.setupInfrastructure = setupInfrastructure;
-        }
-
         public async Task Initialize(PushRuntimeSettings limitations, OnMessage onMessage, OnError onError, CancellationToken cancellationToken = default)
         {
             try
@@ -181,9 +167,9 @@ namespace NServiceBus.Transport.SQS
             await StartReceive(cancellationToken).ConfigureAwait(false);
         }
 
-        public ISubscriptionManager Subscriptions { get; }
-        public string Id { get; }
-        public string ReceiveAddress { get; }
+        public ISubscriptionManager Subscriptions { get; } = subscriptionManager;
+        public string Id { get; } = receiverId;
+        public string ReceiveAddress { get; } = receiveAddress;
 
         async Task PumpMessagesAndSwallowExceptions(CancellationToken messagePumpCancellationToken)
         {
@@ -203,8 +189,12 @@ namespace NServiceBus.Transport.SQS
                     {
                         await maxConcurrencySemaphore.WaitAsync(messagePumpCancellationToken).ConfigureAwait(false);
 
+                        var coordinationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(messageProcessingCancellationTokenSource.Token);
+                        var coordinationToken = coordinationTokenSource.Token;
+
                         // no Task.Run() here to avoid a closure
-                        _ = ProcessMessageSwallowExceptionsAndReleaseMaxConcurrencySemaphore(receivedMessage, messageProcessingCancellationTokenSource.Token);
+                        _ = RenewMessageVisibility(receivedMessage, coordinationToken);
+                        _ = ProcessMessageSwallowExceptionsAndReleaseMaxConcurrencySemaphore(receivedMessage, coordinationTokenSource, coordinationToken);
                     }
                 }
                 catch (Exception ex) when (ex.IsCausedBy(messagePumpCancellationToken))
@@ -220,13 +210,46 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        async Task ProcessMessageSwallowExceptionsAndReleaseMaxConcurrencySemaphore(Message receivedMessage, CancellationToken messageProcessingCancellationToken)
+        async Task RenewMessageVisibility(Message receivedMessage, CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(visibilityTimeout / 2, cancellationToken)
+                        .ConfigureAwait(false);
+                    // we don't want this to be cancellable because we are doing best-effort to complete inflight messages
+                    // on shutdown.
+                    await sqsClient.ChangeMessageVisibilityAsync(
+                        new ChangeMessageVisibilityRequest
+                        {
+                            QueueUrl = inputQueueUrl,
+                            ReceiptHandle = receivedMessage.ReceiptHandle,
+                            VisibilityTimeout = 15 + 30
+                        },
+                        CancellationToken.None).ConfigureAwait(false);
+                    // log
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    // TODO LOG
+                    return;
+                }
+                catch (Exception)
+                {
+                    // TODO LOG
+                    return;
+                }
+            }
+        }
+
+        async Task ProcessMessageSwallowExceptionsAndReleaseMaxConcurrencySemaphore(Message receivedMessage, CancellationTokenSource coordinationTokenSource, CancellationToken cancellationToken)
         {
             try
             {
                 try
                 {
-                    await ProcessMessage(receivedMessage, messageProcessingCancellationToken).ConfigureAwait(false);
+                    await ProcessMessage(receivedMessage, cancellationToken).ConfigureAwait(false);
                 }
 #pragma warning disable PS0019 // Do not catch Exception without considering OperationCanceledException - handling is the same for OCE
                 catch (Exception ex)
@@ -239,7 +262,7 @@ namespace NServiceBus.Transport.SQS
                     throw;
                 }
             }
-            catch (Exception ex) when (ex.IsCausedBy(messageProcessingCancellationToken))
+            catch (Exception ex) when (ex.IsCausedBy(cancellationToken))
             {
                 Logger.Debug("Message processing canceled.", ex);
             }
@@ -249,6 +272,9 @@ namespace NServiceBus.Transport.SQS
             }
             finally
             {
+                await coordinationTokenSource.CancelAsync()
+                    .ConfigureAwait(false);
+                coordinationTokenSource.Dispose();
                 maxConcurrencySemaphore.Release();
             }
         }
@@ -508,7 +534,7 @@ namespace NServiceBus.Transport.SQS
             try
             {
                 await sqsClient.ChangeMessageVisibilityAsync(
-                    new ChangeMessageVisibilityRequest()
+                    new ChangeMessageVisibilityRequest
                     {
                         QueueUrl = inputQueueUrl,
                         ReceiptHandle = message.ReceiptHandle,
@@ -672,14 +698,7 @@ namespace NServiceBus.Transport.SQS
 
         readonly FastConcurrentLru<string, int> deliveryAttempts = new(1_000);
         readonly FastConcurrentLru<string, bool> messagesToBeDeleted = new(1_000);
-        readonly string errorQueueAddress;
-        readonly bool purgeOnStartup;
-        readonly IAmazonSQS sqsClient;
-        readonly QueueCache queueCache;
-        readonly S3Settings s3Settings;
-        readonly Action<string, Exception, CancellationToken> criticalErrorAction;
-        readonly IReadOnlySettings coreSettings;
-        readonly bool setupInfrastructure;
+        readonly TimeSpan visibilityTimeout = visibilityTimeout;
 
         static readonly JsonSerializerOptions transportMessageSerializerOptions = new()
         {

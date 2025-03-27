@@ -13,17 +13,14 @@
     using Extensions;
     using Logging;
 
-    class QueueCreator
+    class QueueCreator(
+        IAmazonSQS sqsClient,
+        QueueCache queueCache,
+        S3Settings s3Settings,
+        TimeSpan maxTimeToLive,
+        int queueDelaySeconds,
+        TimeSpan visibilityTimeout)
     {
-        public QueueCreator(IAmazonSQS sqsClient, QueueCache queueCache, S3Settings s3Settings, TimeSpan maxTimeToLive, int queueDelaySeconds)
-        {
-            this.sqsClient = sqsClient;
-            this.queueCache = queueCache;
-            this.s3Settings = s3Settings;
-            this.maxTimeToLive = maxTimeToLive;
-            this.queueDelaySeconds = queueDelaySeconds;
-        }
-
         public async Task CreateQueueIfNecessary(string address, bool createDelayedDeliveryQueue, CancellationToken cancellationToken = default)
         {
             var queueName = address;
@@ -48,6 +45,8 @@
             };
             sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod,
                 maxTimeToLive.TotalSeconds.ToString(CultureInfo.InvariantCulture));
+            sqsAttributesRequest.Attributes.Add(QueueAttributeName.VisibilityTimeout,
+                visibilityTimeout.TotalSeconds.ToString(CultureInfo.InvariantCulture));
 
             await sqsClient.SetQueueAttributesAsync(sqsAttributesRequest, cancellationToken).ConfigureAwait(false);
 
@@ -135,10 +134,5 @@
         }
 
         static ILog Logger = LogManager.GetLogger(typeof(QueueCreator));
-        IAmazonSQS sqsClient;
-        QueueCache queueCache;
-        readonly S3Settings s3Settings;
-        readonly TimeSpan maxTimeToLive;
-        readonly int queueDelaySeconds;
     }
 }
