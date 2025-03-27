@@ -211,7 +211,7 @@
         /// <summary>
         /// Creates a new instance of the SQS transport definition.
         /// </summary>
-        /// <paramref name="disableUnrestrictedDelayedDelivery">If set to <c>true</c> the unrestricted delayed delivery will be disabled which means when trying to send delayed messages for longer than 15 minutes the transport will throw an exception.</paramref>
+        /// <paramref name="disableUnrestrictedDelayedDelivery">If set to <c>true</c>, the unrestricted delayed delivery will be disabled. This causes the transport to fail with a <see cref="NServiceBus.Unicast.Queuing.QueueNotFoundException"/> when trying to send delayed messages that exceed 15 minutes.</paramref>.
         public SqsTransport(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, bool disableUnrestrictedDelayedDelivery = false)
             : this(sqsClient, snsClient, externallyManaged: true, enableDelayedDelivery: !disableUnrestrictedDelayedDelivery)
         {
@@ -222,7 +222,7 @@
         ///
         /// Uses SQS and SNS clients created using a default constructor (based on the the settings from the environment)
         /// </summary>
-        /// <paramref name="disableUnrestrictedDelayedDelivery">If set to <c>true</c> the unrestricted delayed delivery will be disabled which means when trying to send delayed messages for longer than 15 minutes the transport will throw an exception.</paramref>
+        /// <paramref name="disableUnrestrictedDelayedDelivery">If set to <c>true</c>, the unrestricted delayed delivery will be disabled. This causes the transport to fail with a <see cref="NServiceBus.Unicast.Queuing.QueueNotFoundException"/> when trying to send delayed messages that exceed 15 minutes.</paramref>.
         public SqsTransport(bool disableUnrestrictedDelayedDelivery = false)
             : this(DefaultClientFactories.SqsFactory(), DefaultClientFactories.SnsFactory(), externallyManaged: false, enableDelayedDelivery: !disableUnrestrictedDelayedDelivery)
         {
