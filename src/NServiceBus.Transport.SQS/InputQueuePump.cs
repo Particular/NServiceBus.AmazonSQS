@@ -212,11 +212,12 @@ namespace NServiceBus.Transport.SQS
 
         async Task RenewMessageVisibility(Message receivedMessage, CancellationToken cancellationToken)
         {
+            TimeSpan halfVisibilityTimeout = visibilityTimeout / 2;
             while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    await Task.Delay(visibilityTimeout / 2, cancellationToken)
+                    await Task.Delay(halfVisibilityTimeout, cancellationToken)
                         .ConfigureAwait(false);
                     // we don't want this to be cancellable because we are doing best-effort to complete inflight messages
                     // on shutdown.
@@ -225,7 +226,7 @@ namespace NServiceBus.Transport.SQS
                         {
                             QueueUrl = inputQueueUrl,
                             ReceiptHandle = receivedMessage.ReceiptHandle,
-                            VisibilityTimeout = 15 + 30
+                            VisibilityTimeout = Convert.ToInt32((halfVisibilityTimeout + visibilityTimeout).TotalSeconds)
                         },
                         CancellationToken.None).ConfigureAwait(false);
                     // log
