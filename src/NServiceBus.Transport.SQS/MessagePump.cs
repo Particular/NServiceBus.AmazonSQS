@@ -22,13 +22,14 @@ namespace NServiceBus.Transport.SQS
             S3Settings s3Settings,
             SubscriptionManager subscriptionManager,
             int queueDelayTimeSeconds,
+            TimeSpan visibilityTimeout,
             Action<string, Exception, CancellationToken> criticalErrorAction,
             IReadOnlySettings coreSettings,
             bool setupInfrastructure,
             bool disableDelayedDelivery)
         {
             this.disableDelayedDelivery = disableDelayedDelivery;
-            inputQueuePump = new InputQueuePump(receiverId, receiveAddress, errorQueueAddress, purgeOnStartup, sqsClient, queueCache, s3Settings, subscriptionManager, criticalErrorAction, coreSettings, setupInfrastructure);
+            inputQueuePump = new InputQueuePump(receiverId, receiveAddress, errorQueueAddress, purgeOnStartup, sqsClient, queueCache, s3Settings, subscriptionManager, criticalErrorAction, coreSettings, visibilityTimeout, setupInfrastructure);
             if (!disableDelayedDelivery)
             {
                 delayedMessagesPump =

@@ -151,6 +151,13 @@
         internal int QueueDelayTime { get; set; } = 15 * 60;
 
         /// <summary>
+        /// Configures the message visibility timeout in seconds
+        ///
+        /// This is only for acceptance tests
+        /// </summary>
+        TimeSpan VisibilityTimeout { get; set; } = TimeSpan.FromSeconds(30); // TODO we can expose this
+
+        /// <summary>
         /// Maps a specific message type to a set of topics. The transport will automatically map the most concrete type to a topic.
         /// In case a subscriber needs to subscribe to a type up in the message inheritance chain a custom mapping needs to be defined.
         /// </summary>
@@ -276,6 +283,7 @@
                 S3,
                 Policies,
                 QueueDelayTime,
+                VisibilityTimeout,
                 topicNamePrefix,
                 DoNotWrapOutgoingMessages,
                 !sqsClient.ExternallyManaged,
@@ -286,7 +294,7 @@
 
             if (hostSettings.SetupInfrastructure)
             {
-                var queueCreator = new QueueCreator(SqsClient, QueueCache, S3, maxTimeToLive, QueueDelayTime);
+                var queueCreator = new QueueCreator(SqsClient, QueueCache, S3, maxTimeToLive, QueueDelayTime, VisibilityTimeout);
 
                 var createQueueTasks = sendingAddresses.Select(x => queueCreator.CreateQueueIfNecessary(x, false, cancellationToken))
                     .Concat(infra.Receivers.Values.Select(x => queueCreator.CreateQueueIfNecessary(x.ReceiveAddress, SupportsDelayedDelivery, cancellationToken))).ToArray();
