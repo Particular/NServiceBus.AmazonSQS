@@ -155,7 +155,7 @@
         ///
         /// This is only for acceptance tests
         /// </summary>
-        TimeSpan VisibilityTimeout { get; set; } = TimeSpan.FromSeconds(30); // TODO we can expose this
+        internal int VisibilityTimeout { get; set; } = 30; // TODO we can expose this
 
         /// <summary>
         /// Maps a specific message type to a set of topics. The transport will automatically map the most concrete type to a topic.
@@ -294,7 +294,7 @@
 
             if (hostSettings.SetupInfrastructure)
             {
-                var queueCreator = new QueueCreator(SqsClient, QueueCache, S3, maxTimeToLive, QueueDelayTime, VisibilityTimeout);
+                var queueCreator = new QueueCreator(SqsClient, QueueCache, S3, maxTimeToLive, QueueDelayTime);
 
                 var createQueueTasks = sendingAddresses.Select(x => queueCreator.CreateQueueIfNecessary(x, false, cancellationToken))
                     .Concat(infra.Receivers.Values.Select(x => queueCreator.CreateQueueIfNecessary(x.ReceiveAddress, SupportsDelayedDelivery, cancellationToken))).ToArray();

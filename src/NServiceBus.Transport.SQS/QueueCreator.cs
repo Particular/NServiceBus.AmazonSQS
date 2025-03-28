@@ -18,8 +18,7 @@
         QueueCache queueCache,
         S3Settings s3Settings,
         TimeSpan maxTimeToLive,
-        int queueDelaySeconds,
-        TimeSpan visibilityTimeout)
+        int queueDelaySeconds)
     {
         public async Task CreateQueueIfNecessary(string address, bool createDelayedDeliveryQueue, CancellationToken cancellationToken = default)
         {
@@ -45,8 +44,6 @@
             };
             sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod,
                 maxTimeToLive.TotalSeconds.ToString(CultureInfo.InvariantCulture));
-            sqsAttributesRequest.Attributes.Add(QueueAttributeName.VisibilityTimeout,
-                visibilityTimeout.TotalSeconds.ToString(CultureInfo.InvariantCulture));
 
             await sqsClient.SetQueueAttributesAsync(sqsAttributesRequest, cancellationToken).ConfigureAwait(false);
 

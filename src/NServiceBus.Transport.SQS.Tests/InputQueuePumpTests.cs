@@ -25,7 +25,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 null, null,
                 (error, exception, ct) => { },
                 new SettingsHolder(),
-                TimeSpan.FromSeconds(30));
+                30);
         }
 
         [TearDown]

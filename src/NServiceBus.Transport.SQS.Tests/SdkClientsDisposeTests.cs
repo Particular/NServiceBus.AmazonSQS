@@ -57,7 +57,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 new S3Settings("123", "k", null),
                 new PolicySettings(),
                 0,
-                TimeSpan.FromSeconds(30),
+                30,
                 "",
                 false,
                 disposeSqs,

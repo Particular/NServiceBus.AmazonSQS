@@ -28,7 +28,7 @@ namespace NServiceBus.Transport.SQS
         SubscriptionManager subscriptionManager,
         Action<string, Exception, CancellationToken> criticalErrorAction,
         IReadOnlySettings coreSettings,
-        TimeSpan visibilityTimeout,
+        int visibilityTimeoutInSeconds,
         bool setupInfrastructure = true)
         : IMessageReceiver
     {
@@ -212,12 +212,13 @@ namespace NServiceBus.Transport.SQS
 
         async Task RenewMessageVisibility(Message receivedMessage, CancellationToken cancellationToken)
         {
-            TimeSpan halfVisibilityTimeout = visibilityTimeout / 2;
+            int visibilityRenewalTimeInSeconds = Convert.ToInt32(Math.Round(0.8 * visibilityTimeoutInSeconds));
+            int visibilityRenewalTimeDiffInSeconds = visibilityTimeoutInSeconds - visibilityRenewalTimeInSeconds;
             while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    await Task.Delay(halfVisibilityTimeout, cancellationToken)
+                    await Task.Delay(visibilityRenewalTimeInSeconds, cancellationToken)
                         .ConfigureAwait(false);
                     // we don't want this to be cancellable because we are doing best-effort to complete inflight messages
                     // on shutdown.
@@ -226,7 +227,7 @@ namespace NServiceBus.Transport.SQS
                         {
                             QueueUrl = inputQueueUrl,
                             ReceiptHandle = receivedMessage.ReceiptHandle,
-                            VisibilityTimeout = Convert.ToInt32((halfVisibilityTimeout + visibilityTimeout).TotalSeconds)
+                            VisibilityTimeout = visibilityRenewalTimeDiffInSeconds + visibilityTimeoutInSeconds
                         },
                         CancellationToken.None).ConfigureAwait(false);
                     // log
@@ -699,7 +700,6 @@ namespace NServiceBus.Transport.SQS
 
         readonly FastConcurrentLru<string, int> deliveryAttempts = new(1_000);
         readonly FastConcurrentLru<string, bool> messagesToBeDeleted = new(1_000);
-        readonly TimeSpan visibilityTimeout = visibilityTimeout;
 
         static readonly JsonSerializerOptions transportMessageSerializerOptions = new()
         {
