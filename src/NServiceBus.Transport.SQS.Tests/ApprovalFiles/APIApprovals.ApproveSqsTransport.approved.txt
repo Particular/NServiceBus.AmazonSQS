@@ -56,6 +56,7 @@ namespace NServiceBus
     {
         public S3Settings(string bucketForLargeMessages, string keyPrefix, Amazon.S3.IAmazonS3 s3Client = null) { }
         public string BucketName { get; }
+        public bool? DisablePayloadSigning { get; set; }
         public NServiceBus.S3EncryptionMethod Encryption { get; set; }
         public string KeyPrefix { get; }
         public Amazon.S3.IAmazonS3 S3Client { get; }

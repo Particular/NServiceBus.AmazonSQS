@@ -88,6 +88,13 @@ namespace NServiceBus
         public string KeyPrefix { get; }
 
         /// <summary>
+        /// When set to <c>true</c> the <c>PutObjectRequest</c>to store the message
+        /// body is not signed. This is useful to support services such as Cloudflare R2
+        /// that don't support payload signing.
+        /// </summary>
+        public bool? DisablePayloadSigning { get; set; }
+
+        /// <summary>
         /// The S3 client to use.
         /// </summary>
         public IAmazonS3 S3Client => s3Client.Instance;
