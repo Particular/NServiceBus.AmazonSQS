@@ -22,7 +22,7 @@ namespace NServiceBus.Transport.SQS
             S3Settings s3Settings,
             SubscriptionManager subscriptionManager,
             int queueDelayTimeSeconds,
-            int visibilityTimeoutInSeconds,
+            int? visibilityTimeoutInSeconds,
             Action<string, Exception, CancellationToken> criticalErrorAction,
             IReadOnlySettings coreSettings,
             bool setupInfrastructure,

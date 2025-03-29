@@ -14,7 +14,7 @@
     class SqsTransportInfrastructure : TransportInfrastructure
     {
         public SqsTransportInfrastructure(HostSettings hostSettings, ReceiveSettings[] receiverSettings, IAmazonSQS sqsClient,
-            IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, S3Settings s3Settings, PolicySettings policySettings, int queueDelayTimeSeconds, int visibilityTimeoutInSeconds, string topicNamePrefix, bool doNotWrapOutgoingMessages,
+            IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, S3Settings s3Settings, PolicySettings policySettings, int queueDelayTimeSeconds, int? visibilityTimeoutInSeconds, string topicNamePrefix, bool doNotWrapOutgoingMessages,
             bool shouldDisposeSqsClient, bool shouldDisposeSnsClient, bool disableDelayedDelivery, long reserveBytesInMessageSizeCalculation)
         {
             this.sqsClient = sqsClient;
@@ -38,7 +38,7 @@
         IMessageReceiver CreateMessagePump(ReceiveSettings receiveSettings, IAmazonSQS sqsClient,
             IAmazonSimpleNotificationService snsClient, QueueCache queueCache,
             TopicCache topicCache, S3Settings s3Settings, PolicySettings policySettings, int queueDelayTimeSeconds,
-            int visibilityTimeoutInSeconds, string topicNamePrefix, Action<string, Exception, CancellationToken> criticalErrorAction)
+            int? visibilityTimeoutInSeconds, string topicNamePrefix, Action<string, Exception, CancellationToken> criticalErrorAction)
         {
             var receiveAddress = ToTransportAddress(receiveSettings.ReceiveAddress);
             var subManager = new SubscriptionManager(sqsClient, snsClient, receiveAddress, queueCache, topicCache, policySettings, topicNamePrefix, setupInfrastructure);

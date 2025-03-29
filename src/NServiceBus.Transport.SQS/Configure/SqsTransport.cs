@@ -143,19 +143,40 @@
         public bool DoNotWrapOutgoingMessages { get; set; }
 
         /// <summary>
+        /// TODO
+        /// </summary>
+        public TimeSpan? MaxAutoMessageVisibilityRenewalDuration { get; set; }
+
+        public TimeSpan? VisibilityTimeout
+        {
+            get => visibilityTimeout;
+            set
+            {
+                visibilityTimeout = value;
+                if (!value.HasValue)
+                {
+                    return;
+                }
+
+                var visibilityTimeoutInSeconds = (int)value.Value.TotalSeconds;
+                ArgumentOutOfRangeException.ThrowIfLessThan(visibilityTimeoutInSeconds, visibilityTimeoutInSeconds);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(visibilityTimeoutInSeconds, TimeSpan.FromHours(12).TotalSeconds);
+
+                VisibilityTimeoutInSeconds = visibilityTimeoutInSeconds;
+            }
+        }
+
+        TimeSpan? visibilityTimeout;
+
+        internal int? VisibilityTimeoutInSeconds { get; set; }
+
+        /// <summary>
         /// Configures the delay time to use (up to 15 minutes) when messages are delayed. If message is delayed for longer than
         /// 15 minutes, it is bounced back to the delay queue until it is due.
         ///
         /// This is only for acceptance tests
         /// </summary>
         internal int QueueDelayTime { get; set; } = 15 * 60;
-
-        /// <summary>
-        /// Configures the message visibility timeout in seconds
-        ///
-        /// This is only for acceptance tests
-        /// </summary>
-        internal int VisibilityTimeout { get; set; } = 30; // TODO we can expose this
 
         /// <summary>
         /// Maps a specific message type to a set of topics. The transport will automatically map the most concrete type to a topic.
@@ -283,7 +304,7 @@
                 S3,
                 Policies,
                 QueueDelayTime,
-                VisibilityTimeout,
+                VisibilityTimeoutInSeconds,
                 topicNamePrefix,
                 DoNotWrapOutgoingMessages,
                 !sqsClient.ExternallyManaged,
