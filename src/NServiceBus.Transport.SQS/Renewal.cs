@@ -17,10 +17,9 @@ static class Renewal
         CancellationToken cancellationToken = default)
     {
         timeProvider ??= TimeProvider.System;
-        DateTimeOffset visibilityExpiresOn1 = visibilityExpiresOn;
         while (!cancellationToken.IsCancellationRequested)
         {
-            var renewAfter = CalculateRenewalTime(visibilityExpiresOn1, timeProvider);
+            var renewAfter = CalculateRenewalTime(visibilityExpiresOn, timeProvider);
             try
             {
                 // We're awaiting the task created by 'ContinueWith' to avoid awaiting the Delay task which may be canceled.
@@ -38,7 +37,8 @@ static class Renewal
                     break;
                 }
 
-                var remainingTime = visibilityExpiresOn1 - timeProvider.GetUtcNow();
+                var utcNow = timeProvider.GetUtcNow();
+                var remainingTime = visibilityExpiresOn - utcNow;
                 // It is possible that the remaining time is negative when for example the continuation task scheduling takes too long
                 // In those cases we attempt to overextend the visibility timeout by the positive remaining time in seconds
                 var calculatedVisibilityTimeout =
@@ -46,10 +46,9 @@ static class Renewal
                         visibilityTimeoutInSeconds);
                 // immediately calculating the new expiry before calling updating the visibility to be on the safe side
                 // since we can't make any assumptions on how long the call to ChangeMessageVisibilityAsync will take
-                var now = timeProvider.GetUtcNow();
                 // we don't want this to be cancellable because we are doing best-effort to complete inflight messages
                 // on shutdown.
-                visibilityExpiresOn1 = now.Add(TimeSpan.FromSeconds(calculatedVisibilityTimeout));
+                visibilityExpiresOn = utcNow.Add(TimeSpan.FromSeconds(calculatedVisibilityTimeout));
                 await sqsClient.ChangeMessageVisibilityAsync(
                     new ChangeMessageVisibilityRequest
                     {
