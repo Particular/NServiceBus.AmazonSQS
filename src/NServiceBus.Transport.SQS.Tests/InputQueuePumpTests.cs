@@ -97,7 +97,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 Body = null //poison message
             };
 
-            await pump.ProcessMessage(message, DateTimeOffset.UtcNow.AddSeconds(30), CancellationToken.None).ConfigureAwait(false);
+            await pump.ProcessMessage(message, CancellationToken.None).ConfigureAwait(false);
 
             Assert.Multiple(() =>
             {
@@ -145,14 +145,14 @@ namespace NServiceBus.Transport.SQS.Tests
             };
 
             // First receive attempt
-            await pump.ProcessMessage(message, DateTimeOffset.UtcNow.AddSeconds(30), CancellationToken.None).ConfigureAwait(false);
+            await pump.ProcessMessage(message, CancellationToken.None).ConfigureAwait(false);
 
             // Restore the previous behavior
             mockSqsClient.DeleteMessageRequestResponse = deleteRequest;
             // Second receive attempt of the same message that has already been moved to the error queue
             // but not deleted from the input queue. It will be received with a new receipt handle.
             message.ReceiptHandle = expectedSecondReceiptHandle;
-            await pump.ProcessMessage(message, DateTimeOffset.UtcNow.AddSeconds(30), CancellationToken.None).ConfigureAwait(false);
+            await pump.ProcessMessage(message, CancellationToken.None).ConfigureAwait(false);
 
             Assert.Multiple(() =>
             {
@@ -207,7 +207,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 Body = json
             };
 
-            await pump.ProcessMessage(message, DateTimeOffset.UtcNow.AddSeconds(30), CancellationToken.None).ConfigureAwait(false);
+            await pump.ProcessMessage(message, CancellationToken.None).ConfigureAwait(false);
 
             Assert.Multiple(() =>
             {
@@ -251,7 +251,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 Body = json
             };
 
-            await pump.ProcessMessage(message, DateTimeOffset.UtcNow.AddSeconds(30), CancellationToken.None).ConfigureAwait(false);
+            await pump.ProcessMessage(message, CancellationToken.None).ConfigureAwait(false);
 
             Assert.Multiple(() =>
             {

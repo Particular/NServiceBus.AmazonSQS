@@ -55,7 +55,7 @@ namespace NServiceBus.Transport.SQS
 
             var queueAttributes = await sqsClient.GetQueueAttributesAsync(inputQueueUrl, [QueueAttributeName.VisibilityTimeout], cancellationToken)
                 .ConfigureAwait(false);
-            queueVisibilityTimeoutInSeconds = queueAttributes.VisibilityTimeout;
+            visibilityTimeout = visibilityTimeoutInSeconds.GetValueOrDefault(queueAttributes.VisibilityTimeout);
 
             maxConcurrency = limitations.MaxConcurrency;
 
@@ -192,7 +192,7 @@ namespace NServiceBus.Transport.SQS
                     var receivedMessages = await sqsClient.ReceiveMessageAsync(receiveMessagesRequest, messagePumpCancellationToken).ConfigureAwait(false);
 
                     // TODO TimeProvider?
-                    var visibilityExpiresOn = DateTimeOffset.UtcNow.AddSeconds(visibilityTimeoutInSeconds.GetValueOrDefault(queueVisibilityTimeoutInSeconds));
+                    var visibilityExpiresOn = DateTimeOffset.UtcNow.AddSeconds(visibilityTimeout);
                     foreach (var receivedMessage in receivedMessages.Messages)
                     {
                         await maxConcurrencySemaphore.WaitAsync(messagePumpCancellationToken).ConfigureAwait(false);
@@ -205,9 +205,10 @@ namespace NServiceBus.Transport.SQS
                         }
                         var coordinationToken = coordinationTokenSource.Token;
 
-                        // no Task.Run() here to avoid a closure
                         _ = RenewMessageVisibility(receivedMessage, visibilityExpiresOn, coordinationToken);
-                        _ = ProcessMessageSwallowExceptionsAndReleaseMaxConcurrencySemaphore(receivedMessage, visibilityExpiresOn, coordinationTokenSource, coordinationToken);
+                        // deliberately not passing the coordination token into the processing method. There are scenarios where it is possible that you can still
+                        // successfully process the message even when the message visibility has expired.
+                        _ = ProcessMessageSwallowExceptionsAndReleaseMaxConcurrencySemaphore(receivedMessage, coordinationTokenSource, messageProcessingCancellationTokenSource.Token);
                     }
                 }
                 catch (Exception ex) when (ex.IsCausedBy(messagePumpCancellationToken))
@@ -223,13 +224,11 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
+        // This method does not check whether the visibility time has already expired. The reason being that it is possible to renew the visibility
+        // even when the visibility time has expired as long as the message has not been picked up by another consumer or receive attempt the
+        // original receipt handle is still valid.
         async Task RenewMessageVisibility(Message receivedMessage, DateTimeOffset visibilityExpiresOn, CancellationToken cancellationToken)
         {
-            if (DateTimeOffset.UtcNow >= visibilityExpiresOn)
-            {
-                return;
-            }
-
             while (!cancellationToken.IsCancellationRequested)
             {
                 var renewAfter = RenewalTimeCalculation.Calculate(visibilityExpiresOn);
@@ -250,8 +249,6 @@ namespace NServiceBus.Transport.SQS
                         return;
                     }
 
-                    // TODO check this with a fresh mind
-                    var visibilityTimeout = visibilityTimeoutInSeconds.GetValueOrDefault(queueVisibilityTimeoutInSeconds);
                     var visibilityRenewalTimeDiffInSeconds = visibilityTimeout - (int)renewAfter.TotalSeconds;
                     // we don't want this to be cancellable because we are doing best-effort to complete inflight messages
                     // on shutdown.
@@ -276,29 +273,14 @@ namespace NServiceBus.Transport.SQS
                 }
             }
         }
-        static TimeSpan CalculateRenewDelay(DateTimeOffset visibilityTimeExpiresOn)
-        {
-            var remainingTime = visibilityTimeExpiresOn - DateTimeOffset.UtcNow;
 
-            if (remainingTime < TimeSpan.FromMilliseconds(400))
-            {
-                return TimeSpan.Zero;
-            }
-
-            var buffer = TimeSpan.FromTicks(Math.Min(remainingTime.Ticks / 2, MaximumRenewBufferDuration.Ticks));
-            var renewAfter = remainingTime - buffer;
-
-            return renewAfter;
-        }
-
-
-        async Task ProcessMessageSwallowExceptionsAndReleaseMaxConcurrencySemaphore(Message receivedMessage, DateTimeOffset visibilityTimeExpiresOn, CancellationTokenSource coordinationTokenSource, CancellationToken cancellationToken)
+        async Task ProcessMessageSwallowExceptionsAndReleaseMaxConcurrencySemaphore(Message receivedMessage, CancellationTokenSource coordinationTokenSource, CancellationToken cancellationToken)
         {
             try
             {
                 try
                 {
-                    await ProcessMessage(receivedMessage, visibilityTimeExpiresOn, cancellationToken).ConfigureAwait(false);
+                    await ProcessMessage(receivedMessage, cancellationToken).ConfigureAwait(false);
                 }
 #pragma warning disable PS0019 // Do not catch Exception without considering OperationCanceledException - handling is the same for OCE
                 catch (Exception ex)
@@ -331,7 +313,7 @@ namespace NServiceBus.Transport.SQS
         // the method should really be private, but it's internal for testing
 #pragma warning disable PS0017 // Single, non-private CancellationToken parameters should be named cancellationToken
 #pragma warning disable PS0003 // A parameter of type CancellationToken on a non-private delegate or method should be optional
-        internal async Task ProcessMessage(Message receivedMessage, DateTimeOffset visibilityExpiresOn, CancellationToken messageProcessingCancellationToken)
+        internal async Task ProcessMessage(Message receivedMessage, CancellationToken messageProcessingCancellationToken)
 #pragma warning restore PS0003 // A parameter of type CancellationToken on a non-private delegate or method should be optional
 #pragma warning restore PS0017 // Single, non-private CancellationToken parameters should be named cancellationToken
         {
@@ -342,11 +324,6 @@ namespace NServiceBus.Transport.SQS
             Exception exception = null;
             var isPoisonMessage = false;
             var nativeMessageId = receivedMessage.MessageId;
-
-            if (DateTimeOffset.UtcNow >= visibilityExpiresOn)
-            {
-                return;
-            }
 
             if (messagesToBeDeleted.TryGet(nativeMessageId, out _))
             {
@@ -762,7 +739,7 @@ namespace NServiceBus.Transport.SQS
         ReceiveMessageRequest receiveMessagesRequest;
         CancellationTokenSource messagePumpCancellationTokenSource;
         CancellationTokenSource messageProcessingCancellationTokenSource;
-        int queueVisibilityTimeoutInSeconds;
+        int visibilityTimeout;
 
         static readonly ILog Logger = LogManager.GetLogger<MessagePump>();
     }
