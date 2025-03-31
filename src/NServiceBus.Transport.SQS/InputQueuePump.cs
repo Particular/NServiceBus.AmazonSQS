@@ -429,7 +429,7 @@ namespace NServiceBus.Transport.SQS
                 {
                     continue;
                 }
-                _ = transportMessage.Headers.TryAdd(receivedMessageMessageAttribute.Key, receivedMessageMessageAttribute.Value?.StringValue ?? string.Empty);
+                transportMessage.Headers[receivedMessageMessageAttribute.Key] = receivedMessageMessageAttribute.Value?.StringValue ?? string.Empty;
             }
         }
 
