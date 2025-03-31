@@ -196,22 +196,7 @@ namespace NServiceBus.Transport.SQS
                     {
                         await maxConcurrencySemaphore.WaitAsync(messagePumpCancellationToken).ConfigureAwait(false);
 
-                        var renewalCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(messageProcessingCancellationTokenSource.Token);
-                        if (maxAutoMessageVisibilityRenewalDuration.HasValue)
-                        {
-                            renewalCancellationTokenSource.CancelAfter(maxAutoMessageVisibilityRenewalDuration.Value);
-                        }
-                        var messageVisibilityLostCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(messageProcessingCancellationTokenSource.Token);
-
-                        _ = Renewal.RenewMessageVisibility(receivedMessage, visibilityExpiresOn, visibilityTimeout, sqsClient, inputQueueUrl, messageVisibilityLostCancellationTokenSource, cancellationToken: renewalCancellationTokenSource.Token)
-                            // This makes sure the cancellation token source is disposed of when the renewal task completes to avoid cancellation token no longer be accessible while properly disposing the token source
-                            .ContinueWith((_, state) => ((CancellationTokenSource)state).Dispose(), renewalCancellationTokenSource, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
-                        // deliberately not passing renewalCancellationTokenSource into the processing method. There are scenarios where it is possible that you can still
-                        // successfully process the message even when the message visibility has expired. But when the messageVisibilityLostCancellationTokenSource gets cancelled
-                        // we now that we have lost the visibility and we should not process the message anymore. This gives the users a chance to stop processing.
-                        _ = ProcessMessageSwallowExceptionsAndReleaseMaxConcurrencySemaphore(receivedMessage, renewalCancellationTokenSource, messageVisibilityLostCancellationTokenSource.Token)
-                            // This makes sure the messageVisibilityLostCancellationTokenSource is disposed of when the processing task completes to avoid cancellation token no longer be accessible while properly disposing the token source
-                            .ContinueWith((_, state) => ((CancellationTokenSource)state).Dispose(), messageVisibilityLostCancellationTokenSource, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                        _ = ProcessMessageWithVisibilityRenewal(receivedMessage, visibilityExpiresOn, messageProcessingCancellationTokenSource.Token);
                     }
                 }
                 catch (Exception ex) when (ex.IsCausedBy(messagePumpCancellationToken))
@@ -225,6 +210,28 @@ namespace NServiceBus.Transport.SQS
                     Logger.Error("Exception thrown when consuming messages", ex);
                 }
             }
+        }
+
+        async Task ProcessMessageWithVisibilityRenewal(Message receivedMessage, DateTimeOffset visibilityExpiresOn, CancellationToken cancellationToken)
+        {
+            using var renewalCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            if (maxAutoMessageVisibilityRenewalDuration.HasValue)
+            {
+                renewalCancellationTokenSource.CancelAfter(maxAutoMessageVisibilityRenewalDuration.Value);
+            }
+            using var messageVisibilityLostCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+            var renewalTask = Renewal.RenewMessageVisibility(receivedMessage, visibilityExpiresOn, visibilityTimeout,
+                sqsClient, inputQueueUrl, messageVisibilityLostCancellationTokenSource,
+                cancellationToken: renewalCancellationTokenSource.Token);
+
+            // deliberately not passing renewalCancellationTokenSource into the processing method. There are scenarios where it is possible that you can still
+            // successfully process the message even when the message visibility has expired. But when the messageVisibilityLostCancellationTokenSource gets cancelled
+            // we now that we have lost the visibility and we should not process the message anymore. This gives the users a chance to stop processing.
+            var processingTask = ProcessMessageSwallowExceptionsAndReleaseMaxConcurrencySemaphore(receivedMessage,
+                renewalCancellationTokenSource, messageVisibilityLostCancellationTokenSource.Token);
+
+            await Task.WhenAll(renewalTask, processingTask).ConfigureAwait(false);
         }
 
         async Task ProcessMessageSwallowExceptionsAndReleaseMaxConcurrencySemaphore(Message receivedMessage, CancellationTokenSource renewalCancellationTokenSource, CancellationToken cancellationToken)
