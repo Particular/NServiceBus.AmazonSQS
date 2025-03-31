@@ -196,18 +196,22 @@ namespace NServiceBus.Transport.SQS
                     {
                         await maxConcurrencySemaphore.WaitAsync(messagePumpCancellationToken).ConfigureAwait(false);
 
-                        // The cancellation token source will be disposed in the finally block of ProcessMessageSwallowExceptionsAndReleaseMaxConcurrencySemaphore
-                        var coordinationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(messageProcessingCancellationTokenSource.Token);
+                        var renewalCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(messageProcessingCancellationTokenSource.Token);
                         if (maxAutoMessageVisibilityRenewalDuration.HasValue)
                         {
-                            coordinationTokenSource.CancelAfter(maxAutoMessageVisibilityRenewalDuration.Value);
+                            renewalCancellationTokenSource.CancelAfter(maxAutoMessageVisibilityRenewalDuration.Value);
                         }
-                        var coordinationToken = coordinationTokenSource.Token;
+                        var messageVisibilityLostCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(messageProcessingCancellationTokenSource.Token);
 
-                        _ = Renewal.RenewMessageVisibility(receivedMessage, visibilityExpiresOn, visibilityTimeout, sqsClient, inputQueueUrl, cancellationToken: coordinationToken);
-                        // deliberately not passing the coordination token into the processing method. There are scenarios where it is possible that you can still
-                        // successfully process the message even when the message visibility has expired.
-                        _ = ProcessMessageSwallowExceptionsAndReleaseMaxConcurrencySemaphore(receivedMessage, coordinationTokenSource, messageProcessingCancellationTokenSource.Token);
+                        _ = Renewal.RenewMessageVisibility(receivedMessage, visibilityExpiresOn, visibilityTimeout, sqsClient, inputQueueUrl, messageVisibilityLostCancellationTokenSource, cancellationToken: renewalCancellationTokenSource.Token)
+                            // This makes sure the cancellation token source is disposed of when the renewal task completes to avoid cancellation token no longer be accessible while properly disposing the token source
+                            .ContinueWith((_, state) => ((CancellationTokenSource)state).Dispose(), renewalCancellationTokenSource, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                        // deliberately not passing renewalCancellationTokenSource into the processing method. There are scenarios where it is possible that you can still
+                        // successfully process the message even when the message visibility has expired. But when the messageVisibilityLostCancellationTokenSource gets cancelled
+                        // we now that we have lost the visibility and we should not process the message anymore. This gives the users a chance to stop processing.
+                        _ = ProcessMessageSwallowExceptionsAndReleaseMaxConcurrencySemaphore(receivedMessage, renewalCancellationTokenSource, messageVisibilityLostCancellationTokenSource.Token)
+                            // This makes sure the messageVisibilityLostCancellationTokenSource is disposed of when the processing task completes to avoid cancellation token no longer be accessible while properly disposing the token source
+                            .ContinueWith((_, state) => ((CancellationTokenSource)state).Dispose(), messageVisibilityLostCancellationTokenSource, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
                     }
                 }
                 catch (Exception ex) when (ex.IsCausedBy(messagePumpCancellationToken))
@@ -223,7 +227,7 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        async Task ProcessMessageSwallowExceptionsAndReleaseMaxConcurrencySemaphore(Message receivedMessage, CancellationTokenSource coordinationTokenSource, CancellationToken cancellationToken)
+        async Task ProcessMessageSwallowExceptionsAndReleaseMaxConcurrencySemaphore(Message receivedMessage, CancellationTokenSource renewalCancellationTokenSource, CancellationToken cancellationToken)
         {
             try
             {
@@ -252,19 +256,16 @@ namespace NServiceBus.Transport.SQS
             }
             finally
             {
-                await coordinationTokenSource.CancelAsync()
+                await renewalCancellationTokenSource.CancelAsync()
                     .ConfigureAwait(false);
-                coordinationTokenSource.Dispose();
                 maxConcurrencySemaphore.Release();
             }
         }
 
         // the method should really be private, but it's internal for testing
-#pragma warning disable PS0017 // Single, non-private CancellationToken parameters should be named cancellationToken
 #pragma warning disable PS0003 // A parameter of type CancellationToken on a non-private delegate or method should be optional
-        internal async Task ProcessMessage(Message receivedMessage, CancellationToken messageProcessingCancellationToken)
+        internal async Task ProcessMessage(Message receivedMessage, CancellationToken cancellationToken)
 #pragma warning restore PS0003 // A parameter of type CancellationToken on a non-private delegate or method should be optional
-#pragma warning restore PS0017 // Single, non-private CancellationToken parameters should be named cancellationToken
         {
             var arrayPool = ArrayPool<byte>.Shared;
             ReadOnlyMemory<byte> messageBody = null;
@@ -288,9 +289,9 @@ namespace NServiceBus.Transport.SQS
                 {
                     transportMessage = ExtractTransportMessage(receivedMessage, messageId);
                     messageId = transportMessage.Headers[Headers.MessageId];
-                    (messageBody, messageBodyBuffer) = await transportMessage.RetrieveBody(messageId, s3Settings, arrayPool, messageProcessingCancellationToken).ConfigureAwait(false);
+                    (messageBody, messageBodyBuffer) = await transportMessage.RetrieveBody(messageId, s3Settings, arrayPool, cancellationToken).ConfigureAwait(false);
                 }
-                catch (Exception ex) when (!ex.IsCausedBy(messageProcessingCancellationToken))
+                catch (Exception ex) when (!ex.IsCausedBy(cancellationToken))
                 {
                     // Can't deserialize. This is a poison message
                     exception = ex;
@@ -302,7 +303,7 @@ namespace NServiceBus.Transport.SQS
                     var logMessage = $"Treating message with {messageId} as a poison message. Moving to error queue.";
                     Logger.Warn(logMessage, exception);
 
-                    await MovePoisonMessageToErrorQueue(receivedMessage, messageProcessingCancellationToken)
+                    await MovePoisonMessageToErrorQueue(receivedMessage, cancellationToken)
                         .ConfigureAwait(false);
                     return;
                 }
@@ -314,7 +315,7 @@ namespace NServiceBus.Transport.SQS
                 else
                 {
                     // here we also want to use the native message id because the core demands it like that
-                    var messageProcessed = await InnerProcessMessage(transportMessage.Headers, nativeMessageId, messageBody, receivedMessage, messageProcessingCancellationToken).ConfigureAwait(false);
+                    var messageProcessed = await InnerProcessMessage(transportMessage.Headers, nativeMessageId, messageBody, receivedMessage, cancellationToken).ConfigureAwait(false);
 
                     if (messageProcessed)
                     {
