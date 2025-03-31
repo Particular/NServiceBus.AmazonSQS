@@ -9,7 +9,6 @@ namespace NServiceBus.Transport.SQS
     using System.Threading.Tasks;
     using Amazon.SQS;
     using Amazon.SQS.Model;
-    using Amazon.SQS.Util;
     using BitFaster.Caching.Lru;
     using Configure;
     using Extensibility;
@@ -30,6 +29,7 @@ namespace NServiceBus.Transport.SQS
         Action<string, Exception, CancellationToken> criticalErrorAction,
         IReadOnlySettings coreSettings,
         int? visibilityTimeoutInSeconds,
+        TimeSpan? maxAutoMessageVisibilityRenewalDuration,
         bool setupInfrastructure = true)
         : IMessageReceiver
     {
@@ -192,17 +192,22 @@ namespace NServiceBus.Transport.SQS
                     var receivedMessages = await sqsClient.ReceiveMessageAsync(receiveMessagesRequest, messagePumpCancellationToken).ConfigureAwait(false);
 
                     // TODO TimeProvider?
-                    var visibilityTimeExpiresOn = DateTimeOffset.UtcNow.AddSeconds(visibilityTimeoutInSeconds.GetValueOrDefault(queueVisibilityTimeoutInSeconds));
+                    var visibilityExpiresOn = DateTimeOffset.UtcNow.AddSeconds(visibilityTimeoutInSeconds.GetValueOrDefault(queueVisibilityTimeoutInSeconds));
                     foreach (var receivedMessage in receivedMessages.Messages)
                     {
                         await maxConcurrencySemaphore.WaitAsync(messagePumpCancellationToken).ConfigureAwait(false);
 
+                        // The cancellation token source will be disposed in the finally block of ProcessMessageSwallowExceptionsAndReleaseMaxConcurrencySemaphore
                         var coordinationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(messageProcessingCancellationTokenSource.Token);
+                        if (maxAutoMessageVisibilityRenewalDuration.HasValue)
+                        {
+                            coordinationTokenSource.CancelAfter(maxAutoMessageVisibilityRenewalDuration.Value);
+                        }
                         var coordinationToken = coordinationTokenSource.Token;
 
                         // no Task.Run() here to avoid a closure
-                        _ = RenewMessageVisibility(receivedMessage, visibilityTimeExpiresOn, coordinationToken);
-                        _ = ProcessMessageSwallowExceptionsAndReleaseMaxConcurrencySemaphore(receivedMessage, visibilityTimeExpiresOn, coordinationTokenSource, coordinationToken);
+                        _ = RenewMessageVisibility(receivedMessage, visibilityExpiresOn, coordinationToken);
+                        _ = ProcessMessageSwallowExceptionsAndReleaseMaxConcurrencySemaphore(receivedMessage, visibilityExpiresOn, coordinationTokenSource, coordinationToken);
                     }
                 }
                 catch (Exception ex) when (ex.IsCausedBy(messagePumpCancellationToken))
@@ -218,11 +223,16 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        async Task RenewMessageVisibility(Message receivedMessage, DateTimeOffset visibilityTimeExpiresOn, CancellationToken cancellationToken)
+        async Task RenewMessageVisibility(Message receivedMessage, DateTimeOffset visibilityExpiresOn, CancellationToken cancellationToken)
         {
+            if (DateTimeOffset.UtcNow >= visibilityExpiresOn)
+            {
+                return;
+            }
+
             while (!cancellationToken.IsCancellationRequested)
             {
-                var renewAfter = CalculateRenewDelay(visibilityTimeExpiresOn);
+                var renewAfter = CalculateRenewDelay(visibilityExpiresOn);
                 try
                 {
                     // We're awaiting the task created by 'ContinueWith' to avoid awaiting the Delay task which may be canceled.
@@ -254,7 +264,7 @@ namespace NServiceBus.Transport.SQS
                         },
                         CancellationToken.None).ConfigureAwait(false);
                     // Update the renewal
-                    visibilityTimeExpiresOn = DateTimeOffset.UtcNow.Add(TimeSpan.FromSeconds(visibilityTimeout));
+                    visibilityExpiresOn = DateTimeOffset.UtcNow.Add(TimeSpan.FromSeconds(visibilityTimeout));
                     // log
                 }
 #pragma warning disable PS0019
@@ -333,9 +343,8 @@ namespace NServiceBus.Transport.SQS
             var isPoisonMessage = false;
             var nativeMessageId = receivedMessage.MessageId;
 
-            if (DateTimeOffset.UtcNow <= visibilityExpiresOn)
+            if (DateTimeOffset.UtcNow >= visibilityExpiresOn)
             {
-                // TODO would it be worthwhile to try to update the visibility?
                 return;
             }
 
@@ -344,8 +353,6 @@ namespace NServiceBus.Transport.SQS
                 await DeleteMessage(receivedMessage, null).ConfigureAwait(false);
                 return;
             }
-
-            // TODO Check whether we already lost the visibility
 
             try
             {

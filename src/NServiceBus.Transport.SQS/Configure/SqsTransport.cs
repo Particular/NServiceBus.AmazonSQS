@@ -145,8 +145,11 @@
         /// <summary>
         /// TODO
         /// </summary>
-        public TimeSpan? MaxAutoMessageVisibilityRenewalDuration { get; set; }
+        public TimeSpan? MaxAutoMessageVisibilityRenewalDuration { get; set; } = TimeSpan.FromMinutes(5);
 
+        /// <summary>
+        /// TODO
+        /// </summary>
         public TimeSpan? VisibilityTimeout
         {
             get => visibilityTimeout;
@@ -305,6 +308,7 @@
                 Policies,
                 QueueDelayTime,
                 VisibilityTimeoutInSeconds,
+                MaxAutoMessageVisibilityRenewalDuration,
                 topicNamePrefix,
                 DoNotWrapOutgoingMessages,
                 !sqsClient.ExternallyManaged,
