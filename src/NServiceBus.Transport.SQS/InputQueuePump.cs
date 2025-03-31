@@ -196,7 +196,7 @@ namespace NServiceBus.Transport.SQS
                     {
                         await maxConcurrencySemaphore.WaitAsync(messagePumpCancellationToken).ConfigureAwait(false);
 
-                        _ = ProcessMessageWithVisibilityRenewal(receivedMessage, visibilityExpiresOn, messageProcessingCancellationTokenSource.Token);
+                        _ = ProcessMessageWithVisibilityRenewal(receivedMessage, visibilityExpiresOn, cancellationToken: messageProcessingCancellationTokenSource.Token);
                     }
                 }
                 catch (Exception ex) when (ex.IsCausedBy(messagePumpCancellationToken))
@@ -212,8 +212,9 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        async Task ProcessMessageWithVisibilityRenewal(Message receivedMessage, DateTimeOffset visibilityExpiresOn, CancellationToken cancellationToken)
+        internal async Task ProcessMessageWithVisibilityRenewal(Message receivedMessage, DateTimeOffset visibilityExpiresOn, TimeProvider timeProvider = null, CancellationToken cancellationToken = default)
         {
+            timeProvider ??= TimeProvider.System;
             using var renewalCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             if (maxAutoMessageVisibilityRenewalDuration.HasValue)
             {
@@ -222,7 +223,7 @@ namespace NServiceBus.Transport.SQS
             using var messageVisibilityLostCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
             var renewalTask = Renewal.RenewMessageVisibility(receivedMessage, visibilityExpiresOn, visibilityTimeout,
-                sqsClient, inputQueueUrl, messageVisibilityLostCancellationTokenSource,
+                sqsClient, inputQueueUrl, messageVisibilityLostCancellationTokenSource, timeProvider,
                 cancellationToken: renewalCancellationTokenSource.Token);
 
             // deliberately not passing renewalCancellationTokenSource into the processing method. There are scenarios where it is possible that you can still

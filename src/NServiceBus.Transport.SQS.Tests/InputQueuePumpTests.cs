@@ -7,6 +7,7 @@ namespace NServiceBus.Transport.SQS.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.SQS.Model;
+    using Microsoft.Extensions.Time.Testing;
     using NUnit.Framework;
     using Settings;
 
@@ -259,6 +260,80 @@ namespace NServiceBus.Transport.SQS.Tests
                 Assert.That(mockSqsClient.DeleteMessageRequestsSent, Has.Count.EqualTo(1));
             });
             Assert.That(mockSqsClient.DeleteMessageRequestsSent.Single().receiptHandle, Is.EqualTo(expectedReceiptHandle));
+        }
+
+        [Test]
+        public async Task Should_renew_visibility_while_processing()
+        {
+            var nativeMessageId = Guid.NewGuid().ToString();
+            var messageId = Guid.NewGuid().ToString();
+            var timeProvider = new FakeTimeProvider();
+
+            await SetupInitializedPump(onMessage: (ctx, ct) => Task.Delay(TimeSpan.FromSeconds(60), timeProvider, ct));
+
+            await pump.StartReceive();
+
+            var message = CreateValidTransportMessage(messageId, nativeMessageId);
+
+            var task = pump.ProcessMessageWithVisibilityRenewal(message, timeProvider.Start, timeProvider, CancellationToken.None);
+
+            // Simulate the time passing. Default visibility timeout is 30 seconds.
+            timeProvider.Advance(TimeSpan.FromSeconds(16));
+            timeProvider.Advance(TimeSpan.FromSeconds(32));
+            timeProvider.Advance(TimeSpan.FromSeconds(60));
+
+            await task.ConfigureAwait(false);
+
+            Assert.That(mockSqsClient.ChangeMessageVisibilityRequestsSent, Has.Count.EqualTo(3));
+        }
+
+        [Test]
+        public async Task Should_cancel_processing_when_visibility_expired_during_processing()
+        {
+            var nativeMessageId = Guid.NewGuid().ToString();
+            var messageId = Guid.NewGuid().ToString();
+            var timeProvider = new FakeTimeProvider();
+            mockSqsClient.ChangeMessageVisibilityRequestResponse = (req, ct) => throw new ReceiptHandleIsInvalidException("Visibility expired");
+
+            await SetupInitializedPump(onMessage: (ctx, ct) => Task.Delay(TimeSpan.FromSeconds(60), timeProvider, ct));
+
+            await pump.StartReceive();
+
+            var message = CreateValidTransportMessage(messageId, nativeMessageId);
+
+            var task = pump.ProcessMessageWithVisibilityRenewal(message, timeProvider.Start, timeProvider, CancellationToken.None);
+
+            // Simulate the time passing. Default visibility timeout is 30 seconds.
+            timeProvider.Advance(TimeSpan.FromSeconds(16));
+
+            await task.ConfigureAwait(false);
+
+            // TODO This is not great. The first renewal fails and then the pump tries to renew again by moving it back to the queue.
+            Assert.That(mockSqsClient.ChangeMessageVisibilityRequestsSent, Has.Count.EqualTo(2));
+        }
+
+        static Message CreateValidTransportMessage(string messageId,
+            string nativeMessageId, string expectedReceiptHandle = "receipt-handle")
+        {
+            var json = JsonSerializer.Serialize(new TransportMessage
+            {
+                Headers = new Dictionary<string, string>
+                {
+                    {Headers.MessageId, messageId}
+                },
+                Body = TransportMessage.EmptyMessage
+            });
+            var message = new Message
+            {
+                ReceiptHandle = expectedReceiptHandle,
+                MessageId = nativeMessageId,
+                MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                {
+                    {Headers.MessageId, new MessageAttributeValue {StringValue = messageId}},
+                },
+                Body = json
+            };
+            return message;
         }
 
         InputQueuePump pump;
