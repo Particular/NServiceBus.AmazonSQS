@@ -191,7 +191,6 @@ namespace NServiceBus.Transport.SQS
 #pragma warning restore PS0021 // Highlight when a try block passes multiple cancellation tokens
                     var receivedMessages = await sqsClient.ReceiveMessageAsync(receiveMessagesRequest, messagePumpCancellationToken).ConfigureAwait(false);
 
-                    // TODO TimeProvider?
                     var visibilityExpiresOn = DateTimeOffset.UtcNow.AddSeconds(visibilityTimeout);
                     foreach (var receivedMessage in receivedMessages.Messages)
                     {
@@ -205,7 +204,7 @@ namespace NServiceBus.Transport.SQS
                         }
                         var coordinationToken = coordinationTokenSource.Token;
 
-                        _ = RenewMessageVisibility(receivedMessage, visibilityExpiresOn, coordinationToken);
+                        _ = Renewal.RenewMessageVisibility(receivedMessage, visibilityExpiresOn, visibilityTimeout, sqsClient, inputQueueUrl, cancellationToken: coordinationToken);
                         // deliberately not passing the coordination token into the processing method. There are scenarios where it is possible that you can still
                         // successfully process the message even when the message visibility has expired.
                         _ = ProcessMessageSwallowExceptionsAndReleaseMaxConcurrencySemaphore(receivedMessage, coordinationTokenSource, messageProcessingCancellationTokenSource.Token);
@@ -220,56 +219,6 @@ namespace NServiceBus.Transport.SQS
                 catch (Exception ex)
                 {
                     Logger.Error("Exception thrown when consuming messages", ex);
-                }
-            }
-        }
-
-        // This method does not check whether the visibility time has already expired. The reason being that it is possible to renew the visibility
-        // even when the visibility time has expired as long as the message has not been picked up by another consumer or receive attempt the
-        // original receipt handle is still valid.
-        async Task RenewMessageVisibility(Message receivedMessage, DateTimeOffset visibilityExpiresOn, CancellationToken cancellationToken)
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                var renewAfter = RenewalTimeCalculation.Calculate(visibilityExpiresOn);
-                try
-                {
-                    // We're awaiting the task created by 'ContinueWith' to avoid awaiting the Delay task which may be canceled.
-                    // This way we prevent a TaskCanceledException.
-                    Task delayTask = await Task.Delay(renewAfter, cancellationToken)
-                        .ContinueWith(
-                            t => t,
-                            CancellationToken.None,
-                            TaskContinuationOptions.ExecuteSynchronously,
-                            TaskScheduler.Default)
-                        .ConfigureAwait(false);
-
-                    if (delayTask.IsCanceled)
-                    {
-                        return;
-                    }
-
-                    var visibilityRenewalTimeDiffInSeconds = visibilityTimeout - (int)renewAfter.TotalSeconds;
-                    // we don't want this to be cancellable because we are doing best-effort to complete inflight messages
-                    // on shutdown.
-                    await sqsClient.ChangeMessageVisibilityAsync(
-                        new ChangeMessageVisibilityRequest
-                        {
-                            QueueUrl = inputQueueUrl,
-                            ReceiptHandle = receivedMessage.ReceiptHandle,
-                            VisibilityTimeout = visibilityRenewalTimeDiffInSeconds + visibilityTimeout
-                        },
-                        CancellationToken.None).ConfigureAwait(false);
-                    // Update the renewal
-                    visibilityExpiresOn = DateTimeOffset.UtcNow.Add(TimeSpan.FromSeconds(visibilityTimeout));
-                    // log
-                }
-#pragma warning disable PS0019
-                catch (Exception)
-#pragma warning restore PS0019
-                {
-                    // TODO LOG
-                    return;
                 }
             }
         }
