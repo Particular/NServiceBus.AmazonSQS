@@ -172,10 +172,16 @@
         }
 
         public ConcurrentQueue<ChangeMessageVisibilityRequest> ChangeMessageVisibilityRequestsSent { get; } = [];
+        public Func<ChangeMessageVisibilityRequest, CancellationToken, ChangeMessageVisibilityResponse> ChangeMessageVisibilityRequestResponse = (req, token) =>
+        {
+            token.ThrowIfCancellationRequested();
+            return new ChangeMessageVisibilityResponse();
+        };
+
         public Task<ChangeMessageVisibilityResponse> ChangeMessageVisibilityAsync(ChangeMessageVisibilityRequest request, CancellationToken cancellationToken = default)
         {
             ChangeMessageVisibilityRequestsSent.Enqueue(request);
-            return Task.FromResult(new ChangeMessageVisibilityResponse());
+            return Task.FromResult(ChangeMessageVisibilityRequestResponse(request, cancellationToken));
         }
 
         public bool DisposeInvoked { get; private set; }
