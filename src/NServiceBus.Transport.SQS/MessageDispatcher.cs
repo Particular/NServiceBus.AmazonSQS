@@ -501,7 +501,8 @@ namespace NServiceBus.Transport.SQS
             {
                 BucketName = s3.BucketName,
                 InputStream = bodyStream,
-                Key = key
+                Key = key,
+                DisablePayloadSigning = s3.DisablePayloadSigning
             };
 
             s3.NullSafeEncryption.ModifyPutRequest(putObjectRequest);
