@@ -232,7 +232,7 @@ namespace NServiceBus.Transport.SQS
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                var renewAfter = CalculateRenewDelay(visibilityExpiresOn);
+                var renewAfter = RenewalTimeCalculation.Calculate(visibilityExpiresOn);
                 try
                 {
                     // We're awaiting the task created by 'ContinueWith' to avoid awaiting the Delay task which may be canceled.
@@ -757,8 +757,6 @@ namespace NServiceBus.Transport.SQS
         {
             TypeInfoResolver = TransportMessageSerializerContext.Default
         };
-
-        static readonly TimeSpan MaximumRenewBufferDuration = TimeSpan.FromSeconds(10);
 
         int numberOfMessagesToFetch;
         ReceiveMessageRequest receiveMessagesRequest;
