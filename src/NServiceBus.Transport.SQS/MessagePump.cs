@@ -22,7 +22,7 @@ namespace NServiceBus.Transport.SQS
             SubscriptionManager subscriptionManager,
             int queueDelayTimeSeconds,
             int? visibilityTimeoutInSeconds,
-            TimeSpan? maxAutoMessageVisibilityRenewalDuration,
+            TimeSpan maxAutoMessageVisibilityRenewalDuration,
             Action<string, Exception, CancellationToken> criticalErrorAction,
             IReadOnlySettings coreSettings,
             bool setupInfrastructure,

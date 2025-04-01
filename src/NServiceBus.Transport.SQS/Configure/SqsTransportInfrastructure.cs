@@ -17,7 +17,7 @@
             IAmazonSQS sqsClient,
             IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache,
             S3Settings s3Settings, PolicySettings policySettings, int queueDelayTimeSeconds,
-            int? visibilityTimeoutInSeconds, TimeSpan? maxAutoMessageVisibilityRenewalDuration, string topicNamePrefix,
+            int? visibilityTimeoutInSeconds, TimeSpan maxAutoMessageVisibilityRenewalDuration, string topicNamePrefix,
             bool doNotWrapOutgoingMessages,
             bool shouldDisposeSqsClient, bool shouldDisposeSnsClient, bool disableDelayedDelivery,
             long reserveBytesInMessageSizeCalculation)
@@ -43,7 +43,7 @@
         IMessageReceiver CreateMessagePump(ReceiveSettings receiveSettings, IAmazonSQS sqsClient,
             IAmazonSimpleNotificationService snsClient, QueueCache queueCache,
             TopicCache topicCache, S3Settings s3Settings, PolicySettings policySettings, int queueDelayTimeSeconds,
-            int? visibilityTimeoutInSeconds, TimeSpan? maxAutoMessageVisibilityRenewalDuration, string topicNamePrefix,
+            int? visibilityTimeoutInSeconds, TimeSpan maxAutoMessageVisibilityRenewalDuration, string topicNamePrefix,
             Action<string, Exception, CancellationToken> criticalErrorAction)
         {
             var receiveAddress = ToTransportAddress(receiveSettings.ReceiveAddress);

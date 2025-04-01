@@ -29,7 +29,7 @@ namespace NServiceBus.Transport.SQS
         Action<string, Exception, CancellationToken> criticalErrorAction,
         IReadOnlySettings coreSettings,
         int? visibilityTimeoutInSeconds,
-        TimeSpan? maxAutoMessageVisibilityRenewalDuration,
+        TimeSpan maxAutoMessageVisibilityRenewalDuration,
         bool setupInfrastructure = true)
         : IMessageReceiver
     {
@@ -53,9 +53,17 @@ namespace NServiceBus.Transport.SQS
                         ex.StatusCode);
             }
 
-            var queueAttributes = await sqsClient.GetQueueAttributesAsync(inputQueueUrl, [QueueAttributeName.VisibilityTimeout], cancellationToken)
-                .ConfigureAwait(false);
-            visibilityTimeout = visibilityTimeoutInSeconds.GetValueOrDefault(queueAttributes.VisibilityTimeout);
+            // An explicit visibility timeout takes precedence to control the receive request so there is no need to list the queue attributes in that case.
+            if (visibilityTimeoutInSeconds.HasValue)
+            {
+                visibilityTimeout = visibilityTimeoutInSeconds.Value;
+            }
+            else
+            {
+                var queueAttributes = await sqsClient.GetQueueAttributesAsync(inputQueueUrl, [QueueAttributeName.VisibilityTimeout], cancellationToken)
+                    .ConfigureAwait(false);
+                visibilityTimeout = queueAttributes.VisibilityTimeout;
+            }
 
             maxConcurrency = limitations.MaxConcurrency;
 
@@ -216,10 +224,16 @@ namespace NServiceBus.Transport.SQS
         {
             timeProvider ??= TimeProvider.System;
             using var renewalCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            if (maxAutoMessageVisibilityRenewalDuration.HasValue)
+            if (maxAutoMessageVisibilityRenewalDuration == TimeSpan.Zero)
             {
-                renewalCancellationTokenSource.CancelAfter(maxAutoMessageVisibilityRenewalDuration.Value);
+                await renewalCancellationTokenSource.CancelAsync()
+                    .ConfigureAwait(false);
             }
+            else
+            {
+                renewalCancellationTokenSource.CancelAfter(maxAutoMessageVisibilityRenewalDuration);
+            }
+
             using var messageVisibilityLostCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
             var renewalTask = Renewal.RenewMessageVisibility(receivedMessage, visibilityExpiresOn, visibilityTimeout,

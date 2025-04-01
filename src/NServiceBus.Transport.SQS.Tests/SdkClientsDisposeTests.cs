@@ -58,7 +58,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 new PolicySettings(),
                 0,
                 30,
-                null,
+                TimeSpan.FromSeconds(30),
                 "",
                 false,
                 disposeSqs,

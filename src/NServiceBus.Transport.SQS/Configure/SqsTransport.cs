@@ -143,13 +143,29 @@
         public bool DoNotWrapOutgoingMessages { get; set; }
 
         /// <summary>
-        /// TODO
+        /// Gets or sets the maximum duration within which the message visibility will be renewed automatically. This
+        /// value should be greater than the longest message visibility duration specified either on the queue or on the receive request controlled by <see name="VisibilityTimeout"/>.
         /// </summary>
-        public TimeSpan? MaxAutoMessageVisibilityRenewalDuration { get; set; } = TimeSpan.FromMinutes(5);
+        /// <value>The maximum duration during which message visibility are automatically renewed. The default value is 5 minutes. The renewal can be disabled by passing <see cref="TimeSpan.Zero"/>.</value>
+        public TimeSpan MaxAutoMessageVisibilityRenewalDuration
+        {
+            get => maxAutoMessageVisibilityRenewalDuration;
+            set
+            {
+                var visibilityTimeoutInSeconds = (int)value.TotalSeconds;
+                ArgumentOutOfRangeException.ThrowIfNegative(visibilityTimeoutInSeconds, nameof(MaxAutoMessageVisibilityRenewalDuration));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(visibilityTimeoutInSeconds, TimeSpan.FromHours(12).TotalSeconds, nameof(MaxAutoMessageVisibilityRenewalDuration));
+
+                maxAutoMessageVisibilityRenewalDuration = value;
+            }
+        }
+
+        TimeSpan maxAutoMessageVisibilityRenewalDuration = TimeSpan.FromMinutes(5);
 
         /// <summary>
-        /// TODO
+        /// Gets or sets the message visibility timeout for the receive request. This value overrides the queue visibility timeout
         /// </summary>
+        /// <value>The default value is <c>null</c></value>
         public TimeSpan? VisibilityTimeout
         {
             get => visibilityTimeout;
@@ -162,8 +178,8 @@
                 }
 
                 var visibilityTimeoutInSeconds = (int)value.Value.TotalSeconds;
-                ArgumentOutOfRangeException.ThrowIfLessThan(visibilityTimeoutInSeconds, visibilityTimeoutInSeconds);
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(visibilityTimeoutInSeconds, TimeSpan.FromHours(12).TotalSeconds);
+                ArgumentOutOfRangeException.ThrowIfNegative(visibilityTimeoutInSeconds, nameof(VisibilityTimeout));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(visibilityTimeoutInSeconds, TimeSpan.FromHours(12).TotalSeconds, nameof(VisibilityTimeout));
 
                 VisibilityTimeoutInSeconds = visibilityTimeoutInSeconds;
             }

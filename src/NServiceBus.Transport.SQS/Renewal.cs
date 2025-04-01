@@ -61,16 +61,8 @@ static class Renewal
             }
             catch (ReceiptHandleIsInvalidException)
             {
-                try
-                {
-                    await messageVisibilityLostCancellationTokenSource.CancelAsync()
-                        .ConfigureAwait(false);
-                }
-                catch (ObjectDisposedException)
-                {
-                    // TODO verify
-                    // can happen when the messaging handling task is already done
-                }
+                await messageVisibilityLostCancellationTokenSource.CancelAsync()
+                    .ConfigureAwait(false);
                 return;
             }
 #pragma warning disable PS0019

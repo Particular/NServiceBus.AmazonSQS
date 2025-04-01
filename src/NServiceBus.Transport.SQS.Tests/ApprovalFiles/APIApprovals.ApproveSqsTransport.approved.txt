@@ -78,6 +78,7 @@ namespace NServiceBus
         [System.Obsolete("The SQS transport no longer supports 1.x compatibility mode. Will be removed in v" +
             "ersion 8.0.0.", true)]
         public bool EnableV1CompatibilityMode { get; set; }
+        public System.TimeSpan MaxAutoMessageVisibilityRenewalDuration { get; set; }
         public System.TimeSpan MaxTimeToLive { get; set; }
         public NServiceBus.PolicySettings Policies { get; }
         public System.Func<string, string, string> QueueNameGenerator { get; set; }
@@ -88,6 +89,7 @@ namespace NServiceBus
         public Amazon.SQS.IAmazonSQS SqsClient { get; }
         public System.Func<System.Type, string, string> TopicNameGenerator { get; set; }
         public string TopicNamePrefix { get; set; }
+        public System.TimeSpan? VisibilityTimeout { get; set; }
         public override System.Collections.Generic.IReadOnlyCollection<NServiceBus.TransportTransactionMode> GetSupportedTransactionModes() { }
         public override System.Threading.Tasks.Task<NServiceBus.Transport.TransportInfrastructure> Initialize(NServiceBus.Transport.HostSettings hostSettings, NServiceBus.Transport.ReceiveSettings[] receivers, string[] sendingAddresses, System.Threading.CancellationToken cancellationToken = default) { }
         public void MapEvent(System.Type eventType, string customTopicName) { }

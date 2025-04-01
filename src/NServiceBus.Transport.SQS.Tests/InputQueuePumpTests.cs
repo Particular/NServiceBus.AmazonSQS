@@ -21,14 +21,17 @@ namespace NServiceBus.Transport.SQS.Tests
 
             mockSqsClient = new MockSqsClient();
 
-            pump = new InputQueuePump("queue", FakeInputQueueQueueUrl, "error", false, mockSqsClient,
+            pump = CreatePump();
+        }
+
+        InputQueuePump CreatePump(TimeSpan? maxAutoMessageVisibilityRenewalDuration = null) =>
+            new("queue", FakeInputQueueQueueUrl, "error", false, mockSqsClient,
                 new QueueCache(mockSqsClient, dest => QueueCache.GetSqsQueueName(dest, "")),
                 null, null,
                 (error, exception, ct) => { },
                 new SettingsHolder(),
                 30,
-                null);
-        }
+                maxAutoMessageVisibilityRenewalDuration.GetValueOrDefault(TimeSpan.FromMinutes(5)));
 
         [TearDown]
         public void TearDown()
@@ -285,6 +288,35 @@ namespace NServiceBus.Transport.SQS.Tests
             await task.ConfigureAwait(false);
 
             Assert.That(mockSqsClient.ChangeMessageVisibilityRequestsSent, Has.Count.EqualTo(3));
+        }
+
+        [Test]
+        public async Task Should_renew_up_to_the_maximum_time()
+        {
+            var nativeMessageId = Guid.NewGuid().ToString();
+            var messageId = Guid.NewGuid().ToString();
+            var timeProvider = new FakeTimeProvider();
+
+            // Unfortunately linked cancellation token sources do not support the time provider
+            // setting it to Zero stops the renewal
+            pump = CreatePump(TimeSpan.Zero);
+
+            await SetupInitializedPump(onMessage: (ctx, ct) => Task.Delay(TimeSpan.FromSeconds(60), timeProvider, ct));
+
+            await pump.StartReceive();
+
+            var message = CreateValidTransportMessage(messageId, nativeMessageId);
+
+            var task = pump.ProcessMessageWithVisibilityRenewal(message, timeProvider.Start, timeProvider, CancellationToken.None);
+
+            // Simulate the time passing. Default visibility timeout is 30 seconds.
+            timeProvider.Advance(TimeSpan.FromSeconds(16));
+            timeProvider.Advance(TimeSpan.FromSeconds(32));
+            timeProvider.Advance(TimeSpan.FromSeconds(60));
+
+            await task.ConfigureAwait(false);
+
+            Assert.That(mockSqsClient.ChangeMessageVisibilityRequestsSent, Is.Empty);
         }
 
         [Test]
