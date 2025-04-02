@@ -11,7 +11,7 @@
     using Settings;
     using Transport;
 
-    class SqsTransportInfrastructure : TransportInfrastructure, IDisposable
+    class SqsTransportInfrastructure : TransportInfrastructure
     {
         public SqsTransportInfrastructure(HostSettings hostSettings, ReceiveSettings[] receiverSettings, IAmazonSQS sqsClient,
             IAmazonSimpleNotificationService snsClient, QueueCache queueCache, TopicCache topicCache, S3Settings s3Settings, PolicySettings policySettings, int queueDelayTimeSeconds, string topicNamePrefix, bool doNotWrapOutgoingMessages,
@@ -55,29 +55,21 @@
             }
             finally
             {
-                //NOTE: Once Core disposes the transport seam, this can be removed
-                Dispose();
-            }
-        }
+                if (shouldDisposeSqsClient)
+                {
+                    sqsClient.Dispose();
+                }
 
-        public void Dispose()
-        {
-            if (shouldDisposeSqsClient)
-            {
-                sqsClient.Dispose();
-            }
+                if (shouldDisposeSnsClient)
+                {
+                    snsClient.Dispose();
+                }
 
-            if (shouldDisposeSnsClient)
-            {
-                snsClient.Dispose();
+                if (shouldDisposeS3Client)
+                {
+                    s3Client?.Dispose();
+                }
             }
-
-            if (shouldDisposeS3Client)
-            {
-                s3Client?.Dispose();
-            }
-
-            GC.SuppressFinalize(this);
         }
 
         public override string ToTransportAddress(QueueAddress address)
