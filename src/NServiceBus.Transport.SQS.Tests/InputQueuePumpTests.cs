@@ -278,7 +278,10 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var message = CreateValidTransportMessage(messageId, nativeMessageId);
 
-            var task = pump.ProcessMessageWithVisibilityRenewal(message, timeProvider.Start, timeProvider, CancellationToken.None);
+            // The message expires in 30 seconds
+            var visibilityExpiresOn = timeProvider.Start.AddSeconds(30);
+
+            var task = pump.ProcessMessageWithVisibilityRenewal(message, visibilityExpiresOn, timeProvider, CancellationToken.None);
 
             // Simulate the time passing. Default visibility timeout is 30 seconds.
             timeProvider.Advance(TimeSpan.FromSeconds(16));
@@ -287,7 +290,8 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await task.ConfigureAwait(false);
 
-            Assert.That(mockSqsClient.ChangeMessageVisibilityRequestsSent, Has.Count.EqualTo(3));
+            // On this level of test we don't care about the actual visibility timeout just the fact that they happened
+            Assert.That(mockSqsClient.ChangeMessageVisibilityRequestsSent, Has.Count.EqualTo(2));
         }
 
         [Test]
@@ -307,7 +311,10 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var message = CreateValidTransportMessage(messageId, nativeMessageId);
 
-            var task = pump.ProcessMessageWithVisibilityRenewal(message, timeProvider.Start, timeProvider, CancellationToken.None);
+            // message is already expired which would force the visibility renewal to kick in
+            var visibilityExpiresOn = timeProvider.Start;
+
+            var task = pump.ProcessMessageWithVisibilityRenewal(message, visibilityExpiresOn, timeProvider, CancellationToken.None);
 
             // Simulate the time passing. Default visibility timeout is 30 seconds.
             timeProvider.Advance(TimeSpan.FromSeconds(16));
@@ -333,15 +340,18 @@ namespace NServiceBus.Transport.SQS.Tests
 
             var message = CreateValidTransportMessage(messageId, nativeMessageId);
 
-            var task = pump.ProcessMessageWithVisibilityRenewal(message, timeProvider.Start, timeProvider, CancellationToken.None);
+            // message is already expired which forces the renewal trying to renew the visibility
+            var visibilityExpiresOn = timeProvider.Start;
+
+            var task = pump.ProcessMessageWithVisibilityRenewal(message, visibilityExpiresOn, timeProvider, CancellationToken.None);
 
             // Simulate the time passing. Default visibility timeout is 30 seconds.
             timeProvider.Advance(TimeSpan.FromSeconds(16));
 
             await task.ConfigureAwait(false);
 
-            // TODO This is not great. The first renewal fails and then the pump tries to renew again by moving it back to the queue.
-            Assert.That(mockSqsClient.ChangeMessageVisibilityRequestsSent, Has.Count.EqualTo(2));
+            // On this level of test we don't care about the actual visibility timeout just the fact that they happened
+            Assert.That(mockSqsClient.ChangeMessageVisibilityRequestsSent, Has.Count.EqualTo(1));
         }
 
         static Message CreateValidTransportMessage(string messageId,

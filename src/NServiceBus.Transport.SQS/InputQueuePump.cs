@@ -4,6 +4,7 @@ namespace NServiceBus.Transport.SQS
     using System.Buffers;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Runtime.ExceptionServices;
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
@@ -240,40 +241,23 @@ namespace NServiceBus.Transport.SQS
                 sqsClient, inputQueueUrl, messageVisibilityLostCancellationTokenSource, timeProvider,
                 cancellationToken: renewalCancellationTokenSource.Token);
 
-            // deliberately not passing renewalCancellationTokenSource into the processing method. There are scenarios where it is possible that you can still
-            // successfully process the message even when the message visibility has expired. But when the messageVisibilityLostCancellationTokenSource gets cancelled
-            // we now that we have lost the visibility and we should not process the message anymore. This gives the users a chance to stop processing.
-            var processingTask = ProcessMessageSwallowExceptionsAndReleaseMaxConcurrencySemaphore(receivedMessage,
-                renewalCancellationTokenSource, messageVisibilityLostCancellationTokenSource.Token);
+            ExceptionDispatchInfo processMessageFailed = null;
 
-            await Task.WhenAll(renewalTask, processingTask).ConfigureAwait(false);
-        }
-
-        async Task ProcessMessageSwallowExceptionsAndReleaseMaxConcurrencySemaphore(Message receivedMessage, CancellationTokenSource renewalCancellationTokenSource, CancellationToken cancellationToken)
-        {
             try
             {
-                try
-                {
-                    await ProcessMessage(receivedMessage, cancellationToken).ConfigureAwait(false);
-                }
-#pragma warning disable PS0019 // Do not catch Exception without considering OperationCanceledException - handling is the same for OCE
-                catch (Exception ex)
-#pragma warning restore PS0019 // Do not catch Exception without considering OperationCanceledException - handling is the same for OCE
-                {
-                    Logger.Debug("Returning message to queue...", ex);
-
-                    await ReturnMessageToQueue(receivedMessage).ConfigureAwait(false);
-
-                    throw;
-                }
+                // deliberately not passing renewalCancellationTokenSource into the processing method. There are scenarios where it is possible that you can still
+                // successfully process the message even when the message visibility has expired. But when the messageVisibilityLostCancellationTokenSource gets cancelled
+                // we now that we have lost the visibility and we should not process the message anymore. This gives the users a chance to stop processing.
+                await ProcessMessage(receivedMessage, messageVisibilityLostCancellationTokenSource.Token).ConfigureAwait(false);
             }
-            catch (Exception ex) when (ex.IsCausedBy(cancellationToken))
+            catch (OperationCanceledException ex) when (messageVisibilityLostCancellationTokenSource.Token.IsCancellationRequested)
             {
+                processMessageFailed = ExceptionDispatchInfo.Capture(ex);
                 Logger.Debug("Message processing canceled.", ex);
             }
             catch (Exception ex)
             {
+                processMessageFailed = ExceptionDispatchInfo.Capture(ex);
                 Logger.Error("Message processing failed.", ex);
             }
             finally
@@ -281,6 +265,13 @@ namespace NServiceBus.Transport.SQS
                 await renewalCancellationTokenSource.CancelAsync()
                     .ConfigureAwait(false);
                 maxConcurrencySemaphore.Release();
+            }
+
+            var renewalResult = await renewalTask.ConfigureAwait(false);
+
+            if (processMessageFailed is not null && renewalResult != Renewal.Result.Failed)
+            {
+                await ReturnMessageToQueue(receivedMessage).ConfigureAwait(false);
             }
         }
 

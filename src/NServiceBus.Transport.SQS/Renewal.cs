@@ -11,7 +11,7 @@ static class Renewal
     // This method does not check whether the visibility time has already expired. The reason being that it is possible to renew the visibility
     // even when the visibility time has expired as long as the message has not been picked up by another consumer or receive attempt the
     // original receipt handle is still valid.
-    public static async Task RenewMessageVisibility(Message receivedMessage, DateTimeOffset visibilityExpiresOn,
+    public static async Task<Result> RenewMessageVisibility(Message receivedMessage, DateTimeOffset visibilityExpiresOn,
         int visibilityTimeoutInSeconds, IAmazonSQS sqsClient, string inputQueueUrl,
         CancellationTokenSource messageVisibilityLostCancellationTokenSource, TimeProvider timeProvider = null,
         CancellationToken cancellationToken = default)
@@ -34,7 +34,7 @@ static class Renewal
 
                 if (delayTask.IsCanceled)
                 {
-                    break;
+                    return Result.Stopped;
                 }
 
                 var utcNow = timeProvider.GetUtcNow();
@@ -57,22 +57,30 @@ static class Renewal
                         VisibilityTimeout = calculatedVisibilityTimeout
                     },
                     CancellationToken.None).ConfigureAwait(false);
-                // log
             }
             catch (ReceiptHandleIsInvalidException)
             {
+                // Signaling the message receipt handle is invalid so that other operations relaying on the token owned
+                // by this token source can be cancelled.
                 await messageVisibilityLostCancellationTokenSource.CancelAsync()
                     .ConfigureAwait(false);
-                return;
+                return Result.Failed;
             }
 #pragma warning disable PS0019
             catch (Exception)
 #pragma warning restore PS0019
             {
-                // TODO LOG
-                return;
+                return Result.Failed;
             }
         }
+
+        return Result.Stopped;
+    }
+
+    public enum Result
+    {
+        Failed,
+        Stopped
     }
 
     public static TimeSpan CalculateRenewalTime(DateTimeOffset visibilityTimeExpiresOn,

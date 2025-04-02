@@ -16,6 +16,7 @@ public class RenewalTests
         TestCase(0, 0),
         TestCase(1, 0.5),
         TestCase(20, 10),
+        TestCase(30, 20),
         TestCase(160, 150)
     ]
     public void Should_calculate_correctly(int renewalTime, double expected)
@@ -55,13 +56,13 @@ public class RenewalTests
 
         var renewalTask = Renewal.RenewMessageVisibility(message, expiresOn, visibilityTimeoutInSeconds: 10, sqsClient: sqsClient, inputQueueUrl: "inputQueue", messageVisibilityLostCancellationTokenSource, timeProvider: fakeTimeProvider, cancellationToken: tokenSource.Token);
 
-        // advance time twice to simulate mor than one renewal
+        // advance time twice to simulate more than one renewal
         fakeTimeProvider.Advance(TimeSpan.FromSeconds(5));
         fakeTimeProvider.Advance(TimeSpan.FromSeconds(11));
 
         await tokenSource.CancelAsync();
 
-        await renewalTask;
+        var result = await renewalTask;
 
         Assert.That(sqsClient.ChangeMessageVisibilityRequestsSent, Has.Count.EqualTo(2));
         Assert.Multiple(() =>
@@ -70,6 +71,7 @@ public class RenewalTests
             Assert.That(sqsClient.ChangeMessageVisibilityRequestsSent.ElementAt(0).VisibilityTimeout, Is.EqualTo(15));
             // since the message still has 4 seconds left we are trying to renew it for the ten seconds visibility time plus the expiry window
             Assert.That(sqsClient.ChangeMessageVisibilityRequestsSent.ElementAt(1).VisibilityTimeout, Is.EqualTo(14));
+            Assert.That(result, Is.EqualTo(Renewal.Result.Stopped));
         });
     }
 
@@ -92,9 +94,13 @@ public class RenewalTests
 
         await tokenSource.CancelAsync();
 
-        await renewalTask;
+        var result = await renewalTask;
 
-        Assert.That(sqsClient.ChangeMessageVisibilityRequestsSent, Is.Empty);
+        Assert.Multiple(() =>
+        {
+            Assert.That(sqsClient.ChangeMessageVisibilityRequestsSent, Is.Empty);
+            Assert.That(result, Is.EqualTo(Renewal.Result.Stopped));
+        });
     }
 
     [Test]
@@ -117,11 +123,15 @@ public class RenewalTests
 
         await tokenSource.CancelAsync();
 
-        await renewalTask;
+        var result = await renewalTask;
 
         Assert.That(sqsClient.ChangeMessageVisibilityRequestsSent, Has.Count.EqualTo(1));
-        // since the message expired two seconds ago we are trying to renew it for the ten seconds visibility time plus the expiry window
-        Assert.That(sqsClient.ChangeMessageVisibilityRequestsSent.ElementAt(0).VisibilityTimeout, Is.EqualTo(12));
+        Assert.Multiple(() =>
+        {
+            // since the message expired two seconds ago we are trying to renew it for the ten seconds visibility time plus the expiry window
+            Assert.That(sqsClient.ChangeMessageVisibilityRequestsSent.ElementAt(0).VisibilityTimeout, Is.EqualTo(12));
+            Assert.That(result, Is.EqualTo(Renewal.Result.Stopped));
+        });
     }
 
     [Test]
@@ -143,11 +153,15 @@ public class RenewalTests
 
         await tokenSource.CancelAsync();
 
-        await renewalTask;
+        var result = await renewalTask;
 
         Assert.That(sqsClient.ChangeMessageVisibilityRequestsSent, Has.Count.EqualTo(1));
-        // since the message is about to expire within the 10 seconds buffer we are trying to renew it for the ten seconds visibility time plus the expiry window
-        Assert.That(sqsClient.ChangeMessageVisibilityRequestsSent.ElementAt(0).VisibilityTimeout, Is.EqualTo(20));
+        Assert.Multiple(() =>
+        {
+            // since the message is about to expire within the 10 seconds buffer we are trying to renew it for the ten seconds visibility time plus the expiry window
+            Assert.That(sqsClient.ChangeMessageVisibilityRequestsSent.ElementAt(0).VisibilityTimeout, Is.EqualTo(20));
+            Assert.That(result, Is.EqualTo(Renewal.Result.Stopped));
+        });
     }
 
     [Test]
@@ -172,8 +186,34 @@ public class RenewalTests
         fakeTimeProvider.Advance(TimeSpan.FromSeconds(5));
 
         await completionSource.Task;
-        await renewalTask;
+        var result = await renewalTask;
 
-        Assert.That(sqsClient.ChangeMessageVisibilityRequestsSent, Has.Count.EqualTo(1));
+        Assert.Multiple(() =>
+        {
+            Assert.That(sqsClient.ChangeMessageVisibilityRequestsSent, Has.Count.EqualTo(1));
+            Assert.That(result, Is.EqualTo(Renewal.Result.Failed));
+        });
+    }
+
+    [Test]
+    public async Task Should_indicate_stopped_when_cancelled_from_beginning()
+    {
+        var message = new Message();
+
+        var messageVisibilityLostCancellationTokenSource = new CancellationTokenSource();
+        var sqsClient = new MockSqsClient();
+        var fakeTimeProvider = new FakeTimeProvider();
+
+        var cancelledToken = new CancellationToken(true);
+
+        var renewalTask = Renewal.RenewMessageVisibility(message, fakeTimeProvider.Start, visibilityTimeoutInSeconds: 10, sqsClient: sqsClient, inputQueueUrl: "inputQueue", messageVisibilityLostCancellationTokenSource, timeProvider: fakeTimeProvider, cancellationToken: cancelledToken);
+
+        var result = await renewalTask;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(sqsClient.ChangeMessageVisibilityRequestsSent, Is.Empty);
+            Assert.That(result, Is.EqualTo(Renewal.Result.Stopped));
+        });
     }
 }
