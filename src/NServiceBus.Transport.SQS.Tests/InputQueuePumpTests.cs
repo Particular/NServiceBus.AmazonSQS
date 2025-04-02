@@ -3,9 +3,12 @@ namespace NServiceBus.Transport.SQS.Tests
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net;
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
+    using Amazon.Runtime;
+    using Amazon.SQS;
     using Amazon.SQS.Model;
     using Microsoft.Extensions.Time.Testing;
     using NUnit.Framework;
@@ -113,7 +116,8 @@ namespace NServiceBus.Transport.SQS.Tests
         static IEnumerable<object[]> PoisonMessageExceptions() =>
         [
             [new Exception()],
-            [new ReceiptHandleIsInvalidException("Ooops")]
+            [new ReceiptHandleIsInvalidException("Ooops")],
+            [new AmazonSQSException("Ooops", ErrorType.Sender, "InvalidParameterValue", "RequestId", HttpStatusCode.BadRequest)],
         ];
 
         [Theory]

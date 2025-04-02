@@ -66,6 +66,14 @@ static class Renewal
                     .ConfigureAwait(false);
                 return Result.Failed;
             }
+            catch (AmazonSQSException ex) when (ex.IsCausedByMessageVisibilityExpiry())
+            {
+                // Signaling the message receipt handle is invalid so that other operations relaying on the token owned
+                // by this token source can be cancelled.
+                await messageVisibilityLostCancellationTokenSource.CancelAsync()
+                    .ConfigureAwait(false);
+                return Result.Failed;
+            }
 #pragma warning disable PS0019
             catch (Exception)
 #pragma warning restore PS0019

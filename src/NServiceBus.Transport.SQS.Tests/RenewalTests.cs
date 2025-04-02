@@ -2,8 +2,11 @@ namespace NServiceBus.Transport.SQS.Tests;
 
 using System;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.Runtime;
+using Amazon.SQS;
 using Amazon.SQS.Model;
 using Microsoft.Extensions.Time.Testing;
 using NUnit.Framework;
@@ -176,7 +179,7 @@ public class RenewalTests
         var sqsClient = new MockSqsClient();
         var fakeTimeProvider = new FakeTimeProvider();
 
-        sqsClient.ChangeMessageVisibilityRequestResponse = (req, _) => throw new ReceiptHandleIsInvalidException("Invalid receipt handle");
+        sqsClient.ChangeMessageVisibilityRequestResponse = (req, _) => throw new AmazonSQSException("Simulated exception", ErrorType.Sender, "InvalidParameterValue", "RequestId", HttpStatusCode.BadRequest);
 
         var expiresOn = fakeTimeProvider.Start.AddSeconds(10);
 

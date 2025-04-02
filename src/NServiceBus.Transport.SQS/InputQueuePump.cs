@@ -536,6 +536,10 @@ namespace NServiceBus.Transport.SQS
             }
             catch (ReceiptHandleIsInvalidException ex)
             {
+                Logger.Warn($"Failed to return message with native ID '{message.MessageId}' to the queue because the receipt handle is not valid.", ex);
+            }
+            catch (AmazonSQSException ex) when (ex.IsCausedByMessageVisibilityExpiry())
+            {
                 Logger.Warn($"Failed to return message with native ID '{message.MessageId}' to the queue because the visibility timeout has expired. The message has already been returned to the queue.", ex);
             }
             catch (Exception ex)
@@ -603,6 +607,12 @@ namespace NServiceBus.Transport.SQS
             }
             catch (ReceiptHandleIsInvalidException ex)
             {
+                Logger.Error($"Failed to delete message with native ID '{message.MessageId}' because the receipt handle was invalid.", ex);
+
+                messagesToBeDeleted.AddOrUpdate(message.MessageId, true);
+            }
+            catch (AmazonSQSException ex) when (ex.IsCausedByMessageVisibilityExpiry())
+            {
                 Logger.Error($"Failed to delete message with native ID '{message.MessageId}' because the handler execution time exceeded the visibility timeout. Increase the length of the timeout on the queue. The message was returned to the queue.", ex);
 
                 messagesToBeDeleted.AddOrUpdate(message.MessageId, true);
@@ -665,9 +675,15 @@ namespace NServiceBus.Transport.SQS
                 }, CancellationToken.None) // We don't want the delete to be cancellable to avoid unnecessary duplicates of poison messages
                     .ConfigureAwait(false);
             }
-            catch (ReceiptHandleIsInvalidException ex)
+            catch (AmazonSQSException ex) when (ex.IsCausedByMessageVisibilityExpiry())
             {
                 Logger.Error($"Error removing poison message with native ID '{message.MessageId}' from input queue {inputQueueUrl} because the visibility timeout expired. Poison message will become available at the input queue again and attempted to be removed on a best-effort basis. This may still cause duplicate poison messages in the error queue for this endpoint", ex);
+
+                messagesToBeDeleted.AddOrUpdate(message.MessageId, true);
+            }
+            catch (ReceiptHandleIsInvalidException ex)
+            {
+                Logger.Error($"Error removing poison message with native ID '{message.MessageId}' from input queue {inputQueueUrl} because the receipt handle is not valid. Poison message will become available at the input queue again and attempted to be removed on a best-effort basis. This may still cause duplicate poison messages in the error queue for this endpoint", ex);
 
                 messagesToBeDeleted.AddOrUpdate(message.MessageId, true);
             }
