@@ -8,7 +8,6 @@
     using Amazon.S3;
     using Amazon.SimpleNotificationService;
     using Amazon.SQS;
-    using Settings;
     using Transport;
 
     class SqsTransportInfrastructure : TransportInfrastructure
@@ -27,29 +26,26 @@
             this.queueCache = queueCache;
             this.shouldDisposeSqsClient = shouldDisposeSqsClient;
             this.shouldDisposeSnsClient = shouldDisposeSnsClient;
-            this.disableDelayedDelivery = disableDelayedDelivery;
-            coreSettings = hostSettings.CoreSettings;
             s3Client = s3Settings?.S3Client;
-            setupInfrastructure = hostSettings.SetupInfrastructure;
             shouldDisposeS3Client = s3Settings is { ShouldDisposeS3Client: true };
             Receivers = receiverSettings
-                .Select(receiverSetting => CreateMessagePump(receiverSetting, sqsClient, snsClient, queueCache, topicCache, s3Settings, policySettings, queueDelayTimeSeconds, visibilityTimeoutInSeconds, maxAutoMessageVisibilityRenewalDuration, topicNamePrefix, hostSettings.CriticalErrorAction))
+                .Select(receiverSetting => CreateMessagePump(receiverSetting, sqsClient, snsClient, queueCache, hostSettings.SetupInfrastructure, disableDelayedDelivery, topicCache, s3Settings, policySettings, queueDelayTimeSeconds, visibilityTimeoutInSeconds, maxAutoMessageVisibilityRenewalDuration, topicNamePrefix, hostSettings.CriticalErrorAction))
                 .ToDictionary(x => x.Id, x => x);
 
             Dispatcher = new MessageDispatcher(hostSettings.CoreSettings, sqsClient, snsClient, queueCache, topicCache, s3Settings,
                 queueDelayTimeSeconds, reserveBytesInMessageSizeCalculation, !doNotWrapOutgoingMessages);
         }
 
-        IMessageReceiver CreateMessagePump(ReceiveSettings receiveSettings, IAmazonSQS sqsClient,
-            IAmazonSimpleNotificationService snsClient, QueueCache queueCache,
+        static IMessageReceiver CreateMessagePump(ReceiveSettings receiveSettings, IAmazonSQS sqsClient,
+            IAmazonSimpleNotificationService snsClient, QueueCache queueCache, bool setupInfrastructure, bool disableDelayedDelivery,
             TopicCache topicCache, S3Settings s3Settings, PolicySettings policySettings, int queueDelayTimeSeconds,
             int? visibilityTimeoutInSeconds, TimeSpan maxAutoMessageVisibilityRenewalDuration, string topicNamePrefix,
             Action<string, Exception, CancellationToken> criticalErrorAction)
         {
-            var receiveAddress = ToTransportAddress(receiveSettings.ReceiveAddress);
+            var receiveAddress = ToTransportAddressCore(receiveSettings.ReceiveAddress, queueCache);
             var subManager = new SubscriptionManager(sqsClient, snsClient, receiveAddress, queueCache, topicCache, policySettings, topicNamePrefix, setupInfrastructure);
 
-            return new MessagePump(receiveSettings.Id, receiveAddress, receiveSettings.ErrorQueue, receiveSettings.PurgeOnStartup, sqsClient, queueCache, s3Settings, subManager, queueDelayTimeSeconds, visibilityTimeoutInSeconds, maxAutoMessageVisibilityRenewalDuration, criticalErrorAction, coreSettings, setupInfrastructure, disableDelayedDelivery);
+            return new MessagePump(receiveSettings.Id, receiveAddress, receiveSettings.ErrorQueue, receiveSettings.PurgeOnStartup, sqsClient, queueCache, s3Settings, subManager, queueDelayTimeSeconds, visibilityTimeoutInSeconds, maxAutoMessageVisibilityRenewalDuration, criticalErrorAction, setupInfrastructure, disableDelayedDelivery);
         }
 
         public override async Task Shutdown(CancellationToken cancellationToken = default)
@@ -78,7 +74,9 @@
             }
         }
 
-        public override string ToTransportAddress(QueueAddress address)
+        public override string ToTransportAddress(QueueAddress address) => ToTransportAddressCore(address, queueCache);
+
+        static string ToTransportAddressCore(QueueAddress address, QueueCache queueCache)
         {
             var queueName = address.BaseAddress;
             var queue = new StringBuilder(queueName);
@@ -99,11 +97,8 @@
         readonly IAmazonSQS sqsClient;
         readonly IAmazonSimpleNotificationService snsClient;
         readonly IAmazonS3 s3Client;
-        readonly IReadOnlySettings coreSettings;
-        readonly bool setupInfrastructure;
         readonly bool shouldDisposeSqsClient;
         readonly bool shouldDisposeSnsClient;
-        readonly bool disableDelayedDelivery;
         readonly bool shouldDisposeS3Client;
     }
 }

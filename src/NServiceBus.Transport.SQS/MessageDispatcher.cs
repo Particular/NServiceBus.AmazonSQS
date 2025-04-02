@@ -18,35 +18,18 @@ namespace NServiceBus.Transport.SQS
     using Settings;
     using Transport;
 
-    partial class MessageDispatcher : IMessageDispatcher
+    partial class MessageDispatcher(
+        IReadOnlySettings settings,
+        IAmazonSQS sqsClient,
+        IAmazonSimpleNotificationService snsClient,
+        QueueCache queueCache,
+        TopicCache topicCache,
+        S3Settings? s3,
+        int queueDelaySeconds,
+        long reserveBytesInMessageSizeCalculation,
+        bool wrapOutgoingMessages = true)
+        : IMessageDispatcher
     {
-        public MessageDispatcher(IReadOnlySettings settings, IAmazonSQS sqsClient,
-            IAmazonSimpleNotificationService snsClient,
-            QueueCache queueCache,
-            TopicCache topicCache,
-            S3Settings s3,
-            int queueDelaySeconds,
-            long reserveBytesInMessageSizeCalculation,
-            bool wrapOutgoingMessages = true)
-        {
-            this.topicCache = topicCache;
-            this.s3 = s3;
-            this.queueDelaySeconds = queueDelaySeconds;
-            this.snsClient = snsClient;
-            this.sqsClient = sqsClient;
-            this.queueCache = queueCache;
-            this.wrapOutgoingMessages = wrapOutgoingMessages;
-            this.reserveBytesInMessageSizeCalculation = reserveBytesInMessageSizeCalculation;
-
-            transportMessageSerializerOptions = new JsonSerializerOptions
-            {
-                Converters = { new ReducedPayloadSerializerConverter() },
-                TypeInfoResolver = TransportMessageSerializerContext.Default
-            };
-
-            hybridPubSubChecker = new HybridPubSubChecker(settings, topicCache, queueCache, snsClient);
-        }
-
         public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, CancellationToken cancellationToken = default)
         {
             var concurrentDispatchTasks = new List<Task>(4);
@@ -380,7 +363,7 @@ namespace NServiceBus.Transport.SQS
                 (preparedMessage.Body, var headers) = GetMessageBodyAndHeaders(transportOperation.Message);
                 preparedMessage.MessageAttributes[TransportHeaders.Headers] = new MessageAttributeValue { StringValue = headers, DataType = "String" };
 
-                await PrepareSqsMessageBasedOnBodySize(default).ConfigureAwait(false);
+                await PrepareSqsMessageBasedOnBodySize(null).ConfigureAwait(false);
             }
             else
             {
@@ -415,7 +398,7 @@ namespace NServiceBus.Transport.SQS
                 (preparedMessage.Body, var headers) = GetMessageBodyAndHeaders(transportOperation.Message);
                 preparedMessage.MessageAttributes[TransportHeaders.Headers] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue() { StringValue = headers, DataType = "String" };
 
-                await PrepareSnsMessageBasedOnBodySize(default).ConfigureAwait(false);
+                await PrepareSnsMessageBasedOnBodySize(null).ConfigureAwait(false);
             }
             else
             {
@@ -575,16 +558,13 @@ namespace NServiceBus.Transport.SQS
             }
         }
 
-        readonly IAmazonSimpleNotificationService snsClient;
-        readonly TopicCache topicCache;
-        readonly S3Settings s3;
-        readonly int queueDelaySeconds;
-        readonly HybridPubSubChecker hybridPubSubChecker;
-        readonly bool wrapOutgoingMessages;
-        readonly JsonSerializerOptions transportMessageSerializerOptions;
-        readonly IAmazonSQS sqsClient;
-        readonly QueueCache queueCache;
-        readonly long reserveBytesInMessageSizeCalculation;
+        readonly HybridPubSubChecker hybridPubSubChecker = new(settings, topicCache, queueCache, snsClient);
+
+        readonly JsonSerializerOptions transportMessageSerializerOptions = new()
+        {
+            Converters = { new ReducedPayloadSerializerConverter() },
+            TypeInfoResolver = TransportMessageSerializerContext.Default
+        };
 
         static readonly ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
     }

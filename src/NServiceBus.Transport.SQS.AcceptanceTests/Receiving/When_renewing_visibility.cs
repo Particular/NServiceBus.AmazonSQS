@@ -30,7 +30,7 @@ public class When_renewing_visibility : NServiceBusAcceptanceTest
             EndpointSetup<DefaultServer>(config =>
             {
                 var transport = config.ConfigureSqsTransport();
-                transport.VisibilityTimeout = TimeSpan.FromSeconds(1);
+                transport.MessageVisibilityTimeout = TimeSpan.FromSeconds(1);
             });
 
         public class MyMessageHandler(Context testContext) : IHandleMessages<MyMessage>

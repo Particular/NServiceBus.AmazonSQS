@@ -11,11 +11,9 @@ namespace NServiceBus.Transport.SQS
     using Amazon.SQS;
     using Amazon.SQS.Model;
     using BitFaster.Caching.Lru;
-    using Configure;
     using Extensibility;
     using Extensions;
     using Logging;
-    using Settings;
     using Message = Amazon.SQS.Model.Message;
 
     class InputQueuePump(
@@ -28,8 +26,7 @@ namespace NServiceBus.Transport.SQS
         S3Settings s3Settings,
         SubscriptionManager subscriptionManager,
         Action<string, Exception, CancellationToken> criticalErrorAction,
-        IReadOnlySettings coreSettings,
-        int? visibilityTimeoutInSeconds,
+        int? configuredVisibilityTimeoutInSeconds,
         TimeSpan maxAutoMessageVisibilityRenewalDuration,
         bool setupInfrastructure = true)
         : IMessageReceiver
@@ -55,15 +52,15 @@ namespace NServiceBus.Transport.SQS
             }
 
             // An explicit visibility timeout takes precedence to control the receive request so there is no need to list the queue attributes in that case.
-            if (visibilityTimeoutInSeconds.HasValue)
+            if (configuredVisibilityTimeoutInSeconds.HasValue)
             {
-                visibilityTimeout = visibilityTimeoutInSeconds.Value;
+                visibilityTimeoutInSeconds = configuredVisibilityTimeoutInSeconds.Value;
             }
             else
             {
                 var queueAttributes = await sqsClient.GetQueueAttributesAsync(inputQueueUrl, [QueueAttributeName.VisibilityTimeout], cancellationToken)
                     .ConfigureAwait(false);
-                visibilityTimeout = queueAttributes.VisibilityTimeout;
+                visibilityTimeoutInSeconds = queueAttributes.VisibilityTimeout;
             }
 
             maxConcurrency = limitations.MaxConcurrency;
@@ -125,10 +122,11 @@ namespace NServiceBus.Transport.SQS
                 MessageAttributeNames = ["All"]
             };
 
-            // TODO Replace with new setting
-            if (coreSettings != null && coreSettings.TryGet<int>(SettingsKeys.MessageVisibilityTimeout, out var visibilityTimeout))
+            // Only when the visibility timeout was explicitly configured on the transport it is necessary
+            // to override it on the request.
+            if (configuredVisibilityTimeoutInSeconds.HasValue)
             {
-                receiveMessagesRequest.VisibilityTimeout = visibilityTimeout;
+                receiveMessagesRequest.VisibilityTimeout = configuredVisibilityTimeoutInSeconds.Value;
             }
 
             maxConcurrencySemaphore = new SemaphoreSlim(maxConcurrency);
@@ -200,7 +198,7 @@ namespace NServiceBus.Transport.SQS
 #pragma warning restore PS0021 // Highlight when a try block passes multiple cancellation tokens
                     var receivedMessages = await sqsClient.ReceiveMessageAsync(receiveMessagesRequest, messagePumpCancellationToken).ConfigureAwait(false);
 
-                    var visibilityExpiresOn = DateTimeOffset.UtcNow.AddSeconds(visibilityTimeout);
+                    var visibilityExpiresOn = DateTimeOffset.UtcNow.AddSeconds(visibilityTimeoutInSeconds);
                     foreach (var receivedMessage in receivedMessages.Messages)
                     {
                         await maxConcurrencySemaphore.WaitAsync(messagePumpCancellationToken).ConfigureAwait(false);
@@ -237,7 +235,7 @@ namespace NServiceBus.Transport.SQS
 
             using var messageVisibilityLostCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-            var renewalTask = Renewal.RenewMessageVisibility(receivedMessage, visibilityExpiresOn, visibilityTimeout,
+            var renewalTask = Renewal.RenewMessageVisibility(receivedMessage, visibilityExpiresOn, visibilityTimeoutInSeconds,
                 sqsClient, inputQueueUrl, messageVisibilityLostCancellationTokenSource, timeProvider,
                 cancellationToken: renewalCancellationTokenSource.Token);
 
@@ -702,7 +700,7 @@ namespace NServiceBus.Transport.SQS
         ReceiveMessageRequest receiveMessagesRequest;
         CancellationTokenSource messagePumpCancellationTokenSource;
         CancellationTokenSource messageProcessingCancellationTokenSource;
-        int visibilityTimeout;
+        int visibilityTimeoutInSeconds;
 
         static readonly ILog Logger = LogManager.GetLogger<MessagePump>();
     }

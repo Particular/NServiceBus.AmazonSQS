@@ -166,28 +166,28 @@
         /// Gets or sets the message visibility timeout for the receive request. This value overrides the queue visibility timeout
         /// </summary>
         /// <value>The default value is <c>null</c></value>
-        public TimeSpan? VisibilityTimeout
+        public TimeSpan? MessageVisibilityTimeout
         {
-            get => visibilityTimeout;
+            get => messageVisibilityTimeout;
             set
             {
-                visibilityTimeout = value;
+                messageVisibilityTimeout = value;
                 if (!value.HasValue)
                 {
                     return;
                 }
 
                 var visibilityTimeoutInSeconds = (int)value.Value.TotalSeconds;
-                ArgumentOutOfRangeException.ThrowIfNegative(visibilityTimeoutInSeconds, nameof(VisibilityTimeout));
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(visibilityTimeoutInSeconds, TimeSpan.FromHours(12).TotalSeconds, nameof(VisibilityTimeout));
+                ArgumentOutOfRangeException.ThrowIfNegative(visibilityTimeoutInSeconds, nameof(MessageVisibilityTimeout));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(visibilityTimeoutInSeconds, TimeSpan.FromHours(12).TotalSeconds, nameof(MessageVisibilityTimeout));
 
-                VisibilityTimeoutInSeconds = visibilityTimeoutInSeconds;
+                messageVisibilityTimeoutInSeconds = visibilityTimeoutInSeconds;
             }
         }
 
-        TimeSpan? visibilityTimeout;
+        TimeSpan? messageVisibilityTimeout;
 
-        internal int? VisibilityTimeoutInSeconds { get; set; }
+        int? messageVisibilityTimeoutInSeconds;
 
         /// <summary>
         /// Configures the delay time to use (up to 15 minutes) when messages are delayed. If message is delayed for longer than
@@ -323,7 +323,7 @@
                 S3,
                 Policies,
                 QueueDelayTime,
-                VisibilityTimeoutInSeconds,
+                messageVisibilityTimeoutInSeconds,
                 MaxAutoMessageVisibilityRenewalDuration,
                 topicNamePrefix,
                 DoNotWrapOutgoingMessages,

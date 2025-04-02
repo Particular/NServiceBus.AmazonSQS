@@ -9,7 +9,6 @@ namespace NServiceBus.Transport.SQS.Tests
     using Amazon.SQS.Model;
     using Microsoft.Extensions.Time.Testing;
     using NUnit.Framework;
-    using Settings;
 
     [TestFixture]
     public class InputQueuePumpTests
@@ -29,7 +28,6 @@ namespace NServiceBus.Transport.SQS.Tests
                 new QueueCache(mockSqsClient, dest => QueueCache.GetSqsQueueName(dest, "")),
                 null, null,
                 (error, exception, ct) => { },
-                new SettingsHolder(),
                 30,
                 maxAutoMessageVisibilityRenewalDuration.GetValueOrDefault(TimeSpan.FromMinutes(5)));
 
