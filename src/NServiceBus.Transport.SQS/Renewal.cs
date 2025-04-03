@@ -25,11 +25,14 @@ static class Renewal
             {
                 if (Logger.IsDebugEnabled)
                 {
-                    Logger.DebugFormat("The message visibility timeout for message with native ID '{0}' expiring at '{1}' will be renewed after '{2}'.", receivedMessage.MessageId, visibilityExpiresOn, renewAfter);
+                    Logger.DebugFormat(
+                        "The message visibility timeout for message with native ID '{0}' expiring at '{1}' will be renewed after '{2}'.",
+                        receivedMessage.MessageId, visibilityExpiresOn, renewAfter);
                 }
 
                 // We're awaiting the task created by 'ContinueWith' to avoid awaiting the Delay task which may be canceled.
-                // This way we prevent a TaskCanceledException.
+                // This way we prevent a TaskCanceledException. We do this here because we expect this cancellation scenario
+                // to be rather frequent and it avoids the cost of throwing/catching an exception.
                 Task delayTask = await Task.Delay(renewAfter, timeProvider, cancellationToken)
                     .ContinueWith(
                         t => t,
@@ -40,11 +43,7 @@ static class Renewal
 
                 if (delayTask.IsCanceled)
                 {
-                    if (Logger.IsDebugEnabled)
-                    {
-                        Logger.DebugFormat("The message visibility timeout renewal for message with native ID '{0}' was stopped. The message visibility might expire at '{1}'", receivedMessage.MessageId, visibilityExpiresOn);
-                    }
-
+                    LogStopped(receivedMessage, visibilityExpiresOn);
                     return Result.Stopped;
                 }
 
@@ -57,8 +56,8 @@ static class Renewal
                         visibilityTimeoutInSeconds);
                 // immediately calculating the new expiry before calling updating the visibility to be on the safe side
                 // since we can't make any assumptions on how long the call to ChangeMessageVisibilityAsync will take
-                // we don't want this to be cancellable because we are doing best-effort to complete inflight messages
-                // on shutdown.
+                // It is OK for this to be cancellable because we don't want to attempt to renew the visibility timeout
+                // when the message processing is already done which would trigger the token.
                 visibilityExpiresOn = utcNow.Add(TimeSpan.FromSeconds(calculatedVisibilityTimeout));
                 await sqsClient.ChangeMessageVisibilityAsync(
                     new ChangeMessageVisibilityRequest
@@ -67,18 +66,22 @@ static class Renewal
                         ReceiptHandle = receivedMessage.ReceiptHandle,
                         VisibilityTimeout = calculatedVisibilityTimeout
                     },
-                    CancellationToken.None).ConfigureAwait(false);
+                    cancellationToken).ConfigureAwait(false);
 
                 if (Logger.IsDebugEnabled)
                 {
-                    Logger.DebugFormat("Renewed message visibility timeout by '{0}' until '{1}' UTC for message with native ID '{2}'.", calculatedVisibilityTimeout, visibilityExpiresOn, receivedMessage.MessageId);
+                    Logger.DebugFormat(
+                        "Renewed message visibility timeout by '{0}' until '{1}' UTC for message with native ID '{2}'.",
+                        calculatedVisibilityTimeout, visibilityExpiresOn, receivedMessage.MessageId);
                 }
             }
             catch (ReceiptHandleIsInvalidException ex)
             {
                 if (Logger.IsWarnEnabled)
                 {
-                    Logger.Warn($"Renewing the message visibility timeout failed because the receipt handle was not valid for message with native ID '{receivedMessage.MessageId}'.", ex);
+                    Logger.Warn(
+                        $"Renewing the message visibility timeout failed because the receipt handle was not valid for message with native ID '{receivedMessage.MessageId}'.",
+                        ex);
                 }
 
                 // Signaling the message receipt handle is invalid so that other operations relaying on the token owned
@@ -89,9 +92,13 @@ static class Renewal
             }
             catch (AmazonSQSException ex) when (ex.IsCausedByMessageVisibilityExpiry())
             {
-                if (Logger.IsWarnEnabled)
+                // This is debug level because we expect this to happen when the message is picked up by a competing consumer
+                // or when the message successfully completed processing and the message is deleted
+                if (Logger.IsDebugEnabled)
                 {
-                    Logger.Warn($"Renewing the message visibility timeout failed because the message with native ID {receivedMessage.MessageId} has already been picked up by a competing consumer.", ex);
+                    Logger.Debug(
+                        $"Renewing the message visibility timeout failed because the message with native ID {receivedMessage.MessageId} has already been picked up by a competing consumer.",
+                        ex);
                 }
 
                 // Signaling the message receipt handle is invalid so that other operations relaying on the token owned
@@ -100,9 +107,12 @@ static class Renewal
                     .ConfigureAwait(false);
                 return Result.Failed;
             }
-#pragma warning disable PS0019
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                LogStopped(receivedMessage, visibilityExpiresOn);
+                return Result.Stopped;
+            }
             catch (Exception ex)
-#pragma warning restore PS0019
             {
                 if (Logger.IsWarnEnabled)
                 {
@@ -114,6 +124,14 @@ static class Renewal
         }
 
         return Result.Stopped;
+    }
+
+    static void LogStopped(Message receivedMessage, DateTimeOffset visibilityExpiresOn)
+    {
+        if (Logger.IsDebugEnabled)
+        {
+            Logger.DebugFormat("The message visibility timeout renewal for message with native ID '{0}' was stopped. The message visibility might expire at '{1}'", receivedMessage.MessageId, visibilityExpiresOn);
+        }
     }
 
     public enum Result
