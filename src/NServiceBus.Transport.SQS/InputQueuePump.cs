@@ -399,8 +399,8 @@ namespace NServiceBus.Transport.SQS
 
                         if (CouldBeNativeMessage(transportMessage))
                         {
-                            Logger.Debug($"Message with native id {receivedMessage.MessageId} does not contain the required information and will not be treated as an NServiceBus TransportMessage. " +
-                                   $"Instead it'll be treated as pure native message.");
+                            Logger.DebugFormat(
+                                "Message with native id {0} does not contain the required information and will not be treated as an NServiceBus TransportMessage. Instead it'll be treated as pure native message.", receivedMessage.MessageId);
 
                             transportMessage = new TransportMessage
                             {
@@ -416,8 +416,8 @@ namespace NServiceBus.Transport.SQS
                     catch (Exception ex)
                     {
                         //HINT: Deserialization is best-effort. If it fails, we trat the message as a native message
-                        Logger.Debug($"Failed to deserialize message with native id {receivedMessage.MessageId}. " +
-                                     $"It will not be treated as an NServiceBus TransportMessage. Instead it'll be treated as pure native message.", ex);
+                        Logger.Debug(
+                            $"Failed to deserialize message with native id {receivedMessage.MessageId}. It will not be treated as an NServiceBus TransportMessage. Instead it'll be treated as pure native message.", ex);
 
                         transportMessage = new TransportMessage
                         {
@@ -586,7 +586,7 @@ namespace NServiceBus.Transport.SQS
             }
 
             // Message has expired.
-            Logger.Info($"Discarding expired message with Id {messageId}, expired {now - expiresAt} ago at {expiresAt} utc.");
+            Logger.InfoFormat("Discarding expired message with Id {0}, expired {1} ago at {2} utc.", messageId, now - expiresAt, expiresAt);
             return true;
         }
 
@@ -602,7 +602,7 @@ namespace NServiceBus.Transport.SQS
 
                 if (!string.IsNullOrEmpty(s3BodyKey))
                 {
-                    Logger.Info($"Message body data with key '{s3BodyKey}' will be aged out by the S3 lifecycle policy when the TTL expires.");
+                    Logger.InfoFormat("Message body data with key '{0}' will be aged out by the S3 lifecycle policy when the TTL expires.", s3BodyKey);
                 }
             }
             catch (ReceiptHandleIsInvalidException ex)
