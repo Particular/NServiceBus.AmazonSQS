@@ -26,7 +26,7 @@ static class Renewal
                 if (Logger.IsDebugEnabled)
                 {
                     Logger.DebugFormat(
-                        "The message visibility timeout for message with native ID '{0}' expiring at '{1}' will be renewed after '{2}'.",
+                        "The message visibility timeout for message with native ID '{0}' expiring at '{1}' UTC will be renewed after '{2}'.",
                         receivedMessage.MessageId, visibilityExpiresOn, renewAfter);
                 }
 
@@ -71,7 +71,7 @@ static class Renewal
                 if (Logger.IsDebugEnabled)
                 {
                     Logger.DebugFormat(
-                        "Renewed message visibility timeout by '{0}' until '{1}' UTC for message with native ID '{2}'.",
+                        "Renewed message visibility timeout by '{0}' seconds until '{1}' UTC for message with native ID '{2}'.",
                         calculatedVisibilityTimeout, visibilityExpiresOn, receivedMessage.MessageId);
                 }
             }
@@ -130,7 +130,7 @@ static class Renewal
     {
         if (Logger.IsDebugEnabled)
         {
-            Logger.DebugFormat("The message visibility timeout renewal for message with native ID '{0}' was stopped. The message visibility might expire at '{1}'", receivedMessage.MessageId, visibilityExpiresOn);
+            Logger.DebugFormat("The message visibility timeout renewal for message with native ID '{0}' was stopped. The message visibility might expire at '{1}' UTC", receivedMessage.MessageId, visibilityExpiresOn);
         }
     }
 
