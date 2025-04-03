@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.SQS;
 using Amazon.SQS.Model;
+using Logging;
 
 static class Renewal
 {
@@ -22,6 +23,11 @@ static class Renewal
             var renewAfter = CalculateRenewalTime(visibilityExpiresOn, timeProvider);
             try
             {
+                if (Logger.IsDebugEnabled)
+                {
+                    Logger.DebugFormat("The message visibility timeout for message with native ID '{0}' expiring at '{1}' will be renewed after '{2}'.", receivedMessage.MessageId, visibilityExpiresOn, renewAfter);
+                }
+
                 // We're awaiting the task created by 'ContinueWith' to avoid awaiting the Delay task which may be canceled.
                 // This way we prevent a TaskCanceledException.
                 Task delayTask = await Task.Delay(renewAfter, timeProvider, cancellationToken)
@@ -34,6 +40,11 @@ static class Renewal
 
                 if (delayTask.IsCanceled)
                 {
+                    if (Logger.IsDebugEnabled)
+                    {
+                        Logger.DebugFormat("The message visibility timeout renewal for message with native ID '{0}' was stopped. The message visibility might expire at '{1}'", receivedMessage.MessageId, visibilityExpiresOn);
+                    }
+
                     return Result.Stopped;
                 }
 
@@ -57,9 +68,19 @@ static class Renewal
                         VisibilityTimeout = calculatedVisibilityTimeout
                     },
                     CancellationToken.None).ConfigureAwait(false);
+
+                if (Logger.IsDebugEnabled)
+                {
+                    Logger.DebugFormat("Renewed message visibility timeout by '{0}' until '{1}' UTC for message with native ID '{2}'.", calculatedVisibilityTimeout, visibilityExpiresOn, receivedMessage.MessageId);
+                }
             }
-            catch (ReceiptHandleIsInvalidException)
+            catch (ReceiptHandleIsInvalidException ex)
             {
+                if (Logger.IsWarnEnabled)
+                {
+                    Logger.Warn($"Renewing the message visibility timeout failed because the receipt handle was not valid for message with native ID '{receivedMessage.MessageId}'.", ex);
+                }
+
                 // Signaling the message receipt handle is invalid so that other operations relaying on the token owned
                 // by this token source can be cancelled.
                 await messageVisibilityLostCancellationTokenSource.CancelAsync()
@@ -68,6 +89,11 @@ static class Renewal
             }
             catch (AmazonSQSException ex) when (ex.IsCausedByMessageVisibilityExpiry())
             {
+                if (Logger.IsWarnEnabled)
+                {
+                    Logger.Warn($"Renewing the message visibility timeout failed because the message with native ID {receivedMessage.MessageId} has already been picked up by a competing consumer.", ex);
+                }
+
                 // Signaling the message receipt handle is invalid so that other operations relaying on the token owned
                 // by this token source can be cancelled.
                 await messageVisibilityLostCancellationTokenSource.CancelAsync()
@@ -75,9 +101,14 @@ static class Renewal
                 return Result.Failed;
             }
 #pragma warning disable PS0019
-            catch (Exception)
+            catch (Exception ex)
 #pragma warning restore PS0019
             {
+                if (Logger.IsWarnEnabled)
+                {
+                    Logger.Warn($"Renewing the message visibility timeout failed for the message with native ID '{receivedMessage.MessageId}'.", ex);
+                }
+
                 return Result.Failed;
             }
         }
@@ -109,4 +140,6 @@ static class Renewal
     }
 
     static readonly TimeSpan MaximumRenewBufferDuration = TimeSpan.FromSeconds(10);
+
+    static readonly ILog Logger = LogManager.GetLogger(typeof(Renewal));
 }
