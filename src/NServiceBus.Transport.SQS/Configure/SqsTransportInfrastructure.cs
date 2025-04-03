@@ -48,22 +48,27 @@
 
         public override async Task Shutdown(CancellationToken cancellationToken = default)
         {
-            await Task.WhenAll(Receivers.Values.Select(pump => pump.StopReceive(cancellationToken)))
-                .ConfigureAwait(false);
-
-            if (shouldDisposeSqsClient)
+            try
             {
-                sqsClient.Dispose();
+                await Task.WhenAll(Receivers.Values.Select(pump => pump.StopReceive(cancellationToken)))
+                    .ConfigureAwait(false);
             }
-
-            if (shouldDisposeSnsClient)
+            finally
             {
-                snsClient.Dispose();
-            }
+                if (shouldDisposeSqsClient)
+                {
+                    sqsClient.Dispose();
+                }
 
-            if (shouldDisposeS3Client)
-            {
-                s3Client?.Dispose();
+                if (shouldDisposeSnsClient)
+                {
+                    snsClient.Dispose();
+                }
+
+                if (shouldDisposeS3Client)
+                {
+                    s3Client?.Dispose();
+                }
             }
         }
 
