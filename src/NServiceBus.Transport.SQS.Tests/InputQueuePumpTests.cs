@@ -259,6 +259,42 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.That(mockSqsClient.DeleteMessageRequestsSent.Single().receiptHandle, Is.EqualTo(expectedReceiptHandle));
         }
 
+        [Test]
+        public async Task Custom_native_headers_are_propagated_to_transport_message_headers()
+        {
+            var nativeMessageId = Guid.NewGuid().ToString();
+            var messageId = Guid.NewGuid().ToString();
+            var customHeaderKey = "custom-header-key";
+            var customHeaderValue = new MessageAttributeValue { StringValue = "custom header value" };
+
+            var transportMessageHeaderValue = string.Empty;
+            await SetupInitializedPump(onMessage: (ctx, ct) =>
+            {
+                transportMessageHeaderValue = ctx.Headers[customHeaderKey];
+                return Task.FromResult(0);
+            });
+
+            var message = new Message
+            {
+                ReceiptHandle = "something",
+                MessageId = nativeMessageId,
+                MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                {
+                    {Headers.MessageId, new MessageAttributeValue {StringValue = messageId}},
+                    {customHeaderKey, customHeaderValue }
+                },
+                Body = TransportMessage.EmptyMessage
+            };
+
+            await pump.ProcessMessage(message, CancellationToken.None).ConfigureAwait(false);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(transportMessageHeaderValue, Is.Not.Null);
+                Assert.That(transportMessageHeaderValue!, Is.EqualTo(customHeaderValue.StringValue));
+            });
+        }
+
         InputQueuePump pump;
         MockSqsClient mockSqsClient;
         CancellationTokenSource cancellationTokenSource;

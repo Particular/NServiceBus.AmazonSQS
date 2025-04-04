@@ -397,7 +397,7 @@ namespace NServiceBus.Transport.SQS
                     }
                     catch (Exception ex)
                     {
-                        //HINT: Deserialization is best-effort. If it fails, we trat the message as a native message
+                        //HINT: Deserialization is best-effort. If it fails, we treat the message as a native message
                         Logger.Debug($"Failed to deserialize message with native id {receivedMessage.MessageId}. " +
                                      $"It will not be treated as an NServiceBus TransportMessage. Instead it'll be treated as pure native message.", ex);
 
@@ -415,7 +415,22 @@ namespace NServiceBus.Transport.SQS
             }
             // HINT: Message Id is the only required header
             transportMessage.Headers.TryAdd(Headers.MessageId, messageIdOverride);
+            AddCustomNativeHeadersToNServiceBusHeaders(receivedMessage, transportMessage);
+
             return transportMessage;
+        }
+
+        static void AddCustomNativeHeadersToNServiceBusHeaders(Message receivedMessage, TransportMessage transportMessage)
+        {
+            foreach (var receivedMessageMessageAttribute in receivedMessage.MessageAttributes)
+            {
+                // TODO is there a better way to achieve the same result? This seems fragile
+                if (TransportHeaders.AllTransportHeaders.Contains(receivedMessageMessageAttribute.Key) || receivedMessageMessageAttribute.Key == Headers.MessageId)
+                {
+                    continue;
+                }
+                transportMessage.Headers[receivedMessageMessageAttribute.Key] = receivedMessageMessageAttribute.Value?.StringValue ?? string.Empty;
+            }
         }
 
         static bool CouldBeNativeMessage(TransportMessage msg)
