@@ -2,10 +2,8 @@
 {
     using System.Threading.Tasks;
     using AcceptanceTesting;
-    using Configuration.AdvancedExtensibility;
     using EndpointTemplates;
     using NUnit.Framework;
-    using Transport.SQS.Configure;
 
     public class When_using_small_message_with_no_bucket_configured : NServiceBusAcceptanceTest
     {
@@ -33,24 +31,16 @@
         public class Endpoint : EndpointConfigurationBuilder
         {
             public Endpoint() =>
-                EndpointSetup<DefaultServer>(c =>
-                {
-                    c.GetSettings().Set(SettingsKeys.S3BucketForLargeMessages, string.Empty);
-                    c.GetSettings().Set(SettingsKeys.S3KeyPrefix, string.Empty);
-                });
+                EndpointSetup<DefaultServer>();
 
-            public class MyMessageHandler : IHandleMessages<MyMessage>
+            public class MyMessageHandler(Context testContext) : IHandleMessages<MyMessage>
             {
-                public MyMessageHandler(Context testContext) => this.testContext = testContext;
-
                 public Task Handle(MyMessage messageWithLargePayload, IMessageHandlerContext context)
                 {
                     testContext.ReceivedPayload = messageWithLargePayload.Payload;
 
                     return Task.CompletedTask;
                 }
-
-                readonly Context testContext;
             }
         }
 

@@ -414,6 +414,10 @@ namespace NServiceBus.Transport.SQS
             }
             catch (ReceiptHandleIsInvalidException ex)
             {
+                Logger.Info($"Message receipt handle '{messageToDeleteWithAnotherAttempt.ReceiptHandle}' is invalid.", ex);
+            }
+            catch (AmazonSQSException ex) when (ex.IsCausedByMessageVisibilityExpiry())
+            {
                 Logger.Info($"Message receipt handle '{messageToDeleteWithAnotherAttempt.ReceiptHandle}' no longer valid.", ex);
             }
         }

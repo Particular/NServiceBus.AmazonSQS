@@ -4,8 +4,10 @@ namespace NServiceBus.Transport.SQS.Tests
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Amazon.Runtime;
     using Amazon.SQS;
     using Amazon.SQS.Model;
     using Amazon.SQS.Util;
@@ -636,7 +638,7 @@ namespace NServiceBus.Transport.SQS.Tests
                 };
             };
 
-            var amazonSqsException = new ReceiptHandleIsInvalidException("Problem");
+            var amazonSqsException = new AmazonSQSException("Problem", ErrorType.Sender, "InvalidParameterValue", "RequestId", HttpStatusCode.BadRequest);
             mockSqsClient.DeleteMessageRequestResponse = tuple => throw amazonSqsException;
 
             Assert.DoesNotThrowAsync(async () =>

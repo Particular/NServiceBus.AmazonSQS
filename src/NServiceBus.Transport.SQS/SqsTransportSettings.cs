@@ -174,6 +174,35 @@ namespace NServiceBus
         }
 
         /// <summary>
+        /// Configures the message visibility timeout for the receive request. This value overrides the queue visibility timeout
+        /// </summary>
+        /// <value>The default value is <c>null</c></value>
+        [PreObsolete("https://github.com/Particular/NServiceBus/issues/6811",
+            Note = "Should not be converted to an ObsoleteEx until API mismatch described in issue is resolved.",
+            ReplacementTypeOrMember = "SqsTransport.MessageVisibilityTimeout",
+            Message = "The configuration has been moved to SqsTransport class.")]
+        public static TransportExtensions<SqsTransport> MessageVisibilityTimeout(this TransportExtensions<SqsTransport> transportExtensions, TimeSpan visibilityTimeout)
+        {
+            transportExtensions.Transport.MessageVisibilityTimeout = visibilityTimeout;
+            return transportExtensions;
+        }
+
+        /// <summary>
+        /// Configures the maximum duration within which the message visibility will be renewed automatically. This
+        /// value should be greater than the longest message visibility duration specified either on the queue or on the receive request controlled by <see name="MessageVisibilityTimeout"/>.
+        /// </summary>
+        /// <value>The maximum duration during which message visibility are automatically renewed. The default value is 5 minutes. The renewal can be disabled by passing <see cref="TimeSpan.Zero"/>.</value>
+        [PreObsolete("https://github.com/Particular/NServiceBus/issues/6811",
+            Note = "Should not be converted to an ObsoleteEx until API mismatch described in issue is resolved.",
+            ReplacementTypeOrMember = "SqsTransport.MaxAutoMessageVisibilityRenewalDuration",
+            Message = "The configuration has been moved to SqsTransport class.")]
+        public static TransportExtensions<SqsTransport> MaxAutoMessageVisibilityRenewalDuration(this TransportExtensions<SqsTransport> transportExtensions, TimeSpan duration)
+        {
+            transportExtensions.Transport.MaxAutoMessageVisibilityRenewalDuration = duration;
+            return transportExtensions;
+        }
+
+        /// <summary>
         /// Maps a specific message type to a set of topics. The transport will automatically map the most concrete type to a topic.
         /// In case a subscriber needs to subscribe to a type up in the message inheritance chain a custom mapping needs to be defined.
         /// </summary>
@@ -266,7 +295,8 @@ namespace NServiceBus
            Message = "Hybrid pub/sub is no longer supported, use native pub/sub instead")]
         public static SqsSubscriptionMigrationModeSettings EnableMessageDrivenPubSubCompatibilityMode(this TransportExtensions<SqsTransport> transportExtensions)
         {
-            var subscriptionMigrationModeSettings = transportExtensions.Routing().EnableMessageDrivenPubSubCompatibilityMode();
+            var routingSettings = transportExtensions.Routing();
+            var subscriptionMigrationModeSettings = routingSettings.EnableMessageDrivenPubSubCompatibilityMode();
 
             return subscriptionMigrationModeSettings;
         }

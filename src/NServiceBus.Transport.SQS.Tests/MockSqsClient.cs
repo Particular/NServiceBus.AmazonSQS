@@ -3,7 +3,6 @@
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.Runtime;
@@ -172,6 +171,19 @@
             return Task.FromResult(ReceiveMessagesRequestResponse(request, cancellationToken));
         }
 
+        public ConcurrentQueue<ChangeMessageVisibilityRequest> ChangeMessageVisibilityRequestsSent { get; } = [];
+        public Func<ChangeMessageVisibilityRequest, CancellationToken, ChangeMessageVisibilityResponse> ChangeMessageVisibilityRequestResponse = (req, token) =>
+        {
+            token.ThrowIfCancellationRequested();
+            return new ChangeMessageVisibilityResponse();
+        };
+
+        public Task<ChangeMessageVisibilityResponse> ChangeMessageVisibilityAsync(ChangeMessageVisibilityRequest request, CancellationToken cancellationToken = default)
+        {
+            ChangeMessageVisibilityRequestsSent.Enqueue(request);
+            return Task.FromResult(ChangeMessageVisibilityRequestResponse(request, cancellationToken));
+        }
+
         public bool DisposeInvoked { get; private set; }
 
         public void Dispose() => DisposeInvoked = true;
@@ -233,11 +245,6 @@
         }
 
         public Task<ChangeMessageVisibilityResponse> ChangeMessageVisibilityAsync(string queueUrl, string receiptHandle, int visibilityTimeout, CancellationToken cancellationToken = new CancellationToken())
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<ChangeMessageVisibilityResponse> ChangeMessageVisibilityAsync(ChangeMessageVisibilityRequest request, CancellationToken cancellationToken = new CancellationToken())
         {
             throw new NotImplementedException();
         }
