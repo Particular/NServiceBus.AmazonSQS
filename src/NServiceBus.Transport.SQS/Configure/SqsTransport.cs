@@ -152,9 +152,9 @@
             get => maxAutoMessageVisibilityRenewalDuration;
             set
             {
-                var visibilityTimeoutInSeconds = (int)value.TotalSeconds;
-                ArgumentOutOfRangeException.ThrowIfNegative(visibilityTimeoutInSeconds, nameof(MaxAutoMessageVisibilityRenewalDuration));
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(visibilityTimeoutInSeconds, TimeSpan.FromHours(12).TotalSeconds, nameof(MaxAutoMessageVisibilityRenewalDuration));
+                var maxAutoMessageVisibilityTimeoutInSeconds = (int)value.TotalSeconds;
+                ArgumentOutOfRangeException.ThrowIfNegative(maxAutoMessageVisibilityTimeoutInSeconds, nameof(MaxAutoMessageVisibilityRenewalDuration));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(maxAutoMessageVisibilityTimeoutInSeconds, TimeSpan.FromHours(12).TotalSeconds, nameof(MaxAutoMessageVisibilityRenewalDuration));
 
                 maxAutoMessageVisibilityRenewalDuration = value;
             }
@@ -174,6 +174,7 @@
                 messageVisibilityTimeout = value;
                 if (!value.HasValue)
                 {
+                    messageVisibilityTimeoutInSeconds = null;
                     return;
                 }
 

@@ -288,7 +288,7 @@ namespace NServiceBus.Transport.SQS.Tests
             // Simulate the time passing. Default visibility timeout is 30 seconds.
             timeProvider.Advance(TimeSpan.FromSeconds(16));
             timeProvider.Advance(TimeSpan.FromSeconds(32));
-            timeProvider.Advance(TimeSpan.FromSeconds(60));
+            timeProvider.Advance(TimeSpan.FromSeconds(64));
 
             await task.ConfigureAwait(false);
 

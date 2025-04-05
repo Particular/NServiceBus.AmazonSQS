@@ -9,9 +9,8 @@ using Logging;
 
 static class Renewal
 {
-    // This method does not check whether the visibility time has already expired. The reason being that it is possible to renew the visibility
-    // even when the visibility time has expired as long as the message has not been picked up by another consumer or receive attempt the
-    // original receipt handle is still valid.
+    // This method does not check whether the visibility time has expired. That is because it's possible to renew the visibility even when the visibility time has expired.
+    // The receipt handle remains valid until another consumer or a receiving attempt picks up the message.
     public static async Task<Result> RenewMessageVisibility(Message receivedMessage, DateTimeOffset visibilityExpiresOn,
         int visibilityTimeoutInSeconds, IAmazonSQS sqsClient, string inputQueueUrl,
         CancellationTokenSource messageVisibilityLostCancellationTokenSource, TimeProvider timeProvider = null,
@@ -54,7 +53,7 @@ static class Renewal
                 var calculatedVisibilityTimeout =
                     Math.Max(Math.Abs((int)remainingTime.TotalSeconds) + visibilityTimeoutInSeconds,
                         visibilityTimeoutInSeconds);
-                // immediately calculating the new expiry before calling updating the visibility to be on the safe side
+                // immediately calculating the new expiry before updating the visibility to be on the safe side
                 // since we can't make any assumptions on how long the call to ChangeMessageVisibilityAsync will take
                 // It is OK for this to be cancellable because we don't want to attempt to renew the visibility timeout
                 // when the message processing is already done which would trigger the token.
