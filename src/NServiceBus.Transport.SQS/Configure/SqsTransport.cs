@@ -143,6 +143,54 @@
         public bool DoNotWrapOutgoingMessages { get; set; }
 
         /// <summary>
+        /// Gets or sets the maximum duration within which the message visibility will be renewed automatically. This
+        /// value should be greater than the longest message visibility duration specified either on the queue or on the receive request controlled by <see name="VisibilityTimeout"/>.
+        /// </summary>
+        /// <value>The maximum duration during which message visibility are automatically renewed. The default value is 5 minutes. The renewal can be disabled by passing <see cref="TimeSpan.Zero"/>.</value>
+        public TimeSpan MaxAutoMessageVisibilityRenewalDuration
+        {
+            get => maxAutoMessageVisibilityRenewalDuration;
+            set
+            {
+                var maxAutoMessageVisibilityTimeoutInSeconds = (int)value.TotalSeconds;
+                ArgumentOutOfRangeException.ThrowIfNegative(maxAutoMessageVisibilityTimeoutInSeconds, nameof(MaxAutoMessageVisibilityRenewalDuration));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(maxAutoMessageVisibilityTimeoutInSeconds, TimeSpan.FromHours(12).TotalSeconds, nameof(MaxAutoMessageVisibilityRenewalDuration));
+
+                maxAutoMessageVisibilityRenewalDuration = value;
+            }
+        }
+
+        TimeSpan maxAutoMessageVisibilityRenewalDuration = TimeSpan.FromMinutes(5);
+
+        /// <summary>
+        /// Gets or sets the message visibility timeout for the receive request. This value overrides the queue visibility timeout
+        /// </summary>
+        /// <value>The default value is <c>null</c></value>
+        public TimeSpan? MessageVisibilityTimeout
+        {
+            get => messageVisibilityTimeout;
+            set
+            {
+                messageVisibilityTimeout = value;
+                if (!value.HasValue)
+                {
+                    messageVisibilityTimeoutInSeconds = null;
+                    return;
+                }
+
+                var visibilityTimeoutInSeconds = (int)value.Value.TotalSeconds;
+                ArgumentOutOfRangeException.ThrowIfNegative(visibilityTimeoutInSeconds, nameof(MessageVisibilityTimeout));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(visibilityTimeoutInSeconds, TimeSpan.FromHours(12).TotalSeconds, nameof(MessageVisibilityTimeout));
+
+                messageVisibilityTimeoutInSeconds = visibilityTimeoutInSeconds;
+            }
+        }
+
+        TimeSpan? messageVisibilityTimeout;
+
+        int? messageVisibilityTimeoutInSeconds;
+
+        /// <summary>
         /// Configures the delay time to use (up to 15 minutes) when messages are delayed. If message is delayed for longer than
         /// 15 minutes, it is bounced back to the delay queue until it is due.
         ///
@@ -276,6 +324,8 @@
                 S3,
                 Policies,
                 QueueDelayTime,
+                messageVisibilityTimeoutInSeconds,
+                MaxAutoMessageVisibilityRenewalDuration,
                 topicNamePrefix,
                 DoNotWrapOutgoingMessages,
                 !sqsClient.ExternallyManaged,

@@ -13,10 +13,7 @@
     {
         SettingsHolder settings;
 
-        internal SqsSubscriptionMigrationModeSettings(SettingsHolder settings) : base(settings)
-        {
-            this.settings = settings;
-        }
+        internal SqsSubscriptionMigrationModeSettings(SettingsHolder settings) : base(settings) => this.settings = settings;
 
         /// <summary>
         /// Overrides the default value of 5 seconds for SNS topic cache.
@@ -48,16 +45,10 @@
         /// Overrides the default value specified at the queue level for message visibility timeout.
         /// </summary>
         /// <param name="timeoutInSeconds">Message visibility timeout.</param>
+        [ObsoleteEx(Message = "Use the SqsTransport.MessageVisibilityTimeout property instead", TreatAsErrorFromVersion = "8.0", RemoveInVersion = "9.0")]
         public SubscriptionMigrationModeSettings MessageVisibilityTimeout(int timeoutInSeconds)
         {
-            //HINT: See https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html
-            if (timeoutInSeconds < 0 || timeoutInSeconds > TimeSpan.FromHours(12).TotalSeconds)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeoutInSeconds));
-            }
-
-            settings.Set(SettingsKeys.MessageVisibilityTimeout, timeoutInSeconds);
-
+            ((SqsTransport)settings.Get<TransportDefinition>()).MessageVisibilityTimeout = TimeSpan.FromSeconds(timeoutInSeconds);
             return this;
         }
     }

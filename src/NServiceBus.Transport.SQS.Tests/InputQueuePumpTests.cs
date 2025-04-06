@@ -3,12 +3,15 @@ namespace NServiceBus.Transport.SQS.Tests
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net;
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
+    using Amazon.Runtime;
+    using Amazon.SQS;
     using Amazon.SQS.Model;
+    using Microsoft.Extensions.Time.Testing;
     using NUnit.Framework;
-    using Settings;
 
     [TestFixture]
     public class InputQueuePumpTests
@@ -20,12 +23,16 @@ namespace NServiceBus.Transport.SQS.Tests
 
             mockSqsClient = new MockSqsClient();
 
-            pump = new InputQueuePump("queue", FakeInputQueueQueueUrl, "error", false, mockSqsClient,
+            pump = CreatePump();
+        }
+
+        InputQueuePump CreatePump(TimeSpan? maxAutoMessageVisibilityRenewalDuration = null) =>
+            new("queue", FakeInputQueueQueueUrl, "error", false, mockSqsClient,
                 new QueueCache(mockSqsClient, dest => QueueCache.GetSqsQueueName(dest, "")),
                 null, null,
                 (error, exception, ct) => { },
-                new SettingsHolder());
-        }
+                30,
+                maxAutoMessageVisibilityRenewalDuration.GetValueOrDefault(TimeSpan.FromMinutes(5)));
 
         [TearDown]
         public void TearDown()
@@ -109,7 +116,8 @@ namespace NServiceBus.Transport.SQS.Tests
         static IEnumerable<object[]> PoisonMessageExceptions() =>
         [
             [new Exception()],
-            [new ReceiptHandleIsInvalidException("Ooops")]
+            [new ReceiptHandleIsInvalidException("Ooops")],
+            [new AmazonSQSException("Ooops", ErrorType.Sender, "InvalidParameterValue", "RequestId", HttpStatusCode.BadRequest)],
         ];
 
         [Theory]
@@ -257,6 +265,119 @@ namespace NServiceBus.Transport.SQS.Tests
                 Assert.That(mockSqsClient.DeleteMessageRequestsSent, Has.Count.EqualTo(1));
             });
             Assert.That(mockSqsClient.DeleteMessageRequestsSent.Single().receiptHandle, Is.EqualTo(expectedReceiptHandle));
+        }
+
+        [Test]
+        public async Task Should_renew_visibility_while_processing()
+        {
+            var nativeMessageId = Guid.NewGuid().ToString();
+            var messageId = Guid.NewGuid().ToString();
+            var timeProvider = new FakeTimeProvider();
+
+            await SetupInitializedPump(onMessage: (ctx, ct) => Task.Delay(TimeSpan.FromSeconds(60), timeProvider, ct));
+
+            await pump.StartReceive();
+
+            var message = CreateValidTransportMessage(messageId, nativeMessageId);
+
+            // The message expires in 30 seconds
+            var visibilityExpiresOn = timeProvider.Start.AddSeconds(30);
+
+            var task = pump.ProcessMessageWithVisibilityRenewal(message, visibilityExpiresOn, timeProvider, CancellationToken.None);
+
+            // Simulate the time passing. Default visibility timeout is 30 seconds.
+            timeProvider.Advance(TimeSpan.FromSeconds(16));
+            timeProvider.Advance(TimeSpan.FromSeconds(32));
+            timeProvider.Advance(TimeSpan.FromSeconds(64));
+
+            await task.ConfigureAwait(false);
+
+            // On this level of test we don't care about the actual visibility timeout just the fact that they happened
+            Assert.That(mockSqsClient.ChangeMessageVisibilityRequestsSent, Has.Count.EqualTo(2));
+        }
+
+        [Test]
+        public async Task Should_renew_up_to_the_maximum_time()
+        {
+            var nativeMessageId = Guid.NewGuid().ToString();
+            var messageId = Guid.NewGuid().ToString();
+            var timeProvider = new FakeTimeProvider();
+
+            // Unfortunately linked cancellation token sources do not support the time provider
+            // setting it to Zero stops the renewal
+            pump = CreatePump(TimeSpan.Zero);
+
+            await SetupInitializedPump(onMessage: (ctx, ct) => Task.Delay(TimeSpan.FromSeconds(60), timeProvider, ct));
+
+            await pump.StartReceive();
+
+            var message = CreateValidTransportMessage(messageId, nativeMessageId);
+
+            // message is already expired which would force the visibility renewal to kick in
+            var visibilityExpiresOn = timeProvider.Start;
+
+            var task = pump.ProcessMessageWithVisibilityRenewal(message, visibilityExpiresOn, timeProvider, CancellationToken.None);
+
+            // Simulate the time passing. Default visibility timeout is 30 seconds.
+            timeProvider.Advance(TimeSpan.FromSeconds(16));
+            timeProvider.Advance(TimeSpan.FromSeconds(32));
+            timeProvider.Advance(TimeSpan.FromSeconds(60));
+
+            await task.ConfigureAwait(false);
+
+            Assert.That(mockSqsClient.ChangeMessageVisibilityRequestsSent, Is.Empty);
+        }
+
+        [Test]
+        public async Task Should_cancel_processing_when_visibility_expired_during_processing()
+        {
+            var nativeMessageId = Guid.NewGuid().ToString();
+            var messageId = Guid.NewGuid().ToString();
+            var timeProvider = new FakeTimeProvider();
+            mockSqsClient.ChangeMessageVisibilityRequestResponse = (req, ct) => throw new ReceiptHandleIsInvalidException("Visibility expired");
+
+            await SetupInitializedPump(onMessage: (ctx, ct) => Task.Delay(TimeSpan.FromSeconds(60), timeProvider, ct));
+
+            await pump.StartReceive();
+
+            var message = CreateValidTransportMessage(messageId, nativeMessageId);
+
+            // message is already expired which forces the renewal trying to renew the visibility
+            var visibilityExpiresOn = timeProvider.Start;
+
+            var task = pump.ProcessMessageWithVisibilityRenewal(message, visibilityExpiresOn, timeProvider, CancellationToken.None);
+
+            // Simulate the time passing. Default visibility timeout is 30 seconds.
+            timeProvider.Advance(TimeSpan.FromSeconds(16));
+
+            await task.ConfigureAwait(false);
+
+            // On this level of test we don't care about the actual visibility timeout just the fact that they happened
+            Assert.That(mockSqsClient.ChangeMessageVisibilityRequestsSent, Has.Count.EqualTo(1));
+        }
+
+        static Message CreateValidTransportMessage(string messageId,
+            string nativeMessageId, string expectedReceiptHandle = "receipt-handle")
+        {
+            var json = JsonSerializer.Serialize(new TransportMessage
+            {
+                Headers = new Dictionary<string, string>
+                {
+                    {Headers.MessageId, messageId}
+                },
+                Body = TransportMessage.EmptyMessage
+            });
+            var message = new Message
+            {
+                ReceiptHandle = expectedReceiptHandle,
+                MessageId = nativeMessageId,
+                MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                {
+                    {Headers.MessageId, new MessageAttributeValue {StringValue = messageId}},
+                },
+                Body = json
+            };
+            return message;
         }
 
         InputQueuePump pump;
