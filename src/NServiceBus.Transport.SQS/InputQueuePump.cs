@@ -245,7 +245,7 @@ namespace NServiceBus.Transport.SQS
             {
                 // deliberately not passing renewalCancellationTokenSource into the processing method. There are scenarios where it is possible that you can still
                 // successfully process the message even when the message visibility has expired. But when the messageVisibilityLostCancellationTokenSource gets cancelled
-                // we now that we have lost the visibility and we should not process the message anymore. This gives the users a chance to stop processing.
+                // we know that we have lost the visibility and we should not process the message anymore. This gives the users a chance to stop processing.
                 await ProcessMessage(receivedMessage, messageVisibilityLostCancellationTokenSource.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException ex) when (messageVisibilityLostCancellationTokenSource.Token.IsCancellationRequested)
