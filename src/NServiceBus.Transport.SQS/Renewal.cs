@@ -145,6 +145,9 @@ static class Renewal
         timeProvider ??= TimeProvider.System;
         var remainingTime = visibilityTimeExpiresOn - timeProvider.GetUtcNow();
 
+        // For any renewal below 400ms we want the renewal to be immediate
+        // Why 400ms? Glad you asked. It is an arbitrary number chosen to  factor in some buffer
+        // for the time it takes to actually do the renewal calling the SQS API with the network latency
         if (remainingTime < TimeSpan.FromMilliseconds(400))
         {
             return TimeSpan.Zero;
