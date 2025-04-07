@@ -443,7 +443,7 @@ namespace NServiceBus.Transport.SQS
             foreach (var receivedMessageMessageAttribute in receivedMessage.MessageAttributes)
             {
                 // TODO is there a better way to achieve the same result? This seems fragile
-                if (TransportHeaders.AllTransportHeaders.Contains(receivedMessageMessageAttribute.Key) || receivedMessageMessageAttribute.Key == Headers.MessageId)
+                if (TransportHeaders.AllTransportHeaders.Contains(receivedMessageMessageAttribute.Key))
                 {
                     continue;
                 }
