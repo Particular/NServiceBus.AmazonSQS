@@ -392,6 +392,42 @@ namespace NServiceBus.Transport.SQS.Tests
             });
         }
 
+        [Theory]
+        [TestCase(TransportHeaders.Headers, "{}")]
+        // [TestCase(TransportHeaders.MessageTypeFullName)] special case that is forwarded due to historic reason
+        [TestCase(TransportHeaders.S3BodyKey)]
+        [TestCase(TransportHeaders.DelaySeconds)]
+        [TestCase(TransportHeaders.TimeToBeReceived)]
+        public async Task Excluded_transport_headers_are_not_propagate_to_transport_message_headers(string headerKey, string headerValue = "custom-header-value")
+        {
+            var nativeMessageId = Guid.NewGuid().ToString();
+            var messageId = Guid.NewGuid().ToString();
+            var customHeaderValue = new MessageAttributeValue { StringValue = headerValue };
+
+            var transportHeaderPresent = true;
+            await SetupInitializedPump(onMessage: (ctx, ct) =>
+            {
+                transportHeaderPresent = ctx.Headers.ContainsKey(headerKey);
+                return Task.CompletedTask;
+            });
+
+            var message = new Message
+            {
+                ReceiptHandle = "something",
+                MessageId = nativeMessageId,
+                MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                {
+                    { Headers.MessageId, new MessageAttributeValue { StringValue = messageId } },
+                    { headerKey, customHeaderValue }
+                },
+                Body = TransportMessage.EmptyMessage
+            };
+
+            await pump.ProcessMessage(message, CancellationToken.None).ConfigureAwait(false);
+
+            Assert.That(transportHeaderPresent, Is.False, "Transport header should not be present");
+        }
+
         static Message CreateValidTransportMessage(string messageId,
             string nativeMessageId, string expectedReceiptHandle = "receipt-handle")
         {
