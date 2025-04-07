@@ -392,6 +392,41 @@ namespace NServiceBus.Transport.SQS.Tests
             });
         }
 
+        [Test]
+        public async Task Message_type_fullname_header_is_propagated_to_transport_message_headers()
+        {
+            var nativeMessageId = Guid.NewGuid().ToString();
+            var messageId = Guid.NewGuid().ToString();
+            var customHeaderValue = new MessageAttributeValue { StringValue = "SomeMessageTypeName" };
+
+            var transportMessageHeaderValue = string.Empty;
+            await SetupInitializedPump(onMessage: (ctx, ct) =>
+            {
+                transportMessageHeaderValue = ctx.Headers[TransportHeaders.MessageTypeFullName];
+                return Task.CompletedTask;
+            });
+
+            var message = new Message
+            {
+                ReceiptHandle = "something",
+                MessageId = nativeMessageId,
+                MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                {
+                    {Headers.MessageId, new MessageAttributeValue {StringValue = messageId}},
+                    {TransportHeaders.MessageTypeFullName, customHeaderValue }
+                },
+                Body = TransportMessage.EmptyMessage
+            };
+
+            await pump.ProcessMessage(message, CancellationToken.None).ConfigureAwait(false);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(transportMessageHeaderValue, Is.Not.Null);
+                Assert.That(transportMessageHeaderValue!, Is.EqualTo(customHeaderValue.StringValue));
+            });
+        }
+
         [Theory]
         [TestCase(TransportHeaders.Headers, "{}")]
         // [TestCase(TransportHeaders.MessageTypeFullName)] special case that is forwarded due to historic reason
