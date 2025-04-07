@@ -442,7 +442,9 @@ namespace NServiceBus.Transport.SQS
         {
             foreach (var receivedMessageMessageAttribute in receivedMessage.MessageAttributes)
             {
-                if (TransportHeaders.NativeMessageAttributesNotCopiedToNServiceBusHeaders.Contains(receivedMessageMessageAttribute.Key))
+                // The code doesn't allow overriding the message ID at this point because
+                // message id has its own complex set of rules handled earlier in the process 
+                if (TransportHeaders.NativeMessageAttributesNotCopiedToNServiceBusHeaders.Contains(receivedMessageMessageAttribute.Key) || receivedMessageMessageAttribute.Key == Headers.MessageId)
                 {
                     continue;
                 }
