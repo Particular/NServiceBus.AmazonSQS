@@ -3,14 +3,38 @@ namespace NServiceBus.Transport.SQS.Extensions
 {
     using System;
     using System.Buffers;
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.S3.Model;
+    using Amazon.SQS.Model;
 
     static class TransportMessageExtensions
     {
+        public static void CopyMessageAttributes(this TransportMessage transportMessage, Dictionary<string, MessageAttributeValue>? receiveMessageAttributes)
+        {
+            foreach (var messageAttribute in receiveMessageAttributes ??
+                                             Enumerable.Empty<KeyValuePair<string, MessageAttributeValue>>())
+            {
+                // The message ID requires complicated special handling and in the majority of cases
+                // the NServiceBus message ID when present on the headers might take precedence
+                if (messageAttribute.Key == Headers.MessageId)
+                {
+                    continue;
+                }
+
+                transportMessage.Headers[messageAttribute.Key] = messageAttribute.Value.StringValue;
+            }
+
+            // These headers are not needed in the transport message and would only blow up the message size.
+            _ = transportMessage.Headers.Remove(TransportHeaders.Headers);
+            _ = transportMessage.Headers.Remove(TransportHeaders.DelaySeconds);
+            _ = transportMessage.Headers.Remove(TransportHeaders.TimeToBeReceived);
+        }
+
         public static async ValueTask<(ReadOnlyMemory<byte> MessageBody, byte[]? MessageBodyBuffer)> RetrieveBody(this TransportMessage transportMessage, string messageId, S3Settings s3Settings, ArrayPool<byte> arrayPool,
             CancellationToken cancellationToken = default)
         {

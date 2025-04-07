@@ -298,7 +298,7 @@ namespace NServiceBus.Transport.SQS
 
                 try
                 {
-                    transportMessage = ExtractTransportMessage(receivedMessage, messageId);
+                    transportMessage = ExtractTransportMessage(receivedMessage, nativeMessageId);
                     messageId = transportMessage.Headers[Headers.MessageId];
                     (messageBody, messageBodyBuffer) = await transportMessage.RetrieveBody(messageId, s3Settings, arrayPool, cancellationToken).ConfigureAwait(false);
                 }
@@ -354,42 +354,34 @@ namespace NServiceBus.Transport.SQS
             TransportMessage transportMessage;
             if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.Headers, out var headersAttribute))
             {
+                var headers = JsonSerializer.Deserialize<Dictionary<string, string>>(headersAttribute.StringValue) ?? [];
                 transportMessage = new TransportMessage
                 {
-                    Headers = JsonSerializer.Deserialize<Dictionary<string, string>>(headersAttribute.StringValue) ?? [],
+                    Headers = headers,
                     Body = receivedMessage.Body
                 };
-                if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.S3BodyKey, out var s3BodyKey))
-                {
-                    transportMessage.Headers[TransportHeaders.S3BodyKey] = s3BodyKey.StringValue;
-                    transportMessage.S3BodyKey = s3BodyKey.StringValue;
-                }
+                transportMessage.CopyMessageAttributes(receivedMessage.MessageAttributes);
+
+                // It is possible that the transport message already had a message ID and that one
+                // takes precedence
+                transportMessage.Headers.TryAdd(Headers.MessageId, messageIdOverride);
+                transportMessage.S3BodyKey = transportMessage.Headers.GetValueOrDefault(TransportHeaders.S3BodyKey);
             }
             else
             {
                 // When the MessageTypeFullName attribute is available, we're assuming native integration
                 if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.MessageTypeFullName, out var enclosedMessageType))
                 {
-                    var headers = new Dictionary<string, string>
-                    {
-                                { Headers.MessageId, messageIdOverride },
-                                { Headers.EnclosedMessageTypes, enclosedMessageType.StringValue },
-                                {
-                                    TransportHeaders.MessageTypeFullName, enclosedMessageType.StringValue
-                                } // we're copying over the value of the native message attribute into the headers, converting this into a nsb message
-                            };
-
-                    if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.S3BodyKey, out var s3BodyKey))
-                    {
-                        headers.Add(TransportHeaders.S3BodyKey, s3BodyKey.StringValue);
-                    }
-
                     transportMessage = new TransportMessage
                     {
-                        Headers = headers,
-                        S3BodyKey = s3BodyKey?.StringValue,
+                        Headers = [],
                         Body = receivedMessage.Body
                     };
+                    transportMessage.CopyMessageAttributes(receivedMessage.MessageAttributes);
+
+                    transportMessage.Headers[Headers.MessageId] = messageIdOverride;
+                    transportMessage.Headers[Headers.EnclosedMessageTypes] = enclosedMessageType.StringValue;
+                    transportMessage.S3BodyKey = transportMessage.Headers.GetValueOrDefault(TransportHeaders.S3BodyKey);
                 }
                 else
                 {
@@ -405,12 +397,17 @@ namespace NServiceBus.Transport.SQS
                             transportMessage = new TransportMessage
                             {
                                 Body = receivedMessage.Body,
-                                Headers = new Dictionary<string, string>
-                                {
-                                    // HINT: Message Id is a required field for InnerProcessMessage
-                                    [Headers.MessageId] = receivedMessage.MessageId,
-                                }
+                                Headers = []
                             };
+                            transportMessage.CopyMessageAttributes(receivedMessage.MessageAttributes);
+                            // For native integration scenarios the native message id should be used
+                            transportMessage.Headers[Headers.MessageId] = receivedMessage.MessageId;
+                        }
+                        else
+                        {
+                            // It is possible that the transport message already had a message ID and that one
+                            // takes precedence
+                            transportMessage.Headers.TryAdd(Headers.MessageId, messageIdOverride);
                         }
                     }
                     catch (Exception ex)
@@ -422,34 +419,16 @@ namespace NServiceBus.Transport.SQS
                         transportMessage = new TransportMessage
                         {
                             Body = receivedMessage.Body,
-                            Headers = new Dictionary<string, string>
-                            {
-                                // HINT: Message Id is a required field for InnerProcessMessage
-                                [Headers.MessageId] = receivedMessage.MessageId,
-                            }
+                            Headers = []
                         };
+                        transportMessage.CopyMessageAttributes(receivedMessage.MessageAttributes);
+                        // For native integration scenarios the native message id should be used
+                        transportMessage.Headers[Headers.MessageId] = receivedMessage.MessageId;
                     }
                 }
             }
-            // HINT: Message Id is the only required header
-            transportMessage.Headers.TryAdd(Headers.MessageId, messageIdOverride);
-            AddCustomNativeHeadersToNServiceBusHeaders(receivedMessage, transportMessage);
 
             return transportMessage;
-        }
-
-        static void AddCustomNativeHeadersToNServiceBusHeaders(Message receivedMessage, TransportMessage transportMessage)
-        {
-            foreach (var receivedMessageMessageAttribute in receivedMessage.MessageAttributes)
-            {
-                // The code doesn't allow overriding the message ID at this point because
-                // message id has its own complex set of rules handled earlier in the process 
-                if (TransportHeaders.NativeMessageAttributesNotCopiedToNServiceBusHeaders.Contains(receivedMessageMessageAttribute.Key) || receivedMessageMessageAttribute.Key == Headers.MessageId)
-                {
-                    continue;
-                }
-                transportMessage.Headers[receivedMessageMessageAttribute.Key] = receivedMessageMessageAttribute.Value?.StringValue ?? string.Empty;
-            }
         }
 
         static bool CouldBeNativeMessage(TransportMessage msg)
