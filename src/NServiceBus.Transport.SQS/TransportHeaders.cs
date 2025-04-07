@@ -16,6 +16,6 @@
         // not be copied to NServiceBus headers. When adding a new header to this class
         // consider if that needs to be propagated to NServiceBus headers, if not, add it
         // to this frozen set.
-        public static FrozenSet<string> NativeMessageAttributesNotCopiedToNServiceBusHeaders = new HashSet<string>([TimeToBeReceived, DelaySeconds, Headers, S3BodyKey, MessageTypeFullName]).ToFrozenSet();
+        public static readonly FrozenSet<string> NativeMessageAttributesNotCopiedToNServiceBusHeaders = new HashSet<string>([TimeToBeReceived, DelaySeconds, Headers, S3BodyKey]).ToFrozenSet();
     }
 }
