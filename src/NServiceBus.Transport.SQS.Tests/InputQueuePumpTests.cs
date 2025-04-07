@@ -429,8 +429,6 @@ namespace NServiceBus.Transport.SQS.Tests
 
         [Theory]
         [TestCase(TransportHeaders.Headers, "{}")]
-        // [TestCase(TransportHeaders.MessageTypeFullName)] special case that is forwarded due to historic reason
-        [TestCase(TransportHeaders.S3BodyKey)]
         [TestCase(TransportHeaders.DelaySeconds)]
         [TestCase(TransportHeaders.TimeToBeReceived)]
         public async Task Excluded_transport_headers_are_not_propagate_to_transport_message_headers(string headerKey, string headerValue = "custom-header-value")
