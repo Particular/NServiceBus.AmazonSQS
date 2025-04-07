@@ -356,6 +356,7 @@ namespace NServiceBus.Transport.SQS.Tests
             Assert.That(mockSqsClient.ChangeMessageVisibilityRequestsSent, Has.Count.EqualTo(1));
         }
 
+        [Test]
         public async Task Custom_native_headers_are_propagated_to_transport_message_headers()
         {
             var nativeMessageId = Guid.NewGuid().ToString();
