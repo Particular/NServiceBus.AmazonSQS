@@ -489,7 +489,7 @@ namespace NServiceBus.Transport.SQS.Tests
             protected override Task Delay(int millisecondsDelay, CancellationToken cancellationToken = default)
             {
                 Delays.Add(millisecondsDelay);
-                return Task.FromResult(0);
+                return Task.CompletedTask;
             }
         }
 

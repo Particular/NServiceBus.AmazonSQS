@@ -45,7 +45,7 @@ namespace NServiceBus.Transport.SQS.Tests
         {
             await pump.Initialize(
                 new PushRuntimeSettings(1),
-                onMessage ?? ((ctx, ct) => Task.FromResult(0)),
+                onMessage ?? ((ctx, ct) => Task.CompletedTask),
                 (ctx, ct) => Task.FromResult(ErrorHandleResult.Handled));
         }
 
@@ -88,7 +88,7 @@ namespace NServiceBus.Transport.SQS.Tests
             await SetupInitializedPump(onMessage: (ctx, ct) =>
             {
                 processed = true;
-                return Task.FromResult(0);
+                return Task.CompletedTask;
             });
 
             var message = new Message
@@ -133,7 +133,7 @@ namespace NServiceBus.Transport.SQS.Tests
             await SetupInitializedPump(onMessage: (ctx, ct) =>
             {
                 processed = true;
-                return Task.FromResult(0);
+                return Task.CompletedTask;
             });
 
             var deleteRequest = mockSqsClient.DeleteMessageRequestResponse;
@@ -185,7 +185,7 @@ namespace NServiceBus.Transport.SQS.Tests
             await SetupInitializedPump(onMessage: (ctx, ct) =>
             {
                 processed = true;
-                return Task.FromResult(0);
+                return Task.CompletedTask;
             });
 
             var json = JsonSerializer.Serialize(new TransportMessage
@@ -234,7 +234,7 @@ namespace NServiceBus.Transport.SQS.Tests
             await SetupInitializedPump(onMessage: (ctx, ct) =>
             {
                 processed = true;
-                return Task.FromResult(0);
+                return Task.CompletedTask;
             });
 
             var json = JsonSerializer.Serialize(new TransportMessage
@@ -354,6 +354,113 @@ namespace NServiceBus.Transport.SQS.Tests
 
             // On this level of test we don't care about the actual visibility timeout just the fact that they happened
             Assert.That(mockSqsClient.ChangeMessageVisibilityRequestsSent, Has.Count.EqualTo(1));
+        }
+
+        [Test]
+        public async Task Custom_native_headers_are_propagated_to_transport_message_headers()
+        {
+            var nativeMessageId = Guid.NewGuid().ToString();
+            var messageId = Guid.NewGuid().ToString();
+            var customHeaderKey = "custom-header-key";
+            var customHeaderValue = new MessageAttributeValue { StringValue = "custom header value" };
+
+            var transportMessageHeaderValue = string.Empty;
+            await SetupInitializedPump(onMessage: (ctx, ct) =>
+            {
+                transportMessageHeaderValue = ctx.Headers[customHeaderKey];
+                return Task.CompletedTask;
+            });
+
+            var message = new Message
+            {
+                ReceiptHandle = "something",
+                MessageId = nativeMessageId,
+                MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                {
+                    {Headers.MessageId, new MessageAttributeValue {StringValue = messageId}},
+                    {customHeaderKey, customHeaderValue }
+                },
+                Body = TransportMessage.EmptyMessage
+            };
+
+            await pump.ProcessMessage(message, CancellationToken.None).ConfigureAwait(false);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(transportMessageHeaderValue, Is.Not.Null);
+                Assert.That(transportMessageHeaderValue!, Is.EqualTo(customHeaderValue.StringValue));
+            });
+        }
+
+        [Test]
+        public async Task Message_type_fullname_header_is_propagated_to_transport_message_headers()
+        {
+            var nativeMessageId = Guid.NewGuid().ToString();
+            var messageId = Guid.NewGuid().ToString();
+            var customHeaderValue = new MessageAttributeValue { StringValue = "SomeMessageTypeName" };
+
+            var transportMessageHeaderValue = string.Empty;
+            await SetupInitializedPump(onMessage: (ctx, ct) =>
+            {
+                transportMessageHeaderValue = ctx.Headers[TransportHeaders.MessageTypeFullName];
+                return Task.CompletedTask;
+            });
+
+            var message = new Message
+            {
+                ReceiptHandle = "something",
+                MessageId = nativeMessageId,
+                MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                {
+                    {Headers.MessageId, new MessageAttributeValue {StringValue = messageId}},
+                    {TransportHeaders.MessageTypeFullName, customHeaderValue }
+                },
+                Body = TransportMessage.EmptyMessage
+            };
+
+            await pump.ProcessMessage(message, CancellationToken.None).ConfigureAwait(false);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(transportMessageHeaderValue, Is.Not.Null);
+                Assert.That(transportMessageHeaderValue!, Is.EqualTo(customHeaderValue.StringValue));
+            });
+        }
+
+        [Theory]
+        [TestCase(TransportHeaders.Headers, "{}")]
+        // [TestCase(TransportHeaders.MessageTypeFullName)] special case that is forwarded due to historic reason
+        [TestCase(TransportHeaders.S3BodyKey)]
+        [TestCase(TransportHeaders.DelaySeconds)]
+        [TestCase(TransportHeaders.TimeToBeReceived)]
+        public async Task Excluded_transport_headers_are_not_propagate_to_transport_message_headers(string headerKey, string headerValue = "custom-header-value")
+        {
+            var nativeMessageId = Guid.NewGuid().ToString();
+            var messageId = Guid.NewGuid().ToString();
+            var customHeaderValue = new MessageAttributeValue { StringValue = headerValue };
+
+            var transportHeaderPresent = true;
+            await SetupInitializedPump(onMessage: (ctx, ct) =>
+            {
+                transportHeaderPresent = ctx.Headers.ContainsKey(headerKey);
+                return Task.CompletedTask;
+            });
+
+            var message = new Message
+            {
+                ReceiptHandle = "something",
+                MessageId = nativeMessageId,
+                MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                {
+                    { Headers.MessageId, new MessageAttributeValue { StringValue = messageId } },
+                    { headerKey, customHeaderValue }
+                },
+                Body = TransportMessage.EmptyMessage
+            };
+
+            await pump.ProcessMessage(message, CancellationToken.None).ConfigureAwait(false);
+
+            Assert.That(transportHeaderPresent, Is.False, "Transport header should not be present");
         }
 
         static Message CreateValidTransportMessage(string messageId,

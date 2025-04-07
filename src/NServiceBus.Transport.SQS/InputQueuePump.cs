@@ -433,7 +433,23 @@ namespace NServiceBus.Transport.SQS
             }
             // HINT: Message Id is the only required header
             transportMessage.Headers.TryAdd(Headers.MessageId, messageIdOverride);
+            AddCustomNativeHeadersToNServiceBusHeaders(receivedMessage, transportMessage);
+
             return transportMessage;
+        }
+
+        static void AddCustomNativeHeadersToNServiceBusHeaders(Message receivedMessage, TransportMessage transportMessage)
+        {
+            foreach (var receivedMessageMessageAttribute in receivedMessage.MessageAttributes)
+            {
+                // The code doesn't allow overriding the message ID at this point because
+                // message id has its own complex set of rules handled earlier in the process 
+                if (TransportHeaders.NativeMessageAttributesNotCopiedToNServiceBusHeaders.Contains(receivedMessageMessageAttribute.Key) || receivedMessageMessageAttribute.Key == Headers.MessageId)
+                {
+                    continue;
+                }
+                transportMessage.Headers[receivedMessageMessageAttribute.Key] = receivedMessageMessageAttribute.Value?.StringValue ?? string.Empty;
+            }
         }
 
         static bool CouldBeNativeMessage(TransportMessage msg)

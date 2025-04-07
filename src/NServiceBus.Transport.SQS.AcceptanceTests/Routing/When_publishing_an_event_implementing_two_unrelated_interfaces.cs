@@ -26,7 +26,7 @@
                 {
                     ctx.EventASubscribed = true;
                     ctx.EventBSubscribed = true;
-                    return Task.FromResult(0);
+                    return Task.CompletedTask;
                 }))
                 .Done(c => c.GotEventA && c.GotEventB)
                 .Run(TimeSpan.FromSeconds(20));
@@ -73,11 +73,11 @@
                 {
                     if (@event.ContextId != testContext.Id)
                     {
-                        return Task.FromResult(0);
+                        return Task.CompletedTask;
                     }
                     testContext.GotEventA = true;
 
-                    return Task.FromResult(0);
+                    return Task.CompletedTask;
                 }
 
                 Context testContext;
@@ -94,12 +94,12 @@
                 {
                     if (@event.ContextId != testContext.Id)
                     {
-                        return Task.FromResult(0);
+                        return Task.CompletedTask;
                     }
 
                     testContext.GotEventB = true;
 
-                    return Task.FromResult(0);
+                    return Task.CompletedTask;
                 }
 
                 Context testContext;
