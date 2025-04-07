@@ -132,7 +132,7 @@
             {
                 attributeRequestsQueue.Enqueue(attributes);
             }
-            return Task.FromResult(0);
+            return Task.CompletedTask;
         }
 
         public void EnableGetAttributeReturnsWhatWasSet()

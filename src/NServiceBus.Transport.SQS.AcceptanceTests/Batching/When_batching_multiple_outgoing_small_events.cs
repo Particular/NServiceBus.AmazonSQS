@@ -159,7 +159,7 @@ namespace NServiceBus.AcceptanceTests.Batching
                 public Task Handle(MyEvent messageWithLargePayload, IMessageHandlerContext context)
                 {
                     testContext.MessageIdsReceived.Add(context.MessageId);
-                    return Task.FromResult(0);
+                    return Task.CompletedTask;
                 }
 
                 readonly Context testContext;

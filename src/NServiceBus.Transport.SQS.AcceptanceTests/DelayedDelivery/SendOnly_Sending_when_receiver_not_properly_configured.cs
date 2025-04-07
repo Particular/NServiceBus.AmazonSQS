@@ -117,7 +117,7 @@
                     testContext.Payload = message.Payload;
                     testContext.ReceivedAt = DateTime.UtcNow;
 
-                    return Task.FromResult(0);
+                    return Task.CompletedTask;
                 }
             }
         }

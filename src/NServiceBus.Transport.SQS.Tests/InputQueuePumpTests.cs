@@ -45,7 +45,7 @@ namespace NServiceBus.Transport.SQS.Tests
         {
             await pump.Initialize(
                 new PushRuntimeSettings(1),
-                onMessage ?? ((ctx, ct) => Task.FromResult(0)),
+                onMessage ?? ((ctx, ct) => Task.CompletedTask),
                 (ctx, ct) => Task.FromResult(ErrorHandleResult.Handled));
         }
 
@@ -88,7 +88,7 @@ namespace NServiceBus.Transport.SQS.Tests
             await SetupInitializedPump(onMessage: (ctx, ct) =>
             {
                 processed = true;
-                return Task.FromResult(0);
+                return Task.CompletedTask;
             });
 
             var message = new Message
@@ -133,7 +133,7 @@ namespace NServiceBus.Transport.SQS.Tests
             await SetupInitializedPump(onMessage: (ctx, ct) =>
             {
                 processed = true;
-                return Task.FromResult(0);
+                return Task.CompletedTask;
             });
 
             var deleteRequest = mockSqsClient.DeleteMessageRequestResponse;
@@ -185,7 +185,7 @@ namespace NServiceBus.Transport.SQS.Tests
             await SetupInitializedPump(onMessage: (ctx, ct) =>
             {
                 processed = true;
-                return Task.FromResult(0);
+                return Task.CompletedTask;
             });
 
             var json = JsonSerializer.Serialize(new TransportMessage
@@ -234,7 +234,7 @@ namespace NServiceBus.Transport.SQS.Tests
             await SetupInitializedPump(onMessage: (ctx, ct) =>
             {
                 processed = true;
-                return Task.FromResult(0);
+                return Task.CompletedTask;
             });
 
             var json = JsonSerializer.Serialize(new TransportMessage
@@ -368,7 +368,7 @@ namespace NServiceBus.Transport.SQS.Tests
             await SetupInitializedPump(onMessage: (ctx, ct) =>
             {
                 transportMessageHeaderValue = ctx.Headers[customHeaderKey];
-                return Task.FromResult(0);
+                return Task.CompletedTask;
             });
 
             var message = new Message
