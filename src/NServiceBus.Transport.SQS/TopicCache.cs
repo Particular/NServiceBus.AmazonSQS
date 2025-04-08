@@ -15,7 +15,7 @@ class TopicCache
 {
     sealed class TopicCacheItem
     {
-        public Topic? Topic { get; set; }
+        public Topic? Topic { get; init; }
 
         public DateTime CreatedOn { get; } = DateTime.UtcNow;
     }
