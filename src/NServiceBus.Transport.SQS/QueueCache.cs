@@ -6,17 +6,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amazon.SQS;
 
-class QueueCache
+class QueueCache(IAmazonSQS sqsClient, Func<string, string> queueNameGenerator)
 {
-    public QueueCache(IAmazonSQS sqsClient, Func<string, string> queueNameGenerator)
-    {
-        queueNameToUrlCache = new();
-        queueNameToPhysicalAddressCache = new();
-        queueUrlToQueueArnCache = new();
-        this.sqsClient = sqsClient;
-        this.queueNameGenerator = queueNameGenerator;
-    }
-
     public void SetQueueUrl(string queueName, string queueUrl) => queueNameToUrlCache.TryAdd(queueName, Task.FromResult(queueUrl));
 
     public string GetPhysicalQueueName(string queueName)
@@ -93,9 +84,8 @@ class QueueCache
     // Caching the task to make sure during concurrent operations we are not overwhelming metadata fetching
     // These values do not require lazy like in Subscription and TopicCache because the used APIs do not
     // have restrictions like SNS.
-    readonly ConcurrentDictionary<string, Task<string>> queueNameToUrlCache;
-    readonly ConcurrentDictionary<string, Task<string>> queueUrlToQueueArnCache;
-    readonly ConcurrentDictionary<string, string> queueNameToPhysicalAddressCache;
-    readonly IAmazonSQS sqsClient;
-    readonly Func<string, string> queueNameGenerator;
+    readonly ConcurrentDictionary<string, Task<string>> queueNameToUrlCache = new();
+    readonly ConcurrentDictionary<string, Task<string>> queueUrlToQueueArnCache = new();
+    readonly ConcurrentDictionary<string, string> queueNameToPhysicalAddressCache = new();
+    readonly IAmazonSQS sqsClient = sqsClient;
 }

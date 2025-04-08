@@ -13,20 +13,17 @@ using Extensions;
 using Logging;
 using Unicast.Messages;
 
-class SubscriptionManager : ISubscriptionManager
+class SubscriptionManager(
+    IAmazonSQS sqsClient,
+    IAmazonSimpleNotificationService snsClient,
+    string queueName,
+    QueueCache queueCache,
+    TopicCache topicCache,
+    PolicySettings policySettings,
+    string topicNamePrefix,
+    bool setupInfrastructure = true)
+    : ISubscriptionManager
 {
-    public SubscriptionManager(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, string queueName, QueueCache queueCache, TopicCache topicCache, PolicySettings policySettings, string topicNamePrefix, bool setupInfrastructure = true)
-    {
-        this.topicCache = topicCache;
-        this.policySettings = policySettings;
-        this.topicNamePrefix = topicNamePrefix;
-        this.queueCache = queueCache;
-        this.sqsClient = sqsClient;
-        this.snsClient = snsClient;
-        this.queueName = queueName;
-        this.setupInfrastructure = setupInfrastructure;
-    }
-
     public async Task SubscribeAll(MessageMetadata[] eventTypes, ContextBag context, CancellationToken cancellationToken = default)
     {
         var queueUrl = await queueCache.GetQueueUrl(queueName, cancellationToken)
@@ -287,15 +284,7 @@ class SubscriptionManager : ISubscriptionManager
     bool IsTypeTopologyKnownConfigured(Type eventType) => typeTopologyConfiguredSet.ContainsKey(eventType);
 
     readonly ConcurrentDictionary<Type, string> typeTopologyConfiguredSet = new();
-    readonly QueueCache queueCache;
-    readonly IAmazonSQS sqsClient;
-    readonly IAmazonSimpleNotificationService snsClient;
-    readonly string queueName;
-    readonly bool setupInfrastructure;
 
-    readonly TopicCache topicCache;
-    readonly PolicySettings policySettings;
-    readonly string topicNamePrefix;
     readonly SemaphoreSlim subscribeQueueLimiter = new(1);
 
     static readonly ILog Logger = LogManager.GetLogger(typeof(SubscriptionManager));

@@ -2,14 +2,8 @@
 
 namespace NServiceBus.Transport.SQS;
 
-class SqsReceivedDelayedMessage : SqsPreparedMessage
+class SqsReceivedDelayedMessage(string receivedMessageId, string receiptHandle) : SqsPreparedMessage
 {
-    public SqsReceivedDelayedMessage(string receivedMessageId, string receiptHandle)
-    {
-        ReceivedMessageId = receivedMessageId;
-        ReceiptHandle = receiptHandle;
-    }
-
-    public string ReceivedMessageId { get; }
-    public string ReceiptHandle { get; }
+    public string ReceivedMessageId { get; } = receivedMessageId;
+    public string ReceiptHandle { get; } = receiptHandle;
 }

@@ -11,16 +11,8 @@ using Amazon.SQS.Model;
 using Extensions;
 using Logging;
 
-class DelayedMessagesPump
+class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCache queueCache, int queueDelayTimeSeconds)
 {
-    public DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCache queueCache, int queueDelayTimeSeconds)
-    {
-        this.receiveAddress = receiveAddress;
-        this.queueCache = queueCache;
-        this.queueDelayTimeSeconds = queueDelayTimeSeconds;
-        this.sqsClient = sqsClient;
-    }
-
     public async Task Initialize(CancellationToken cancellationToken = default)
     {
         inputQueueUrl = await queueCache.GetQueueUrl(receiveAddress, cancellationToken)
@@ -422,11 +414,6 @@ class DelayedMessagesPump
         }
     }
 
-    readonly IAmazonSQS sqsClient;
-
-    readonly string receiveAddress;
-    readonly QueueCache queueCache;
-    readonly int queueDelayTimeSeconds;
     string delayedDeliveryQueueUrl;
     Task pumpTask;
     string inputQueueUrl;

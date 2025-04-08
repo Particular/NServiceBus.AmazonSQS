@@ -6,14 +6,9 @@ using System;
 /// Meant for staging future obsoletes.
 /// </summary>
 [AttributeUsage(AttributeTargets.All)]
-sealed class PreObsoleteAttribute : Attribute
+sealed class PreObsoleteAttribute(string contextUrl) : Attribute
 {
-    public PreObsoleteAttribute(string contextUrl)
-    {
-        ContextUrl = contextUrl;
-    }
-
-    public string ContextUrl { get; }
+    public string ContextUrl { get; } = contextUrl;
 
     public string ReplacementTypeOrMember { get; set; }
 
