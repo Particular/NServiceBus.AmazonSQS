@@ -1,48 +1,46 @@
-﻿namespace NServiceBus.AcceptanceTests.Sending
+﻿namespace NServiceBus.AcceptanceTests.Sending;
+
+using System;
+using AcceptanceTesting;
+using EndpointTemplates;
+using NUnit.Framework;
+
+public class When_using_oversized_message_without_bucket_configured : NServiceBusAcceptanceTest
 {
-    using System;
-    using AcceptanceTesting;
-    using EndpointTemplates;
-    using NUnit.Framework;
-
-    public class When_using_oversized_message_without_bucket_configured : NServiceBusAcceptanceTest
+    [Test]
+    public void Should_fail()
     {
-        [Test]
-        public void Should_fail()
+        var exception = Assert.ThrowsAsync<Exception>(async () =>
         {
-            var exception = Assert.ThrowsAsync<Exception>(async () =>
-            {
-                await Scenario.Define<Context>()
-                    .WithEndpoint<Endpoint>(b => b.When(session => session.SendLocal(new MyMessageWithLargePayload
-                    {
-                        Payload = new byte[PayloadSize]
-                    }))
-                    )
-                    .Done(c => false)
-                    .Run();
-            });
-
-            Assert.That(exception.Message, Is.EqualTo("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration."));
-        }
-
-        const int PayloadSize = 150 * 1024;
-
-        public class Context : ScenarioContext
-        {
-        }
-
-        public class Endpoint : EndpointConfigurationBuilder
-        {
-            public Endpoint() =>
-                EndpointSetup<DefaultServer>(c =>
+            await Scenario.Define<Context>()
+                .WithEndpoint<Endpoint>(b => b.When(session => session.SendLocal(new MyMessageWithLargePayload
                 {
-                    c.ConfigureSqsTransport().S3 = null; //Disable S3
-                });
-        }
+                    Payload = new byte[PayloadSize]
+                })))
+                .Done(c => false)
+                .Run();
+        });
 
-        public class MyMessageWithLargePayload : ICommand
-        {
-            public byte[] Payload { get; set; }
-        }
+        Assert.That(exception.Message, Is.EqualTo("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration."));
+    }
+
+    const int PayloadSize = 150 * 1024;
+
+    public class Context : ScenarioContext
+    {
+    }
+
+    public class Endpoint : EndpointConfigurationBuilder
+    {
+        public Endpoint() =>
+            EndpointSetup<DefaultServer>(c =>
+            {
+                c.ConfigureSqsTransport().S3 = null; //Disable S3
+            });
+    }
+
+    public class MyMessageWithLargePayload : ICommand
+    {
+        public byte[] Payload { get; set; }
     }
 }

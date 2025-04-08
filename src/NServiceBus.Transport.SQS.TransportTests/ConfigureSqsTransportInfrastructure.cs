@@ -1,7 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using NServiceBus;
-using NServiceBus.AcceptanceTests.ScenarioDescriptors;
 using NServiceBus.Transport;
 using NServiceBus.Transport.SQS.Tests;
 using NServiceBus.TransportTests;

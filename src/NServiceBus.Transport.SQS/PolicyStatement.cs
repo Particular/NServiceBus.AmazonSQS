@@ -1,41 +1,40 @@
-﻿namespace NServiceBus.Transport.SQS
-{
-    using System;
-    using System.Linq;
-    using Amazon.Auth.AccessControlPolicy;
-    using Amazon.Auth.AccessControlPolicy.ActionIdentifiers;
+﻿namespace NServiceBus.Transport.SQS;
+
+using System;
+using System.Linq;
+using Amazon.Auth.AccessControlPolicy;
+using Amazon.Auth.AccessControlPolicy.ActionIdentifiers;
 
 #pragma warning disable 618
-    class PolicyStatement
+class PolicyStatement
+{
+    public PolicyStatement(string topicName, string topicArn, string queueArn)
     {
-        public PolicyStatement(string topicName, string topicArn, string queueArn)
-        {
-            TopicName = topicName;
-            TopicArn = topicArn;
-            Statement = CreatePermissionStatement(queueArn, topicArn);
-            QueueArn = queueArn;
+        TopicName = topicName;
+        TopicArn = topicArn;
+        Statement = CreatePermissionStatement(queueArn, topicArn);
+        QueueArn = queueArn;
 
-            var splittedTopicArn = TopicArn.Split(ArnSeperator, StringSplitOptions.RemoveEmptyEntries);
-            AccountArn = string.Join(":", splittedTopicArn.Take(5));
-        }
-
-        public string QueueArn { get; }
-        public string TopicName { get; }
-        public string TopicArn { get; }
-        public string AccountArn { get; }
-        public Statement Statement { get; }
-
-        internal static Statement CreatePermissionStatement(string queueArn, string topicArn)
-        {
-            var statement = new Statement(Statement.StatementEffect.Allow);
-            statement.Actions.Add(SQSActionIdentifiers.SendMessage);
-            statement.Resources.Add(new Resource(queueArn));
-            statement.Conditions.Add(ConditionFactory.NewSourceArnCondition(topicArn));
-            statement.Principals.Add(new Principal("*"));
-            return statement;
-        }
-
-        static readonly string[] ArnSeperator = { ":" };
+        var splittedTopicArn = TopicArn.Split(ArnSeperator, StringSplitOptions.RemoveEmptyEntries);
+        AccountArn = string.Join(":", splittedTopicArn.Take(5));
     }
-#pragma warning restore 618
+
+    public string QueueArn { get; }
+    public string TopicName { get; }
+    public string TopicArn { get; }
+    public string AccountArn { get; }
+    public Statement Statement { get; }
+
+    internal static Statement CreatePermissionStatement(string queueArn, string topicArn)
+    {
+        var statement = new Statement(Statement.StatementEffect.Allow);
+        statement.Actions.Add(SQSActionIdentifiers.SendMessage);
+        statement.Resources.Add(new Resource(queueArn));
+        statement.Conditions.Add(ConditionFactory.NewSourceArnCondition(topicArn));
+        statement.Principals.Add(new Principal("*"));
+        return statement;
+    }
+
+    static readonly string[] ArnSeperator = { ":" };
 }
+#pragma warning restore 618

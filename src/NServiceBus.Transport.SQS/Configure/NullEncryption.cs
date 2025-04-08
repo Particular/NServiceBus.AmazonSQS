@@ -1,17 +1,16 @@
-namespace NServiceBus
+namespace NServiceBus;
+
+using Amazon.S3.Model;
+
+class NullEncryption : S3EncryptionMethod
 {
-    using Amazon.S3.Model;
+    public static readonly NullEncryption Instance = new NullEncryption();
 
-    class NullEncryption : S3EncryptionMethod
+    protected internal override void ModifyGetRequest(GetObjectRequest get)
     {
-        public static readonly NullEncryption Instance = new NullEncryption();
+    }
 
-        protected internal override void ModifyGetRequest(GetObjectRequest get)
-        {
-        }
-
-        protected internal override void ModifyPutRequest(PutObjectRequest put)
-        {
-        }
+    protected internal override void ModifyPutRequest(PutObjectRequest put)
+    {
     }
 }

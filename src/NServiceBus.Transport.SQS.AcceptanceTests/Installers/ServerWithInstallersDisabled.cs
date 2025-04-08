@@ -1,34 +1,33 @@
-﻿namespace NServiceBus.AcceptanceTests.Installers
+﻿namespace NServiceBus.AcceptanceTests.Installers;
+
+using System;
+using System.Threading.Tasks;
+using NServiceBus.AcceptanceTesting.Customization;
+using NServiceBus.AcceptanceTesting.Support;
+using NServiceBus.AcceptanceTests.EndpointTemplates;
+
+public class ServerWithInstallersDisabled : IEndpointSetupTemplate
 {
-    using System;
-    using System.Threading.Tasks;
-    using NServiceBus.AcceptanceTesting.Customization;
-    using NServiceBus.AcceptanceTesting.Support;
-    using NServiceBus.AcceptanceTests.EndpointTemplates;
+    public IConfigureEndpointTestExecution TransportConfiguration { get; set; } = TestSuiteConstraints.Current.CreateTransportConfiguration();
 
-    public class ServerWithInstallersDisabled : IEndpointSetupTemplate
+    public virtual async Task<EndpointConfiguration> GetConfiguration(RunDescriptor runDescriptor, EndpointCustomizationConfiguration endpointConfiguration, Func<EndpointConfiguration, Task> configurationBuilderCustomization)
     {
-        public IConfigureEndpointTestExecution TransportConfiguration { get; set; } = TestSuiteConstraints.Current.CreateTransportConfiguration();
+        var builder = new EndpointConfiguration(endpointConfiguration.EndpointName);
 
-        public virtual async Task<EndpointConfiguration> GetConfiguration(RunDescriptor runDescriptor, EndpointCustomizationConfiguration endpointConfiguration, Func<EndpointConfiguration, Task> configurationBuilderCustomization)
-        {
-            var builder = new EndpointConfiguration(endpointConfiguration.EndpointName);
+        builder.Recoverability()
+            .Delayed(delayed => delayed.NumberOfRetries(0))
+            .Immediate(immediate => immediate.NumberOfRetries(0));
+        builder.SendFailedMessagesTo("error");
 
-            builder.Recoverability()
-                .Delayed(delayed => delayed.NumberOfRetries(0))
-                .Immediate(immediate => immediate.NumberOfRetries(0));
-            builder.SendFailedMessagesTo("error");
+        await builder.DefineTransport(TransportConfiguration, runDescriptor, endpointConfiguration).ConfigureAwait(false);
 
-            await builder.DefineTransport(TransportConfiguration, runDescriptor, endpointConfiguration).ConfigureAwait(false);
+        builder.UseSerialization<SystemJsonSerializer>();
 
-            builder.UseSerialization<SystemJsonSerializer>();
+        await configurationBuilderCustomization(builder).ConfigureAwait(false);
 
-            await configurationBuilderCustomization(builder).ConfigureAwait(false);
+        // scan types at the end so that all types used by the configuration have been loaded into the AppDomain
+        builder.ScanTypesForTest(endpointConfiguration);
 
-            // scan types at the end so that all types used by the configuration have been loaded into the AppDomain
-            builder.ScanTypesForTest(endpointConfiguration);
-
-            return builder;
-        }
+        return builder;
     }
 }

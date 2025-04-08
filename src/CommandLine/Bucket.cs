@@ -1,117 +1,116 @@
-﻿namespace NServiceBus.Transport.SQS.CommandLine
+﻿namespace NServiceBus.Transport.SQS.CommandLine;
+
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using Amazon.S3;
+using Amazon.S3.Model;
+using Amazon.S3.Util;
+
+static class Bucket
 {
-    using System;
-    using System.Linq;
-    using System.Threading.Tasks;
-    using Amazon.S3;
-    using Amazon.S3.Model;
-    using Amazon.S3.Util;
-
-    static class Bucket
+    public static async Task Create(IAmazonS3 s3, string endpointName, string bucketName)
     {
-        public static async Task Create(IAmazonS3 s3, string endpointName, string bucketName)
+        await Console.Out.WriteLineAsync($"Creating bucket with name '{bucketName}' for endpoint '{endpointName}'.");
+
+        if (!await AmazonS3Util.DoesS3BucketExistV2Async(s3, bucketName))
         {
-            await Console.Out.WriteLineAsync($"Creating bucket with name '{bucketName}' for endpoint '{endpointName}'.");
+            await s3.RetryConflictsAsync(async () =>
+                    await s3.PutBucketAsync(new PutBucketRequest { BucketName = bucketName }).ConfigureAwait(false),
+                onRetry: async x => { await Console.Out.WriteLineAsync($"Conflict when creating S3 bucket, retrying after {x}ms."); }).ConfigureAwait(false);
 
-            if (!await AmazonS3Util.DoesS3BucketExistV2Async(s3, bucketName))
-            {
-                await s3.RetryConflictsAsync(async () =>
-                        await s3.PutBucketAsync(new PutBucketRequest { BucketName = bucketName }).ConfigureAwait(false),
-                    onRetry: async x => { await Console.Out.WriteLineAsync($"Conflict when creating S3 bucket, retrying after {x}ms."); }).ConfigureAwait(false);
-
-                await Console.Out.WriteLineAsync($"Created bucket with name '{bucketName}' for endpoint '{endpointName}'.");
-            }
-            else
-            {
-                await Console.Out.WriteLineAsync($"Bucket with name '{bucketName}' already exists.");
-            }
+            await Console.Out.WriteLineAsync($"Created bucket with name '{bucketName}' for endpoint '{endpointName}'.");
         }
-
-        public static async Task EnableCleanup(IAmazonS3 s3, string endpointName, string bucketName, string keyPrefix, int expirationInDays)
+        else
         {
-            await Console.Out.WriteLineAsync($"Adding lifecycle configuration to bucket name '{bucketName}' for endpoint '{endpointName}'.");
+            await Console.Out.WriteLineAsync($"Bucket with name '{bucketName}' already exists.");
+        }
+    }
 
-            var lifecycleConfig = await s3.GetLifecycleConfigurationAsync(bucketName).ConfigureAwait(false);
-            var setLifecycleConfig = lifecycleConfig.Configuration.Rules.All(x => x.Id != "NServiceBus.SQS.DeleteMessageBodies");
+    public static async Task EnableCleanup(IAmazonS3 s3, string endpointName, string bucketName, string keyPrefix, int expirationInDays)
+    {
+        await Console.Out.WriteLineAsync($"Adding lifecycle configuration to bucket name '{bucketName}' for endpoint '{endpointName}'.");
 
-            if (setLifecycleConfig)
-            {
-                await s3.RetryConflictsAsync(async () =>
-                        await s3.PutLifecycleConfigurationAsync(new PutLifecycleConfigurationRequest
+        var lifecycleConfig = await s3.GetLifecycleConfigurationAsync(bucketName).ConfigureAwait(false);
+        var setLifecycleConfig = lifecycleConfig.Configuration.Rules.All(x => x.Id != "NServiceBus.SQS.DeleteMessageBodies");
+
+        if (setLifecycleConfig)
+        {
+            await s3.RetryConflictsAsync(async () =>
+                    await s3.PutLifecycleConfigurationAsync(new PutLifecycleConfigurationRequest
+                    {
+                        BucketName = bucketName,
+                        Configuration = new LifecycleConfiguration
                         {
-                            BucketName = bucketName,
-                            Configuration = new LifecycleConfiguration
-                            {
-                                Rules =
-                                [
-                                    new LifecycleRule
+                            Rules =
+                            [
+                                new LifecycleRule
+                                {
+                                    Id = "NServiceBus.SQS.DeleteMessageBodies",
+                                    Filter = new LifecycleFilter
                                     {
-                                        Id = "NServiceBus.SQS.DeleteMessageBodies",
-                                        Filter = new LifecycleFilter
+                                        LifecycleFilterPredicate = new LifecyclePrefixPredicate
                                         {
-                                            LifecycleFilterPredicate = new LifecyclePrefixPredicate
-                                            {
-                                                Prefix = keyPrefix
-                                            }
-                                        },
-                                        Status = LifecycleRuleStatus.Enabled,
-                                        Expiration = new LifecycleRuleExpiration
-                                        {
-                                            Days = expirationInDays
+                                            Prefix = keyPrefix
                                         }
+                                    },
+                                    Status = LifecycleRuleStatus.Enabled,
+                                    Expiration = new LifecycleRuleExpiration
+                                    {
+                                        Days = expirationInDays
                                     }
-                                ]
-                            }
-                        }).ConfigureAwait(false),
-                    onRetry: async x => { await Console.Out.WriteLineAsync($"Conflict when setting S3 lifecycle configuration, retrying after {x}ms."); }).ConfigureAwait(false);
+                                }
+                            ]
+                        }
+                    }).ConfigureAwait(false),
+                onRetry: async x => { await Console.Out.WriteLineAsync($"Conflict when setting S3 lifecycle configuration, retrying after {x}ms."); }).ConfigureAwait(false);
 
-                await Console.Out.WriteLineAsync($"Added lifecycle configuration to bucket name '{bucketName}' for endpoint '{endpointName}'.");
-            }
-            else
-            {
-                await Console.Out.WriteLineAsync($"Lifecycle configuration already configured for bucket name '{bucketName}' for endpoint '{endpointName}'.");
-            }
+            await Console.Out.WriteLineAsync($"Added lifecycle configuration to bucket name '{bucketName}' for endpoint '{endpointName}'.");
         }
-
-        public static async Task Delete(IAmazonS3 s3, string endpointName, string bucketName)
+        else
         {
-            await Console.Out.WriteLineAsync($"Delete bucket with name '{bucketName}' for endpoint '{endpointName}'.");
+            await Console.Out.WriteLineAsync($"Lifecycle configuration already configured for bucket name '{bucketName}' for endpoint '{endpointName}'.");
+        }
+    }
 
-            if (await AmazonS3Util.DoesS3BucketExistV2Async(s3, bucketName))
+    public static async Task Delete(IAmazonS3 s3, string endpointName, string bucketName)
+    {
+        await Console.Out.WriteLineAsync($"Delete bucket with name '{bucketName}' for endpoint '{endpointName}'.");
+
+        if (await AmazonS3Util.DoesS3BucketExistV2Async(s3, bucketName))
+        {
+            var response = await s3.GetBucketLocationAsync(bucketName);
+            S3Region region;
+            switch (response.Location)
             {
-                var response = await s3.GetBucketLocationAsync(bucketName);
-                S3Region region;
-                switch (response.Location)
-                {
-                    case "":
-                        {
-                            region = new S3Region("us-east-1");
-                            break;
-                        }
-                    case "EU":
-                        {
-                            region = S3Region.EUWest1;
-                            break;
-                        }
-                    default:
-                        region = response.Location;
+                case "":
+                    {
+                        region = new S3Region("us-east-1");
                         break;
-                }
-
-                var deleteRequest = new DeleteBucketRequest
-                {
-                    BucketName = bucketName,
-                    BucketRegion = region,
-                };
-
-                await s3.DeleteBucketAsync(deleteRequest).ConfigureAwait(false);
-
-                await Console.Out.WriteLineAsync($"Delete bucket with name '{bucketName}' for endpoint '{endpointName}'.");
+                    }
+                case "EU":
+                    {
+                        region = S3Region.EUWest1;
+                        break;
+                    }
+                default:
+                    region = response.Location;
+                    break;
             }
-            else
+
+            var deleteRequest = new DeleteBucketRequest
             {
-                await Console.Out.WriteLineAsync($"Bucket with name '{bucketName}' does not exist.");
-            }
+                BucketName = bucketName,
+                BucketRegion = region,
+            };
+
+            await s3.DeleteBucketAsync(deleteRequest).ConfigureAwait(false);
+
+            await Console.Out.WriteLineAsync($"Delete bucket with name '{bucketName}' for endpoint '{endpointName}'.");
+        }
+        else
+        {
+            await Console.Out.WriteLineAsync($"Bucket with name '{bucketName}' does not exist.");
         }
     }
 }

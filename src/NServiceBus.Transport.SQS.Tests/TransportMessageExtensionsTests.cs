@@ -1,69 +1,68 @@
-namespace NServiceBus.Transport.SQS.Tests
+namespace NServiceBus.Transport.SQS.Tests;
+
+using System;
+using System.Buffers;
+using System.Text;
+using System.Threading.Tasks;
+using Extensions;
+using NUnit.Framework;
+
+[TestFixture]
+public class TransportMessageExtensionsTests
 {
-    using System;
-    using System.Buffers;
-    using System.Text;
-    using System.Threading.Tasks;
-    using Extensions;
-    using NUnit.Framework;
+    readonly ArrayPool<byte> arrayPool = ArrayPool<byte>.Shared;
+    byte[] bodyBuffer;
 
-    [TestFixture]
-    public class TransportMessageExtensionsTests
+    [TearDown]
+    public void TearDown()
     {
-        readonly ArrayPool<byte> arrayPool = ArrayPool<byte>.Shared;
-        byte[] bodyBuffer;
-
-        [TearDown]
-        public void TearDown()
+        if (bodyBuffer != null)
         {
-            if (bodyBuffer != null)
-            {
-                arrayPool.Return(bodyBuffer);
-            }
+            arrayPool.Return(bodyBuffer);
         }
+    }
 
-        [Test]
-        public async Task Empty_body_is_received_ok()
+    [Test]
+    public async Task Empty_body_is_received_ok()
+    {
+        var messageId = Guid.NewGuid().ToString();
+        var body = Array.Empty<byte>();
+        var outgoingMessage = new OutgoingMessage(messageId, [], body);
+
+        var transportMessage = new TransportMessage(outgoingMessage, []);
+
+        (var receivedBodyArray, bodyBuffer) = await transportMessage.RetrieveBody(messageId, null, arrayPool);
+        var receivedBody = Encoding.UTF8.GetString(receivedBodyArray.ToArray());
+
+        Assert.That(body, Is.EqualTo(receivedBodyArray.ToArray()).AsCollection);
+        Assert.That(receivedBody, Is.Null.Or.Empty);
+    }
+
+    [Test]
+    public async Task Null_body_is_received_ok()
+    {
+        var messageId = Guid.NewGuid().ToString();
+        var outgoingMessage = new OutgoingMessage(messageId, [], null);
+
+        var transportMessage = new TransportMessage(outgoingMessage, []);
+
+        (var receivedBodyArray, bodyBuffer) = await transportMessage.RetrieveBody(messageId, null, arrayPool);
+        var receivedBody = Encoding.UTF8.GetString(receivedBodyArray.ToArray());
+
+        Assert.That(receivedBody, Is.Null.Or.Empty);
+    }
+
+    [Test]
+    public async Task Empty_message_string_body_is_received_as_empty()
+    {
+        var transportMessage = new TransportMessage
         {
-            var messageId = Guid.NewGuid().ToString();
-            var body = Array.Empty<byte>();
-            var outgoingMessage = new OutgoingMessage(messageId, [], body);
+            Body = "empty message",
+        };
 
-            var transportMessage = new TransportMessage(outgoingMessage, []);
+        (var receivedBodyArray, bodyBuffer) = await transportMessage.RetrieveBody(Guid.NewGuid().ToString(), null, arrayPool);
+        var receivedBody = Encoding.UTF8.GetString(receivedBodyArray.ToArray());
 
-            (var receivedBodyArray, bodyBuffer) = await transportMessage.RetrieveBody(messageId, null, arrayPool);
-            var receivedBody = Encoding.UTF8.GetString(receivedBodyArray.ToArray());
-
-            Assert.That(body, Is.EqualTo(receivedBodyArray.ToArray()).AsCollection);
-            Assert.That(receivedBody, Is.Null.Or.Empty);
-        }
-
-        [Test]
-        public async Task Null_body_is_received_ok()
-        {
-            var messageId = Guid.NewGuid().ToString();
-            var outgoingMessage = new OutgoingMessage(messageId, [], null);
-
-            var transportMessage = new TransportMessage(outgoingMessage, []);
-
-            (var receivedBodyArray, bodyBuffer) = await transportMessage.RetrieveBody(messageId, null, arrayPool);
-            var receivedBody = Encoding.UTF8.GetString(receivedBodyArray.ToArray());
-
-            Assert.That(receivedBody, Is.Null.Or.Empty);
-        }
-
-        [Test]
-        public async Task Empty_message_string_body_is_received_as_empty()
-        {
-            var transportMessage = new TransportMessage
-            {
-                Body = "empty message",
-            };
-
-            (var receivedBodyArray, bodyBuffer) = await transportMessage.RetrieveBody(Guid.NewGuid().ToString(), null, arrayPool);
-            var receivedBody = Encoding.UTF8.GetString(receivedBodyArray.ToArray());
-
-            Assert.That(receivedBody, Is.Null.Or.Empty);
-        }
+        Assert.That(receivedBody, Is.Null.Or.Empty);
     }
 }

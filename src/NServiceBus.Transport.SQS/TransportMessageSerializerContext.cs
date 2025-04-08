@@ -1,10 +1,9 @@
-namespace NServiceBus.Transport.SQS
-{
-    using System.Text.Json.Serialization;
+namespace NServiceBus.Transport.SQS;
 
-    [JsonSourceGenerationOptions]
-    [JsonSerializable(typeof(TransportMessage))]
-    partial class TransportMessageSerializerContext : JsonSerializerContext
-    {
-    }
+using System.Text.Json.Serialization;
+
+[JsonSourceGenerationOptions]
+[JsonSerializable(typeof(TransportMessage))]
+partial class TransportMessageSerializerContext : JsonSerializerContext
+{
 }
