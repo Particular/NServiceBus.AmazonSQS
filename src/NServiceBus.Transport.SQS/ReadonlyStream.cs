@@ -1,6 +1,4 @@
-﻿// unset
-
-namespace NServiceBus.Transport.SQS;
+﻿namespace NServiceBus.Transport.SQS;
 
 using System;
 using System.IO;
