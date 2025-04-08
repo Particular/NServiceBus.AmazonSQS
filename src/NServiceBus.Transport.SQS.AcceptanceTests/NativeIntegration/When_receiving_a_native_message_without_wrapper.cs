@@ -95,7 +95,7 @@
 
             if (!string.IsNullOrEmpty(s3Key))
             {
-                nsbHeaders.Add("S3BodyKey", "s3Key");
+                nsbHeaders.Add("S3BodyKey", s3Key);
             }
 
             if (!string.IsNullOrEmpty(messageId))
