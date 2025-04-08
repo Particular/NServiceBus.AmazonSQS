@@ -1,9 +1,11 @@
-﻿namespace NServiceBus.TransportTests
+﻿namespace TransportTests
 {
     using System.Collections.Generic;
     using System.Threading.Tasks;
+    using NServiceBus;
+    using NServiceBus.Transport;
+    using NServiceBus.TransportTests;
     using NUnit.Framework;
-    using Transport;
 
     public class Sending_messages_with_invalid_sqs_chars : NServiceBusTransportTest
     {

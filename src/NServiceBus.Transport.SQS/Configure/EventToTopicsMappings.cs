@@ -1,30 +1,29 @@
-﻿namespace NServiceBus.Transport.SQS.Configure
+﻿namespace NServiceBus.Transport.SQS.Configure;
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+class EventToTopicsMappings
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-
-    class EventToTopicsMappings
+    public void Add(Type subscribedEventType, IEnumerable<string> topicsNames)
     {
-        public void Add(Type subscribedEventType, IEnumerable<string> topicsNames)
+        if (!eventsToTopicsMappings.TryGetValue(subscribedEventType, out var mapping))
         {
-            if (!eventsToTopicsMappings.TryGetValue(subscribedEventType, out var mapping))
-            {
-                mapping = [];
-                eventsToTopicsMappings.Add(subscribedEventType, mapping);
-            }
-
-            foreach (var topicName in topicsNames)
-            {
-                mapping.Add(topicName);
-            }
+            mapping = [];
+            eventsToTopicsMappings.Add(subscribedEventType, mapping);
         }
 
-        public IEnumerable<string> GetMappedTopicsNames(Type subscribedEventType)
+        foreach (var topicName in topicsNames)
         {
-            return eventsToTopicsMappings.ContainsKey(subscribedEventType) ? eventsToTopicsMappings[subscribedEventType] : Enumerable.Empty<string>();
+            mapping.Add(topicName);
         }
-
-        Dictionary<Type, HashSet<string>> eventsToTopicsMappings = [];
     }
+
+    public IEnumerable<string> GetMappedTopicsNames(Type subscribedEventType)
+    {
+        return eventsToTopicsMappings.ContainsKey(subscribedEventType) ? eventsToTopicsMappings[subscribedEventType] : Enumerable.Empty<string>();
+    }
+
+    Dictionary<Type, HashSet<string>> eventsToTopicsMappings = [];
 }

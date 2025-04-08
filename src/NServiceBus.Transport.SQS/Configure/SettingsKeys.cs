@@ -1,10 +1,9 @@
-﻿namespace NServiceBus.Transport.SQS.Configure
-{
-    static class SettingsKeys
-    {
-        const string Prefix = "NServiceBus.AmazonSQS.";
+﻿namespace NServiceBus.Transport.SQS.Configure;
 
-        public const string SubscriptionsCacheTTL = Prefix + nameof(SubscriptionsCacheTTL);
-        public const string NotFoundTopicsCacheTTL = Prefix + nameof(NotFoundTopicsCacheTTL);
-    }
+static class SettingsKeys
+{
+    const string Prefix = "NServiceBus.AmazonSQS.";
+
+    public const string SubscriptionsCacheTTL = Prefix + nameof(SubscriptionsCacheTTL);
+    public const string NotFoundTopicsCacheTTL = Prefix + nameof(NotFoundTopicsCacheTTL);
 }

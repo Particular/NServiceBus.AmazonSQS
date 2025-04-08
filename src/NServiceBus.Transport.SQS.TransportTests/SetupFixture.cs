@@ -1,43 +1,45 @@
-﻿namespace NServiceBus.TransportTests
+﻿namespace TransportTests;
+
+using System;
+using System.Threading.Tasks;
+using Amazon.S3;
+using Amazon.SimpleNotificationService;
+using Amazon.SQS;
+using NServiceBus.Transport.SQS.Tests;
+using NUnit.Framework;
+
+[SetUpFixture]
+public class SetupFixture
 {
-    using System;
-    using System.Threading.Tasks;
-    using NUnit.Framework;
-    using Transport.SQS.Tests;
+    /// <summary>
+    ///     The name prefix for the current run of the test suite.
+    /// </summary>
+    static string NamePrefix { get; set; }
 
-    [SetUpFixture]
-    public class SetupFixture
+    public static string GetNamePrefix()
     {
-        /// <summary>
-        /// The name prefix for the current run of the test suite.
-        /// </summary>
-        static string NamePrefix { get; set; }
+        TestContext ctx = TestContext.CurrentContext;
+        int methodHashPositive = Math.Abs(ctx.Test.ID.GetHashCode());
 
-        public static string GetNamePrefix()
-        {
-            var ctx = TestContext.CurrentContext;
-            var methodHashPositive = Math.Abs(ctx.Test.ID.GetHashCode());
+        return NamePrefix + methodHashPositive;
+    }
 
-            return NamePrefix + methodHashPositive;
-        }
+    [OneTimeSetUp]
+    public void OneTimeSetUp() =>
+        // Generate a new queue name prefix for acceptance tests
+        // every time the tests are run.
+        // This is to work around an SQS limitation that prevents
+        // us from deleting then creating a queue with the
+        // same name in a 60 second period.
+        NamePrefix = $"TT{DateTime.UtcNow:yyyyMMddHHmmss}";
 
-        [OneTimeSetUp]
-        public void OneTimeSetUp() =>
-            // Generate a new queue name prefix for acceptance tests
-            // every time the tests are run.
-            // This is to work around an SQS limitation that prevents
-            // us from deleting then creating a queue with the
-            // same name in a 60 second period.
-            NamePrefix = $"TT{DateTime.UtcNow:yyyyMMddHHmmss}";
+    [OneTimeTearDown]
+    public async Task OneTimeTearDown()
+    {
+        using IAmazonSQS sqsClient = ClientFactories.CreateSqsClient();
+        using IAmazonSimpleNotificationService snsClient = ClientFactories.CreateSnsClient();
+        using IAmazonS3 s3Client = ClientFactories.CreateS3Client();
 
-        [OneTimeTearDown]
-        public async Task OneTimeTearDown()
-        {
-            using var sqsClient = ClientFactories.CreateSqsClient();
-            using var snsClient = ClientFactories.CreateSnsClient();
-            using var s3Client = ClientFactories.CreateS3Client();
-
-            await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, NamePrefix).ConfigureAwait(false);
-        }
+        await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, NamePrefix).ConfigureAwait(false);
     }
 }

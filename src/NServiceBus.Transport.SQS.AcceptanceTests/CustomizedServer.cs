@@ -1,12 +1,11 @@
-﻿namespace NServiceBus.AcceptanceTests
-{
-    using NServiceBus.AcceptanceTests.EndpointTemplates;
+﻿namespace NServiceBus.AcceptanceTests;
 
-    public class CustomizedServer : DefaultServer
+using NServiceBus.AcceptanceTests.EndpointTemplates;
+
+public class CustomizedServer : DefaultServer
+{
+    public CustomizedServer(bool supportsPublishSubscribe)
     {
-        public CustomizedServer(bool supportsPublishSubscribe)
-        {
-            TransportConfiguration = new ConfigureEndpointSqsTransport(supportsPublishSubscribe);
-        }
+        TransportConfiguration = new ConfigureEndpointSqsTransport(supportsPublishSubscribe);
     }
 }

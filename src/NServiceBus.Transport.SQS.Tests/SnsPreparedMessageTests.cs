@@ -1,69 +1,68 @@
-namespace NServiceBus.Transport.SQS.Tests
+namespace NServiceBus.Transport.SQS.Tests;
+
+using System;
+using System.IO;
+using Amazon.SimpleNotificationService.Model;
+using NServiceBus;
+using NUnit.Framework;
+using SQS;
+
+[TestFixture]
+public class SnsPreparedMessageTests
 {
-    using System;
-    using System.IO;
-    using Amazon.SimpleNotificationService.Model;
-    using NServiceBus;
-    using NUnit.Framework;
-    using SQS;
-
-    [TestFixture]
-    public class SnsPreparedMessageTests
+    [Test]
+    public void CalculateSize_BodyTakenIntoAccount()
     {
-        [Test]
-        public void CalculateSize_BodyTakenIntoAccount()
+        var expectedSize = 10;
+
+        var message = new SnsPreparedMessage
         {
-            var expectedSize = 10;
+            Body = new string('a', expectedSize)
+        };
 
-            var message = new SnsPreparedMessage
-            {
-                Body = new string('a', expectedSize)
-            };
+        message.CalculateSize();
 
-            message.CalculateSize();
+        Assert.That(message.Size, Is.EqualTo(expectedSize));
+    }
 
-            Assert.That(message.Size, Is.EqualTo(expectedSize));
-        }
+    [Test]
+    public void CalculateSize_BodyAndReservedBytesTakenIntoAccount()
+    {
+        var expectedSize = 15;
 
-        [Test]
-        public void CalculateSize_BodyAndReservedBytesTakenIntoAccount()
+        var message = new SnsPreparedMessage
         {
-            var expectedSize = 15;
+            Body = new string('a', 10),
+            ReserveBytesInMessageSizeCalculation = 5
+        };
 
-            var message = new SnsPreparedMessage
-            {
-                Body = new string('a', 10),
-                ReserveBytesInMessageSizeCalculation = 5
-            };
+        message.CalculateSize();
 
-            message.CalculateSize();
+        Assert.That(message.Size, Is.EqualTo(expectedSize));
+    }
 
-            Assert.That(message.Size, Is.EqualTo(expectedSize));
-        }
+    [Test]
+    public void CalculateSize_TakesAttributesIntoAccount()
+    {
+        var message = new SnsPreparedMessage();
+        message.MessageAttributes.Add("Key1", new MessageAttributeValue { DataType = "string", StringValue = "SomeString" });
+        message.MessageAttributes.Add("Key3", new MessageAttributeValue { BinaryValue = new MemoryStream(new byte[1]) });
 
-        [Test]
-        public void CalculateSize_TakesAttributesIntoAccount()
+        message.CalculateSize();
+
+        Assert.That(message.Size, Is.EqualTo(25));
+    }
+
+    [Test]
+    public void MessageId_SetAttribute()
+    {
+        var expectedMessageId = Guid.NewGuid().ToString();
+
+        var message = new SnsPreparedMessage
         {
-            var message = new SnsPreparedMessage();
-            message.MessageAttributes.Add("Key1", new MessageAttributeValue { DataType = "string", StringValue = "SomeString" });
-            message.MessageAttributes.Add("Key3", new MessageAttributeValue { BinaryValue = new MemoryStream(new byte[1]) });
+            MessageId = expectedMessageId
+        };
 
-            message.CalculateSize();
-
-            Assert.That(message.Size, Is.EqualTo(25));
-        }
-
-        [Test]
-        public void MessageId_SetAttribute()
-        {
-            var expectedMessageId = Guid.NewGuid().ToString();
-
-            var message = new SnsPreparedMessage
-            {
-                MessageId = expectedMessageId
-            };
-
-            Assert.That(message.MessageAttributes[Headers.MessageId].StringValue, Is.EqualTo(expectedMessageId));
-        }
+        Assert.That(message.MessageAttributes[Headers.MessageId].StringValue, Is.EqualTo(expectedMessageId));
     }
 }

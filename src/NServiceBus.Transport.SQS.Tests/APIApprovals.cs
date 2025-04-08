@@ -1,21 +1,20 @@
-﻿namespace NServiceBus.Transport.SQS.Tests
-{
-    using NServiceBus;
-    using NUnit.Framework;
-    using Particular.Approvals;
-    using PublicApiGenerator;
+﻿namespace NServiceBus.Transport.SQS.Tests;
 
-    [TestFixture]
-    public class APIApprovals
+using NServiceBus;
+using NUnit.Framework;
+using Particular.Approvals;
+using PublicApiGenerator;
+
+[TestFixture]
+public class APIApprovals
+{
+    [Test]
+    public void ApproveSqsTransport()
     {
-        [Test]
-        public void ApproveSqsTransport()
+        var publicApi = typeof(SqsTransport).Assembly.GeneratePublicApi(new ApiGeneratorOptions
         {
-            var publicApi = typeof(SqsTransport).Assembly.GeneratePublicApi(new ApiGeneratorOptions
-            {
-                ExcludeAttributes = ["System.Runtime.Versioning.TargetFrameworkAttribute", "System.Reflection.AssemblyMetadataAttribute"]
-            });
-            Approver.Verify(publicApi);
-        }
+            ExcludeAttributes = ["System.Runtime.Versioning.TargetFrameworkAttribute", "System.Reflection.AssemblyMetadataAttribute"]
+        });
+        Approver.Verify(publicApi);
     }
 }

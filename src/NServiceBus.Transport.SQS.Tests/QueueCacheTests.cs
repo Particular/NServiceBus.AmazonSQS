@@ -1,156 +1,155 @@
-﻿namespace NServiceBus.Transport.SQS.Tests
+﻿namespace NServiceBus.Transport.SQS.Tests;
+
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using NUnit.Framework;
+using SQS;
+
+[TestFixture]
+public class QueueCacheTests
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using NUnit.Framework;
-    using SQS;
-
-    [TestFixture]
-    public class QueueCacheTests
+    [Test]
+    [TestCase("really-really-really-really-really-really-really-really-really-really-really-really-really-really-really-really", "")]
+    [TestCase("PREFIXreally-really-really-really-really-really-really-really-really-really-really-really-really-really-really-really", "PREFIX")]
+    public void ThrowsWhenLongerThanEightyChars(string destination, string queueNamePrefix)
     {
-        [Test]
-        [TestCase("really-really-really-really-really-really-really-really-really-really-really-really-really-really-really-really", "")]
-        [TestCase("PREFIXreally-really-really-really-really-really-really-really-really-really-really-really-really-really-really-really", "PREFIX")]
-        public void ThrowsWhenLongerThanEightyChars(string destination, string queueNamePrefix)
+        var cache = new QueueCache(null, dest => QueueCache.GetSqsQueueName(dest, queueNamePrefix));
+
+        var exception = Assert.Throws<Exception>(() => cache.GetPhysicalQueueName(destination));
+        Assert.That(exception.Message, Contains.Substring("is longer than 80 characters"));
+    }
+
+    [Test]
+    [TestCase("really-really-really-really-really-really-really-really-really-really-really-really-really-really-really-really", "", "lly-really-really-really-really-really-really-really-really-really-really-really")]
+    [TestCase("PREFIXreally-really-really-really-really-really-really-really-really-really-really-really-really-really-really-really", "PREFIX", "PREFIXally-really-really-really-really-really-really-really-really-really-really")]
+    public void DoesNotThrowWithPretruncation(string destination, string queueNamePrefix, string expected)
+    {
+        var cache = new QueueCache(null, dest => TestNameHelper.GetSqsQueueName(dest, queueNamePrefix));
+
+        var result = cache.GetPhysicalQueueName(destination);
+        var resultIdempotent = cache.GetPhysicalQueueName(result);
+
+        Assert.Multiple(() =>
         {
-            var cache = new QueueCache(null, dest => QueueCache.GetSqsQueueName(dest, queueNamePrefix));
+            Assert.That(result, Is.EqualTo(expected));
+            Assert.That(resultIdempotent, Is.EqualTo(expected));
+        });
+    }
 
-            var exception = Assert.Throws<Exception>(() => cache.GetPhysicalQueueName(destination));
-            Assert.That(exception.Message, Contains.Substring("is longer than 80 characters"));
-        }
+    [Test]
+    [TestCase("destination-delay.fifo", "destination-delay.fifo")]
+    [TestCase("destination-delay.blurb", "destination-delay-blurb")]
+    [TestCase("destination-delay.blurb.fifo", "destination-delay-blurb.fifo")]
+    [TestCase("destination-delay.fifo.fifo", "destination-delay-fifo.fifo")]
+    public void Preserves_FifoQueue(string destination, string expected)
+    {
+        var cache = new QueueCache(null, dest => QueueCache.GetSqsQueueName(dest, ""));
 
-        [Test]
-        [TestCase("really-really-really-really-really-really-really-really-really-really-really-really-really-really-really-really", "", "lly-really-really-really-really-really-really-really-really-really-really-really")]
-        [TestCase("PREFIXreally-really-really-really-really-really-really-really-really-really-really-really-really-really-really-really", "PREFIX", "PREFIXally-really-really-really-really-really-really-really-really-really-really")]
-        public void DoesNotThrowWithPretruncation(string destination, string queueNamePrefix, string expected)
+        var result = cache.GetPhysicalQueueName(destination);
+        var resultIdempotent = cache.GetPhysicalQueueName(result);
+
+        Assert.Multiple(() =>
         {
-            var cache = new QueueCache(null, dest => TestNameHelper.GetSqsQueueName(dest, queueNamePrefix));
+            Assert.That(result, Is.EqualTo(expected));
+            Assert.That(resultIdempotent, Is.EqualTo(expected));
+        });
+    }
 
-            var result = cache.GetPhysicalQueueName(destination);
-            var resultIdempotent = cache.GetPhysicalQueueName(result);
+    [Test]
+    [TestCase("really-really-really-really-really-really-really-really-really-really-really-really-really-really-really-really-delay.fifo", "really-really-really-really-really-really-really-really-really-really-delay.fifo")]
+    [TestCase("really-really-really-really-really-really-really-really-really-really-really-really-really-really-really-really-delay.blurb", "eally-really-really-really-really-really-really-really-really-really-delay-blurb")]
+    [TestCase("really-really-really-really-really-really-really-really-really-really-really-really-really-really-really-really-delay.blurb.fifo", "-really-really-really-really-really-really-really-really-really-delay-blurb.fifo")]
+    [TestCase("really-really-really-really-really-really-really-really-really-really-really-really-really-really-really-really-delay.fifo.fifo", "y-really-really-really-really-really-really-really-really-really-delay-fifo.fifo")]
+    public void Preserves_FifoQueue_WithPreTruncate(string destination, string expected)
+    {
+        var cache = new QueueCache(null, dest => TestNameHelper.GetSqsQueueName(dest, ""));
 
-            Assert.Multiple(() =>
-            {
-                Assert.That(result, Is.EqualTo(expected));
-                Assert.That(resultIdempotent, Is.EqualTo(expected));
-            });
-        }
+        var result = cache.GetPhysicalQueueName(destination);
+        var resultIdempotent = cache.GetPhysicalQueueName(result);
 
-        [Test]
-        [TestCase("destination-delay.fifo", "destination-delay.fifo")]
-        [TestCase("destination-delay.blurb", "destination-delay-blurb")]
-        [TestCase("destination-delay.blurb.fifo", "destination-delay-blurb.fifo")]
-        [TestCase("destination-delay.fifo.fifo", "destination-delay-fifo.fifo")]
-        public void Preserves_FifoQueue(string destination, string expected)
+        Assert.Multiple(() =>
         {
-            var cache = new QueueCache(null, dest => QueueCache.GetSqsQueueName(dest, ""));
+            Assert.That(result, Is.EqualTo(expected));
+            Assert.That(resultIdempotent, Is.EqualTo(expected));
+        });
+    }
 
-            var result = cache.GetPhysicalQueueName(destination);
-            var resultIdempotent = cache.GetPhysicalQueueName(result);
+    [Test]
+    [TestCase("destination-1", "destination-1")]
+    [TestCase("destination.1", "destination-1")]
+    [TestCase("destination!1", "destination-1")]
+    [TestCase("destination?1", "destination-1")]
+    [TestCase("destination@1", "destination-1")]
+    [TestCase("destination$1", "destination-1")]
+    [TestCase("destination%1", "destination-1")]
+    [TestCase("destination^1", "destination-1")]
+    [TestCase("destination&1", "destination-1")]
+    [TestCase("destination*1", "destination-1")]
+    [TestCase("destination_1", "destination_1")]
+    public void ReplacesNonDigitsWithDash(string destination, string expected)
+    {
+        var cache = new QueueCache(null, dest => QueueCache.GetSqsQueueName(destination, ""));
 
-            Assert.Multiple(() =>
-            {
-                Assert.That(result, Is.EqualTo(expected));
-                Assert.That(resultIdempotent, Is.EqualTo(expected));
-            });
-        }
+        var result = cache.GetPhysicalQueueName(destination);
+        var resultIdempotent = cache.GetPhysicalQueueName(result);
 
-        [Test]
-        [TestCase("really-really-really-really-really-really-really-really-really-really-really-really-really-really-really-really-delay.fifo", "really-really-really-really-really-really-really-really-really-really-delay.fifo")]
-        [TestCase("really-really-really-really-really-really-really-really-really-really-really-really-really-really-really-really-delay.blurb", "eally-really-really-really-really-really-really-really-really-really-delay-blurb")]
-        [TestCase("really-really-really-really-really-really-really-really-really-really-really-really-really-really-really-really-delay.blurb.fifo", "-really-really-really-really-really-really-really-really-really-delay-blurb.fifo")]
-        [TestCase("really-really-really-really-really-really-really-really-really-really-really-really-really-really-really-really-delay.fifo.fifo", "y-really-really-really-really-really-really-really-really-really-delay-fifo.fifo")]
-        public void Preserves_FifoQueue_WithPreTruncate(string destination, string expected)
+        Assert.Multiple(() =>
         {
-            var cache = new QueueCache(null, dest => TestNameHelper.GetSqsQueueName(dest, ""));
+            Assert.That(result, Is.EqualTo(expected));
+            Assert.That(resultIdempotent, Is.EqualTo(expected));
+        });
+    }
 
-            var result = cache.GetPhysicalQueueName(destination);
-            var resultIdempotent = cache.GetPhysicalQueueName(result);
+    [Test]
+    public async Task GetQueueUrl_caches()
+    {
+        var sqsClient = new MockSqsClient();
+        var cache = new QueueCache(sqsClient, dest => QueueCache.GetSqsQueueName(dest, "PREFIX"));
 
-            Assert.Multiple(() =>
-            {
-                Assert.That(result, Is.EqualTo(expected));
-                Assert.That(resultIdempotent, Is.EqualTo(expected));
-            });
-        }
+        await cache.GetQueueUrl("fakeQueueName");
 
-        [Test]
-        [TestCase("destination-1", "destination-1")]
-        [TestCase("destination.1", "destination-1")]
-        [TestCase("destination!1", "destination-1")]
-        [TestCase("destination?1", "destination-1")]
-        [TestCase("destination@1", "destination-1")]
-        [TestCase("destination$1", "destination-1")]
-        [TestCase("destination%1", "destination-1")]
-        [TestCase("destination^1", "destination-1")]
-        [TestCase("destination&1", "destination-1")]
-        [TestCase("destination*1", "destination-1")]
-        [TestCase("destination_1", "destination_1")]
-        public void ReplacesNonDigitsWithDash(string destination, string expected)
-        {
-            var cache = new QueueCache(null, dest => QueueCache.GetSqsQueueName(destination, ""));
+        var requestsSent = new List<string>(sqsClient.QueueUrlRequestsSent);
 
-            var result = cache.GetPhysicalQueueName(destination);
-            var resultIdempotent = cache.GetPhysicalQueueName(result);
+        sqsClient.QueueUrlRequestsSent.Clear();
 
-            Assert.Multiple(() =>
-            {
-                Assert.That(result, Is.EqualTo(expected));
-                Assert.That(resultIdempotent, Is.EqualTo(expected));
-            });
-        }
+        await cache.GetQueueUrl("fakeQueueName");
 
-        [Test]
-        public async Task GetQueueUrl_caches()
-        {
-            var sqsClient = new MockSqsClient();
-            var cache = new QueueCache(sqsClient, dest => QueueCache.GetSqsQueueName(dest, "PREFIX"));
+        Assert.That(sqsClient.QueueUrlRequestsSent, Is.Empty);
+        Assert.That(requestsSent, Is.EqualTo(["PREFIXfakeQueueName"]).AsCollection);
+    }
 
-            await cache.GetQueueUrl("fakeQueueName");
+    [Test]
+    public async Task GetQueueArn_caches()
+    {
 
-            var requestsSent = new List<string>(sqsClient.QueueUrlRequestsSent);
+        var sqsClient = new MockSqsClient();
 
-            sqsClient.QueueUrlRequestsSent.Clear();
+        var cache = new QueueCache(sqsClient, dest => QueueCache.GetSqsQueueName(dest, "PREFIX"));
 
-            await cache.GetQueueUrl("fakeQueueName");
+        await cache.GetQueueArn("fakeQueueUrl");
 
-            Assert.That(sqsClient.QueueUrlRequestsSent, Is.Empty);
-            Assert.That(requestsSent, Is.EqualTo(["PREFIXfakeQueueName"]).AsCollection);
-        }
+        var requestsSent = new List<string>(sqsClient.GetAttributeRequestsSent);
 
-        [Test]
-        public async Task GetQueueArn_caches()
-        {
+        sqsClient.GetAttributeRequestsSent.Clear();
 
-            var sqsClient = new MockSqsClient();
+        await cache.GetQueueArn("fakeQueueUrl");
 
-            var cache = new QueueCache(sqsClient, dest => QueueCache.GetSqsQueueName(dest, "PREFIX"));
+        Assert.That(sqsClient.GetAttributeRequestsSent, Is.Empty);
+        Assert.That(requestsSent, Is.EqualTo(["fakeQueueUrl"]).AsCollection);
+    }
 
-            await cache.GetQueueArn("fakeQueueUrl");
+    [Test]
+    public async Task SetQueueUrl_caches()
+    {
+        var sqsClient = new MockSqsClient();
 
-            var requestsSent = new List<string>(sqsClient.GetAttributeRequestsSent);
+        var cache = new QueueCache(sqsClient, dest => QueueCache.GetSqsQueueName(dest, "PREFIX"));
 
-            sqsClient.GetAttributeRequestsSent.Clear();
+        cache.SetQueueUrl("fakeQueueName", "http://fakeQueueName");
 
-            await cache.GetQueueArn("fakeQueueUrl");
+        await cache.GetQueueUrl("fakeQueueName");
 
-            Assert.That(sqsClient.GetAttributeRequestsSent, Is.Empty);
-            Assert.That(requestsSent, Is.EqualTo(["fakeQueueUrl"]).AsCollection);
-        }
-
-        [Test]
-        public async Task SetQueueUrl_caches()
-        {
-            var sqsClient = new MockSqsClient();
-
-            var cache = new QueueCache(sqsClient, dest => QueueCache.GetSqsQueueName(dest, "PREFIX"));
-
-            cache.SetQueueUrl("fakeQueueName", "http://fakeQueueName");
-
-            await cache.GetQueueUrl("fakeQueueName");
-
-            Assert.That(sqsClient.QueueUrlRequestsSent, Is.Empty);
-        }
+        Assert.That(sqsClient.QueueUrlRequestsSent, Is.Empty);
     }
 }
