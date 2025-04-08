@@ -10,6 +10,7 @@ using Features;
 using Microsoft.Extensions.DependencyInjection;
 using NServiceBus.Pipeline;
 using NServiceBus.Routing;
+using AcceptanceTesting.Customization;
 using NUnit.Framework;
 using Transport;
 
@@ -20,7 +21,7 @@ class When_sending_control_messages_without_body : NServiceBusAcceptanceTest
     {
         var context = await Scenario.Define<MyContext>(ctx =>
             {
-                ctx.DestinationQueueName = TestNameHelper.GetSqsQueueName("SendingControlMessagesWithoutBody.Receiver", SetupFixture.NamePrefix);
+                ctx.DestinationQueueName = TestNameHelper.GetSqsQueueName(Conventions.EndpointNamingConvention(typeof(Receiver)), SetupFixture.NamePrefix);
                 ctx.ControlMessageId = Guid.NewGuid().ToString();
             })
             .WithEndpoint<Sender>()

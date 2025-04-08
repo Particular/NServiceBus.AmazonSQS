@@ -12,6 +12,7 @@ using Features;
 using Microsoft.Extensions.DependencyInjection;
 using NServiceBus.Pipeline;
 using NServiceBus.Routing;
+using AcceptanceTesting.Customization;
 using NUnit.Framework;
 using Transport;
 
@@ -22,7 +23,7 @@ class When_sending_messages_with_invalid_sqs_chars : NServiceBusAcceptanceTest
     {
         var context = await Scenario.Define<MyContext>(ctx =>
             {
-                ctx.DestinationQueueName = TestNameHelper.GetSqsQueueName("SendingMessagesWithInvalidSqsChars.Receiver", SetupFixture.NamePrefix);
+                ctx.DestinationQueueName = TestNameHelper.GetSqsQueueName(Conventions.EndpointNamingConvention(typeof(Receiver)), SetupFixture.NamePrefix);
                 ctx.ControlMessageId = Guid.NewGuid().ToString();
             })
             .WithEndpoint<Sender>()
