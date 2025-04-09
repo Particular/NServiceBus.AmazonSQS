@@ -28,8 +28,14 @@ static class SqsPreparedMessageBatcher
 
                 if (payloadSize > TransportConstraints.MaximumMessageSize)
                 {
-                    allBatches.Add(message.ToBatchRequest(currentDestinationBatches));
-                    currentDestinationBatches.Clear();
+                    // if the first message is already over the limit then it has not yet been added to current destination batches
+                    // so the only thing we do is resetting the payload size and assuming the messages will be added below
+                    // without rechecking the payload size using the service limits enforcing the message cannot be sent
+                    if (currentDestinationBatches.Count > 0)
+                    {
+                        allBatches.Add(message.ToBatchRequest(currentDestinationBatches));
+                        currentDestinationBatches.Clear();
+                    }
                     payloadSize = size;
                 }
 
