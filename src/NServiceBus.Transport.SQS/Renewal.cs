@@ -96,7 +96,7 @@ static class Renewal
                 if (Logger.IsDebugEnabled)
                 {
                     Logger.Debug(
-                        $"Renewing the message visibility timeout failed because the message with native ID {receivedMessage.MessageId} has already been picked up by a competing consumer.",
+                        $"Renewing the message visibility timeout failed because the message with native ID {receivedMessage.MessageId} has already been successfully completed or picked up by a competing consumer.",
                         ex);
                 }
 
