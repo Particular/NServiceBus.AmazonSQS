@@ -1,20 +1,11 @@
-﻿// unset
-
-namespace NServiceBus.Transport.SQS;
+﻿namespace NServiceBus.Transport.SQS;
 
 using System;
 using System.IO;
 
-class ReadonlyStream : Stream
+class ReadonlyStream(ReadOnlyMemory<byte> memory) : Stream
 {
-    ReadOnlyMemory<byte> memory;
-    long position;
-
-    public ReadonlyStream(ReadOnlyMemory<byte> memory)
-    {
-        this.memory = memory;
-        position = 0;
-    }
+    long position = 0;
 
     public override void Flush() => throw new NotSupportedException();
 
