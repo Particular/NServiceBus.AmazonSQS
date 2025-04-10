@@ -91,6 +91,44 @@ public class SqsPreparedMessageBatcherTests
     }
 
     [Test]
+    public void SingleBatchEvenWhenSingleMessageNotFittingIntoBatchDueToMessageSize()
+    {
+        var preparedMessages = new[]
+        {
+            new SqsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(256)},
+        };
+        PrecalculateSize(preparedMessages);
+
+        var batches = SqsPreparedMessageBatcher.Batch(preparedMessages);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(batches, Has.Count.EqualTo(1));
+            Assert.That(batches.ElementAt(0).BatchRequest.Entries, Has.Count.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public void BatchPerMessageNotFittingIntoBatchDueToMessageSize()
+    {
+        var preparedMessages = new[]
+        {
+            new SqsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(256)},
+            new SqsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(256)},
+        };
+        PrecalculateSize(preparedMessages);
+
+        var batches = SqsPreparedMessageBatcher.Batch(preparedMessages);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(batches, Has.Count.EqualTo(2));
+            Assert.That(batches.ElementAt(0).BatchRequest.Entries, Has.Count.EqualTo(1));
+            Assert.That(batches.ElementAt(1).BatchRequest.Entries, Has.Count.EqualTo(1));
+        });
+    }
+
+    [Test]
     public void MultipleBatchesForGreaterThan10Entries()
     {
         var preparedMessages = new[]
@@ -116,7 +154,7 @@ public class SqsPreparedMessageBatcherTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(batches.Count(), Is.EqualTo(2));
+            Assert.That(batches, Has.Count.EqualTo(2));
             Assert.That(batches.ElementAt(0).BatchRequest.Entries, Has.Count.EqualTo(10));
             Assert.That(batches.ElementAt(1).BatchRequest.Entries, Has.Count.EqualTo(3));
         });
@@ -182,7 +220,7 @@ public class SqsPreparedMessageBatcherTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(batches.Count(), Is.EqualTo(7));
+            Assert.That(batches, Has.Count.EqualTo(7));
             Assert.That(batches.ElementAt(0).BatchRequest.Entries, Has.Count.EqualTo(1));
             Assert.That(batches.ElementAt(1).BatchRequest.Entries, Has.Count.EqualTo(1));
             Assert.That(batches.ElementAt(2).BatchRequest.Entries, Has.Count.EqualTo(4));
@@ -253,7 +291,7 @@ public class SqsPreparedMessageBatcherTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(batches.Count(), Is.EqualTo(7));
+            Assert.That(batches, Has.Count.EqualTo(7));
             Assert.That(batches.ElementAt(0).BatchRequest.Entries, Has.Count.EqualTo(1));
             Assert.That(batches.ElementAt(1).BatchRequest.Entries, Has.Count.EqualTo(1));
             Assert.That(batches.ElementAt(2).BatchRequest.Entries, Has.Count.EqualTo(4));
@@ -304,7 +342,7 @@ public class SqsPreparedMessageBatcherTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(batches.Count(), Is.EqualTo(4));
+            Assert.That(batches, Has.Count.EqualTo(4));
             Assert.That(batches.ElementAt(0).BatchRequest.Entries, Has.Count.EqualTo(10));
             Assert.That(batches.ElementAt(1).BatchRequest.Entries, Has.Count.EqualTo(3));
             Assert.That(batches.ElementAt(2).BatchRequest.Entries, Has.Count.EqualTo(10));
