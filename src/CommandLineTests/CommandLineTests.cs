@@ -99,7 +99,7 @@ public class CommandLineTests
     [Test]
     public async Task Create_endpoint_with_custom_retention()
     {
-        int customRetention = 60000;
+        const int customRetention = 60000;
         (_, string error, int exitCode) =
             await Execute($"endpoint create {EndpointName} --retention {customRetention} --prefix {prefix}");
 
@@ -109,7 +109,7 @@ public class CommandLineTests
             Assert.That(error, Is.EqualTo(string.Empty));
         });
 
-        await VerifyQueue(EndpointName, prefix, customRetention);
+        await VerifyQueue(EndpointName, prefix, retentionPeriodInSeconds: customRetention);
     }
 
     [Test]
@@ -217,7 +217,7 @@ public class CommandLineTests
     [Test]
     public async Task Enable_delay_delivery_on_endpoint_with_custom_retention()
     {
-        int retention = 60000;
+        const int customRetention = 60000;
 
         (_, string error, int exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
@@ -229,7 +229,7 @@ public class CommandLineTests
 
         (_, error, exitCode) =
             await Execute(
-                $"endpoint add {EndpointName} delay-delivery-support --retention {retention} --prefix {prefix}");
+                $"endpoint add {EndpointName} delay-delivery-support --retention {customRetention} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -237,7 +237,7 @@ public class CommandLineTests
             Assert.That(error, Is.EqualTo(string.Empty));
         });
 
-        await VerifyDelayDeliveryQueue(EndpointName, prefix, retention);
+        await VerifyDelayDeliveryQueue(EndpointName, prefix, retentionPeriodInSeconds: customRetention);
     }
 
     [Test]
