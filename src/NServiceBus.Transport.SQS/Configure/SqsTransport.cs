@@ -52,7 +52,20 @@
         /// which is useful to account for any overhead of message attributes added outside the scope of NServiceBus
         /// to address the SQS service message size limitation by uploading the message payload to S3.
         /// </summary>
-        public long ReserveBytesInMessageSizeCalculation { get; set; }
+        /// <exception cref="ArgumentOutOfRangeException">For values smaller than 0 or higher than 25 * 1024.</exception>
+        public long ReserveBytesInMessageSizeCalculation
+        {
+            get => reserveBytesInMessageSizeCalculation;
+            set
+            {
+                ArgumentOutOfRangeException.ThrowIfNegative(value, nameof(ReserveBytesInMessageSizeCalculation));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 25 * 1024, nameof(ReserveBytesInMessageSizeCalculation));
+
+                reserveBytesInMessageSizeCalculation = value;
+            }
+        }
+
+        long reserveBytesInMessageSizeCalculation;
 
         /// <summary>
         /// Specifies a lambda function that allows to take control of the queue name generation logic.
@@ -147,6 +160,7 @@
         /// value should be greater than the longest message visibility duration specified either on the queue or on the receive request controlled by <see name="VisibilityTimeout"/>.
         /// </summary>
         /// <value>The maximum duration during which message visibility are automatically renewed. The default value is 5 minutes. The renewal can be disabled by passing <see cref="TimeSpan.Zero"/>.</value>
+    	/// <exception cref="ArgumentOutOfRangeException">For time spans bigger than <c>TimeSpan.FromHours(12)</c>.</exception>
         public TimeSpan MaxAutoMessageVisibilityRenewalDuration
         {
             get => maxAutoMessageVisibilityRenewalDuration;
@@ -166,6 +180,7 @@
         /// Gets or sets the message visibility timeout for the receive request. This value overrides the queue visibility timeout
         /// </summary>
         /// <value>The default value is <c>null</c></value>
+    	/// <exception cref="ArgumentOutOfRangeException">For time spans bigger than <c>TimeSpan.FromHours(12)</c>.</exception>
         public TimeSpan? MessageVisibilityTimeout
         {
             get => messageVisibilityTimeout;
