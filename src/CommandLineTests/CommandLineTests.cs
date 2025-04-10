@@ -21,12 +21,40 @@ using SQS.Tests;
 [TestFixture]
 public class CommandLineTests
 {
+    [SetUp]
+    public void Setup()
+    {
+        prefix =
+            $"cli-{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToLowerInvariant()}-";
+
+        var regionEndpoint = RegionEndpoint.GetBySystemName(region);
+
+        sqsClient = new AmazonSQSClient(accessKeyId, secretAccessKey, regionEndpoint);
+        snsClient = new AmazonSimpleNotificationServiceClient(accessKeyId, secretAccessKey, regionEndpoint);
+        s3Client = new AmazonS3Client(accessKeyId, secretAccessKey, regionEndpoint);
+    }
+
+    [TearDown]
+    public async Task TearDown()
+    {
+        try
+        {
+            await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, prefix);
+        }
+        finally
+        {
+            sqsClient?.Dispose();
+            snsClient?.Dispose();
+            s3Client?.Dispose();
+        }
+    }
+
     [Test]
     public async Task Create_endpoint_without_prefix_when_there_are_no_entities()
     {
-        var endpointName = prefix + EndpointName;
+        string endpointName = prefix + EndpointName;
 
-        var (_, error, exitCode) = await Execute($"endpoint create {endpointName}");
+        (_, string error, int exitCode) = await Execute($"endpoint create {endpointName}");
 
         Assert.Multiple(() =>
         {
@@ -40,10 +68,10 @@ public class CommandLineTests
     [Test]
     public async Task Create_endpoint_without_prefix_when_there_are_entities()
     {
-        var endpointName = prefix + EndpointName;
+        string endpointName = prefix + EndpointName;
 
         await Execute($"endpoint create {endpointName}");
-        var (_, error, exitCode) = await Execute($"endpoint create {endpointName}");
+        (_, string error, int exitCode) = await Execute($"endpoint create {endpointName}");
 
         Assert.Multiple(() =>
         {
@@ -57,7 +85,7 @@ public class CommandLineTests
     [Test]
     public async Task Create_endpoint()
     {
-        var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+        (_, string error, int exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -71,8 +99,9 @@ public class CommandLineTests
     [Test]
     public async Task Create_endpoint_with_custom_retention()
     {
-        var customRetention = 60000;
-        var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --retention {customRetention} --prefix {prefix}");
+        int customRetention = 60000;
+        (_, string error, int exitCode) =
+            await Execute($"endpoint create {EndpointName} --retention {customRetention} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -80,15 +109,15 @@ public class CommandLineTests
             Assert.That(error, Is.EqualTo(string.Empty));
         });
 
-        await VerifyQueue(EndpointName, prefix, retentionPeriodInSeconds: customRetention);
+        await VerifyQueue(EndpointName, prefix, customRetention);
     }
 
     [Test]
     public async Task Enable_large_message_support_on_endpoint()
     {
-        var bucketName = prefix + BucketName;
+        string bucketName = prefix + BucketName;
 
-        var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+        (_, string error, int exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -110,11 +139,11 @@ public class CommandLineTests
     [Test]
     public async Task Enable_large_message_support_on_endpoint_with_custom_key_prefix()
     {
-        var bucketName = prefix + BucketName;
+        string bucketName = prefix + BucketName;
 
-        var keyPrefix = "k-";
+        string keyPrefix = "k-";
 
-        var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+        (_, string error, int exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -122,7 +151,8 @@ public class CommandLineTests
             Assert.That(exitCode, Is.EqualTo(0));
         });
 
-        (_, error, exitCode) = await Execute($"endpoint add {EndpointName} large-message-support {bucketName} --key-prefix {keyPrefix}");
+        (_, error, exitCode) =
+            await Execute($"endpoint add {EndpointName} large-message-support {bucketName} --key-prefix {keyPrefix}");
 
         Assert.Multiple(() =>
         {
@@ -131,17 +161,17 @@ public class CommandLineTests
         });
 
         await VerifyBucket(bucketName);
-        await VerifyLifecycleConfiguration(bucketName, keyPrefix: keyPrefix);
+        await VerifyLifecycleConfiguration(bucketName, keyPrefix);
     }
 
     [Test]
     public async Task Enable_large_message_support_on_endpoint_with_custom_expiration()
     {
-        var bucketName = prefix + BucketName;
+        string bucketName = prefix + BucketName;
 
-        var expiration = 7;
+        int expiration = 7;
 
-        var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+        (_, string error, int exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -149,7 +179,8 @@ public class CommandLineTests
             Assert.That(exitCode, Is.EqualTo(0));
         });
 
-        (_, error, exitCode) = await Execute($"endpoint add {EndpointName} large-message-support {bucketName} --expiration {expiration}");
+        (_, error, exitCode) =
+            await Execute($"endpoint add {EndpointName} large-message-support {bucketName} --expiration {expiration}");
 
         Assert.Multiple(() =>
         {
@@ -164,7 +195,7 @@ public class CommandLineTests
     [Test]
     public async Task Enable_delay_delivery_on_endpoint()
     {
-        var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+        (_, string error, int exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -186,17 +217,9 @@ public class CommandLineTests
     [Test]
     public async Task Enable_delay_delivery_on_endpoint_with_custom_retention()
     {
-        var retention = 60000;
+        int retention = 60000;
 
-        var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(exitCode, Is.EqualTo(0));
-            Assert.That(error, Is.EqualTo(string.Empty));
-        });
-
-        (_, error, exitCode) = await Execute($"endpoint add {EndpointName} delay-delivery-support --retention {retention} --prefix {prefix}");
+        (_, string error, int exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -204,13 +227,23 @@ public class CommandLineTests
             Assert.That(error, Is.EqualTo(string.Empty));
         });
 
-        await VerifyDelayDeliveryQueue(EndpointName, prefix, retentionPeriodInSeconds: retention);
+        (_, error, exitCode) =
+            await Execute(
+                $"endpoint add {EndpointName} delay-delivery-support --retention {retention} --prefix {prefix}");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(exitCode, Is.EqualTo(0));
+            Assert.That(error, Is.EqualTo(string.Empty));
+        });
+
+        await VerifyDelayDeliveryQueue(EndpointName, prefix, retention);
     }
 
     [Test]
     public async Task Subscribe_on_event()
     {
-        var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+        (_, string error, int exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -226,15 +259,15 @@ public class CommandLineTests
             Assert.That(error, Is.EqualTo(string.Empty));
         });
 
-        var queueArn = await VerifyQueue(EndpointName, prefix);
-        var topicArn = await VerifyTopic(EventType, prefix);
+        string queueArn = await VerifyQueue(EndpointName, prefix);
+        string topicArn = await VerifyTopic(EventType, prefix);
         await VerifySubscription(topicArn, queueArn);
     }
 
     [Test]
     public async Task Unsubscribe_from_event()
     {
-        var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+        (_, string error, int exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -250,8 +283,8 @@ public class CommandLineTests
             Assert.That(error, Is.EqualTo(string.Empty));
         });
 
-        var queueArn = await VerifyQueue(EndpointName, prefix);
-        var topicArn = await VerifyTopic(EventType, prefix);
+        string queueArn = await VerifyQueue(EndpointName, prefix);
+        string topicArn = await VerifyTopic(EventType, prefix);
         await VerifySubscription(topicArn, queueArn);
 
         await Execute($"endpoint unsubscribe {EndpointName} {EventType} --prefix {prefix}");
@@ -263,7 +296,8 @@ public class CommandLineTests
     [Test]
     public async Task Unsubscribe_from_event_without_topic_warns()
     {
-        var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+        (string output, string error, int exitCode) =
+            await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -279,14 +313,17 @@ public class CommandLineTests
             Assert.That(exitCode, Is.EqualTo(0));
             Assert.That(error, Is.EqualTo(string.Empty));
 
-            Assert.That(output, Does.Contain($"No topic detected for event type '{EventType}', please subscribe to the event type first."));
+            Assert.That(output,
+                Does.Contain(
+                    $"No topic detected for event type '{EventType}', please subscribe to the event type first."));
         });
     }
 
     [Test]
     public async Task List_policy()
     {
-        var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+        (string output, string error, int exitCode) =
+            await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -310,7 +347,7 @@ public class CommandLineTests
     [Test]
     public async Task Set_policy_single_event()
     {
-        var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+        (_, string error, int exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -326,7 +363,8 @@ public class CommandLineTests
             Assert.That(error, Is.EqualTo(string.Empty));
         });
 
-        (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} events --event-type {EventType} --prefix {prefix}");
+        (_, error, exitCode) =
+            await Execute($"endpoint set-policy {EndpointName} events --event-type {EventType} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -340,7 +378,8 @@ public class CommandLineTests
     [Test]
     public async Task Set_policy_single_event_without_subscribe_warns()
     {
-        var (output, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+        (string output, string error, int exitCode) =
+            await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -349,7 +388,8 @@ public class CommandLineTests
             Assert.That(error, Is.EqualTo(string.Empty));
         });
 
-        (output, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} events --event-type {EventType} --prefix {prefix}");
+        (output, error, exitCode) =
+            await Execute($"endpoint set-policy {EndpointName} events --event-type {EventType} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -357,13 +397,14 @@ public class CommandLineTests
             Assert.That(error, Is.EqualTo(string.Empty));
         });
 
-        Assert.That(output, Does.Contain($"No topic detected for event type '{EventType}', please subscribe to the event type first."));
+        Assert.That(output,
+            Does.Contain($"No topic detected for event type '{EventType}', please subscribe to the event type first."));
     }
 
     [Test]
     public async Task Set_policy_multiple_events()
     {
-        var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+        (_, string error, int exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -387,7 +428,9 @@ public class CommandLineTests
             Assert.That(error, Is.EqualTo(string.Empty));
         });
 
-        (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} events --event-type {EventType} --event-type {EventType2} --prefix {prefix}");
+        (_, error, exitCode) =
+            await Execute(
+                $"endpoint set-policy {EndpointName} events --event-type {EventType} --event-type {EventType2} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -402,7 +445,7 @@ public class CommandLineTests
     [Test]
     public async Task Set_policy_account_wildcard()
     {
-        var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+        (_, string error, int exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -410,7 +453,8 @@ public class CommandLineTests
             Assert.That(error, Is.EqualTo(string.Empty));
         });
 
-        (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --account-condition --prefix {prefix}");
+        (_, error, exitCode) =
+            await Execute($"endpoint set-policy {EndpointName} wildcard --account-condition --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -424,7 +468,7 @@ public class CommandLineTests
     [Test]
     public async Task Set_policy_prefix_wildcard()
     {
-        var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+        (_, string error, int exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -432,7 +476,8 @@ public class CommandLineTests
             Assert.That(error, Is.EqualTo(string.Empty));
         });
 
-        (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --prefix-condition --prefix {prefix}");
+        (_, error, exitCode) =
+            await Execute($"endpoint set-policy {EndpointName} wildcard --prefix-condition --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -446,9 +491,9 @@ public class CommandLineTests
     [Test]
     public async Task Set_policy_namespace_wildcard()
     {
-        var ns = "MyNamespace";
+        string ns = "MyNamespace";
 
-        var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+        (_, string error, int exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -456,7 +501,8 @@ public class CommandLineTests
             Assert.That(error, Is.EqualTo(string.Empty));
         });
 
-        (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --namespace-condition {ns} --prefix {prefix}");
+        (_, error, exitCode) =
+            await Execute($"endpoint set-policy {EndpointName} wildcard --namespace-condition {ns} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -470,7 +516,7 @@ public class CommandLineTests
     [Test]
     public async Task Remove_multiple_events_when_setting_wildcard_policy()
     {
-        var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+        (_, string error, int exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -494,7 +540,9 @@ public class CommandLineTests
             Assert.That(error, Is.EqualTo(string.Empty));
         });
 
-        (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} events --event-type {EventType} --event-type {EventType2} --prefix {prefix}");
+        (_, error, exitCode) =
+            await Execute(
+                $"endpoint set-policy {EndpointName} events --event-type {EventType} --event-type {EventType2} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -502,7 +550,9 @@ public class CommandLineTests
             Assert.That(error, Is.EqualTo(string.Empty));
         });
 
-        (_, error, exitCode) = await Execute($"endpoint set-policy {EndpointName} wildcard --account-condition --remove-event-type {EventType} --remove-event-type {EventType2} --prefix {prefix}");
+        (_, error, exitCode) =
+            await Execute(
+                $"endpoint set-policy {EndpointName} wildcard --account-condition --remove-event-type {EventType} --remove-event-type {EventType2} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -517,7 +567,7 @@ public class CommandLineTests
     [Test]
     public async Task Unsubscribe_from_event_with_remove_shared_resources()
     {
-        var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+        (_, string error, int exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -533,8 +583,8 @@ public class CommandLineTests
             Assert.That(error, Is.EqualTo(string.Empty));
         });
 
-        var queueArn = await VerifyQueue(EndpointName, prefix);
-        var topicArn = await VerifyTopic(EventType, prefix);
+        string queueArn = await VerifyQueue(EndpointName, prefix);
+        string topicArn = await VerifyTopic(EventType, prefix);
         await VerifySubscription(topicArn, queueArn);
 
         await Execute($"endpoint unsubscribe {EndpointName} {EventType} --prefix {prefix} --remove-shared-resources");
@@ -545,7 +595,7 @@ public class CommandLineTests
     [Test]
     public async Task Remove_delay_delivery_from_endpoint()
     {
-        var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+        (_, string error, int exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -563,7 +613,8 @@ public class CommandLineTests
 
         await VerifyDelayDeliveryQueue(EndpointName, prefix);
 
-        (_, error, exitCode) = await Execute($"endpoint remove {EndpointName} delay-delivery-support --prefix {prefix}");
+        (_, error, exitCode) =
+            await Execute($"endpoint remove {EndpointName} delay-delivery-support --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -577,9 +628,9 @@ public class CommandLineTests
     [Test]
     public async Task Remove_large_message_support_from_endpoint_does_not_remove_bucket_by_default()
     {
-        var bucketName = prefix + BucketName;
+        string bucketName = prefix + BucketName;
 
-        var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+        (_, string error, int exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -611,9 +662,9 @@ public class CommandLineTests
     [Test]
     public async Task Remove_large_message_support_from_endpoint_removes_bucket_with_remove_shared_resources()
     {
-        var bucketName = prefix + BucketName;
+        string bucketName = prefix + BucketName;
 
-        var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+        (_, string error, int exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -631,7 +682,9 @@ public class CommandLineTests
 
         await VerifyBucket(bucketName);
 
-        (_, error, exitCode) = await Execute($"endpoint remove {EndpointName} large-message-support {bucketName} --remove-shared-resources");
+        (_, error, exitCode) =
+            await Execute(
+                $"endpoint remove {EndpointName} large-message-support {bucketName} --remove-shared-resources");
 
         Assert.Multiple(() =>
         {
@@ -645,7 +698,7 @@ public class CommandLineTests
     [Test]
     public async Task Delete_endpoint()
     {
-        var (_, error, exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
+        (_, string error, int exitCode) = await Execute($"endpoint create {EndpointName} --prefix {prefix}");
 
         Assert.Multiple(() =>
         {
@@ -682,12 +735,12 @@ public class CommandLineTests
         };
 
         process.Start();
-        var outputTask = process.StandardOutput.ReadToEndAsync();
-        var errorTask = process.StandardError.ReadToEndAsync();
+        Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+        Task<string> errorTask = process.StandardError.ReadToEndAsync();
         process.WaitForExit(10000);
 
-        var output = await outputTask;
-        var error = await errorTask;
+        string output = await outputTask;
+        string error = await errorTask;
 
         if (output != string.Empty)
         {
@@ -702,37 +755,40 @@ public class CommandLineTests
         return (output, error, process.ExitCode);
     }
 
-    async Task<string> VerifyQueue(string queueName, string prefix = null, double? retentionPeriodInSeconds = null)
+    async Task<string> VerifyQueue(string queueName, string queuePrefix = null, int? retentionPeriodInSeconds = null)
     {
-        prefix ??= DefaultConfigurationValues.QueueNamePrefix;
-        retentionPeriodInSeconds ??= DefaultConfigurationValues.RetentionPeriod.TotalSeconds;
+        queuePrefix ??= DefaultConfigurationValues.QueueNamePrefix;
+        retentionPeriodInSeconds ??= (int)DefaultConfigurationValues.RetentionPeriod.TotalSeconds;
 
-        var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
-        var queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+        var getQueueUrlRequest = new GetQueueUrlRequest($"{queuePrefix}{queueName}");
+        GetQueueUrlResponse queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest);
 
-        var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl, [QueueAttributeName.MessageRetentionPeriod, QueueAttributeName.QueueArn]).ConfigureAwait(false);
+        GetQueueAttributesResponse queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(
+            queueUrlResponse.QueueUrl, [QueueAttributeName.MessageRetentionPeriod, QueueAttributeName.QueueArn]);
 
         Assert.That(queueAttributesResponse.MessageRetentionPeriod, Is.EqualTo(retentionPeriodInSeconds));
 
         return queueAttributesResponse.QueueARN;
     }
 
-    async Task<string> VerifyDelayDeliveryQueue(string queueName, string prefix = null, double? retentionPeriodInSeconds = null, double? delayInSeconds = null, string suffix = null)
+    async Task<string> VerifyDelayDeliveryQueue(string queueName, string queuePrefix = null,
+        int? retentionPeriodInSeconds = null, int? delayInSeconds = null, string suffix = null)
     {
-        prefix ??= DefaultConfigurationValues.QueueNamePrefix;
-        retentionPeriodInSeconds ??= DefaultConfigurationValues.RetentionPeriod.TotalSeconds;
-        delayInSeconds ??= DefaultConfigurationValues.MaximumQueueDelayTime.TotalSeconds;
+        queuePrefix ??= DefaultConfigurationValues.QueueNamePrefix;
+        retentionPeriodInSeconds ??= (int)DefaultConfigurationValues.RetentionPeriod.TotalSeconds;
+        delayInSeconds ??= (int)DefaultConfigurationValues.MaximumQueueDelayTime.TotalSeconds;
         suffix ??= DefaultConfigurationValues.DelayedDeliveryQueueSuffix;
 
-        var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}{suffix}");
-        var queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+        var getQueueUrlRequest = new GetQueueUrlRequest($"{queuePrefix}{queueName}{suffix}");
+        GetQueueUrlResponse queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest);
 
-        var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl,
-        [
-            QueueAttributeName.MessageRetentionPeriod,
-            QueueAttributeName.DelaySeconds,
-            QueueAttributeName.QueueArn
-        ]).ConfigureAwait(false);
+        GetQueueAttributesResponse queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(
+            queueUrlResponse.QueueUrl,
+            [
+                QueueAttributeName.MessageRetentionPeriod,
+                QueueAttributeName.DelaySeconds,
+                QueueAttributeName.QueueArn
+            ]);
 
         Assert.Multiple(() =>
         {
@@ -743,108 +799,115 @@ public class CommandLineTests
         return queueAttributesResponse.QueueARN;
     }
 
-    async Task<string> VerifyTopic(string eventType, string prefix = null)
+    async Task<string> VerifyTopic(string eventType, string topicPrefix = null)
     {
-        prefix ??= DefaultConfigurationValues.TopicNamePrefix;
+        topicPrefix ??= DefaultConfigurationValues.TopicNamePrefix;
 
-        var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
+        string topicName = TopicSanitization.GetSanitizedTopicName($"{topicPrefix}{eventType}");
 
-        var findTopicResponse = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
+        Topic findTopicResponse = await snsClient.FindTopicAsync(topicName);
 
         Assert.That(findTopicResponse.TopicArn, Is.Not.Null);
 
         return findTopicResponse.TopicArn;
     }
 
-    async Task VerifyPolicyContainsTopicFor(string queueName, string prefix, string eventType)
+    async Task VerifyPolicyContainsTopicFor(string queueName, string queuePrefix, string eventType)
     {
-        prefix ??= DefaultConfigurationValues.QueueNamePrefix;
+        queuePrefix ??= DefaultConfigurationValues.QueueNamePrefix;
 
-        var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
-        var queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
-        var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl,
-        [
-            QueueAttributeName.Policy
-        ]).ConfigureAwait(false);
+        var getQueueUrlRequest = new GetQueueUrlRequest($"{queuePrefix}{queueName}");
+        GetQueueUrlResponse queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest);
+        GetQueueAttributesResponse queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(
+            queueUrlResponse.QueueUrl,
+            [
+                QueueAttributeName.Policy
+            ]);
         var policy = Policy.FromJson(queueAttributesResponse.Policy);
 
-        var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
-        var findTopicResponse = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
+        string topicName = TopicSanitization.GetSanitizedTopicName($"{queuePrefix}{eventType}");
+        Topic findTopicResponse = await snsClient.FindTopicAsync(topicName);
 
-        Assert.That(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(findTopicResponse.TopicArn))), Is.True);
+        Assert.That(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(findTopicResponse.TopicArn))),
+            Is.True);
     }
 
-    async Task VerifyPolicyDoesNotContainTopicFor(string queueName, string prefix, string eventType)
+    async Task VerifyPolicyDoesNotContainTopicFor(string queueName, string queuePrefix, string eventType)
     {
-        prefix ??= DefaultConfigurationValues.QueueNamePrefix;
+        queuePrefix ??= DefaultConfigurationValues.QueueNamePrefix;
 
-        var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
-        var queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
-        var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl,
-        [
-            QueueAttributeName.Policy
-        ]).ConfigureAwait(false);
+        var getQueueUrlRequest = new GetQueueUrlRequest($"{queuePrefix}{queueName}");
+        GetQueueUrlResponse queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest);
+        GetQueueAttributesResponse queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(
+            queueUrlResponse.QueueUrl,
+            [
+                QueueAttributeName.Policy
+            ]);
         var policy = Policy.FromJson(queueAttributesResponse.Policy);
 
-        var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
-        var findTopicResponse = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
+        string topicName = TopicSanitization.GetSanitizedTopicName($"{queuePrefix}{eventType}");
+        Topic findTopicResponse = await snsClient.FindTopicAsync(topicName);
 
-        Assert.That(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(findTopicResponse.TopicArn))), Is.False);
+        Assert.That(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(findTopicResponse.TopicArn))),
+            Is.False);
     }
 
-    async Task VerifyPolicyContainsAccountWildCard(string queueName, string prefix)
+    async Task VerifyPolicyContainsAccountWildCard(string queueName, string queuePrefix)
     {
-        prefix ??= DefaultConfigurationValues.QueueNamePrefix;
+        queuePrefix ??= DefaultConfigurationValues.QueueNamePrefix;
 
-        var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
-        var queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
-        var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl,
-        [
-            QueueAttributeName.QueueArn,
-            QueueAttributeName.Policy
-        ]).ConfigureAwait(false);
+        var getQueueUrlRequest = new GetQueueUrlRequest($"{queuePrefix}{queueName}");
+        GetQueueUrlResponse queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest);
+        GetQueueAttributesResponse queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(
+            queueUrlResponse.QueueUrl,
+            [
+                QueueAttributeName.QueueArn,
+                QueueAttributeName.Policy
+            ]);
         var policy = Policy.FromJson(queueAttributesResponse.Policy);
 
-        var parts = queueAttributesResponse.QueueARN.Split(":", StringSplitOptions.RemoveEmptyEntries);
-        var accountArn = $"{parts[0]}:{parts[1]}:sns:{parts[3]}:{parts[4]}:*";
+        string[] parts = queueAttributesResponse.QueueARN.Split(":", StringSplitOptions.RemoveEmptyEntries);
+        string accountArn = $"{parts[0]}:{parts[1]}:sns:{parts[3]}:{parts[4]}:*";
 
         Assert.That(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(accountArn))), Is.True);
     }
 
-    async Task VerifyPolicyContainsPrefixWildCard(string queueName, string prefix)
+    async Task VerifyPolicyContainsPrefixWildCard(string queueName, string queuePrefix)
     {
-        prefix ??= DefaultConfigurationValues.QueueNamePrefix;
+        queuePrefix ??= DefaultConfigurationValues.QueueNamePrefix;
 
-        var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
-        var queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
-        var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl,
-        [
-            QueueAttributeName.QueueArn,
-            QueueAttributeName.Policy
-        ]).ConfigureAwait(false);
+        var getQueueUrlRequest = new GetQueueUrlRequest($"{queuePrefix}{queueName}");
+        GetQueueUrlResponse queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest);
+        GetQueueAttributesResponse queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(
+            queueUrlResponse.QueueUrl,
+            [
+                QueueAttributeName.QueueArn,
+                QueueAttributeName.Policy
+            ]);
         var policy = Policy.FromJson(queueAttributesResponse.Policy);
 
-        var parts = queueAttributesResponse.QueueARN.Split(":", StringSplitOptions.RemoveEmptyEntries);
-        var prefixArn = $"{parts[0]}:{parts[1]}:sns:{parts[3]}:{parts[4]}:{prefix}*";
+        string[] parts = queueAttributesResponse.QueueARN.Split(":", StringSplitOptions.RemoveEmptyEntries);
+        string prefixArn = $"{parts[0]}:{parts[1]}:sns:{parts[3]}:{parts[4]}:{queuePrefix}*";
 
         Assert.That(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(prefixArn))), Is.True);
     }
 
-    async Task VerifyPolicyContainsNamespaceWildCard(string queueName, string prefix, string ns)
+    async Task VerifyPolicyContainsNamespaceWildCard(string queueName, string queuePrefix, string ns)
     {
-        prefix ??= DefaultConfigurationValues.QueueNamePrefix;
+        queuePrefix ??= DefaultConfigurationValues.QueueNamePrefix;
 
-        var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
-        var queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
-        var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrlResponse.QueueUrl,
-        [
-            QueueAttributeName.QueueArn,
-            QueueAttributeName.Policy
-        ]).ConfigureAwait(false);
+        var getQueueUrlRequest = new GetQueueUrlRequest($"{queuePrefix}{queueName}");
+        GetQueueUrlResponse queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest);
+        GetQueueAttributesResponse queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(
+            queueUrlResponse.QueueUrl,
+            [
+                QueueAttributeName.QueueArn,
+                QueueAttributeName.Policy
+            ]);
         var policy = Policy.FromJson(queueAttributesResponse.Policy);
 
-        var parts = queueAttributesResponse.QueueARN.Split(":", StringSplitOptions.RemoveEmptyEntries);
-        var namespaceArn = $"{parts[0]}:{parts[1]}:sns:{parts[3]}:{parts[4]}:{GetNamespaceName(prefix, ns)}*";
+        string[] parts = queueAttributesResponse.QueueARN.Split(":", StringSplitOptions.RemoveEmptyEntries);
+        string namespaceArn = $"{parts[0]}:{parts[1]}:sns:{parts[3]}:{parts[4]}:{GetNamespaceName(queuePrefix, ns)}*";
 
         Assert.That(policy.Statements.Any(s => s.Conditions.Any(c => c.Values.Contains(namespaceArn))), Is.True);
     }
@@ -854,9 +917,9 @@ public class CommandLineTests
         // SNS topic names can only have alphanumeric characters, hyphens and underscores.
         // Any other characters will be replaced with a hyphen.
         var namespaceNameBuilder = new StringBuilder(namespaceName);
-        for (var i = 0; i < namespaceNameBuilder.Length; ++i)
+        for (int i = 0; i < namespaceNameBuilder.Length; ++i)
         {
-            var c = namespaceNameBuilder[i];
+            char c = namespaceNameBuilder[i];
             if (!char.IsLetterOrDigit(c)
                 && c != '-'
                 && c != '_')
@@ -871,8 +934,9 @@ public class CommandLineTests
 
     async Task<string> VerifyBucket(string bucketName)
     {
-        var listBucketsResponse = await s3Client.ListBucketsAsync(new ListBucketsRequest()).ConfigureAwait(false);
-        var bucket = listBucketsResponse.Buckets.FirstOrDefault(x => string.Equals(x.BucketName, bucketName, StringComparison.InvariantCultureIgnoreCase));
+        ListBucketsResponse listBucketsResponse = await s3Client.ListBucketsAsync(new ListBucketsRequest());
+        S3Bucket bucket = listBucketsResponse.Buckets.FirstOrDefault(x =>
+            string.Equals(x.BucketName, bucketName, StringComparison.InvariantCultureIgnoreCase));
 
         Assert.That(bucket, Is.Not.Null);
 
@@ -886,23 +950,25 @@ public class CommandLineTests
 
         LifecycleRule setLifeCycleConfig;
         int backOff;
-        var executions = 0;
+        int executions = 0;
         do
         {
             backOff = executions * executions * VerificationBackoffInterval;
             await Task.Delay(backOff);
             executions++;
 
-            var lifecycleConfig = await s3Client.GetLifecycleConfigurationAsync(bucketName).ConfigureAwait(false);
-            setLifeCycleConfig = lifecycleConfig.Configuration.Rules.FirstOrDefault(x => x.Id == "NServiceBus.SQS.DeleteMessageBodies");
-        }
-        while (setLifeCycleConfig == null && backOff < MaximumBackoffInterval);
+            GetLifecycleConfigurationResponse lifecycleConfig =
+                await s3Client.GetLifecycleConfigurationAsync(bucketName);
+            setLifeCycleConfig =
+                lifecycleConfig.Configuration.Rules.FirstOrDefault(x => x.Id == "NServiceBus.SQS.DeleteMessageBodies");
+        } while (setLifeCycleConfig == null && backOff < MaximumBackoffInterval);
 
         Assert.That(setLifeCycleConfig, Is.Not.Null);
         Assert.Multiple(() =>
         {
             Assert.That(setLifeCycleConfig.Expiration.Days, Is.EqualTo(expiration));
-            Assert.That(((LifecyclePrefixPredicate)setLifeCycleConfig.Filter.LifecycleFilterPredicate).Prefix, Is.EqualTo(keyPrefix));
+            Assert.That(((LifecyclePrefixPredicate)setLifeCycleConfig.Filter.LifecycleFilterPredicate).Prefix,
+                Is.EqualTo(keyPrefix));
         });
     }
 
@@ -913,18 +979,17 @@ public class CommandLineTests
 
         do
         {
-            upToAHundredSubscriptions = await snsClient.ListSubscriptionsByTopicAsync(topicArn, upToAHundredSubscriptions?.NextToken)
-                .ConfigureAwait(false);
+            upToAHundredSubscriptions =
+                await snsClient.ListSubscriptionsByTopicAsync(topicArn, upToAHundredSubscriptions?.NextToken);
 
-            foreach (var upToAHundredSubscription in upToAHundredSubscriptions.Subscriptions)
+            foreach (Subscription upToAHundredSubscription in upToAHundredSubscriptions.Subscriptions)
             {
                 if (upToAHundredSubscription.Endpoint == queueArn)
                 {
                     subscription = upToAHundredSubscription;
                 }
             }
-        }
-        while (upToAHundredSubscriptions.NextToken != null && upToAHundredSubscriptions.Subscriptions.Count > 0);
+        } while (upToAHundredSubscriptions.NextToken != null && upToAHundredSubscriptions.Subscriptions.Count > 0);
 
         Assert.That(subscription, Is.Not.Null);
     }
@@ -936,42 +1001,42 @@ public class CommandLineTests
 
         do
         {
-            upToAHundredSubscriptions = await snsClient.ListSubscriptionsByTopicAsync(topicArn, upToAHundredSubscriptions?.NextToken)
-                .ConfigureAwait(false);
+            upToAHundredSubscriptions =
+                await snsClient.ListSubscriptionsByTopicAsync(topicArn, upToAHundredSubscriptions?.NextToken)
+                ;
 
-            foreach (var upToAHundredSubscription in upToAHundredSubscriptions.Subscriptions)
+            foreach (Subscription upToAHundredSubscription in upToAHundredSubscriptions.Subscriptions)
             {
                 if (upToAHundredSubscription.Endpoint == queueArn)
                 {
                     subscription = upToAHundredSubscription;
                 }
             }
-        }
-        while (upToAHundredSubscriptions.NextToken != null && upToAHundredSubscriptions.Subscriptions.Count > 0);
+        } while (upToAHundredSubscriptions.NextToken != null && upToAHundredSubscriptions.Subscriptions.Count > 0);
 
         Assert.That(subscription, Is.Null);
     }
 
-    async Task VerifyTopicDeleted(string eventType, string prefix = null)
+    async Task VerifyTopicDeleted(string eventType, string topicPrefix = null)
     {
-        prefix ??= DefaultConfigurationValues.TopicNamePrefix;
+        topicPrefix ??= DefaultConfigurationValues.TopicNamePrefix;
 
-        var topicName = TopicSanitization.GetSanitizedTopicName($"{prefix}{eventType}");
+        string topicName = TopicSanitization.GetSanitizedTopicName($"{topicPrefix}{eventType}");
 
-        var findTopicResponse = await snsClient.FindTopicAsync(topicName).ConfigureAwait(false);
+        Topic findTopicResponse = await snsClient.FindTopicAsync(topicName);
 
         Assert.That(findTopicResponse, Is.Null);
     }
 
-    async Task VerifyDelayDeliveryQueueDeleted(string queueName, string prefix = null, string suffix = null)
+    async Task VerifyDelayDeliveryQueueDeleted(string queueName, string queuePrefix = null, string suffix = null)
     {
-        prefix ??= DefaultConfigurationValues.QueueNamePrefix;
+        queuePrefix ??= DefaultConfigurationValues.QueueNamePrefix;
         suffix ??= DefaultConfigurationValues.DelayedDeliveryQueueSuffix;
 
-        var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}{suffix}");
+        var getQueueUrlRequest = new GetQueueUrlRequest($"{queuePrefix}{queueName}{suffix}");
         GetQueueUrlResponse queueUrlResponse;
-        var backOff = 0;
-        var executions = 0;
+        int backOff = 0;
+        int executions = 0;
         do
         {
             try
@@ -980,15 +1045,14 @@ public class CommandLineTests
                 await Task.Delay(backOff);
                 executions++;
 
-                queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+                queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest);
             }
             catch (QueueDoesNotExistException)
             {
                 // expected
                 queueUrlResponse = null;
             }
-        }
-        while (queueUrlResponse != null && backOff < MaximumBackoffInterval);
+        } while (queueUrlResponse != null && backOff < MaximumBackoffInterval);
 
         Assert.That(queueUrlResponse, Is.Null);
     }
@@ -999,8 +1063,8 @@ public class CommandLineTests
 
         var getQueueUrlRequest = new GetQueueUrlRequest($"{prefix}{queueName}");
         GetQueueUrlResponse queueUrlResponse;
-        var backOff = 0;
-        var executions = 0;
+        int backOff = 0;
+        int executions = 0;
         do
         {
             try
@@ -1009,15 +1073,14 @@ public class CommandLineTests
                 await Task.Delay(backOff);
                 executions++;
 
-                queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest).ConfigureAwait(false);
+                queueUrlResponse = await sqsClient.GetQueueUrlAsync(getQueueUrlRequest);
             }
             catch (QueueDoesNotExistException)
             {
                 // expected
                 queueUrlResponse = null;
             }
-        }
-        while (queueUrlResponse != null && backOff < MaximumBackoffInterval);
+        } while (queueUrlResponse != null && backOff < MaximumBackoffInterval);
 
         Assert.That(queueUrlResponse, Is.Null);
     }
@@ -1025,7 +1088,7 @@ public class CommandLineTests
     async Task VerifyBucketDeleted(string bucketName)
     {
         int backOff;
-        var executions = 0;
+        int executions = 0;
         bool bucketExists;
         do
         {
@@ -1034,37 +1097,9 @@ public class CommandLineTests
             executions++;
 
             bucketExists = await AmazonS3Util.DoesS3BucketExistV2Async(s3Client, bucketName);
-        }
-        while (bucketExists && backOff < MaximumBackoffInterval);
+        } while (bucketExists && backOff < MaximumBackoffInterval);
 
         Assert.That(bucketExists, Is.False);
-    }
-
-    [SetUp]
-    public void Setup()
-    {
-        prefix = $"cli-{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToLowerInvariant()}-";
-
-        var regionEndpoint = RegionEndpoint.GetBySystemName(region);
-
-        sqsClient = new AmazonSQSClient(accessKeyId, secretAccessKey, regionEndpoint);
-        snsClient = new AmazonSimpleNotificationServiceClient(accessKeyId, secretAccessKey, regionEndpoint);
-        s3Client = new AmazonS3Client(accessKeyId, secretAccessKey, regionEndpoint);
-    }
-
-    [TearDown]
-    public async Task TearDown()
-    {
-        try
-        {
-            await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, prefix);
-        }
-        finally
-        {
-            sqsClient?.Dispose();
-            snsClient?.Dispose();
-            s3Client?.Dispose();
-        }
     }
 
     string prefix;
