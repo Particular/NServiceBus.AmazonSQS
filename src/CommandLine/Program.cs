@@ -68,12 +68,12 @@
                     createCommand.AddOption(prefixOption);
 
                     var retentionPeriodInSecondsCommand = createCommand.Option("-t|--retention",
-                        $"Retention Period in seconds (defaults to {DefaultConfigurationValues.RetentionPeriod.TotalSeconds} ) ", CommandOptionType.SingleValue);
+                        $"Retention Period in seconds (defaults to {(int)DefaultConfigurationValues.RetentionPeriod.TotalSeconds} ) ", CommandOptionType.SingleValue);
 
                     createCommand.OnExecuteAsync(async ct =>
                     {
                         var endpointName = nameArgument.Value;
-                        var retentionPeriodInSeconds = retentionPeriodInSecondsCommand.HasValue() ? double.Parse(retentionPeriodInSecondsCommand.Value()) : DefaultConfigurationValues.RetentionPeriod.TotalSeconds;
+                        var retentionPeriodInSeconds = retentionPeriodInSecondsCommand.HasValue() ? int.Parse(retentionPeriodInSecondsCommand.Value()) : (int)DefaultConfigurationValues.RetentionPeriod.TotalSeconds;
                         var prefix = prefixOption.HasValue() ? prefixOption.Value() : DefaultConfigurationValues.QueueNamePrefix;
 
                         await CommandRunner.Run(accessKeyOption, secretOption, regionOption, (sqs, sns, s3) => Endpoint.Create(sqs, prefix, endpointName, retentionPeriodInSeconds));
@@ -140,8 +140,8 @@
 
                         delayDeliverySupportCommand.OnExecuteAsync(async ct =>
                         {
-                            var delayInSeconds = DefaultConfigurationValues.MaximumQueueDelayTime.TotalSeconds;
-                            var retentionPeriodInSeconds = retentionPeriodInSecondsCommand.HasValue() ? double.Parse(retentionPeriodInSecondsCommand.Value()) : DefaultConfigurationValues.RetentionPeriod.TotalSeconds;
+                            var delayInSeconds = (int)DefaultConfigurationValues.MaximumQueueDelayTime.TotalSeconds;
+                            var retentionPeriodInSeconds = retentionPeriodInSecondsCommand.HasValue() ? int.Parse(retentionPeriodInSecondsCommand.Value()) : (int)DefaultConfigurationValues.RetentionPeriod.TotalSeconds;
                             var suffix = DefaultConfigurationValues.DelayedDeliveryQueueSuffix;
 
                             var endpointName = nameArgument.Value;
