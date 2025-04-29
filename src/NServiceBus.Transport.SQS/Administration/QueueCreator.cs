@@ -40,10 +40,12 @@ class QueueCreator(
         // change the MaxTTLDays configuration property.
         var sqsAttributesRequest = new SetQueueAttributesRequest
         {
-            QueueUrl = createQueueResponse.QueueUrl
+            QueueUrl = createQueueResponse.QueueUrl,
+            Attributes = new Dictionary<string, string>
+            {
+                { QueueAttributeName.MessageRetentionPeriod, maxTimeToLive.TotalSeconds.ToString(CultureInfo.InvariantCulture) }
+            }
         };
-        sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod,
-            maxTimeToLive.TotalSeconds.ToString(CultureInfo.InvariantCulture));
 
         await sqsClient.SetQueueAttributesAsync(sqsAttributesRequest, cancellationToken).ConfigureAwait(false);
 
@@ -68,15 +70,17 @@ class QueueCreator(
 
             sqsAttributesRequest = new SetQueueAttributesRequest
             {
-                QueueUrl = createQueueResponse.QueueUrl
+                QueueUrl = createQueueResponse.QueueUrl,
+                Attributes = new Dictionary<string, string>
+                {
+                    { QueueAttributeName.MessageRetentionPeriod, TransportConstraints.DelayedDeliveryQueueMessageRetentionPeriod.TotalSeconds.ToString(CultureInfo.InvariantCulture) },
+                }
             };
 
             // Set the queue attributes in a separate call.
             // If you call CreateQueue with a queue name that already exists, and with a different
             // value for MessageRetentionPeriod, the service throws. This will happen if you
             // change the MaxTTLDays configuration property.
-            sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod, TransportConstraints.DelayedDeliveryQueueMessageRetentionPeriod.TotalSeconds.ToString(CultureInfo.InvariantCulture));
-
             await sqsClient.SetQueueAttributesAsync(sqsAttributesRequest, cancellationToken).ConfigureAwait(false);
         }
 
@@ -130,5 +134,5 @@ class QueueCreator(
         }
     }
 
-    static ILog Logger = LogManager.GetLogger(typeof(QueueCreator));
+    static readonly ILog Logger = LogManager.GetLogger(typeof(QueueCreator));
 }
