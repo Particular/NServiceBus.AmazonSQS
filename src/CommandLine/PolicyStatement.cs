@@ -1,7 +1,6 @@
 namespace NServiceBus.Transport.SQS.CommandLine;
 
 using Amazon.Auth.AccessControlPolicy;
-using Amazon.Auth.AccessControlPolicy.ActionIdentifiers;
 
 class PolicyStatement
 {
@@ -22,7 +21,7 @@ class PolicyStatement
     static Statement CreatePermissionStatement(string queueArn, string topicArn)
     {
         var statement = new Statement(Statement.StatementEffect.Allow);
-        statement.Actions.Add(SQSActionIdentifiers.SendMessage);
+        statement.Actions.Add(new ActionIdentifier("sqs:SendMessage"));
         statement.Resources.Add(new Resource(queueArn));
         statement.Conditions.Add(ConditionFactory.NewSourceArnCondition(topicArn));
         statement.Principals.Add(new Principal("*"));

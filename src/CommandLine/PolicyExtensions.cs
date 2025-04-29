@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Amazon.Auth.AccessControlPolicy;
-using Amazon.Auth.AccessControlPolicy.ActionIdentifiers;
 
 static class PolicyExtensions
 {
@@ -177,7 +176,7 @@ static class PolicyExtensions
     static Statement CreatePermissionStatementForQueueMatching(string queueArn, IEnumerable<string> topicArnMatchPatterns)
     {
         var statement = new Statement(Statement.StatementEffect.Allow);
-        statement.Actions.Add(SQSActionIdentifiers.SendMessage);
+        statement.Actions.Add(new ActionIdentifier("sqs:SendMessage"));
         statement.Resources.Add(new Resource(queueArn));
         statement.Principals.Add(new Principal("*"));
         var queuePermissionCondition = new Condition(ConditionFactory.ArnComparisonType.ArnLike.ToString(), "aws:SourceArn", topicArnMatchPatterns.OrderBy(t => t, OrdinalComparer).ToArray());

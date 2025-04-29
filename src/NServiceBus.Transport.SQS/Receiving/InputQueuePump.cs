@@ -8,6 +8,7 @@ namespace NServiceBus.Transport.SQS
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
+    using Amazon.Runtime;
     using Amazon.SQS;
     using Amazon.SQS.Model;
     using BitFaster.Caching.Lru;
@@ -319,7 +320,9 @@ namespace NServiceBus.Transport.SQS
                     return;
                 }
 
-                if (IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, sqsClient.Config.ClockOffset))
+
+                var clockCorrection = CorrectClockSkew.GetClockCorrectionForEndpoint(sqsClient.Config.ServiceURL);
+                if (IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, clockCorrection))
                 {
                     await DeleteMessage(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
                 }

@@ -190,6 +190,10 @@ class MockSqsClient : IAmazonSQS
 
     #region NotImplemented
 
+    public Task<ChangeMessageVisibilityResponse> ChangeMessageVisibilityAsync(string queueUrl, string receiptHandle, int? visibilityTimeout,
+        CancellationToken cancellationToken = new CancellationToken()) =>
+        throw new NotImplementedException();
+
     public Dictionary<string, string> GetAttributes(string queueUrl)
     {
         throw new NotImplementedException();

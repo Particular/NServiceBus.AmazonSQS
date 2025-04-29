@@ -29,6 +29,9 @@ public class MockS3Client : IAmazonS3
 
     #region NotImplemented
 
+    public Task<PutObjectAclResponse> PutObjectAclAsync(PutObjectAclRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
+
+
     public PutObjectLegalHoldResponse PutObjectLegalHold(PutObjectLegalHoldRequest request)
     {
         throw new NotImplementedException();
@@ -232,6 +235,15 @@ public class MockS3Client : IAmazonS3
     {
         throw new NotImplementedException();
     }
+
+    public Task<CopyPartResponse> CopyPartAsync(string sourceBucket, string sourceKey, string destinationBucket, string destinationKey,
+        string uploadId, int? partNumber, CancellationToken cancellationToken = new CancellationToken()) =>
+        throw new NotImplementedException();
+
+    public Task<CopyPartResponse> CopyPartAsync(string sourceBucket, string sourceKey, string sourceVersionId, string destinationBucket,
+        string destinationKey, string uploadId, int? partNumber,
+        CancellationToken cancellationToken = new CancellationToken()) =>
+        throw new NotImplementedException();
 
     public CopyPartResponse CopyPart(string sourceBucket, string sourceKey, string destinationBucket, string destinationKey, string uploadId)
     {
@@ -554,6 +566,8 @@ public class MockS3Client : IAmazonS3
         throw new NotImplementedException();
     }
 
+    public Task<GetBucketAclResponse> GetBucketAclAsync(GetBucketAclRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
+
     public GetBucketAnalyticsConfigurationResponse GetBucketAnalyticsConfiguration(GetBucketAnalyticsConfigurationRequest request)
     {
         throw new NotImplementedException();
@@ -848,6 +862,8 @@ public class MockS3Client : IAmazonS3
     {
         throw new NotImplementedException();
     }
+
+    public Task<GetObjectAclResponse> GetObjectAclAsync(GetObjectAclRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
 
     public GetObjectLegalHoldResponse GetObjectLegalHold(GetObjectLegalHoldRequest request)
     {
@@ -1185,6 +1201,8 @@ public class MockS3Client : IAmazonS3
         throw new NotImplementedException();
     }
 
+    public Task<PutBucketAclResponse> PutBucketAclAsync(PutBucketAclRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
+
     public PutBucketAnalyticsConfigurationResponse PutBucketAnalyticsConfiguration(PutBucketAnalyticsConfigurationRequest request)
     {
         throw new NotImplementedException();
@@ -1461,6 +1479,10 @@ public class MockS3Client : IAmazonS3
         throw new NotImplementedException();
     }
 
+    public Task<RestoreObjectResponse> RestoreObjectAsync(string bucketName, string key, int? days,
+        CancellationToken cancellationToken = new CancellationToken()) =>
+        throw new NotImplementedException();
+
     public Task<RestoreObjectResponse> RestoreObjectAsync(string bucketName, string key, int days, CancellationToken cancellationToken = new CancellationToken())
     {
         throw new NotImplementedException();
@@ -1470,6 +1492,10 @@ public class MockS3Client : IAmazonS3
     {
         throw new NotImplementedException();
     }
+
+    public Task<RestoreObjectResponse> RestoreObjectAsync(string bucketName, string key, string versionId, int? days,
+        CancellationToken cancellationToken = new CancellationToken()) =>
+        throw new NotImplementedException();
 
     public Task<RestoreObjectResponse> RestoreObjectAsync(string bucketName, string key, string versionId, int days, CancellationToken cancellationToken = new CancellationToken())
     {

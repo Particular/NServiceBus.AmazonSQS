@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.Runtime;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Extensions;
@@ -139,7 +140,7 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
             return;
         }
 
-        var clockCorrection = sqsClient.Config.ClockOffset;
+        var clockCorrection = CorrectClockSkew.GetClockCorrectionForEndpoint(sqsClient.Config.ServiceURL);
         var preparedMessages = PrepareMessages(receivedMessages, clockCorrection, cancellationToken);
 
         cancellationToken.ThrowIfCancellationRequested();
