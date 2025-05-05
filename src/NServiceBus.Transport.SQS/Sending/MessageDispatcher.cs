@@ -170,17 +170,16 @@ partial class MessageDispatcher(
                 Logger.Debug($"Sent batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
             }
 
-            List<Task>? redispatchTasks = null;
-            foreach (var errorEntry in result.Failed)
+            if (result.Failed is { Count: > 0 })
             {
-                redispatchTasks ??= new List<Task>(result.Failed.Count);
-                var messageToRetry = batch.PreparedMessagesBydId[errorEntry.Id];
-                Logger.Info($"Retrying message with MessageId {messageToRetry.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
-                redispatchTasks.Add(SendMessageForBatch(messageToRetry, batchNumber, totalBatches, cancellationToken));
-            }
+                var redispatchTasks = new List<Task>(result.Failed.Count);
+                foreach (var errorEntry in result.Failed)
+                {
 
-            if (redispatchTasks != null)
-            {
+                    var messageToRetry = batch.PreparedMessagesBydId[errorEntry.Id];
+                    Logger.Info($"Retrying message with MessageId {messageToRetry.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
+                    redispatchTasks.Add(SendMessageForBatch(messageToRetry, batchNumber, totalBatches, cancellationToken));
+                }
                 await Task.WhenAll(redispatchTasks).ConfigureAwait(false);
             }
         }
@@ -231,17 +230,15 @@ partial class MessageDispatcher(
                 Logger.Debug($"Published batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' to destination {message.Destination}");
             }
 
-            List<Task>? redispatchTasks = null;
-            foreach (var errorEntry in result.Failed)
+            if (result.Failed is { Count: > 0 })
             {
-                redispatchTasks ??= new List<Task>(result.Failed.Count);
-                var messageToRetry = batch.PreparedMessagesBydId[errorEntry.Id];
-                Logger.Info($"Republishing message with MessageId {messageToRetry.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
-                redispatchTasks.Add(PublishForBatch(messageToRetry, batchNumber, totalBatches, cancellationToken));
-            }
-
-            if (redispatchTasks != null)
-            {
+                var redispatchTasks = new List<Task>(result.Failed.Count);
+                foreach (var errorEntry in result.Failed)
+                {
+                    var messageToRetry = batch.PreparedMessagesBydId[errorEntry.Id];
+                    Logger.Info($"Republishing message with MessageId {messageToRetry.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
+                    redispatchTasks.Add(PublishForBatch(messageToRetry, batchNumber, totalBatches, cancellationToken));
+                }
                 await Task.WhenAll(redispatchTasks).ConfigureAwait(false);
             }
         }
