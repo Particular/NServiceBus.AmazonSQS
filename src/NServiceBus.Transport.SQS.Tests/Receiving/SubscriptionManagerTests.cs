@@ -248,7 +248,7 @@ public class SubscriptionManagerTests
             return original(s);
         };
 
-        Assert.DoesNotThrowAsync(async () => await manager.SubscribeAll(new[] { new MessageMetadata(typeof(Event)) }, null));
+        Assert.DoesNotThrowAsync(async () => await manager.SubscribeAll([new MessageMetadata(typeof(Event))], null));
         Assert.That(manager.Delays, Has.Count.EqualTo(7));
         Assert.That(manager.Delays.Sum(), Is.EqualTo(35000));
     }
