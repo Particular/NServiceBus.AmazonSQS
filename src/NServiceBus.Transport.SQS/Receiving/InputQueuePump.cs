@@ -323,8 +323,9 @@ namespace NServiceBus.Transport.SQS
                     return;
                 }
 
-
-                var clockCorrection = CorrectClockSkew.GetClockCorrectionForEndpoint(sqsClient.Config.ServiceURL);
+                // TODO revise clock skew correction logic
+                var endpoint = sqsClient.DetermineServiceOperationEndpoint(receiveMessagesRequest).URL;
+                var clockCorrection = CorrectClockSkew.GetClockCorrectionForEndpoint(endpoint);
                 if (IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, clockCorrection))
                 {
                     await DeleteMessage(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);

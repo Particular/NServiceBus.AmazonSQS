@@ -137,7 +137,9 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
         var receivedMessages = await sqsClient.ReceiveMessageAsync(request, cancellationToken).ConfigureAwait(false);
         if (receivedMessages.Messages is { Count: > 0 })
         {
-            var clockCorrection = CorrectClockSkew.GetClockCorrectionForEndpoint(sqsClient.Config.ServiceURL);
+            // TODO revise clock skew correction logic
+            var endpoint = sqsClient.DetermineServiceOperationEndpoint(request).URL;
+            var clockCorrection = CorrectClockSkew.GetClockCorrectionForEndpoint(endpoint);
             var preparedMessages = PrepareMessages(receivedMessages, clockCorrection, cancellationToken);
 
             cancellationToken.ThrowIfCancellationRequested();
