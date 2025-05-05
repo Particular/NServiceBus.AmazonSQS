@@ -199,12 +199,15 @@ namespace NServiceBus.Transport.SQS
 #pragma warning restore PS0021 // Highlight when a try block passes multiple cancellation tokens
                     var receivedMessages = await sqsClient.ReceiveMessageAsync(receiveMessagesRequest, messagePumpCancellationToken).ConfigureAwait(false);
 
-                    var visibilityExpiresOn = DateTimeOffset.UtcNow.AddSeconds(visibilityTimeoutInSeconds);
-                    foreach (var receivedMessage in receivedMessages.Messages)
+                    if (receivedMessages.Messages is { Count: > 0 })
                     {
-                        await maxConcurrencySemaphore.WaitAsync(messagePumpCancellationToken).ConfigureAwait(false);
+                        var visibilityExpiresOn = DateTimeOffset.UtcNow.AddSeconds(visibilityTimeoutInSeconds);
+                        foreach (var receivedMessage in receivedMessages.Messages)
+                        {
+                            await maxConcurrencySemaphore.WaitAsync(messagePumpCancellationToken).ConfigureAwait(false);
 
-                        _ = ProcessMessageWithVisibilityRenewal(receivedMessage, visibilityExpiresOn, cancellationToken: messageProcessingCancellationTokenSource.Token);
+                            _ = ProcessMessageWithVisibilityRenewal(receivedMessage, visibilityExpiresOn, cancellationToken: messageProcessingCancellationTokenSource.Token);
+                        }
                     }
                 }
                 catch (Exception ex) when (ex.IsCausedBy(messagePumpCancellationToken))
