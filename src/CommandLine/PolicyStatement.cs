@@ -2,20 +2,12 @@ namespace NServiceBus.Transport.SQS.CommandLine;
 
 using Amazon.Auth.AccessControlPolicy;
 
-class PolicyStatement
+class PolicyStatement(string topicName, string topicArn, string queueArn)
 {
-    public PolicyStatement(string topicName, string topicArn, string queueArn)
-    {
-        TopicName = topicName;
-        TopicArn = topicArn;
-        Statement = CreatePermissionStatement(queueArn, topicArn);
-        QueueArn = queueArn;
-    }
-
-    public string QueueArn { get; }
-    public string TopicName { get; }
-    public string TopicArn { get; }
-    public Statement Statement { get; }
+    public string QueueArn { get; } = queueArn;
+    public string TopicName { get; } = topicName;
+    public string TopicArn { get; } = topicArn;
+    public Statement Statement { get; } = CreatePermissionStatement(queueArn, topicArn);
 
 #pragma warning disable 618
     static Statement CreatePermissionStatement(string queueArn, string topicArn)

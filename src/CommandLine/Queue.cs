@@ -30,8 +30,14 @@ static class Queue
         var sqsRequest = new CreateQueueRequest { QueueName = queueName };
         await Console.Out.WriteLineAsync($"Creating SQS Queue with name '{sqsRequest.QueueName}' for endpoint '{endpointName}'.");
         var createQueueResponse = await sqs.CreateQueueAsync(sqsRequest).ConfigureAwait(false);
-        var sqsAttributesRequest = new SetQueueAttributesRequest { QueueUrl = createQueueResponse.QueueUrl };
-        sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod, retentionPeriodInSeconds.ToString(CultureInfo.InvariantCulture));
+        var sqsAttributesRequest = new SetQueueAttributesRequest
+        {
+            QueueUrl = createQueueResponse.QueueUrl,
+            Attributes = new Dictionary<string, string>
+            {
+                { QueueAttributeName.MessageRetentionPeriod, retentionPeriodInSeconds.ToString(CultureInfo.InvariantCulture) }
+            }
+        };
         await sqs.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
         await Console.Out.WriteLineAsync($"Created SQS Queue with name '{sqsRequest.QueueName}' for endpoint '{endpointName}'.");
         return createQueueResponse.QueueUrl;
@@ -47,9 +53,15 @@ static class Queue
         };
         await Console.Out.WriteLineAsync($"Creating SQS delayed delivery queue with name '{sqsRequest.QueueName}' for endpoint '{endpointName}'.");
         var createQueueResponse = await sqs.CreateQueueAsync(sqsRequest).ConfigureAwait(false);
-        var sqsAttributesRequest = new SetQueueAttributesRequest { QueueUrl = createQueueResponse.QueueUrl };
-        sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod, retentionPeriodInSeconds.ToString(CultureInfo.InvariantCulture));
-        sqsAttributesRequest.Attributes.Add(QueueAttributeName.DelaySeconds, delayInSeconds.ToString(CultureInfo.InvariantCulture));
+        var sqsAttributesRequest = new SetQueueAttributesRequest
+        {
+            QueueUrl = createQueueResponse.QueueUrl,
+            Attributes = new Dictionary<string, string>
+            {
+                { QueueAttributeName.MessageRetentionPeriod, retentionPeriodInSeconds.ToString(CultureInfo.InvariantCulture) },
+                { QueueAttributeName.DelaySeconds, delayInSeconds.ToString(CultureInfo.InvariantCulture) }
+            }
+        };
         await sqs.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
         await Console.Out.WriteLineAsync($"Created SQS delayed delivery queue with name '{sqsRequest.QueueName}' for endpoint '{endpointName}'.");
         return createQueueResponse.QueueUrl;

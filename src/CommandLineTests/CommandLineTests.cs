@@ -960,7 +960,7 @@ public class CommandLineTests
             GetLifecycleConfigurationResponse lifecycleConfig =
                 await s3Client.GetLifecycleConfigurationAsync(bucketName);
             setLifeCycleConfig =
-                lifecycleConfig.Configuration.Rules.FirstOrDefault(x => x.Id == "NServiceBus.SQS.DeleteMessageBodies");
+                lifecycleConfig.Configuration.Rules?.FirstOrDefault(x => x.Id == "NServiceBus.SQS.DeleteMessageBodies");
         } while (setLifeCycleConfig == null && backOff < MaximumBackoffInterval);
 
         Assert.That(setLifeCycleConfig, Is.Not.Null);
@@ -982,14 +982,14 @@ public class CommandLineTests
             upToAHundredSubscriptions =
                 await snsClient.ListSubscriptionsByTopicAsync(topicArn, upToAHundredSubscriptions?.NextToken);
 
-            foreach (Subscription upToAHundredSubscription in upToAHundredSubscriptions.Subscriptions)
+            foreach (Subscription upToAHundredSubscription in upToAHundredSubscriptions.Subscriptions ?? Enumerable.Empty<Subscription>())
             {
                 if (upToAHundredSubscription.Endpoint == queueArn)
                 {
                     subscription = upToAHundredSubscription;
                 }
             }
-        } while (upToAHundredSubscriptions.NextToken != null && upToAHundredSubscriptions.Subscriptions.Count > 0);
+        } while (upToAHundredSubscriptions.NextToken != null && upToAHundredSubscriptions.Subscriptions is { Count: > 0 });
 
         Assert.That(subscription, Is.Not.Null);
     }
@@ -1002,17 +1002,16 @@ public class CommandLineTests
         do
         {
             upToAHundredSubscriptions =
-                await snsClient.ListSubscriptionsByTopicAsync(topicArn, upToAHundredSubscriptions?.NextToken)
-                ;
+                await snsClient.ListSubscriptionsByTopicAsync(topicArn, upToAHundredSubscriptions?.NextToken);
 
-            foreach (Subscription upToAHundredSubscription in upToAHundredSubscriptions.Subscriptions)
+            foreach (Subscription upToAHundredSubscription in upToAHundredSubscriptions.Subscriptions ?? Enumerable.Empty<Subscription>())
             {
                 if (upToAHundredSubscription.Endpoint == queueArn)
                 {
                     subscription = upToAHundredSubscription;
                 }
             }
-        } while (upToAHundredSubscriptions.NextToken != null && upToAHundredSubscriptions.Subscriptions.Count > 0);
+        } while (upToAHundredSubscriptions.NextToken != null && upToAHundredSubscriptions.Subscriptions is { Count: > 0 });
 
         Assert.That(subscription, Is.Null);
     }

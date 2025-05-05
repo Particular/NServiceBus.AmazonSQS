@@ -32,9 +32,9 @@ static class Bucket
         await Console.Out.WriteLineAsync($"Adding lifecycle configuration to bucket name '{bucketName}' for endpoint '{endpointName}'.");
 
         var lifecycleConfig = await s3.GetLifecycleConfigurationAsync(bucketName).ConfigureAwait(false);
-        var setLifecycleConfig = lifecycleConfig.Configuration.Rules.All(x => x.Id != "NServiceBus.SQS.DeleteMessageBodies");
+        var setLifecycleConfig = lifecycleConfig.Configuration.Rules?.All(x => x.Id != "NServiceBus.SQS.DeleteMessageBodies");
 
-        if (setLifecycleConfig)
+        if (setLifecycleConfig.HasValue)
         {
             await s3.RetryConflictsAsync(async () =>
                     await s3.PutLifecycleConfigurationAsync(new PutLifecycleConfigurationRequest
