@@ -293,39 +293,45 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
         await deletionTask.ConfigureAwait(false);
     }
 
-    async Task ChangeVisibilityOfDelayedMessagesThatFailedBatchDeliveryInBatches(SqsBatchEntry batch, SendMessageBatchResponse result, int batchNumber, int totalBatches, CancellationToken cancellationToken)
+    async Task ChangeVisibilityOfDelayedMessagesThatFailedBatchDeliveryInBatches(SqsBatchEntry batch,
+        SendMessageBatchResponse result, int batchNumber, int totalBatches, CancellationToken cancellationToken)
     {
-        try
+        if (result.Failed is { Count: > 0 })
         {
-            List<ChangeMessageVisibilityBatchRequestEntry> changeVisibilityBatchRequestEntries = null;
-            foreach (var failed in result.Failed)
+            try
             {
-                changeVisibilityBatchRequestEntries ??= new List<ChangeMessageVisibilityBatchRequestEntry>(result.Failed.Count);
-                var preparedMessage = (SqsReceivedDelayedMessage)batch.PreparedMessagesBydId[failed.Id];
-                // need to reuse the previous batch entry ID so that we can map again in failure scenarios, this is fine given that IDs only need to be unique per request
-                changeVisibilityBatchRequestEntries.Add(new ChangeMessageVisibilityBatchRequestEntry(failed.Id, preparedMessage.ReceiptHandle)
+                var changeVisibilityBatchRequestEntries = new List<ChangeMessageVisibilityBatchRequestEntry>(result.Failed.Count);
+                foreach (var failed in result.Failed)
                 {
-                    VisibilityTimeout = 0
-                });
-            }
 
-            if (changeVisibilityBatchRequestEntries != null)
-            {
+                    var preparedMessage = (SqsReceivedDelayedMessage)batch.PreparedMessagesBydId[failed.Id];
+                    // need to reuse the previous batch entry ID so that we can map again in failure scenarios, this is fine given that IDs only need to be unique per request
+                    changeVisibilityBatchRequestEntries.Add(
+                        new ChangeMessageVisibilityBatchRequestEntry(failed.Id, preparedMessage.ReceiptHandle)
+                        {
+                            VisibilityTimeout = 0
+                        });
+                }
+
                 if (Logger.IsDebugEnabled)
                 {
                     var message = batch.PreparedMessagesBydId.Values.First();
 
-                    Logger.Debug($"Changing delayed message visibility for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
+                    Logger.Debug(
+                        $"Changing delayed message visibility for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
                 }
 
-                var changeVisibilityResult = await sqsClient.ChangeMessageVisibilityBatchAsync(new ChangeMessageVisibilityBatchRequest(delayedDeliveryQueueUrl, changeVisibilityBatchRequestEntries), cancellationToken)
+                var changeVisibilityResult = await sqsClient.ChangeMessageVisibilityBatchAsync(
+                        new ChangeMessageVisibilityBatchRequest(delayedDeliveryQueueUrl,
+                            changeVisibilityBatchRequestEntries), cancellationToken)
                     .ConfigureAwait(false);
 
                 if (Logger.IsDebugEnabled)
                 {
                     var message = batch.PreparedMessagesBydId.Values.First();
 
-                    Logger.Debug($"Changed delayed message visibility for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
+                    Logger.Debug(
+                        $"Changed delayed message visibility for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
                 }
 
                 if (Logger.IsDebugEnabled && changeVisibilityResult.Failed.Count > 0)
@@ -339,32 +345,32 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
                     Logger.Debug($"Changing visibility failed for {builder}");
                 }
             }
-        }
-        catch (Exception ex) when (!ex.IsCausedBy(cancellationToken))
-        {
-            var builder = new StringBuilder();
-            foreach (var failed in result.Failed)
+            catch (Exception ex) when (!ex.IsCausedBy(cancellationToken))
             {
-                builder.AppendLine($"{failed.Id}: {failed.Message} | {failed.Code} | {failed.SenderFault}");
-            }
+                var builder = new StringBuilder();
+                foreach (var failed in result.Failed)
+                {
+                    builder.AppendLine($"{failed.Id}: {failed.Message} | {failed.Code} | {failed.SenderFault}");
+                }
 
-            Logger.Error($"Changing visibility failed for {builder}", ex);
+                Logger.Error($"Changing visibility failed for {builder}", ex);
+            }
         }
     }
 
     async Task DeleteDelayedMessagesThatWereDeliveredSuccessfullyAsBatchesInBatches(SqsBatchEntry batch, SendMessageBatchResponse result, int batchNumber, int totalBatches, CancellationToken cancellationToken)
     {
-        List<DeleteMessageBatchRequestEntry> deleteBatchRequestEntries = null;
-        foreach (var successful in result.Successful)
+        if (result.Successful is { Count: > 0 })
         {
-            deleteBatchRequestEntries ??= new List<DeleteMessageBatchRequestEntry>(result.Successful.Count);
-            var preparedMessage = (SqsReceivedDelayedMessage)batch.PreparedMessagesBydId[successful.Id];
-            // need to reuse the previous batch entry ID so that we can map again in failure scenarios, this is fine given that IDs only need to be unique per request
-            deleteBatchRequestEntries.Add(new DeleteMessageBatchRequestEntry(successful.Id, preparedMessage.ReceiptHandle));
-        }
+            var deleteBatchRequestEntries = new List<DeleteMessageBatchRequestEntry>(result.Successful.Count);
+            foreach (var successful in result.Successful)
+            {
 
-        if (deleteBatchRequestEntries != null)
-        {
+                var preparedMessage = (SqsReceivedDelayedMessage)batch.PreparedMessagesBydId[successful.Id];
+                // need to reuse the previous batch entry ID so that we can map again in failure scenarios, this is fine given that IDs only need to be unique per request
+                deleteBatchRequestEntries.Add(new DeleteMessageBatchRequestEntry(successful.Id, preparedMessage.ReceiptHandle));
+            }
+
             if (Logger.IsDebugEnabled)
             {
                 var message = batch.PreparedMessagesBydId.Values.First();
@@ -382,17 +388,16 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
                 Logger.Debug($"Deleted delayed message for batch '{batchNumber}/{totalBatches}' with message ids '{string.Join(", ", batch.PreparedMessagesBydId.Values.Select(v => v.MessageId))}' for destination {message.Destination}");
             }
 
-            List<Task> deleteTasks = null;
-            foreach (var errorEntry in deleteResult.Failed)
+            if (deleteResult.Failed is { Count: > 0 })
             {
-                deleteTasks ??= new List<Task>(deleteResult.Failed.Count);
-                var messageToDeleteWithAnotherAttempt = (SqsReceivedDelayedMessage)batch.PreparedMessagesBydId[errorEntry.Id];
-                Logger.Info($"Retrying message deletion with MessageId {messageToDeleteWithAnotherAttempt.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
-                deleteTasks.Add(DeleteMessage(messageToDeleteWithAnotherAttempt, cancellationToken));
-            }
+                var deleteTasks = new List<Task>(deleteResult.Failed.Count);
+                foreach (var errorEntry in deleteResult.Failed)
+                {
 
-            if (deleteTasks != null)
-            {
+                    var messageToDeleteWithAnotherAttempt = (SqsReceivedDelayedMessage)batch.PreparedMessagesBydId[errorEntry.Id];
+                    Logger.Info($"Retrying message deletion with MessageId {messageToDeleteWithAnotherAttempt.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
+                    deleteTasks.Add(DeleteMessage(messageToDeleteWithAnotherAttempt, cancellationToken));
+                }
                 await Task.WhenAll(deleteTasks).ConfigureAwait(false);
             }
         }
