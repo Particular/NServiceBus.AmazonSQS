@@ -88,12 +88,7 @@ static class PolicyExtensions
 
     internal static Policy ExtractPolicy(this Dictionary<string, string> queueAttributes)
     {
-        string policyStr = null;
-        if (queueAttributes.ContainsKey("Policy"))
-        {
-            policyStr = queueAttributes["Policy"];
-        }
-
+        _ = queueAttributes.TryGetValue("Policy", out string policyStr);
         return string.IsNullOrEmpty(policyStr) ? new Policy() : Policy.FromJson(policyStr);
     }
 
