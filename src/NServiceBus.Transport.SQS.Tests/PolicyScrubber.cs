@@ -8,18 +8,15 @@ public static class PolicyScrubber
 {
     public static string ScrubPolicy(string policyAsString)
     {
-        var scrubbed = Regex.Replace(policyAsString, "\"Sid\" : \"(.*)\",", string.Empty);
+        var scrubbed = Regex.Replace(policyAsString, "\"Sid\": \"(.*)\",", string.Empty);
         return RemoveUnnecessaryWhiteSpace(scrubbed);
     }
 
-    static string RemoveUnnecessaryWhiteSpace(string policyAsString)
-    {
-        return string.Join(Environment.NewLine, policyAsString.Split(new[]
-            {
+    static string RemoveUnnecessaryWhiteSpace(string policyAsString) =>
+        string.Join(Environment.NewLine, policyAsString.Split([
                 Environment.NewLine
-            }, StringSplitOptions.RemoveEmptyEntries)
+            ], StringSplitOptions.RemoveEmptyEntries)
             .Where(l => !string.IsNullOrWhiteSpace(l))
             .Select(l => l.TrimEnd())
         );
-    }
 }
