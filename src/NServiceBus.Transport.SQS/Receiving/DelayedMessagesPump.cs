@@ -135,17 +135,15 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
     internal async Task ConsumeDelayedMessages(ReceiveMessageRequest request, CancellationToken cancellationToken = default)
     {
         var receivedMessages = await sqsClient.ReceiveMessageAsync(request, cancellationToken).ConfigureAwait(false);
-        if (receivedMessages.Messages.Count == 0)
+        if (receivedMessages.Messages is { Count: > 0 })
         {
-            return;
+            var clockCorrection = CorrectClockSkew.GetClockCorrectionForEndpoint(sqsClient.Config.ServiceURL);
+            var preparedMessages = PrepareMessages(receivedMessages, clockCorrection, cancellationToken);
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            await BatchDispatchPreparedMessages(preparedMessages, cancellationToken).ConfigureAwait(false);
         }
-
-        var clockCorrection = CorrectClockSkew.GetClockCorrectionForEndpoint(sqsClient.Config.ServiceURL);
-        var preparedMessages = PrepareMessages(receivedMessages, clockCorrection, cancellationToken);
-
-        cancellationToken.ThrowIfCancellationRequested();
-
-        await BatchDispatchPreparedMessages(preparedMessages, cancellationToken).ConfigureAwait(false);
     }
 
     IReadOnlyCollection<SqsReceivedDelayedMessage> PrepareMessages(ReceiveMessageResponse receivedMessages, TimeSpan clockCorrection, CancellationToken cancellationToken)
