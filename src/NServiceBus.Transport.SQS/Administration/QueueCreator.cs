@@ -88,7 +88,7 @@ class QueueCreator(
         {
             // determine if the configured bucket exists; create it if it doesn't
             var listBucketsResponse = await s3Settings.S3Client.ListBucketsAsync(new ListBucketsRequest(), cancellationToken).ConfigureAwait(false);
-            var bucketExists = listBucketsResponse.Buckets.Any(x => string.Equals(x.BucketName, s3Settings.BucketName, StringComparison.InvariantCultureIgnoreCase));
+            var bucketExists = (listBucketsResponse.Buckets ?? []).Any(x => string.Equals(x.BucketName, s3Settings.BucketName, StringComparison.InvariantCultureIgnoreCase));
             if (!bucketExists)
             {
                 await s3Settings.S3Client.RetryConflictsAsync(async token =>
