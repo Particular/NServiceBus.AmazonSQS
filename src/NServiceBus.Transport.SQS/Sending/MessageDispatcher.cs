@@ -426,7 +426,7 @@ partial class MessageDispatcher(
         return delaySeconds;
     }
 
-    Dictionary<string, MessageAttributeValue>? GetNativeMessageAttributes(UnicastTransportOperation transportOperation, TransportTransaction transportTransaction)
+    static Dictionary<string, MessageAttributeValue>? GetNativeMessageAttributes(UnicastTransportOperation transportOperation, TransportTransaction transportTransaction)
     {
         // In case we're handling a message of which the incoming message id equals the outgoing message id, we're essentially handling an error or audit scenario, in which case we want copy over the message attributes
         // from the native message, so we don't lose part of the message
