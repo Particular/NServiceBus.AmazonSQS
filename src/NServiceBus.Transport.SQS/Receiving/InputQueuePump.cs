@@ -351,15 +351,21 @@ namespace NServiceBus.Transport.SQS
         }
 
 
-        public static string ExtractMessageId(Message receivedMessage) =>
-            receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute)
-                ? messageIdAttribute.StringValue
-                : receivedMessage.MessageId;
+        public static string ExtractMessageId(Message receivedMessage)
+        {
+            if (receivedMessage.MessageAttributes != null &&
+                receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
+            {
+                return messageIdAttribute.StringValue;
+            }
+
+            return receivedMessage.MessageId;
+        }
 
         public static TransportMessage ExtractTransportMessage(Message receivedMessage, string messageIdOverride)
         {
             TransportMessage transportMessage;
-            if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.Headers, out var headersAttribute))
+            if (receivedMessage.MessageAttributes != null && receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.Headers, out var headersAttribute))
             {
                 var headers = JsonSerializer.Deserialize<Dictionary<string, string>>(headersAttribute.StringValue) ?? [];
                 transportMessage = new TransportMessage
@@ -377,7 +383,7 @@ namespace NServiceBus.Transport.SQS
             else
             {
                 // When the MessageTypeFullName attribute is available, we're assuming native integration
-                if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.MessageTypeFullName, out var enclosedMessageType))
+                if (receivedMessage.MessageAttributes != null && receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.MessageTypeFullName, out var enclosedMessageType))
                 {
                     transportMessage = new TransportMessage
                     {
