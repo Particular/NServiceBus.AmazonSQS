@@ -158,13 +158,13 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
             preparedMessages ??= new List<SqsReceivedDelayedMessage>(receivedMessages.Messages.Count);
             long delaySeconds = 0;
 
-            if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.DelaySeconds, out var delayAttribute))
+            if (receivedMessage.MessageAttributes?.TryGetValue(TransportHeaders.DelaySeconds, out var delayAttribute) is true)
             {
                 long.TryParse(delayAttribute.StringValue, out delaySeconds);
             }
 
-            string originalMessageId = null;
-            if (receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
+            string originalMessageId = receivedMessage.MessageId;
+            if (receivedMessage.MessageAttributes?.TryGetValue(Headers.MessageId, out var messageIdAttribute) is true)
             {
                 originalMessageId = messageIdAttribute.StringValue;
             }

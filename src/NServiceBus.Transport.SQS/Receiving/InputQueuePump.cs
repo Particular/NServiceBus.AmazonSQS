@@ -351,21 +351,15 @@ namespace NServiceBus.Transport.SQS
         }
 
 
-        public static string ExtractMessageId(Message receivedMessage)
-        {
-            if (receivedMessage.MessageAttributes != null &&
-                receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute))
-            {
-                return messageIdAttribute.StringValue;
-            }
-
-            return receivedMessage.MessageId;
-        }
+        public static string ExtractMessageId(Message receivedMessage) =>
+            receivedMessage.MessageAttributes?.TryGetValue(Headers.MessageId, out var messageIdAttribute) is true
+                ? messageIdAttribute.StringValue
+                : receivedMessage.MessageId;
 
         public static TransportMessage ExtractTransportMessage(Message receivedMessage, string messageIdOverride)
         {
             TransportMessage transportMessage;
-            if (receivedMessage.MessageAttributes != null && receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.Headers, out var headersAttribute))
+            if (receivedMessage.MessageAttributes?.TryGetValue(TransportHeaders.Headers, out var headersAttribute) is true)
             {
                 var headers = JsonSerializer.Deserialize<Dictionary<string, string>>(headersAttribute.StringValue) ?? [];
                 transportMessage = new TransportMessage
@@ -383,7 +377,7 @@ namespace NServiceBus.Transport.SQS
             else
             {
                 // When the MessageTypeFullName attribute is available, we're assuming native integration
-                if (receivedMessage.MessageAttributes != null && receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.MessageTypeFullName, out var enclosedMessageType))
+                if (receivedMessage.MessageAttributes?.TryGetValue(TransportHeaders.MessageTypeFullName, out var enclosedMessageType) is true)
                 {
                     transportMessage = new TransportMessage
                     {
@@ -642,7 +636,7 @@ namespace NServiceBus.Transport.SQS
                     .ConfigureAwait(false);
                 // Ok to use LINQ here since this is not really a hot path
                 var messageAttributeValues = message.MessageAttributes
-                    .ToDictionary(pair => pair.Key, messageAttribute => messageAttribute.Value);
+                    ?.ToDictionary(pair => pair.Key, messageAttribute => messageAttribute.Value);
 
                 await sqsClient.SendMessageAsync(new SendMessageRequest
                 {
