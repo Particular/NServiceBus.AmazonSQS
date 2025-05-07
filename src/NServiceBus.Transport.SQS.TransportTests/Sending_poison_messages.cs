@@ -1,5 +1,7 @@
 ﻿namespace TransportTests;
 
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -47,11 +49,14 @@ public class Sending_poison_messages : NServiceBusTransportTest
         {
             QueueUrl = queueUrl,
             MessageBody = UnwrappedAndNotRelevantPoisonMessageBody,
-            MessageAttributes =
+            MessageAttributes = new Dictionary<string, MessageAttributeValue>
             {
-                [TransportHeaders.Headers] = new MessageAttributeValue
                 {
-                    StringValue = "junk:this.will.fail.deserializing", DataType = "String"
+                    TransportHeaders.Headers, new MessageAttributeValue
+                    {
+                        StringValue = "junk:this.will.fail.deserializing",
+                        DataType = "String"
+                    }
                 }
             }
         };
