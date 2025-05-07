@@ -88,6 +88,8 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
             MessageAttributeNames = ["All"]
         };
 
+        endpointUrl = sqsClient.DetermineServiceOperationEndpoint(receiveDelayedMessagesRequest).URL;
+
         // Task.Run() so the call returns immediately instead of waiting for the first await or return down the call stack
         pumpTask = Task.Run(() => ConsumeDelayedMessagesAndSwallowExceptions(receiveDelayedMessagesRequest, tokenSource.Token), CancellationToken.None);
     }
@@ -137,9 +139,7 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
         var receivedMessages = await sqsClient.ReceiveMessageAsync(request, cancellationToken).ConfigureAwait(false);
         if (receivedMessages.Messages is { Count: > 0 })
         {
-            // TODO revise clock skew correction logic
-            var endpoint = sqsClient.DetermineServiceOperationEndpoint(request).URL;
-            var clockCorrection = CorrectClockSkew.GetClockCorrectionForEndpoint(endpoint);
+            var clockCorrection = CorrectClockSkew.GetClockCorrectionForEndpoint(endpointUrl);
             var preparedMessages = PrepareMessages(receivedMessages, clockCorrection, cancellationToken);
 
             cancellationToken.ThrowIfCancellationRequested();
@@ -423,6 +423,7 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
     string delayedDeliveryQueueUrl;
     Task pumpTask;
     string inputQueueUrl;
+    string endpointUrl;
 
     // using the same logger for now
     static readonly ILog Logger = LogManager.GetLogger(typeof(MessagePump));

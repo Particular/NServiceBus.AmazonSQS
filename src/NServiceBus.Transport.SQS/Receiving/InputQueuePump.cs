@@ -130,6 +130,8 @@ namespace NServiceBus.Transport.SQS
                 receiveMessagesRequest.VisibilityTimeout = configuredVisibilityTimeoutInSeconds.Value;
             }
 
+            endpointUrl = sqsClient.DetermineServiceOperationEndpoint(receiveMessagesRequest).URL;
+
             maxConcurrencySemaphore = new SemaphoreSlim(maxConcurrency);
             pumpTasks = new List<Task>(numberOfPumps);
 
@@ -323,9 +325,7 @@ namespace NServiceBus.Transport.SQS
                     return;
                 }
 
-                // TODO revise clock skew correction logic
-                var endpoint = sqsClient.DetermineServiceOperationEndpoint(receiveMessagesRequest).URL;
-                var clockCorrection = CorrectClockSkew.GetClockCorrectionForEndpoint(endpoint);
+                var clockCorrection = CorrectClockSkew.GetClockCorrectionForEndpoint(endpointUrl);
                 if (IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, clockCorrection))
                 {
                     await DeleteMessage(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
@@ -704,6 +704,7 @@ namespace NServiceBus.Transport.SQS
         OnMessage onMessage;
         SemaphoreSlim maxConcurrencySemaphore;
         string inputQueueUrl;
+        string endpointUrl;
         int maxConcurrency;
 
         readonly FastConcurrentLru<string, int> deliveryAttempts = new(1_000);
