@@ -99,7 +99,7 @@ class QueueCreator(
             }
 
             var lifecycleConfig = await s3Settings.S3Client.GetLifecycleConfigurationAsync(s3Settings.BucketName, cancellationToken).ConfigureAwait(false);
-            var setLifecycleConfig = lifecycleConfig.Configuration.Rules.All(x => x.Id != "NServiceBus.SQS.DeleteMessageBodies");
+            var setLifecycleConfig = (lifecycleConfig.Configuration.Rules ?? []).All(x => x.Id != "NServiceBus.SQS.DeleteMessageBodies");
 
             if (setLifecycleConfig)
             {
