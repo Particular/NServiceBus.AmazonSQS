@@ -139,7 +139,8 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
         var receivedMessages = await sqsClient.ReceiveMessageAsync(request, cancellationToken).ConfigureAwait(false);
         if (receivedMessages.Messages is { Count: > 0 })
         {
-            var clockCorrection = CorrectClockSkew.GetClockCorrectionForEndpoint(endpointUrl);
+            // In some unit test the pump is not started, with the consequence that the endpoint URL is never evaluated
+            var clockCorrection = endpointUrl == null ? TimeSpan.Zero : CorrectClockSkew.GetClockCorrectionForEndpoint(endpointUrl);
             var preparedMessages = PrepareMessages(receivedMessages, clockCorrection, cancellationToken);
 
             cancellationToken.ThrowIfCancellationRequested();

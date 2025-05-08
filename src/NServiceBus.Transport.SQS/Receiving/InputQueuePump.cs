@@ -325,7 +325,8 @@ namespace NServiceBus.Transport.SQS
                     return;
                 }
 
-                var clockCorrection = CorrectClockSkew.GetClockCorrectionForEndpoint(endpointUrl);
+                // In some unit test the pump is not started, with the consequence that the endpoint URL is never evaluated
+                var clockCorrection = endpointUrl == null ? TimeSpan.Zero : CorrectClockSkew.GetClockCorrectionForEndpoint(endpointUrl);
                 if (IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, clockCorrection))
                 {
                     await DeleteMessage(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
