@@ -8,6 +8,7 @@ namespace NServiceBus.Transport.SQS
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
+    using Amazon.Runtime;
     using Amazon.SQS;
     using Amazon.SQS.Model;
     using BitFaster.Caching.Lru;
@@ -129,6 +130,8 @@ namespace NServiceBus.Transport.SQS
                 receiveMessagesRequest.VisibilityTimeout = configuredVisibilityTimeoutInSeconds.Value;
             }
 
+            endpointUrl = sqsClient.DetermineServiceOperationEndpoint(receiveMessagesRequest).URL;
+
             maxConcurrencySemaphore = new SemaphoreSlim(maxConcurrency);
             pumpTasks = new List<Task>(numberOfPumps);
 
@@ -198,12 +201,15 @@ namespace NServiceBus.Transport.SQS
 #pragma warning restore PS0021 // Highlight when a try block passes multiple cancellation tokens
                     var receivedMessages = await sqsClient.ReceiveMessageAsync(receiveMessagesRequest, messagePumpCancellationToken).ConfigureAwait(false);
 
-                    var visibilityExpiresOn = DateTimeOffset.UtcNow.AddSeconds(visibilityTimeoutInSeconds);
-                    foreach (var receivedMessage in receivedMessages.Messages)
+                    if (receivedMessages.Messages is { Count: > 0 })
                     {
-                        await maxConcurrencySemaphore.WaitAsync(messagePumpCancellationToken).ConfigureAwait(false);
+                        var visibilityExpiresOn = DateTimeOffset.UtcNow.AddSeconds(visibilityTimeoutInSeconds);
+                        foreach (var receivedMessage in receivedMessages.Messages)
+                        {
+                            await maxConcurrencySemaphore.WaitAsync(messagePumpCancellationToken).ConfigureAwait(false);
 
-                        _ = ProcessMessageWithVisibilityRenewal(receivedMessage, visibilityExpiresOn, cancellationToken: messageProcessingCancellationTokenSource.Token);
+                            _ = ProcessMessageWithVisibilityRenewal(receivedMessage, visibilityExpiresOn, cancellationToken: messageProcessingCancellationTokenSource.Token);
+                        }
                     }
                 }
                 catch (Exception ex) when (ex.IsCausedBy(messagePumpCancellationToken))
@@ -319,7 +325,9 @@ namespace NServiceBus.Transport.SQS
                     return;
                 }
 
-                if (IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, sqsClient.Config.ClockOffset))
+                // In some unit test the pump is not started, with the consequence that the endpoint URL is never evaluated
+                var clockCorrection = endpointUrl == null ? TimeSpan.Zero : CorrectClockSkew.GetClockCorrectionForEndpoint(endpointUrl);
+                if (IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, clockCorrection))
                 {
                     await DeleteMessage(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
                 }
@@ -345,14 +353,14 @@ namespace NServiceBus.Transport.SQS
 
 
         public static string ExtractMessageId(Message receivedMessage) =>
-            receivedMessage.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute)
+            receivedMessage.MessageAttributes?.TryGetValue(Headers.MessageId, out var messageIdAttribute) is true
                 ? messageIdAttribute.StringValue
                 : receivedMessage.MessageId;
 
         public static TransportMessage ExtractTransportMessage(Message receivedMessage, string messageIdOverride)
         {
             TransportMessage transportMessage;
-            if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.Headers, out var headersAttribute))
+            if (receivedMessage.MessageAttributes?.TryGetValue(TransportHeaders.Headers, out var headersAttribute) is true)
             {
                 var headers = JsonSerializer.Deserialize<Dictionary<string, string>>(headersAttribute.StringValue) ?? [];
                 transportMessage = new TransportMessage
@@ -370,7 +378,7 @@ namespace NServiceBus.Transport.SQS
             else
             {
                 // When the MessageTypeFullName attribute is available, we're assuming native integration
-                if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.MessageTypeFullName, out var enclosedMessageType))
+                if (receivedMessage.MessageAttributes?.TryGetValue(TransportHeaders.MessageTypeFullName, out var enclosedMessageType) is true)
                 {
                     transportMessage = new TransportMessage
                     {
@@ -629,7 +637,7 @@ namespace NServiceBus.Transport.SQS
                     .ConfigureAwait(false);
                 // Ok to use LINQ here since this is not really a hot path
                 var messageAttributeValues = message.MessageAttributes
-                    .ToDictionary(pair => pair.Key, messageAttribute => messageAttribute.Value);
+                    ?.ToDictionary(pair => pair.Key, messageAttribute => messageAttribute.Value);
 
                 await sqsClient.SendMessageAsync(new SendMessageRequest
                 {
@@ -697,6 +705,7 @@ namespace NServiceBus.Transport.SQS
         OnMessage onMessage;
         SemaphoreSlim maxConcurrencySemaphore;
         string inputQueueUrl;
+        string endpointUrl;
         int maxConcurrency;
 
         readonly FastConcurrentLru<string, int> deliveryAttempts = new(1_000);

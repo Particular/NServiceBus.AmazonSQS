@@ -33,8 +33,7 @@ static class NativeEndpoint
 
             foreach (var msg in receiveMessageResponse.Messages)
             {
-                msg.MessageAttributes.TryGetValue(Headers.MessageId, out var messageIdAttribute);
-                if (messageIdAttribute?.StringValue == testRunId.ToString())
+                if (msg.MessageAttributes?.TryGetValue(Headers.MessageId, out var messageIdAttribute) is true && messageIdAttribute?.StringValue == testRunId.ToString())
                 {
                     nativeMessageAccessor?.Invoke(msg);
                 }

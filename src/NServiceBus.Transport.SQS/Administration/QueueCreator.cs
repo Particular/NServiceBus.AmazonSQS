@@ -40,10 +40,12 @@ class QueueCreator(
         // change the MaxTTLDays configuration property.
         var sqsAttributesRequest = new SetQueueAttributesRequest
         {
-            QueueUrl = createQueueResponse.QueueUrl
+            QueueUrl = createQueueResponse.QueueUrl,
+            Attributes = new Dictionary<string, string>
+            {
+                { QueueAttributeName.MessageRetentionPeriod, maxTimeToLive.TotalSeconds.ToString(CultureInfo.InvariantCulture) }
+            }
         };
-        sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod,
-            maxTimeToLive.TotalSeconds.ToString(CultureInfo.InvariantCulture));
 
         await sqsClient.SetQueueAttributesAsync(sqsAttributesRequest, cancellationToken).ConfigureAwait(false);
 
@@ -68,15 +70,17 @@ class QueueCreator(
 
             sqsAttributesRequest = new SetQueueAttributesRequest
             {
-                QueueUrl = createQueueResponse.QueueUrl
+                QueueUrl = createQueueResponse.QueueUrl,
+                Attributes = new Dictionary<string, string>
+                {
+                    { QueueAttributeName.MessageRetentionPeriod, TransportConstraints.DelayedDeliveryQueueMessageRetentionPeriod.TotalSeconds.ToString(CultureInfo.InvariantCulture) },
+                }
             };
 
             // Set the queue attributes in a separate call.
             // If you call CreateQueue with a queue name that already exists, and with a different
             // value for MessageRetentionPeriod, the service throws. This will happen if you
             // change the MaxTTLDays configuration property.
-            sqsAttributesRequest.Attributes.Add(QueueAttributeName.MessageRetentionPeriod, TransportConstraints.DelayedDeliveryQueueMessageRetentionPeriod.TotalSeconds.ToString(CultureInfo.InvariantCulture));
-
             await sqsClient.SetQueueAttributesAsync(sqsAttributesRequest, cancellationToken).ConfigureAwait(false);
         }
 
@@ -84,7 +88,7 @@ class QueueCreator(
         {
             // determine if the configured bucket exists; create it if it doesn't
             var listBucketsResponse = await s3Settings.S3Client.ListBucketsAsync(new ListBucketsRequest(), cancellationToken).ConfigureAwait(false);
-            var bucketExists = listBucketsResponse.Buckets.Any(x => string.Equals(x.BucketName, s3Settings.BucketName, StringComparison.InvariantCultureIgnoreCase));
+            var bucketExists = (listBucketsResponse.Buckets ?? []).Any(x => string.Equals(x.BucketName, s3Settings.BucketName, StringComparison.InvariantCultureIgnoreCase));
             if (!bucketExists)
             {
                 await s3Settings.S3Client.RetryConflictsAsync(async token =>
@@ -95,7 +99,7 @@ class QueueCreator(
             }
 
             var lifecycleConfig = await s3Settings.S3Client.GetLifecycleConfigurationAsync(s3Settings.BucketName, cancellationToken).ConfigureAwait(false);
-            var setLifecycleConfig = lifecycleConfig.Configuration.Rules.All(x => x.Id != "NServiceBus.SQS.DeleteMessageBodies");
+            var setLifecycleConfig = (lifecycleConfig.Configuration.Rules ?? []).All(x => x.Id != "NServiceBus.SQS.DeleteMessageBodies");
 
             if (setLifecycleConfig)
             {
@@ -130,5 +134,5 @@ class QueueCreator(
         }
     }
 
-    static ILog Logger = LogManager.GetLogger(typeof(QueueCreator));
+    static readonly ILog Logger = LogManager.GetLogger(typeof(QueueCreator));
 }

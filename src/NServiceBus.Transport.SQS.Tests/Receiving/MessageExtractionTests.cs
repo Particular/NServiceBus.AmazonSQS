@@ -233,15 +233,10 @@ class MessageExtractionTests
         Assert.That(transportMessage.Headers, Is.EquivalentTo(expectedTransportMessage.Headers), "Headers are not set correctly");
     }
 
-    class NativeMessageBuilder
+    class NativeMessageBuilder(string nativeMessageId)
     {
-        Message message;
-        Dictionary<string, string> headers = [];
-
-        public NativeMessageBuilder(string nativeMessageId)
-        {
-            message = new Message { MessageId = nativeMessageId };
-        }
+        readonly Message message = new() { MessageId = nativeMessageId, MessageAttributes = [] };
+        readonly Dictionary<string, string> headers = [];
 
         public NativeMessageBuilder If(bool condition, Action<NativeMessageBuilder> action)
         {
@@ -272,22 +267,24 @@ class MessageExtractionTests
 
         public Message Build()
         {
-            if (headers.Any())
+            if (headers.Count == 0)
             {
-                var serialized = JsonSerializer.Serialize(headers);
-                message.MessageAttributes.Add(TransportHeaders.Headers, new MessageAttributeValue
-                {
-                    StringValue = serialized
-                });
-                ;
+                return message;
             }
+
+            var serialized = JsonSerializer.Serialize(headers);
+            message.MessageAttributes.Add(TransportHeaders.Headers, new MessageAttributeValue
+            {
+                StringValue = serialized
+            });
+            ;
             return message;
         }
     }
 
     class TransportMessageBuilder
     {
-        TransportMessage message = new TransportMessage
+        readonly TransportMessage message = new TransportMessage
         {
             Headers = []
         };

@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Amazon.Auth.AccessControlPolicy;
-using Amazon.Auth.AccessControlPolicy.ActionIdentifiers;
 
 #pragma warning disable 618
 static class PolicyExtensions
@@ -89,12 +88,7 @@ static class PolicyExtensions
 
     internal static Policy ExtractPolicy(this Dictionary<string, string> queueAttributes)
     {
-        string policyStr = null;
-        if (queueAttributes.ContainsKey("Policy"))
-        {
-            policyStr = queueAttributes["Policy"];
-        }
-
+        _ = queueAttributes.TryGetValue("Policy", out string policyStr);
         return string.IsNullOrEmpty(policyStr) ? new Policy() : Policy.FromJson(policyStr);
     }
 
@@ -182,7 +176,7 @@ static class PolicyExtensions
     internal static Statement CreatePermissionStatementForQueueMatching(string queueArn, IEnumerable<string> topicArnMatchPatterns)
     {
         var statement = new Statement(Statement.StatementEffect.Allow);
-        statement.Actions.Add(SQSActionIdentifiers.SendMessage);
+        statement.Actions.Add(new ActionIdentifier("sqs:SendMessage"));
         statement.Resources.Add(new Resource(queueArn));
         statement.Principals.Add(new Principal("*"));
         var queuePermissionCondition = new Condition(ConditionFactory.ArnComparisonType.ArnLike.ToString(), "aws:SourceArn", topicArnMatchPatterns.OrderBy(t => t, OrdinalComparer).ToArray());

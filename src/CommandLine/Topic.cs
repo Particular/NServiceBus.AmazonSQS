@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
@@ -66,7 +67,7 @@ static class Topic
             upToAHundredSubscriptions = await sns.ListSubscriptionsByTopicAsync(topicArn, upToAHundredSubscriptions?.NextToken)
                 .ConfigureAwait(false);
 
-            foreach (var upToAHundredSubscription in upToAHundredSubscriptions.Subscriptions)
+            foreach (var upToAHundredSubscription in upToAHundredSubscriptions.Subscriptions ?? Enumerable.Empty<Subscription>())
             {
                 if (upToAHundredSubscription.Endpoint == queueArn)
                 {
@@ -74,7 +75,7 @@ static class Topic
                 }
             }
         }
-        while (upToAHundredSubscriptions.NextToken != null && upToAHundredSubscriptions.Subscriptions.Count > 0);
+        while (upToAHundredSubscriptions.NextToken != null && upToAHundredSubscriptions.Subscriptions is { Count: > 0 });
 
         return null;
     }

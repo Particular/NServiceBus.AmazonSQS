@@ -18,7 +18,7 @@ class MockSqsClient : IAmazonSQS
     };
     public ConcurrentQueue<string> QueueUrlRequestsSent { get; } = [];
 
-    public Task<GetQueueUrlResponse> GetQueueUrlAsync(string queueName, CancellationToken cancellationToken = new CancellationToken())
+    public Task<GetQueueUrlResponse> GetQueueUrlAsync(string queueName, CancellationToken cancellationToken = default)
     {
         QueueUrlRequestsSent.Enqueue(queueName);
         return Task.FromResult(new GetQueueUrlResponse { QueueUrl = queueName });
@@ -28,8 +28,7 @@ class MockSqsClient : IAmazonSQS
 
     public Func<SendMessageBatchRequest, SendMessageBatchResponse> BatchRequestResponse = req => new SendMessageBatchResponse();
 
-
-    public Task<SendMessageBatchResponse> SendMessageBatchAsync(SendMessageBatchRequest request, CancellationToken cancellationToken = new CancellationToken())
+    public Task<SendMessageBatchResponse> SendMessageBatchAsync(SendMessageBatchRequest request, CancellationToken cancellationToken = default)
     {
         BatchRequestsSent.Enqueue(request);
         return Task.FromResult(BatchRequestResponse(request));
@@ -39,7 +38,7 @@ class MockSqsClient : IAmazonSQS
 
     public Func<DeleteMessageBatchRequest, DeleteMessageBatchResponse> DeleteMessageBatchRequestResponse = req => new DeleteMessageBatchResponse();
 
-    public Task<DeleteMessageBatchResponse> DeleteMessageBatchAsync(DeleteMessageBatchRequest request, CancellationToken cancellationToken = new CancellationToken())
+    public Task<DeleteMessageBatchResponse> DeleteMessageBatchAsync(DeleteMessageBatchRequest request, CancellationToken cancellationToken = default)
     {
         DeleteMessageBatchRequestsSent.Enqueue(request);
         return Task.FromResult(DeleteMessageBatchRequestResponse(request));
@@ -49,7 +48,7 @@ class MockSqsClient : IAmazonSQS
 
     public Func<ChangeMessageVisibilityBatchRequest, ChangeMessageVisibilityBatchResponse> ChangeMessageVisibilityBatchRequestResponse = req => new ChangeMessageVisibilityBatchResponse();
 
-    public Task<ChangeMessageVisibilityBatchResponse> ChangeMessageVisibilityBatchAsync(ChangeMessageVisibilityBatchRequest request, CancellationToken cancellationToken = new CancellationToken())
+    public Task<ChangeMessageVisibilityBatchResponse> ChangeMessageVisibilityBatchAsync(ChangeMessageVisibilityBatchRequest request, CancellationToken cancellationToken = default)
     {
         ChangeMessageVisibilityBatchRequestsSent.Enqueue(request);
         return Task.FromResult(ChangeMessageVisibilityBatchRequestResponse(request));
@@ -59,13 +58,13 @@ class MockSqsClient : IAmazonSQS
 
     public Func<(string queueUrl, string receiptHandle), DeleteMessageResponse> DeleteMessageRequestResponse = req => new DeleteMessageResponse();
 
-    public Task<DeleteMessageResponse> DeleteMessageAsync(string queueUrl, string receiptHandle, CancellationToken cancellationToken = new CancellationToken())
+    public Task<DeleteMessageResponse> DeleteMessageAsync(string queueUrl, string receiptHandle, CancellationToken cancellationToken = default)
     {
         DeleteMessageRequestsSent.Enqueue((queueUrl, receiptHandle));
         return Task.FromResult(DeleteMessageRequestResponse((queueUrl, receiptHandle)));
     }
 
-    public Task<DeleteMessageResponse> DeleteMessageAsync(DeleteMessageRequest request, CancellationToken cancellationToken = new CancellationToken())
+    public Task<DeleteMessageResponse> DeleteMessageAsync(DeleteMessageRequest request, CancellationToken cancellationToken = default)
     {
         DeleteMessageRequestsSent.Enqueue((request.QueueUrl, request.ReceiptHandle));
         return Task.FromResult(DeleteMessageRequestResponse((request.QueueUrl, request.ReceiptHandle)));
@@ -75,7 +74,7 @@ class MockSqsClient : IAmazonSQS
     public Func<SendMessageRequest, SendMessageResponse> RequestResponse = req => new SendMessageResponse();
 
 
-    public Task<SendMessageResponse> SendMessageAsync(SendMessageRequest request, CancellationToken cancellationToken = new CancellationToken())
+    public Task<SendMessageResponse> SendMessageAsync(SendMessageRequest request, CancellationToken cancellationToken = default)
     {
         RequestsSent.Enqueue(request);
         return Task.FromResult(RequestResponse(request));
@@ -104,7 +103,7 @@ class MockSqsClient : IAmazonSQS
         }
     };
 
-    public Task<GetQueueAttributesResponse> GetQueueAttributesAsync(string queueUrl, List<string> attributeNames, CancellationToken cancellationToken = new CancellationToken())
+    public Task<GetQueueAttributesResponse> GetQueueAttributesAsync(string queueUrl, List<string> attributeNames, CancellationToken cancellationToken = default)
     {
         GetAttributeNamesRequestsSent.Enqueue((queueUrl, attributeNames));
         return Task.FromResult(GetAttributeNamesRequestsResponse(queueUrl, attributeNames));
@@ -113,7 +112,6 @@ class MockSqsClient : IAmazonSQS
     public ConcurrentQueue<(string queueUrl, Dictionary<string, string> attributes)> SetAttributesRequestsSent { get; } = [];
 
     public Dictionary<string, Queue<Dictionary<string, string>>> SetAttributesRequestsSentByUrl { get; } = [];
-
 
     public Task SetAttributesAsync(string queueUrl, Dictionary<string, string> attributes)
     {
@@ -135,8 +133,7 @@ class MockSqsClient : IAmazonSQS
         return Task.CompletedTask;
     }
 
-    public void EnableGetAttributeReturnsWhatWasSet()
-    {
+    public void EnableGetAttributeReturnsWhatWasSet() =>
         GetAttributeRequestsResponse = queueUrl =>
         {
             if (!SetAttributesRequestsSentByUrl.TryGetValue(queueUrl, out Queue<Dictionary<string, string>> queue))
@@ -156,7 +153,6 @@ class MockSqsClient : IAmazonSQS
             }
             return queue.Dequeue();
         };
-    }
 
     public ConcurrentQueue<ReceiveMessageRequest> ReceiveMessagesRequestsSent { get; } = [];
     public Func<ReceiveMessageRequest, CancellationToken, ReceiveMessageResponse> ReceiveMessagesRequestResponse = (req, token) =>
@@ -165,7 +161,7 @@ class MockSqsClient : IAmazonSQS
         return new ReceiveMessageResponse();
     };
 
-    public Task<ReceiveMessageResponse> ReceiveMessageAsync(ReceiveMessageRequest request, CancellationToken cancellationToken = new CancellationToken())
+    public Task<ReceiveMessageResponse> ReceiveMessageAsync(ReceiveMessageRequest request, CancellationToken cancellationToken = default)
     {
         ReceiveMessagesRequestsSent.Enqueue(request);
         return Task.FromResult(ReceiveMessagesRequestResponse(request, cancellationToken));
@@ -184,357 +180,75 @@ class MockSqsClient : IAmazonSQS
         return Task.FromResult(ChangeMessageVisibilityRequestResponse(request, cancellationToken));
     }
 
+    public Endpoint DetermineServiceOperationEndpoint(AmazonWebServiceRequest request) => new("https://sqs.us-east-1.amazonaws.com");
+
     public bool DisposeInvoked { get; private set; }
 
     public void Dispose() => DisposeInvoked = true;
 
     #region NotImplemented
 
-    public Dictionary<string, string> GetAttributes(string queueUrl)
-    {
+    public Task<ChangeMessageVisibilityResponse> ChangeMessageVisibilityAsync(string queueUrl, string receiptHandle, int? visibilityTimeout,
+        CancellationToken cancellationToken = default) =>
         throw new NotImplementedException();
-    }
 
-    public void SetAttributes(string queueUrl, Dictionary<string, string> attributes)
-    {
-        throw new NotImplementedException();
-    }
-
-    public string AuthorizeS3ToSendMessage(string queueUrl, string bucket)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<string> AuthorizeS3ToSendMessageAsync(string queueUrl, string bucket)
-    {
-        throw new NotImplementedException();
-    }
-
-    public AddPermissionResponse AddPermission(string queueUrl, string label, List<string> awsAccountIds, List<string> actions)
-    {
-        throw new NotImplementedException();
-    }
-
-    public AddPermissionResponse AddPermission(AddPermissionRequest request)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<AddPermissionResponse> AddPermissionAsync(string queueUrl, string label, List<string> awsAccountIds, List<string> actions, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<AddPermissionResponse> AddPermissionAsync(AddPermissionRequest request, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
-
-    public CancelMessageMoveTaskResponse CancelMessageMoveTask(CancelMessageMoveTaskRequest request) => throw new NotImplementedException();
-
-    public Task<CancelMessageMoveTaskResponse> CancelMessageMoveTaskAsync(CancelMessageMoveTaskRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
-
-    public ChangeMessageVisibilityResponse ChangeMessageVisibility(string queueUrl, string receiptHandle, int visibilityTimeout)
-    {
-        throw new NotImplementedException();
-    }
-
-    public ChangeMessageVisibilityResponse ChangeMessageVisibility(ChangeMessageVisibilityRequest request)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<ChangeMessageVisibilityResponse> ChangeMessageVisibilityAsync(string queueUrl, string receiptHandle, int visibilityTimeout, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
-
-    public ChangeMessageVisibilityBatchResponse ChangeMessageVisibilityBatch(string queueUrl, List<ChangeMessageVisibilityBatchRequestEntry> entries)
-    {
-        throw new NotImplementedException();
-    }
-
-    public ChangeMessageVisibilityBatchResponse ChangeMessageVisibilityBatch(ChangeMessageVisibilityBatchRequest request)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<ChangeMessageVisibilityBatchResponse> ChangeMessageVisibilityBatchAsync(string queueUrl, List<ChangeMessageVisibilityBatchRequestEntry> entries, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
-
-    public CreateQueueResponse CreateQueue(string queueName)
-    {
-        throw new NotImplementedException();
-    }
-
-    public CreateQueueResponse CreateQueue(CreateQueueRequest request)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<CreateQueueResponse> CreateQueueAsync(string queueName, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<CreateQueueResponse> CreateQueueAsync(CreateQueueRequest request, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
-
-    public DeleteMessageResponse DeleteMessage(string queueUrl, string receiptHandle)
-    {
-        throw new NotImplementedException();
-    }
-
-    public DeleteMessageResponse DeleteMessage(DeleteMessageRequest request)
-    {
-        throw new NotImplementedException();
-    }
-
-    public DeleteMessageBatchResponse DeleteMessageBatch(string queueUrl, List<DeleteMessageBatchRequestEntry> entries)
-    {
-        throw new NotImplementedException();
-    }
-
-    public DeleteMessageBatchResponse DeleteMessageBatch(DeleteMessageBatchRequest request)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<DeleteMessageBatchResponse> DeleteMessageBatchAsync(string queueUrl, List<DeleteMessageBatchRequestEntry> entries, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
-
-    public DeleteQueueResponse DeleteQueue(string queueUrl)
-    {
-        throw new NotImplementedException();
-    }
-
-    public DeleteQueueResponse DeleteQueue(DeleteQueueRequest request)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<DeleteQueueResponse> DeleteQueueAsync(string queueUrl, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<DeleteQueueResponse> DeleteQueueAsync(DeleteQueueRequest request, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
-
-    public GetQueueAttributesResponse GetQueueAttributes(string queueUrl, List<string> attributeNames)
-    {
-        throw new NotImplementedException();
-    }
+    public Task<string> AuthorizeS3ToSendMessageAsync(string queueUrl, string bucket) => throw new NotImplementedException();
 
-    public GetQueueAttributesResponse GetQueueAttributes(GetQueueAttributesRequest request)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<GetQueueAttributesResponse> GetQueueAttributesAsync(GetQueueAttributesRequest request, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
-
-    public GetQueueUrlResponse GetQueueUrl(string queueName)
-    {
-        throw new NotImplementedException();
-    }
-
-    public GetQueueUrlResponse GetQueueUrl(GetQueueUrlRequest request)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<GetQueueUrlResponse> GetQueueUrlAsync(GetQueueUrlRequest request, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
-
-    public ListDeadLetterSourceQueuesResponse ListDeadLetterSourceQueues(ListDeadLetterSourceQueuesRequest request)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<ListDeadLetterSourceQueuesResponse> ListDeadLetterSourceQueuesAsync(ListDeadLetterSourceQueuesRequest request, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
-
-    public ListMessageMoveTasksResponse ListMessageMoveTasks(ListMessageMoveTasksRequest request) => throw new NotImplementedException();
-
-    public Task<ListMessageMoveTasksResponse> ListMessageMoveTasksAsync(ListMessageMoveTasksRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
-
-    public ListQueuesResponse ListQueues(string queueNamePrefix)
-    {
-        throw new NotImplementedException();
-    }
-
-    public ListQueuesResponse ListQueues(ListQueuesRequest request)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<ListQueuesResponse> ListQueuesAsync(string queueNamePrefix, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<ListQueuesResponse> ListQueuesAsync(ListQueuesRequest request, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
-
-    public ListQueueTagsResponse ListQueueTags(ListQueueTagsRequest request)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<ListQueueTagsResponse> ListQueueTagsAsync(ListQueueTagsRequest request, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
+    public Task<AddPermissionResponse> AddPermissionAsync(string queueUrl, string label, List<string> awsAccountIds, List<string> actions, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public PurgeQueueResponse PurgeQueue(string queueUrl)
-    {
-        throw new NotImplementedException();
-    }
-
-    public PurgeQueueResponse PurgeQueue(PurgeQueueRequest request)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<PurgeQueueResponse> PurgeQueueAsync(string queueUrl, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<PurgeQueueResponse> PurgeQueueAsync(PurgeQueueRequest request, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
+    public Task<AddPermissionResponse> AddPermissionAsync(AddPermissionRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public ReceiveMessageResponse ReceiveMessage(string queueUrl)
-    {
-        throw new NotImplementedException();
-    }
+    public Task<CancelMessageMoveTaskResponse> CancelMessageMoveTaskAsync(CancelMessageMoveTaskRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public ReceiveMessageResponse ReceiveMessage(ReceiveMessageRequest request)
-    {
-        throw new NotImplementedException();
-    }
+    public Task<ChangeMessageVisibilityBatchResponse> ChangeMessageVisibilityBatchAsync(string queueUrl, List<ChangeMessageVisibilityBatchRequestEntry> entries, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public Task<ReceiveMessageResponse> ReceiveMessageAsync(string queueUrl, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
+    public Task<CreateQueueResponse> CreateQueueAsync(string queueName, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
+    public Task<CreateQueueResponse> CreateQueueAsync(CreateQueueRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
+    public Task<DeleteMessageBatchResponse> DeleteMessageBatchAsync(string queueUrl, List<DeleteMessageBatchRequestEntry> entries, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public RemovePermissionResponse RemovePermission(string queueUrl, string label)
-    {
-        throw new NotImplementedException();
-    }
+    public Task<DeleteQueueResponse> DeleteQueueAsync(string queueUrl, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public RemovePermissionResponse RemovePermission(RemovePermissionRequest request)
-    {
-        throw new NotImplementedException();
-    }
+    public Task<DeleteQueueResponse> DeleteQueueAsync(DeleteQueueRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public Task<RemovePermissionResponse> RemovePermissionAsync(string queueUrl, string label, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
+    public Task<GetQueueAttributesResponse> GetQueueAttributesAsync(GetQueueAttributesRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public Task<RemovePermissionResponse> RemovePermissionAsync(RemovePermissionRequest request, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
+    public Task<GetQueueUrlResponse> GetQueueUrlAsync(GetQueueUrlRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public SendMessageResponse SendMessage(string queueUrl, string messageBody)
-    {
-        throw new NotImplementedException();
-    }
+    public Task<ListDeadLetterSourceQueuesResponse> ListDeadLetterSourceQueuesAsync(ListDeadLetterSourceQueuesRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public SendMessageResponse SendMessage(SendMessageRequest request)
-    {
-        throw new NotImplementedException();
-    }
+    public Task<ListMessageMoveTasksResponse> ListMessageMoveTasksAsync(ListMessageMoveTasksRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public Task<SendMessageResponse> SendMessageAsync(string queueUrl, string messageBody, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
+    public Task<ListQueuesResponse> ListQueuesAsync(string queueNamePrefix, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public SendMessageBatchResponse SendMessageBatch(string queueUrl, List<SendMessageBatchRequestEntry> entries)
-    {
-        throw new NotImplementedException();
-    }
+    public Task<ListQueuesResponse> ListQueuesAsync(ListQueuesRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public SendMessageBatchResponse SendMessageBatch(SendMessageBatchRequest request)
-    {
-        throw new NotImplementedException();
-    }
+    public Task<ListQueueTagsResponse> ListQueueTagsAsync(ListQueueTagsRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public Task<SendMessageBatchResponse> SendMessageBatchAsync(string queueUrl, List<SendMessageBatchRequestEntry> entries, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
+    public Task<PurgeQueueResponse> PurgeQueueAsync(string queueUrl, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public SetQueueAttributesResponse SetQueueAttributes(string queueUrl, Dictionary<string, string> attributes)
-    {
-        throw new NotImplementedException();
-    }
+    public Task<PurgeQueueResponse> PurgeQueueAsync(PurgeQueueRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public SetQueueAttributesResponse SetQueueAttributes(SetQueueAttributesRequest request)
-    {
-        throw new NotImplementedException();
-    }
+    public Task<ReceiveMessageResponse> ReceiveMessageAsync(string queueUrl, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public Task<SetQueueAttributesResponse> SetQueueAttributesAsync(string queueUrl, Dictionary<string, string> attributes, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
+    public Task<RemovePermissionResponse> RemovePermissionAsync(string queueUrl, string label, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public Task<SetQueueAttributesResponse> SetQueueAttributesAsync(SetQueueAttributesRequest request, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
+    public Task<RemovePermissionResponse> RemovePermissionAsync(RemovePermissionRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public StartMessageMoveTaskResponse StartMessageMoveTask(StartMessageMoveTaskRequest request) => throw new NotImplementedException();
+    public Task<SendMessageResponse> SendMessageAsync(string queueUrl, string messageBody, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public Task<StartMessageMoveTaskResponse> StartMessageMoveTaskAsync(StartMessageMoveTaskRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
+    public Task<SendMessageBatchResponse> SendMessageBatchAsync(string queueUrl, List<SendMessageBatchRequestEntry> entries, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public TagQueueResponse TagQueue(TagQueueRequest request)
-    {
-        throw new NotImplementedException();
-    }
+    public Task<SetQueueAttributesResponse> SetQueueAttributesAsync(string queueUrl, Dictionary<string, string> attributes, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public Task<TagQueueResponse> TagQueueAsync(TagQueueRequest request, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
+    public Task<SetQueueAttributesResponse> SetQueueAttributesAsync(SetQueueAttributesRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public UntagQueueResponse UntagQueue(UntagQueueRequest request)
-    {
-        throw new NotImplementedException();
-    }
+    public Task<StartMessageMoveTaskResponse> StartMessageMoveTaskAsync(StartMessageMoveTaskRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public Task<UntagQueueResponse> UntagQueueAsync(UntagQueueRequest request, CancellationToken cancellationToken = new CancellationToken())
-    {
-        throw new NotImplementedException();
-    }
+    public Task<TagQueueResponse> TagQueueAsync(TagQueueRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public Endpoint DetermineServiceOperationEndpoint(AmazonWebServiceRequest request) => throw new NotImplementedException();
+    public Task<UntagQueueResponse> UntagQueueAsync(UntagQueueRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
     public ISQSPaginatorFactory Paginators { get; }
 

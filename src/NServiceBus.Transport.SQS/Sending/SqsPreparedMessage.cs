@@ -9,7 +9,7 @@ class SqsPreparedMessage
     public string MessageId
     {
         get => MessageAttributes.ContainsKey(Headers.MessageId) ? MessageAttributes[Headers.MessageId].StringValue : null;
-        set =>
+        init =>
             // because message attributes are part of the content size restriction we want to prevent message size from changing thus we add it
             // for native delayed deliver as well even though the information is slightly redundant (MessageId is assigned to MessageDeduplicationId for example)
             MessageAttributes[Headers.MessageId] = new MessageAttributeValue
@@ -21,7 +21,6 @@ class SqsPreparedMessage
     public string Body { get; set; }
     public string Destination { get; set; }
     public long Size { get; private set; }
-
     public string OriginalDestination { get; set; }
     public string QueueUrl { get; set; }
     public int DelaySeconds { get; set; }
@@ -40,19 +39,21 @@ class SqsPreparedMessage
     long CalculateAttributesSize()
     {
         var size = 0L;
-        foreach (var messageAttributeValue in MessageAttributes)
+        foreach ((string key, MessageAttributeValue attributeValue) in MessageAttributes)
         {
-            size += messageAttributeValue.Key.Length;
-            var attributeValue = messageAttributeValue.Value;
+            size += key.Length;
             size += attributeValue.DataType?.Length ?? 0;
             size += attributeValue.StringValue?.Length ?? 0;
-            var stringValuesSum = 0;
-            foreach (var x in attributeValue.StringListValues)
-            {
-                stringValuesSum += x?.Length ?? 0;
-            }
 
-            size += stringValuesSum;
+            if (attributeValue.StringListValues is { Count: > 0 })
+            {
+                var stringValuesSum = 0;
+                foreach (var x in attributeValue.StringListValues)
+                {
+                    stringValuesSum += x?.Length ?? 0;
+                }
+                size += stringValuesSum;
+            }
 
             try
             {
@@ -63,20 +64,22 @@ class SqsPreparedMessage
                 // if we can't determine the length we ignore it for now
             }
 
-            var binaryValuesSum = 0L;
-            foreach (var x in attributeValue.BinaryListValues)
+            if (attributeValue.BinaryListValues is { Count: > 0 })
             {
-                try
+                var binaryValuesSum = 0L;
+                foreach (var x in attributeValue.BinaryListValues)
                 {
-                    binaryValuesSum += x?.Length ?? 0;
+                    try
+                    {
+                        binaryValuesSum += x?.Length ?? 0;
+                    }
+                    catch (Exception)
+                    {
+                        // if we can't determine the length we ignore it for now
+                    }
                 }
-                catch (Exception)
-                {
-                    // if we can't determine the length we ignore it for now
-                }
+                size += binaryValuesSum;
             }
-
-            size += binaryValuesSum;
         }
 
         return size;
