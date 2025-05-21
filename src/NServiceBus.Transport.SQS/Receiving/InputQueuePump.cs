@@ -5,12 +5,12 @@ namespace NServiceBus.Transport.SQS
     using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.ExceptionServices;
-    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Amazon.SQS;
     using Amazon.SQS.Model;
     using BitFaster.Caching.Lru;
+    using Envelopes;
     using Extensibility;
     using Extensions;
     using Logging;
@@ -43,12 +43,12 @@ namespace NServiceBus.Transport.SQS
                     ? $"Queue `{ReceiveAddress}` doesn't exist. Ensure this process has the required permissions to create queues on Amazon SQS."
                     : $"Queue `{ReceiveAddress}` doesn't exist. Call endpointConfiguration.EnableInstallers() to create the queues at startup, or create them manually.";
                 throw new QueueDoesNotExistException(
-                        msg,
-                        ex,
-                        ex.ErrorType,
-                        ex.ErrorCode,
-                        ex.RequestId,
-                        ex.StatusCode);
+                    msg,
+                    ex,
+                    ex.ErrorType,
+                    ex.ErrorCode,
+                    ex.RequestId,
+                    ex.StatusCode);
             }
 
             // An explicit visibility timeout takes precedence to control the receive request so there is no need to list the queue attributes in that case.
@@ -351,106 +351,9 @@ namespace NServiceBus.Transport.SQS
 
         public static TransportMessage ExtractTransportMessage(Message receivedMessage, string messageIdOverride)
         {
-            TransportMessage transportMessage;
-            if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.Headers, out var headersAttribute))
-            {
-                var headers = JsonSerializer.Deserialize<Dictionary<string, string>>(headersAttribute.StringValue) ?? [];
-                transportMessage = new TransportMessage
-                {
-                    Headers = headers,
-                    Body = receivedMessage.Body
-                };
-                transportMessage.CopyMessageAttributes(receivedMessage.MessageAttributes);
+            var envelopeTranslatorRouter = EnvelopeTranslatorRouter.Initialize();
 
-                // It is possible that the transport message already had a message ID and that one
-                // takes precedence
-                transportMessage.Headers.TryAdd(Headers.MessageId, messageIdOverride);
-                transportMessage.S3BodyKey = transportMessage.Headers.GetValueOrDefault(TransportHeaders.S3BodyKey);
-            }
-            else
-            {
-                // When the MessageTypeFullName attribute is available, we're assuming native integration
-                if (receivedMessage.MessageAttributes.TryGetValue(TransportHeaders.MessageTypeFullName, out var enclosedMessageType))
-                {
-                    transportMessage = new TransportMessage
-                    {
-                        Headers = [],
-                        Body = receivedMessage.Body
-                    };
-                    transportMessage.CopyMessageAttributes(receivedMessage.MessageAttributes);
-
-                    transportMessage.Headers[Headers.MessageId] = messageIdOverride;
-                    transportMessage.Headers[Headers.EnclosedMessageTypes] = enclosedMessageType.StringValue;
-                    transportMessage.S3BodyKey = transportMessage.Headers.GetValueOrDefault(TransportHeaders.S3BodyKey);
-                }
-                else
-                {
-                    try
-                    {
-                        transportMessage = JsonSerializer.Deserialize<TransportMessage>(receivedMessage.Body, transportMessageSerializerOptions);
-
-                        if (CouldBeNativeMessage(transportMessage))
-                        {
-                            Logger.DebugFormat(
-                                "Message with native id {0} does not contain the required information and will not be treated as an NServiceBus TransportMessage. Instead it'll be treated as pure native message.", receivedMessage.MessageId);
-
-                            transportMessage = new TransportMessage
-                            {
-                                Body = receivedMessage.Body,
-                                Headers = []
-                            };
-                            transportMessage.CopyMessageAttributes(receivedMessage.MessageAttributes);
-                            // For native integration scenarios the native message id should be used
-                            transportMessage.Headers[Headers.MessageId] = receivedMessage.MessageId;
-                        }
-                        else
-                        {
-                            // It is possible that the transport message already had a message ID and that one
-                            // takes precedence
-                            transportMessage.Headers.TryAdd(Headers.MessageId, messageIdOverride);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        //HINT: Deserialization is best-effort. If it fails, we trat the message as a native message
-                        Logger.Debug(
-                            $"Failed to deserialize message with native id {receivedMessage.MessageId}. It will not be treated as an NServiceBus TransportMessage. Instead it'll be treated as pure native message.", ex);
-
-                        transportMessage = new TransportMessage
-                        {
-                            Body = receivedMessage.Body,
-                            Headers = []
-                        };
-                        transportMessage.CopyMessageAttributes(receivedMessage.MessageAttributes);
-                        // For native integration scenarios the native message id should be used
-                        transportMessage.Headers[Headers.MessageId] = receivedMessage.MessageId;
-                    }
-                }
-            }
-
-            return transportMessage;
-        }
-
-        static bool CouldBeNativeMessage(TransportMessage msg)
-        {
-            if (msg.Headers == null)
-            {
-                return true;
-            }
-
-            if (msg.Headers.ContainsKey(Headers.ControlMessageHeader) &&
-                msg.Headers[Headers.ControlMessageHeader] == true.ToString())
-            {
-                return false;
-            }
-
-            if (!msg.Headers.ContainsKey(Headers.MessageId) &&
-                !msg.Headers.ContainsKey(Headers.EnclosedMessageTypes))
-            {
-                return true;
-            }
-
-            return false;
+            return envelopeTranslatorRouter.TranslateIncoming(receivedMessage, messageIdOverride);
         }
 
         async Task<bool> InnerProcessMessage(Dictionary<string, string> headers, string nativeMessageId, ReadOnlyMemory<byte> body, Message nativeMessage, CancellationToken messageProcessingCancellationToken)
@@ -521,12 +424,7 @@ namespace NServiceBus.Transport.SQS
             try
             {
                 await sqsClient.ChangeMessageVisibilityAsync(
-                    new ChangeMessageVisibilityRequest
-                    {
-                        QueueUrl = inputQueueUrl,
-                        ReceiptHandle = message.ReceiptHandle,
-                        VisibilityTimeout = 0
-                    },
+                    new ChangeMessageVisibilityRequest { QueueUrl = inputQueueUrl, ReceiptHandle = message.ReceiptHandle, VisibilityTimeout = 0 },
                     CancellationToken.None).ConfigureAwait(false);
             }
             catch (ReceiptHandleIsInvalidException ex)
@@ -631,12 +529,7 @@ namespace NServiceBus.Transport.SQS
                 var messageAttributeValues = message.MessageAttributes
                     .ToDictionary(pair => pair.Key, messageAttribute => messageAttribute.Value);
 
-                await sqsClient.SendMessageAsync(new SendMessageRequest
-                {
-                    QueueUrl = errorQueueUrl,
-                    MessageBody = message.Body,
-                    MessageAttributes = messageAttributeValues
-                }, cancellationToken).ConfigureAwait(false);
+                await sqsClient.SendMessageAsync(new SendMessageRequest { QueueUrl = errorQueueUrl, MessageBody = message.Body, MessageAttributes = messageAttributeValues }, cancellationToken).ConfigureAwait(false);
                 // The Attributes on message are read-only attributes provided by SQS
                 // and can't be re-sent. Unfortunately all the SQS metadata
                 // such as SentTimestamp is reset with this send.
@@ -646,12 +539,7 @@ namespace NServiceBus.Transport.SQS
                 Logger.Error($"Error moving poison message to error queue at url {errorQueueUrl}. Moving back to input queue.", ex);
                 try
                 {
-                    await sqsClient.ChangeMessageVisibilityAsync(new ChangeMessageVisibilityRequest
-                    {
-                        QueueUrl = inputQueueUrl,
-                        ReceiptHandle = message.ReceiptHandle,
-                        VisibilityTimeout = 0
-                    }, cancellationToken).ConfigureAwait(false);
+                    await sqsClient.ChangeMessageVisibilityAsync(new ChangeMessageVisibilityRequest { QueueUrl = inputQueueUrl, ReceiptHandle = message.ReceiptHandle, VisibilityTimeout = 0 }, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception changeMessageVisibilityEx) when (!changeMessageVisibilityEx.IsCausedBy(cancellationToken))
                 {
@@ -663,11 +551,7 @@ namespace NServiceBus.Transport.SQS
 
             try
             {
-                await sqsClient.DeleteMessageAsync(new DeleteMessageRequest
-                {
-                    QueueUrl = inputQueueUrl,
-                    ReceiptHandle = message.ReceiptHandle
-                }, CancellationToken.None) // We don't want the delete to be cancellable to avoid unnecessary duplicates of poison messages
+                await sqsClient.DeleteMessageAsync(new DeleteMessageRequest { QueueUrl = inputQueueUrl, ReceiptHandle = message.ReceiptHandle }, CancellationToken.None) // We don't want the delete to be cancellable to avoid unnecessary duplicates of poison messages
                     .ConfigureAwait(false);
             }
             catch (AmazonSQSException ex) when (ex.IsCausedByMessageVisibilityExpiry())
@@ -701,11 +585,6 @@ namespace NServiceBus.Transport.SQS
 
         readonly FastConcurrentLru<string, int> deliveryAttempts = new(1_000);
         readonly FastConcurrentLru<string, bool> messagesToBeDeleted = new(1_000);
-
-        static readonly JsonSerializerOptions transportMessageSerializerOptions = new()
-        {
-            TypeInfoResolver = TransportMessageSerializerContext.Default
-        };
 
         int numberOfMessagesToFetch;
         ReceiveMessageRequest receiveMessagesRequest;
