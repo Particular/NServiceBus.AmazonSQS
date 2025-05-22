@@ -1,0 +1,9 @@
+// Copy this file with your values into local.settings.json
+// Make sure the file is set as Content and Copy if Newer
+{
+  "Aws": {
+    "Region": "us-west-2",
+    "AccessKey": "YOURACCESSKEY",
+    "SecretAccessKey": "YOURSECRETACCESSKEY"
+  }
+}
