@@ -349,12 +349,8 @@ namespace NServiceBus.Transport.SQS
                 ? messageIdAttribute.StringValue
                 : receivedMessage.MessageId;
 
-        public static TransportMessage ExtractTransportMessage(Message receivedMessage, string messageIdOverride)
-        {
-            var envelopeTranslatorRouter = EnvelopeTranslatorRouter.Initialize();
-
-            return envelopeTranslatorRouter.TranslateIncoming(receivedMessage, messageIdOverride);
-        }
+        public static TransportMessage ExtractTransportMessage(Message receivedMessage, string messageIdOverride) =>
+            envelopeTranslatorRouter.TranslateIncoming(receivedMessage, messageIdOverride);
 
         async Task<bool> InnerProcessMessage(Dictionary<string, string> headers, string nativeMessageId, ReadOnlyMemory<byte> body, Message nativeMessage, CancellationToken messageProcessingCancellationToken)
         {
@@ -593,5 +589,7 @@ namespace NServiceBus.Transport.SQS
         int visibilityTimeoutInSeconds;
 
         static readonly ILog Logger = LogManager.GetLogger<MessagePump>();
+
+        static readonly EnvelopeTranslatorRouter envelopeTranslatorRouter = EnvelopeTranslatorRouter.Initialize();
     }
 }

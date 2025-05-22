@@ -1,6 +1,7 @@
 namespace NServiceBus.Transport.SQS.Envelopes;
 
 using System.Collections.Generic;
+using System.Linq;
 using Amazon.SQS.Model;
 
 class EnvelopeTranslatorRouter(IEnumerable<IMessageEnvelopeTranslator> translators)
@@ -29,5 +30,19 @@ class EnvelopeTranslatorRouter(IEnumerable<IMessageEnvelopeTranslator> translato
         translationResult ??= new DefaultTranslator().TryTranslateIncoming(message, messageIdOverride);
 
         return translationResult.Message;
+    }
+
+    internal bool TranslateIfNeeded(OutgoingMessage message, out OutgoingMessageTranslationResult result)
+    {
+        result = null;
+
+        if (message.Headers.TryGetValue("NServiceBus.OutgoingTranslator", out string outgoingTranslatorName))
+        {
+            result = translators.FirstOrDefault(x => x.GetType().Name == outgoingTranslatorName)?.TryTranslateOutgoing(message);
+
+            return result?.Success == true;
+        }
+
+        return false;
     }
 }

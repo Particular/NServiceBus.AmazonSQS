@@ -52,6 +52,8 @@ class DefaultTranslator : IMessageEnvelopeTranslator
         return result;
     }
 
+    public OutgoingMessageTranslationResult TryTranslateOutgoing(OutgoingMessage message) => throw new InvalidOperationException("The default translator should not be used for outgoing messages");
+
     static bool CouldBeNativeMessage(TransportMessage msg)
     {
         if (msg.Headers == null)

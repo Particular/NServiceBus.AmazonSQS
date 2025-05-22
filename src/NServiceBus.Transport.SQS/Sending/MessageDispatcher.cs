@@ -14,6 +14,7 @@ using Amazon.S3.Model;
 using Amazon.SimpleNotificationService;
 using Amazon.SQS;
 using Amazon.SQS.Model;
+using Envelopes;
 using Logging;
 using Settings;
 using Transport;
@@ -443,10 +444,16 @@ partial class MessageDispatcher(
     (string, string) GetMessageBodyAndHeaders(OutgoingMessage outgoingMessage)
     {
         string body;
+        var headers = outgoingMessage.Headers;
         if (outgoingMessage.Body.IsEmpty)
         {
             // this could be a control message
             body = TransportMessage.EmptyMessage;
+        }
+        else if (envelopeTranslatorRouter.TranslateIfNeeded(outgoingMessage, out var translationResult))
+        {
+            body = translationResult.Body;
+            headers = translationResult.Headers;
         }
         else if (!wrapOutgoingMessages)
         {
@@ -463,9 +470,9 @@ partial class MessageDispatcher(
         }
 
         // probably think about how compact this should be?
-        var headers = JsonSerializer.Serialize(outgoingMessage.Headers);
+        var serializedHeaders = JsonSerializer.Serialize(headers);
 
-        return (body, headers);
+        return (body, serializedHeaders);
     }
 
     [GeneratedRegex(@"^[\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD\u10000-\u10FFFF]*$", RegexOptions.Singleline)]
@@ -480,13 +487,7 @@ partial class MessageDispatcher(
 
         var key = $"{s3.KeyPrefix}/{messageId}";
         using var bodyStream = new ReadonlyStream(transportOperation.Message.Body);
-        var putObjectRequest = new PutObjectRequest
-        {
-            BucketName = s3.BucketName,
-            InputStream = bodyStream,
-            Key = key,
-            DisablePayloadSigning = s3.DisablePayloadSigning
-        };
+        var putObjectRequest = new PutObjectRequest { BucketName = s3.BucketName, InputStream = bodyStream, Key = key, DisablePayloadSigning = s3.DisablePayloadSigning };
 
         s3.NullSafeEncryption.ModifyPutRequest(putObjectRequest);
 
@@ -525,11 +526,7 @@ partial class MessageDispatcher(
             sqsPreparedMessage.MessageDeduplicationId = sqsPreparedMessage.MessageId;
             sqsPreparedMessage.MessageGroupId = sqsPreparedMessage.MessageId;
 
-            sqsPreparedMessage.MessageAttributes[TransportHeaders.DelaySeconds] = new MessageAttributeValue
-            {
-                StringValue = delaySeconds.ToString(),
-                DataType = "String"
-            };
+            sqsPreparedMessage.MessageAttributes[TransportHeaders.DelaySeconds] = new MessageAttributeValue { StringValue = delaySeconds.ToString(), DataType = "String" };
         }
         else
         {
@@ -560,11 +557,8 @@ partial class MessageDispatcher(
 
     readonly HybridPubSubChecker hybridPubSubChecker = new(settings, topicCache, queueCache, snsClient);
 
-    readonly JsonSerializerOptions transportMessageSerializerOptions = new()
-    {
-        Converters = { new ReducedPayloadSerializerConverter() },
-        TypeInfoResolver = TransportMessageSerializerContext.Default
-    };
+    readonly JsonSerializerOptions transportMessageSerializerOptions = new() { Converters = { new ReducedPayloadSerializerConverter() }, TypeInfoResolver = TransportMessageSerializerContext.Default };
 
     static readonly ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
+    static readonly EnvelopeTranslatorRouter envelopeTranslatorRouter = EnvelopeTranslatorRouter.Initialize();
 }

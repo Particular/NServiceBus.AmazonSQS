@@ -1,6 +1,7 @@
 namespace NServiceBus.Transport.SQS.Envelopes;
 
 using System;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Amazon.SQS.Model;
@@ -19,9 +20,13 @@ class JustSayingTranslator : IMessageEnvelopeTranslator
             {
                 if (!string.IsNullOrEmpty(jsMessage.Message?.Id.ToString()) && !string.IsNullOrEmpty(jsMessage.Subject))
                 {
-                    var transportMessage = new TransportMessage { Headers = { [Headers.MessageId] = jsMessage.Message.Id.ToString(), [Headers.EnclosedMessageTypes] = jsMessage.Subject }, Body = jsMessage.MessageJson };
+                    var transportMessage = new TransportMessage { Headers = [], Body = jsMessage.MessageJson };
 
                     transportMessage.CopyMessageAttributes(message.MessageAttributes);
+
+                    transportMessage.Headers[Headers.MessageId] = jsMessage.Message.Id.ToString();
+                    transportMessage.Headers[Headers.EnclosedMessageTypes] = jsMessage.Subject;
+                    transportMessage.Headers["NServiceBus.IncomingTranslator"] = GetType().Name;
 
                     result.Success = true;
                     result.Message = transportMessage;
@@ -36,6 +41,19 @@ class JustSayingTranslator : IMessageEnvelopeTranslator
         return result;
     }
 
+    public OutgoingMessageTranslationResult TryTranslateOutgoing(OutgoingMessage message)
+    {
+        var result = new OutgoingMessageTranslationResult { Success = true };
+
+        var jsMessageJson = Encoding.UTF8.GetString(message.Body.Span);
+        var jsWrapper = new JustSayingWrapper { Subject = message.Headers[Headers.EnclosedMessageTypes], MessageJson = jsMessageJson };
+
+        result.Headers = [];
+        result.Body = JsonSerializer.Serialize(jsWrapper);
+
+        return result;
+    }
+
     class JustSayingWrapper
     {
         public string MessageId { get; set; }
@@ -44,14 +62,16 @@ class JustSayingTranslator : IMessageEnvelopeTranslator
         [JsonPropertyName("Message")] public string MessageJson { get; set; }
 
         [JsonIgnore] public JustSayingMessage Message => JsonSerializer.Deserialize<JustSayingMessage>(MessageJson);
-        public string Conversation { get; set; }
-        public string RaisingComponent { get; set; }
-        public string SourceIp { get; set; }
     }
 
     class JustSayingMessage
     {
         public Guid Id { get; set; }
         public DateTime TimeStamp { get; set; }
+        public string RaisingComponent { get; set; }
+        public string Version { get; set; }
+        public string SourceIp { get; set; }
+        public string Tenant { get; set; }
+        public string Conversation { get; set; }
     }
 }
