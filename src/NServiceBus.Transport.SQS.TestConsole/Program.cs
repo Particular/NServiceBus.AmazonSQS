@@ -52,7 +52,9 @@ class Program
     static Task OnMessage(MessageContext messagecontext, CancellationToken cancellationtoken)
     {
         var body = JsonSerializer.Deserialize<JsonNode>(Encoding.UTF8.GetString(messagecontext.Body.Span));
-        Console.WriteLine($"\n----------Received message----------\nHeaders:\n{JsonSerializer.Serialize(messagecontext.Headers, new JsonSerializerOptions { WriteIndented = true })}\nBody:\n{JsonSerializer.Serialize(body, new JsonSerializerOptions { WriteIndented = true })}");
+        Console.WriteLine($"\n----------Received message----------" +
+                          $"\nHeaders:\n{JsonSerializer.Serialize(messagecontext.Headers, new JsonSerializerOptions { WriteIndented = true })}" +
+                          $"\nBody:\n{JsonSerializer.Serialize(body, new JsonSerializerOptions { WriteIndented = true })}");
         return Task.CompletedTask;
     }
 }
