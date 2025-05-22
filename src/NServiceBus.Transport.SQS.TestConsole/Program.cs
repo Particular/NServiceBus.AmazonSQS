@@ -2,6 +2,9 @@
 
 namespace NServiceBus.Transport.SQS.TestConsole;
 
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Amazon;
 using Amazon.Runtime;
 using Amazon.SimpleNotificationService;
@@ -31,15 +34,7 @@ class Program
         var receiver = infra.Receivers[queueName];
         await receiver.Initialize(new PushRuntimeSettings(), OnMessage, OnError, cancellationToken: cts.Token).ConfigureAwait(false);
         await receiver.StartReceive(cts.Token).ConfigureAwait(false);
-        // await Task.Run(async () =>
-        // {
-        //     await receiver.StartReceive(cts.Token).ConfigureAwait(false);
-        //     // while (!cts.IsCancellationRequested)
-        //     // {
-        //     //     await Task.Delay(100, cts.Token).ConfigureAwait(false);
-        //     //     await infra.Receivers[queueName].StartReceive(cts.Token).ConfigureAwait(false);
-        //     // }
-        // }, cts.Token).ConfigureAwait(false);
+
 
         Console.ReadKey();
 
@@ -56,7 +51,8 @@ class Program
 
     static Task OnMessage(MessageContext messagecontext, CancellationToken cancellationtoken)
     {
-        Console.WriteLine("received");
+        var body = JsonSerializer.Deserialize<JsonNode>(Encoding.UTF8.GetString(messagecontext.Body.Span));
+        Console.WriteLine($"\n----------Received message----------\nHeaders:\n{JsonSerializer.Serialize(messagecontext.Headers, new JsonSerializerOptions { WriteIndented = true })}\nBody:\n{JsonSerializer.Serialize(body, new JsonSerializerOptions { WriteIndented = true })}");
         return Task.CompletedTask;
     }
 }
