@@ -3,6 +3,7 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -721,6 +722,8 @@ public class CommandLineTests
 
     async Task<(string output, string error, int exitCode)> Execute(string command)
     {
+        var frameworkVersion = RuntimeInformation.FrameworkDescription.AsSpan()[5..];
+
         var process = new Process
         {
             StartInfo =
@@ -730,7 +733,7 @@ public class CommandLineTests
                 WorkingDirectory = TestContext.CurrentContext.TestDirectory,
                 FileName = "dotnet",
                 Arguments =
-                    $"--fx-version {Environment.Version} NServiceBus.Transports.SQS.CommandLine.dll {command} -i {accessKeyId} -s {secretAccessKey} -r {region}"
+                    $"--fx-version {frameworkVersion} NServiceBus.Transports.SQS.CommandLine.dll {command} -i {accessKeyId} -s {secretAccessKey} -r {region}"
             }
         };
 
