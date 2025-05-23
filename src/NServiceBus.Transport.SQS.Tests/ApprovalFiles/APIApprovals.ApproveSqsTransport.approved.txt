@@ -16,18 +16,6 @@ namespace NServiceBus
         public bool SetupTopicPoliciesWhenSubscribing { get; set; }
         public bool TopicNamePrefixCondition { get; set; }
         public System.Collections.Generic.List<string> TopicNamespaceConditions { get; }
-        [System.Obsolete("Use `AccountCondition` instead. The member currently throws a NotImplementedExcep" +
-            "tion. Will be removed in version 8.0.0.", true)]
-        public void AddAccountCondition() { }
-        [System.Obsolete("Use `TopicNamespaceConditions` instead. The member currently throws a NotImplemen" +
-            "tedException. Will be removed in version 8.0.0.", true)]
-        public void AddNamespaceCondition(string topicNamespace) { }
-        [System.Obsolete("Use `TopicNamePrefixCondition` instead. The member currently throws a NotImplemen" +
-            "tedException. Will be removed in version 8.0.0.", true)]
-        public void AddTopicNamePrefixCondition() { }
-        [System.Obsolete("Use `SetupTopicPoliciesWhenSubscribing` instead. The member currently throws a No" +
-            "tImplementedException. Will be removed in version 8.0.0.", true)]
-        public void AssumePolicyHasAppropriatePermissions() { }
     }
     public abstract class S3EncryptionMethod
     {
@@ -60,24 +48,12 @@ namespace NServiceBus
         public NServiceBus.S3EncryptionMethod Encryption { get; set; }
         public string KeyPrefix { get; }
         public Amazon.S3.IAmazonS3 S3Client { get; }
-        [System.Obsolete("Use `Client or S3Settings constructor` instead. The member currently throws a Not" +
-            "ImplementedException. Will be removed in version 8.0.0.", true)]
-        public void ClientFactory(System.Func<Amazon.S3.IAmazonS3> factory) { }
-        [System.Obsolete("Use `Encryption` instead. The member currently throws a NotImplementedException. " +
-            "Will be removed in version 8.0.0.", true)]
-        public void ServerSideCustomerEncryption(Amazon.S3.ServerSideEncryptionCustomerMethod encryptionMethod, string providedKey, string providedKeyMD5 = null) { }
-        [System.Obsolete("Use `Encryption` instead. The member currently throws a NotImplementedException. " +
-            "Will be removed in version 8.0.0.", true)]
-        public void ServerSideEncryption(Amazon.S3.ServerSideEncryptionMethod encryptionMethod, string keyManagementServiceKeyId = null) { }
     }
     public class SqsTransport : NServiceBus.Transport.TransportDefinition
     {
         public SqsTransport(bool disableUnrestrictedDelayedDelivery = false) { }
         public SqsTransport(Amazon.SQS.IAmazonSQS sqsClient, Amazon.SimpleNotificationService.IAmazonSimpleNotificationService snsClient, bool disableUnrestrictedDelayedDelivery = false) { }
         public bool DoNotWrapOutgoingMessages { get; set; }
-        [System.Obsolete("The SQS transport no longer supports 1.x compatibility mode. Will be removed in v" +
-            "ersion 8.0.0.", true)]
-        public bool EnableV1CompatibilityMode { get; set; }
         public System.TimeSpan MaxAutoMessageVisibilityRenewalDuration { get; set; }
         public System.TimeSpan MaxTimeToLive { get; set; }
         public System.TimeSpan? MessageVisibilityTimeout { get; set; }
@@ -98,20 +74,12 @@ namespace NServiceBus
         public void MapEvent<TSubscribedEvent>(System.Collections.Generic.IEnumerable<string> customTopicsNames) { }
         public void MapEvent<TSubscribedEvent>(string customTopicName) { }
         public void MapEvent<TSubscribedEvent, TPublishedEvent>() { }
-        [System.Obsolete("Inject the ITransportAddressResolver type to access the address translation mecha" +
-            "nism at runtime. See the NServiceBus version 8 upgrade guide for further details" +
-            ". The member currently throws a NotImplementedException. Will be removed in vers" +
-            "ion 8.0.0.", true)]
-        public override string ToTransportAddress(NServiceBus.Transport.QueueAddress address) { }
     }
     public static class SqsTransportSettings
     {
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> ClientFactory(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Func<Amazon.SQS.IAmazonSQS> factory) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> ClientFactory(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Func<Amazon.SimpleNotificationService.IAmazonSimpleNotificationService> factory) { }
         public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> DoNotWrapOutgoingMessages(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
-        [System.Obsolete("The SQS transport no longer supports 1.x compatibility mode. The member currently" +
-            " throws a NotImplementedException. Will be removed in version 8.0.0.", true)]
-        public static NServiceBus.TransportExtensions<NServiceBus.SqsTransport> EnableV1CompatibilityMode(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
         public static void MapEvent(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Type eventType, string customTopicName) { }
         public static void MapEvent(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Type subscribedEventType, System.Collections.Generic.IEnumerable<string> customTopicsNames) { }
         public static void MapEvent(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions, System.Type subscribedEventType, System.Type publishedEventType) { }
@@ -134,8 +102,8 @@ namespace NServiceBus.Transport.SQS.Configure
 {
     public class SqsSubscriptionMigrationModeSettings : NServiceBus.SubscriptionMigrationModeSettings
     {
-        [System.Obsolete("Use the SqsTransport.MessageVisibilityTimeout property instead. Will be treated a" +
-            "s an error from version 8.0.0. Will be removed in version 9.0.0.", false)]
+        [System.Obsolete("Use the SqsTransport.MessageVisibilityTimeout property instead. Will be removed i" +
+            "n version 9.0.0.", true)]
         public NServiceBus.SubscriptionMigrationModeSettings MessageVisibilityTimeout(int timeoutInSeconds) { }
         public NServiceBus.SubscriptionMigrationModeSettings SubscriptionsCacheTTL(System.TimeSpan ttl) { }
         public NServiceBus.Transport.SQS.Configure.SqsSubscriptionMigrationModeSettings TopicCacheTTL(System.TimeSpan ttl) { }
