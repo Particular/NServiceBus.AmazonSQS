@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="../.github/workflows/ci.yml" />
+    <File Path="../.github/workflows/release.yml" />
+    <File Path="Custom.Build.props" />
+  </Folder>
+  <Project Path="CommandLine/NServiceBus.Transports.SQS.CommandLine.csproj" />
+  <Project Path="CommandLineTests/NServiceBus.Transports.SQS.CommandLine.Tests.csproj" />
+  <Project Path="NServiceBus.Transport.SQS.AcceptanceTests/NServiceBus.Transport.SQS.AcceptanceTests.csproj" />
+  <Project Path="NServiceBus.Transport.SQS.Tests/NServiceBus.Transport.SQS.Tests.csproj" />
+  <Project Path="NServiceBus.Transport.SQS.TransportTests.DoNotWrapOutgoingMessages/NServiceBus.Transport.SQS.TransportTests.DoNotWrapOutgoingMessages.csproj" />
+  <Project Path="NServiceBus.Transport.SQS.TransportTests/NServiceBus.Transport.SQS.TransportTests.csproj" />
+  <Project Path="NServiceBus.Transport.SQS/NServiceBus.Transport.SQS.csproj" />
+</Solution>
