@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <!-- This project can be replaced with a permutation once the core supports it for transport tests https://github.com/Particular/NServiceBus/issues/7231 -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -23,27 +24,16 @@
   <ItemGroup>
     <Compile Include="..\NServiceBus.Transport.SQS.Tests\Cleanup.cs" />
     <Compile Include="..\NServiceBus.Transport.SQS.Tests\ClientFactories.cs" />
-    <Compile Include="..\NServiceBus.Transport.SQS.TransportTests\EnvironmentHelper.cs">
-      <Link>EnvironmentHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\NServiceBus.Transport.SQS.TransportTests\Sending_poison_messages.cs">
-      <Link>Sending_poison_messages.cs</Link>
-    </Compile>
-    <Compile Include="..\NServiceBus.Transport.SQS.TransportTests\Sending_to_non_existing_queues.cs">
-      <Link>Sending_to_non_existing_queues.cs</Link>
-    </Compile>
-    <Compile Include="..\NServiceBus.Transport.SQS.TransportTests\SetupFixture.cs">
-      <Link>SetupFixture.cs</Link>
-    </Compile>
-    <Compile Include="..\NServiceBus.Transport.SQS.TransportTests\TestNameHelper.cs">
-      <Link>TestNameHelper.cs</Link>
-    </Compile>
+    <Compile Include="..\NServiceBus.Transport.SQS.TransportTests\EnvironmentHelper.cs" />
+    <Compile Include="..\NServiceBus.Transport.SQS.TransportTests\Sending_poison_messages.cs" />
+    <Compile Include="..\NServiceBus.Transport.SQS.TransportTests\Sending_to_non_existing_queues.cs" />
+    <Compile Include="..\NServiceBus.Transport.SQS.TransportTests\SetupFixture.cs" />
+    <Compile Include="..\NServiceBus.Transport.SQS.TransportTests\TestNameHelper.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(PkgNServiceBus_TransportTests_Sources)' != ''">
     <!-- See https://github.com/Particular/NServiceBus.AmazonSQS/issues/2425 -->
     <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\When_starting_again.cs" />
-    <!-- The following tests currently fail on the CI build server. They are being excluded from the sources until they are fixed. -->
     <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\When_multiple_messages_are_available_and_concurrency_is_increased_after_pump_started.cs" />
     <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\When_multiple_messages_are_available_and_concurrency_is_increased_and_decreased_after_pump_started.cs" />
     <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\When_multiple_messages_are_available_and_concurrency_is_lowered_after_pump_started.cs" />
