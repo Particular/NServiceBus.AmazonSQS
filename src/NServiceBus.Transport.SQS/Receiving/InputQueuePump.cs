@@ -298,12 +298,6 @@ namespace NServiceBus.Transport.SQS
                 try
                 {
                     (messageContext, messageId, messageBodyBuffer) = await messageTranslation.CreateMessageContext(receivedMessage, messageId, ReceiveAddress, s3Settings, arrayPool, cancellationToken).ConfigureAwait(false);
-                    //translatedMessage = messageTranslation.TranslateIncoming(receivedMessage, nativeMessageId);
-
-                    // messageId = translationResult.messageId;
-                    // messageBodyBuffer = translationResult.messageBodyBuffer;
-                    // messageId = translatedMessage.Headers[Headers.MessageId];
-                    // (messageBody, messageBodyBuffer) = await translatedMessage.RetrieveBody(messageId, s3Settings, arrayPool, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception ex) when (!ex.IsCausedBy(cancellationToken))
                 {
@@ -330,7 +324,6 @@ namespace NServiceBus.Transport.SQS
                 {
                     // here we also want to use the native message id because the core demands it like that
                     var messageProcessed = await InnerProcessMessage(messageContext, cancellationToken).ConfigureAwait(false);
-                    //var messageProcessed = await InnerProcessMessage(translatedMessage.Headers, nativeMessageId, messageBody, receivedMessage, cancellationToken).ConfigureAwait(false);
 
                     if (messageProcessed)
                     {
@@ -398,28 +391,6 @@ namespace NServiceBus.Transport.SQS
 
             return true;
         }
-
-        // async Task<bool> InnerProcessMessage(Dictionary<string, string> headers, string nativeMessageId, ReadOnlyMemory<byte> body, Message nativeMessage, CancellationToken messageProcessingCancellationToken)
-        // {
-        //     // set the native message on the context for advanced usage scenario's
-        //     var context = new ContextBag();
-        //     context.Set(nativeMessage);
-        //
-        //     context.Set("EnvelopeFormat", "TBD");
-        //     // We add it to the transport transaction to make it available in dispatching scenario's so we copy over message attributes when moving messages to the error/audit queue
-        //     var transportTransaction = new TransportTransaction();
-        //     transportTransaction.Set(nativeMessage);
-        //     transportTransaction.Set("IncomingMessageId", headers[Headers.MessageId]);
-        //
-        //     return await InnerProcessMessage(new MessageContext(
-        //         nativeMessageId,
-        //         new Dictionary<string, string>(headers),
-        //         body,
-        //         transportTransaction,
-        //         ReceiveAddress,
-        //         context), messageProcessingCancellationToken).ConfigureAwait(false);
-        // }
-
 
 #pragma warning disable PS0018 //Cancellation token intentionally not passed because cancellation shouldn't stop messages from being returned to the queue
         async Task ReturnMessageToQueue(Message message)

@@ -3,28 +3,25 @@ namespace NServiceBus.Transport.SQS.Envelopes;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using Amazon.SQS.Model;
 
-partial class SqsHeadersTranslator : IMessageEnvelopeTranslator
+partial class MessageTypeFullNameTranslator : IMessageTranslator
 {
     public TranslatedMessage TryTranslateIncoming(Message message, string messageIdOverride)
     {
         var result = new TranslatedMessage { TranslatorName = GetType().Name };
 
-        if (message.MessageAttributes.TryGetValue(TransportHeaders.Headers, out MessageAttributeValue headersAttribute))
+        // When the MessageTypeFullName attribute is available, we're assuming native integration
+        if (message.MessageAttributes.TryGetValue(TransportHeaders.MessageTypeFullName, out MessageAttributeValue enclosedMessageType))
         {
-            result.Headers = JsonSerializer.Deserialize<Dictionary<string, string>>(headersAttribute.StringValue) ?? [];
             result.CopyMessageAttributes(message.MessageAttributes);
-
-            // It is possible that the transport message already had a message ID and that one
-            // takes precedence
-            result.Headers.TryAdd(Headers.MessageId, messageIdOverride);
+            result.Headers[Headers.MessageId] = messageIdOverride;
+            result.Headers[Headers.EnclosedMessageTypes] = enclosedMessageType.StringValue;
             result.S3BodyKey = result.Headers.GetValueOrDefault(TransportHeaders.S3BodyKey);
+            result.Body = message.Body;
 
             result.Success = true;
-            result.Body = message.Body;
         }
 
         return result;
@@ -41,6 +38,7 @@ partial class SqsHeadersTranslator : IMessageEnvelopeTranslator
         var headers = new Dictionary<string, string>(message.Headers);
 
         headers.Remove(Headers.MessageId);
+        headers.Remove(Headers.EnclosedMessageTypes);
 
         return new OutgoingMessageTranslationResult { Success = true, Body = body, Headers = headers };
     }

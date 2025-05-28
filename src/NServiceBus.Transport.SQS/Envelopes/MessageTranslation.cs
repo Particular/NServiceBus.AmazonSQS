@@ -8,11 +8,11 @@ using System.Threading.Tasks;
 using Amazon.SQS.Model;
 using Extensibility;
 
-class MessageTranslation(IEnumerable<IMessageEnvelopeTranslator> translators)
+class MessageTranslation(IEnumerable<IMessageTranslator> translators)
 {
-    internal static MessageTranslation Initialize(IEnumerable<IMessageEnvelopeTranslator> additionalTranslators = null)
+    internal static MessageTranslation Initialize(IEnumerable<IMessageTranslator> additionalTranslators = null)
     {
-        var translators = new List<IMessageEnvelopeTranslator> { new SqsHeadersTranslator(), new MessageTypeFullNameTranslator(), new JustSayingTranslator(), new TransportMessageTranslator() };
+        var translators = new List<IMessageTranslator> { new SqsHeadersTranslator(), new MessageTypeFullNameTranslator(), new JustSayingTranslator(), new TransportMessageTranslator() };
 
         translators.AddRange(additionalTranslators ?? []);
 
@@ -22,7 +22,7 @@ class MessageTranslation(IEnumerable<IMessageEnvelopeTranslator> translators)
     internal TranslatedMessage TranslateIncoming(Message message, string messageIdOverride)
     {
         TranslatedMessage translationResult = null;
-        foreach (IMessageEnvelopeTranslator translator in translators)
+        foreach (IMessageTranslator translator in translators)
         {
             translationResult = translator.TryTranslateIncoming(message, messageIdOverride);
             if (translationResult.Success)
@@ -39,7 +39,7 @@ class MessageTranslation(IEnumerable<IMessageEnvelopeTranslator> translators)
     internal async Task<(MessageContext context, string messageId, byte[] messageBodyBuffer)> CreateMessageContext(Message message, string messageIdOverride, string receiveAddress, S3Settings s3Settings, ArrayPool<byte> arrayPool, CancellationToken cancellationToken = default)
     {
         TranslatedMessage translatedMessage = null;
-        foreach (IMessageEnvelopeTranslator translator in translators)
+        foreach (IMessageTranslator translator in translators)
         {
             translatedMessage = translator.TryTranslateIncoming(message, messageIdOverride);
             if (translatedMessage.Success)

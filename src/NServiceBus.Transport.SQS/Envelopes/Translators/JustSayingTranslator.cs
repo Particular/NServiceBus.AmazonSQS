@@ -6,7 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Amazon.SQS.Model;
 
-class JustSayingTranslator : IMessageEnvelopeTranslator
+class JustSayingTranslator : IMessageTranslator
 {
     public TranslatedMessage TryTranslateIncoming(Message message, string messageIdOverride)
     {

@@ -3,7 +3,7 @@ namespace NServiceBus.Transport.SQS.Envelopes;
 using System;
 using Amazon.SQS.Model;
 
-class NativeTranslator : IMessageEnvelopeTranslator
+class NativeTranslator : IMessageTranslator
 {
     public TranslatedMessage TryTranslateIncoming(Message message, string messageIdOverride)
     {

@@ -5,7 +5,7 @@ using System.Text.Json;
 using Amazon.SQS.Model;
 using Logging;
 
-class TransportMessageTranslator : IMessageEnvelopeTranslator
+class TransportMessageTranslator : IMessageTranslator
 {
     static readonly ILog Logger = LogManager.GetLogger<MessagePump>();
     static readonly JsonSerializerOptions transportMessageSerializerOptions = new() { TypeInfoResolver = TransportMessageSerializerContext.Default };
