@@ -361,7 +361,7 @@ partial class MessageDispatcher(
 
         if (!wrapOutgoingMessages)
         {
-            (preparedMessage.Body, var headers) = GetMessageBodyAndHeaders(transportOperation.Message);
+            (preparedMessage.Body, var headers) = GetMessageBodyAndHeaders(transportOperation);
             preparedMessage.MessageAttributes[TransportHeaders.Headers] = new MessageAttributeValue { StringValue = headers, DataType = "String" };
 
             await PrepareSqsMessageBasedOnBodySize(null).ConfigureAwait(false);
@@ -396,7 +396,7 @@ partial class MessageDispatcher(
 
         if (!wrapOutgoingMessages)
         {
-            (preparedMessage.Body, var headers) = GetMessageBodyAndHeaders(transportOperation.Message);
+            (preparedMessage.Body, var headers) = GetMessageBodyAndHeaders(transportOperation);
             preparedMessage.MessageAttributes[TransportHeaders.Headers] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue() { StringValue = headers, DataType = "String" };
 
             await PrepareSnsMessageBasedOnBodySize(null).ConfigureAwait(false);
@@ -441,32 +441,32 @@ partial class MessageDispatcher(
         return forwardingANativeMessage ? nativeMessage.MessageAttributes : null;
     }
 
-    (string, string) GetMessageBodyAndHeaders(OutgoingMessage outgoingMessage)
+    (string, string) GetMessageBodyAndHeaders(IOutgoingTransportOperation transportOperation)
     {
         string body;
-        var headers = outgoingMessage.Headers;
-        if (outgoingMessage.Body.IsEmpty)
+        var headers = transportOperation.Message.Headers;
+        if (transportOperation.Message.Body.IsEmpty)
         {
             // this could be a control message
             body = TransportMessage.EmptyMessage;
         }
-        else if (envelopeTranslatorRouter.TranslateIfNeeded(outgoingMessage, out var translationResult))
+        else if (messageTranslation.TranslateIfNeeded(transportOperation, out var translationResult))
         {
             body = translationResult.Body;
             headers = translationResult.Headers;
         }
         else if (!wrapOutgoingMessages)
         {
-            body = Encoding.UTF8.GetString(outgoingMessage.Body.Span);
+            body = Encoding.UTF8.GetString(transportOperation.Message.Body.Span);
             if (!ValidSqsCharacters().IsMatch(body))
             {
-                body = Convert.ToBase64String(outgoingMessage.Body.Span);
+                body = Convert.ToBase64String(transportOperation.Message.Body.Span);
             }
         }
         else
         {
             // this is any payload type
-            body = Encoding.UTF8.GetString(outgoingMessage.Body.Span);
+            body = Encoding.UTF8.GetString(transportOperation.Message.Body.Span);
         }
 
         // probably think about how compact this should be?
@@ -560,5 +560,5 @@ partial class MessageDispatcher(
     readonly JsonSerializerOptions transportMessageSerializerOptions = new() { Converters = { new ReducedPayloadSerializerConverter() }, TypeInfoResolver = TransportMessageSerializerContext.Default };
 
     static readonly ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
-    static readonly EnvelopeTranslatorRouter envelopeTranslatorRouter = EnvelopeTranslatorRouter.Initialize();
+    static readonly MessageTranslation messageTranslation = MessageTranslation.Initialize();
 }

@@ -5,13 +5,12 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Amazon.SQS.Model;
-using Extensions;
 
 class JustSayingTranslator : IMessageEnvelopeTranslator
 {
-    public IncomingMessageTranslationResult TryTranslateIncoming(Message message, string messageIdOverride)
+    public TranslatedMessage TryTranslateIncoming(Message message, string messageIdOverride)
     {
-        var result = new IncomingMessageTranslationResult { TranslatorName = GetType().Name };
+        var result = new TranslatedMessage { TranslatorName = GetType().Name };
 
         try
         {
@@ -20,16 +19,14 @@ class JustSayingTranslator : IMessageEnvelopeTranslator
             {
                 if (!string.IsNullOrEmpty(jsMessage.Message?.Id.ToString()) && !string.IsNullOrEmpty(jsMessage.Subject))
                 {
-                    var transportMessage = new TransportMessage { Headers = [], Body = jsMessage.MessageJson };
+                    result.CopyMessageAttributes(message.MessageAttributes);
 
-                    transportMessage.CopyMessageAttributes(message.MessageAttributes);
+                    result.Headers[Headers.MessageId] = jsMessage.Message.Id.ToString();
+                    result.Headers[Headers.EnclosedMessageTypes] = jsMessage.Subject;
 
-                    transportMessage.Headers[Headers.MessageId] = jsMessage.Message.Id.ToString();
-                    transportMessage.Headers[Headers.EnclosedMessageTypes] = jsMessage.Subject;
-                    transportMessage.Headers["NServiceBus.IncomingTranslator"] = GetType().Name;
-
+                    result.TranslatorName = GetType().Name;
+                    result.Body = message.Body;
                     result.Success = true;
-                    result.Message = transportMessage;
                 }
             }
         }
@@ -48,7 +45,9 @@ class JustSayingTranslator : IMessageEnvelopeTranslator
         var jsMessageJson = Encoding.UTF8.GetString(message.Body.Span);
         var jsWrapper = new JustSayingWrapper { Subject = message.Headers[Headers.EnclosedMessageTypes], MessageJson = jsMessageJson };
 
-        result.Headers = [];
+        result.Headers = message.Headers;
+        result.Headers.Remove(Headers.MessageId);
+        result.Headers.Remove(Headers.EnclosedMessageTypes);
         result.Body = JsonSerializer.Serialize(jsWrapper);
 
         return result;

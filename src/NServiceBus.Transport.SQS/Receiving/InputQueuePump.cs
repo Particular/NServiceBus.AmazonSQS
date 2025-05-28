@@ -11,7 +11,6 @@ namespace NServiceBus.Transport.SQS
     using Amazon.SQS.Model;
     using BitFaster.Caching.Lru;
     using Envelopes;
-    using Extensibility;
     using Extensions;
     using Logging;
     using Message = Amazon.SQS.Model.Message;
@@ -279,12 +278,12 @@ namespace NServiceBus.Transport.SQS
 #pragma warning restore PS0003 // A parameter of type CancellationToken on a non-private delegate or method should be optional
         {
             var arrayPool = ArrayPool<byte>.Shared;
-            ReadOnlyMemory<byte> messageBody = null;
             byte[] messageBodyBuffer = null;
-            TransportMessage transportMessage = null;
+            TranslatedMessage translatedMessage = null;
             Exception exception = null;
             var isPoisonMessage = false;
             var nativeMessageId = receivedMessage.MessageId;
+            MessageContext messageContext = null;
 
             if (messagesToBeDeleted.TryGet(nativeMessageId, out _))
             {
@@ -298,9 +297,13 @@ namespace NServiceBus.Transport.SQS
 
                 try
                 {
-                    transportMessage = ExtractTransportMessage(receivedMessage, nativeMessageId);
-                    messageId = transportMessage.Headers[Headers.MessageId];
-                    (messageBody, messageBodyBuffer) = await transportMessage.RetrieveBody(messageId, s3Settings, arrayPool, cancellationToken).ConfigureAwait(false);
+                    (messageContext, messageId, messageBodyBuffer) = await messageTranslation.CreateMessageContext(receivedMessage, messageId, ReceiveAddress, s3Settings, arrayPool, cancellationToken).ConfigureAwait(false);
+                    //translatedMessage = messageTranslation.TranslateIncoming(receivedMessage, nativeMessageId);
+
+                    // messageId = translationResult.messageId;
+                    // messageBodyBuffer = translationResult.messageBodyBuffer;
+                    // messageId = translatedMessage.Headers[Headers.MessageId];
+                    // (messageBody, messageBodyBuffer) = await translatedMessage.RetrieveBody(messageId, s3Settings, arrayPool, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception ex) when (!ex.IsCausedBy(cancellationToken))
                 {
@@ -319,18 +322,19 @@ namespace NServiceBus.Transport.SQS
                     return;
                 }
 
-                if (IsMessageExpired(receivedMessage, transportMessage.Headers, messageId, sqsClient.Config.ClockOffset))
+                if (IsMessageExpired(receivedMessage, translatedMessage.Headers, messageId, sqsClient.Config.ClockOffset))
                 {
-                    await DeleteMessage(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
+                    await DeleteMessage(receivedMessage, translatedMessage.S3BodyKey).ConfigureAwait(false);
                 }
                 else
                 {
                     // here we also want to use the native message id because the core demands it like that
-                    var messageProcessed = await InnerProcessMessage(transportMessage.Headers, nativeMessageId, messageBody, receivedMessage, cancellationToken).ConfigureAwait(false);
+                    var messageProcessed = await InnerProcessMessage(messageContext, cancellationToken).ConfigureAwait(false);
+                    //var messageProcessed = await InnerProcessMessage(translatedMessage.Headers, nativeMessageId, messageBody, receivedMessage, cancellationToken).ConfigureAwait(false);
 
                     if (messageProcessed)
                     {
-                        await DeleteMessage(receivedMessage, transportMessage.S3BodyKey).ConfigureAwait(false);
+                        await DeleteMessage(receivedMessage, translatedMessage.S3BodyKey).ConfigureAwait(false);
                     }
                 }
             }
@@ -349,45 +353,28 @@ namespace NServiceBus.Transport.SQS
                 ? messageIdAttribute.StringValue
                 : receivedMessage.MessageId;
 
-        public static TransportMessage ExtractTransportMessage(Message receivedMessage, string messageIdOverride) =>
-            envelopeTranslatorRouter.TranslateIncoming(receivedMessage, messageIdOverride);
-
-        async Task<bool> InnerProcessMessage(Dictionary<string, string> headers, string nativeMessageId, ReadOnlyMemory<byte> body, Message nativeMessage, CancellationToken messageProcessingCancellationToken)
+        async Task<bool> InnerProcessMessage(MessageContext messageContext, CancellationToken messageProcessingCancellationToken)
         {
-            // set the native message on the context for advanced usage scenario's
-            var context = new ContextBag();
-            context.Set(nativeMessage);
-            // We add it to the transport transaction to make it available in dispatching scenario's so we copy over message attributes when moving messages to the error/audit queue
-            var transportTransaction = new TransportTransaction();
-            transportTransaction.Set(nativeMessage);
-            transportTransaction.Set("IncomingMessageId", headers[Headers.MessageId]);
-
             try
             {
-                var messageContext = new MessageContext(
-                    nativeMessageId,
-                    new Dictionary<string, string>(headers),
-                    body,
-                    transportTransaction,
-                    ReceiveAddress,
-                    context);
-
                 await onMessage(messageContext, messageProcessingCancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex) when (!ex.IsCausedBy(messageProcessingCancellationToken))
             {
+                var nativeMessageId = messageContext.NativeMessageId;
+                var nativeMessage = messageContext.Extensions.Get<Message>();
                 var deliveryAttempts = GetDeliveryAttempts(nativeMessageId, nativeMessage);
 
                 try
                 {
                     var errorHandlerResult = await onError(new ErrorContext(ex,
-                        new Dictionary<string, string>(headers),
+                        messageContext.Headers,
                         nativeMessageId,
-                        body,
-                        transportTransaction,
+                        messageContext.Body,
+                        messageContext.TransportTransaction,
                         deliveryAttempts,
                         ReceiveAddress,
-                        context), messageProcessingCancellationToken).ConfigureAwait(false);
+                        messageContext.Extensions), messageProcessingCancellationToken).ConfigureAwait(false);
 
                     if (errorHandlerResult == ErrorHandleResult.RetryRequired)
                     {
@@ -411,6 +398,27 @@ namespace NServiceBus.Transport.SQS
 
             return true;
         }
+
+        // async Task<bool> InnerProcessMessage(Dictionary<string, string> headers, string nativeMessageId, ReadOnlyMemory<byte> body, Message nativeMessage, CancellationToken messageProcessingCancellationToken)
+        // {
+        //     // set the native message on the context for advanced usage scenario's
+        //     var context = new ContextBag();
+        //     context.Set(nativeMessage);
+        //
+        //     context.Set("EnvelopeFormat", "TBD");
+        //     // We add it to the transport transaction to make it available in dispatching scenario's so we copy over message attributes when moving messages to the error/audit queue
+        //     var transportTransaction = new TransportTransaction();
+        //     transportTransaction.Set(nativeMessage);
+        //     transportTransaction.Set("IncomingMessageId", headers[Headers.MessageId]);
+        //
+        //     return await InnerProcessMessage(new MessageContext(
+        //         nativeMessageId,
+        //         new Dictionary<string, string>(headers),
+        //         body,
+        //         transportTransaction,
+        //         ReceiveAddress,
+        //         context), messageProcessingCancellationToken).ConfigureAwait(false);
+        // }
 
 
 #pragma warning disable PS0018 //Cancellation token intentionally not passed because cancellation shouldn't stop messages from being returned to the queue
@@ -590,6 +598,6 @@ namespace NServiceBus.Transport.SQS
 
         static readonly ILog Logger = LogManager.GetLogger<MessagePump>();
 
-        static readonly EnvelopeTranslatorRouter envelopeTranslatorRouter = EnvelopeTranslatorRouter.Initialize();
+        static readonly MessageTranslation messageTranslation = MessageTranslation.Initialize();
     }
 }
