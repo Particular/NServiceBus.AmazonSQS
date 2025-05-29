@@ -25,7 +25,7 @@ class JustSayingTranslator : MessageTranslatorBase
                     result.Headers[Headers.EnclosedMessageTypes] = jsMessage.Subject;
 
                     result.TranslatorName = GetType().Name;
-                    result.Body = message.Body;
+                    result.Body = jsMessage.MessageJson;
                     result.Success = true;
                 }
             }

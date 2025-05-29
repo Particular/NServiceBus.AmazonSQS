@@ -10,9 +10,12 @@ using Amazon.Runtime;
 using Amazon.SimpleNotificationService;
 using Amazon.SQS;
 using Microsoft.Extensions.Configuration;
+using Routing;
 
 class Program
 {
+    static IMessageDispatcher? dispatcher = null;
+
     static async Task Main()
     {
         var config = new ConfigurationBuilder()
@@ -31,6 +34,7 @@ class Program
         var cts = new CancellationTokenSource();
 
         var infra = await transport.Initialize(hostSettings, receivers, sendingAddresses, cts.Token).ConfigureAwait(false);
+        dispatcher = infra.Dispatcher;
         var receiver = infra.Receivers[queueName];
         await receiver.Initialize(new PushRuntimeSettings(), OnMessage, OnError, cancellationToken: cts.Token).ConfigureAwait(false);
         await receiver.StartReceive(cts.Token).ConfigureAwait(false);
@@ -49,7 +53,7 @@ class Program
         return Task.FromResult(ErrorHandleResult.Handled);
     }
 
-    static Task OnMessage(MessageContext messagecontext, CancellationToken cancellationtoken)
+    static async Task OnMessage(MessageContext messagecontext, CancellationToken cancellationtoken)
     {
         messagecontext.Extensions.TryGet<string>("EnvelopeFormat", out var envelopeFormat);
         var body = JsonSerializer.Deserialize<JsonNode>(Encoding.UTF8.GetString(messagecontext.Body.Span));
@@ -57,6 +61,17 @@ class Program
                           $"\nEnvelopeFormat: {envelopeFormat}" +
                           $"\nHeaders:\n{JsonSerializer.Serialize(messagecontext.Headers, new JsonSerializerOptions { WriteIndented = true })}" +
                           $"\nBody:\n{JsonSerializer.Serialize(body, new JsonSerializerOptions { WriteIndented = true })}");
-        return Task.CompletedTask;
+
+        if (dispatcher != null)
+        {
+            var outgoingMessage = new OutgoingMessage(Guid.NewGuid().ToString(), messagecontext.Headers, messagecontext.Body);
+            var tranportOp = new TransportOperation(outgoingMessage, new UnicastAddressTag("orderplacedevent_from_nsb"));
+            if (envelopeFormat != null)
+            {
+                tranportOp.Properties.Add("EnvelopeFormat", envelopeFormat);
+            }
+
+            await dispatcher.Dispatch(new TransportOperations([tranportOp]), new TransportTransaction(), cancellationtoken).ConfigureAwait(false);
+        }
     }
 }
