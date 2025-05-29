@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\NServiceBusTests.snk</AssemblyOriginatorKeyFile>
     <RootNamespace>TransportTests</RootNamespace>
@@ -13,8 +13,8 @@
 
   <ItemGroup>
     <PackageReference Include="GitHubActionsTestLogger" Version="2.4.1" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
-    <PackageReference Include="NServiceBus.TransportTests.Sources" Version="9.2.7" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.0" />
+    <PackageReference Include="NServiceBus.TransportTests.Sources" Version="10.0.0-alpha.1" GeneratePathProperty="true" />
     <PackageReference Include="NUnit" Version="4.3.2" />
     <PackageReference Include="NUnit.Analyzers" Version="4.7.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="5.0.0" />
@@ -26,10 +26,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(PkgNServiceBus_TransportTests_Sources)' != ''">
-    <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\ExceptionExtensions.cs" />
     <!-- See https://github.com/Particular/NServiceBus.AmazonSQS/issues/2425 -->
     <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\When_starting_again.cs" />
-    <!-- The following tests currently fail on the CI build server. They are being excluded from the sources until they are fixed. -->
     <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\When_multiple_messages_are_available_and_concurrency_is_increased_after_pump_started.cs" />
     <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\When_multiple_messages_are_available_and_concurrency_is_increased_and_decreased_after_pump_started.cs" />
     <Compile Remove="$(PkgNServiceBus_TransportTests_Sources)\**\When_multiple_messages_are_available_and_concurrency_is_lowered_after_pump_started.cs" />

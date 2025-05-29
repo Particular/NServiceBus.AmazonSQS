@@ -1,26 +1,26 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\NServiceBus.snk</AssemblyOriginatorKeyFile>
     <PackageId>NServiceBus.AmazonSQS</PackageId>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="4.0.0.3" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.0.6" />
     <!-- Required for IAM Roles for Service Accounts even though no API is added -->
-    <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.0.2" />
-    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="4.0.0.2" />
-    <PackageReference Include="AWSSDK.SQS" Version="4.0.0.2" />
+    <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.0.4" />
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="4.0.0.4" />
+    <PackageReference Include="AWSSDK.SQS" Version="4.0.0.4" />
     <PackageReference Include="BitFaster.Caching" Version="2.5.3" />
-    <PackageReference Include="NServiceBus" Version="9.2.7" />
+    <PackageReference Include="NServiceBus" Version="10.0.0-alpha.1" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Fody" Version="6.9.2" PrivateAssets="All" />
     <PackageReference Include="Obsolete.Fody" Version="5.3.1" PrivateAssets="All" />
-    <PackageReference Include="Particular.Packaging" Version="4.2.2" PrivateAssets="All" />
+    <PackageReference Include="Particular.Packaging" Version="4.3.1" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>

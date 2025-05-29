@@ -26,7 +26,7 @@ public class When_publishing_one_event_type_to_native_and_non_native_subscribers
         new TestCase(5)
         {
             NumberOfEvents = 1000,
-            MessageVisibilityTimeout = 180,
+            MessageVisibilityTimeout = TimeSpan.FromMinutes(3),
             TestExecutionTimeout = TimeSpan.FromMinutes(3),
             SubscriptionsCacheTTL = TimeSpan.FromMinutes(1),
             NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(1),
@@ -34,7 +34,7 @@ public class When_publishing_one_event_type_to_native_and_non_native_subscribers
         new TestCase(6)
         {
             NumberOfEvents = 3000,
-            MessageVisibilityTimeout = 300,
+            MessageVisibilityTimeout = TimeSpan.FromMinutes(5),
             TestExecutionTimeout = TimeSpan.FromMinutes(7),
             SubscriptionsCacheTTL = TimeSpan.FromMinutes(2),
             NotFoundTopicsCacheTTL = TimeSpan.FromMinutes(2),
@@ -75,7 +75,7 @@ public class When_publishing_one_event_type_to_native_and_non_native_subscribers
                     var migrationMode = config.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
                     migrationMode.SubscriptionsCacheTTL(testCase.SubscriptionsCacheTTL);
                     migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);
-                    migrationMode.MessageVisibilityTimeout(testCase.MessageVisibilityTimeout);
+                    config.ConfigureSqsTransport().MessageVisibilityTimeout = testCase.MessageVisibilityTimeout;
                 });
 
                 b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, session

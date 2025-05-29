@@ -8,7 +8,7 @@ public class TestCase
 
     public int NumberOfEvents { get; internal set; }
     public TimeSpan? TestExecutionTimeout { get; internal set; }
-    public int MessageVisibilityTimeout { get; internal set; } = DefaultMessageVisibilityTimeout;
+    public TimeSpan MessageVisibilityTimeout { get; internal set; } = DefaultMessageVisibilityTimeout;
     public TimeSpan SubscriptionsCacheTTL { get; internal set; } = DefaultSubscriptionCacheTTL;
     public TimeSpan NotFoundTopicsCacheTTL { get; internal set; } = DefaultTopicCacheTTL;
     public bool PreDeployInfrastructure { get; internal set; } = DefaultPreDeployInfrastructure;
@@ -24,7 +24,7 @@ public class TestCase
 
     static TimeSpan DefaultSubscriptionCacheTTL = TimeSpan.FromSeconds(5);
     static TimeSpan DefaultTopicCacheTTL = TimeSpan.FromSeconds(5);
-    static int DefaultMessageVisibilityTimeout = 30;
+    static TimeSpan DefaultMessageVisibilityTimeout = TimeSpan.FromSeconds(30);
     static int DefaultDeployInfrastructureDelay = 65000;
     static bool DefaultPreDeployInfrastructure = true;
 }
