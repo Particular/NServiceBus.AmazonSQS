@@ -51,8 +51,10 @@ class Program
 
     static Task OnMessage(MessageContext messagecontext, CancellationToken cancellationtoken)
     {
+        messagecontext.Extensions.TryGet<string>("EnvelopeFormat", out var envelopeFormat);
         var body = JsonSerializer.Deserialize<JsonNode>(Encoding.UTF8.GetString(messagecontext.Body.Span));
         Console.WriteLine($"\n----------Received message----------" +
+                          $"\nEnvelopeFormat: {envelopeFormat}" +
                           $"\nHeaders:\n{JsonSerializer.Serialize(messagecontext.Headers, new JsonSerializerOptions { WriteIndented = true })}" +
                           $"\nBody:\n{JsonSerializer.Serialize(body, new JsonSerializerOptions { WriteIndented = true })}");
         return Task.CompletedTask;

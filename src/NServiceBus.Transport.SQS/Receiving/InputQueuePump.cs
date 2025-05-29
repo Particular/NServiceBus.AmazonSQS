@@ -279,7 +279,6 @@ namespace NServiceBus.Transport.SQS
         {
             var arrayPool = ArrayPool<byte>.Shared;
             byte[] messageBodyBuffer = null;
-            TranslatedMessage translatedMessage = null;
             Exception exception = null;
             var isPoisonMessage = false;
             var nativeMessageId = receivedMessage.MessageId;
@@ -316,9 +315,10 @@ namespace NServiceBus.Transport.SQS
                     return;
                 }
 
-                if (IsMessageExpired(receivedMessage, translatedMessage.Headers, messageId, sqsClient.Config.ClockOffset))
+                var s3BodyKey = messageContext.Headers.GetValueOrDefault(TransportHeaders.S3BodyKey);
+                if (IsMessageExpired(receivedMessage, messageContext.Headers, messageId, sqsClient.Config.ClockOffset))
                 {
-                    await DeleteMessage(receivedMessage, translatedMessage.S3BodyKey).ConfigureAwait(false);
+                    await DeleteMessage(receivedMessage, s3BodyKey).ConfigureAwait(false);
                 }
                 else
                 {
@@ -327,7 +327,7 @@ namespace NServiceBus.Transport.SQS
 
                     if (messageProcessed)
                     {
-                        await DeleteMessage(receivedMessage, translatedMessage.S3BodyKey).ConfigureAwait(false);
+                        await DeleteMessage(receivedMessage, s3BodyKey).ConfigureAwait(false);
                     }
                 }
             }
