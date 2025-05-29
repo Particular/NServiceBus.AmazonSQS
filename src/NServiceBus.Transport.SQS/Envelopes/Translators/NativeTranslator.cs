@@ -1,11 +1,12 @@
 namespace NServiceBus.Transport.SQS.Envelopes;
 
 using System;
+using System.Text;
 using Amazon.SQS.Model;
 
-class NativeTranslator : IMessageTranslator
+class NativeTranslator : MessageTranslatorBase
 {
-    public TranslatedMessage TryTranslateIncoming(Message message, string messageIdOverride)
+    public override TranslatedMessage TryTranslateIncoming(Message message, string messageIdOverride)
     {
         var result = new TranslatedMessage { TranslatorName = GetType().Name, Success = true, Body = message.Body };
 
@@ -14,5 +15,14 @@ class NativeTranslator : IMessageTranslator
         return result;
     }
 
-    public OutgoingMessageTranslationResult TryTranslateOutgoing(OutgoingMessage message) => throw new InvalidOperationException("The native translator should not be used for outgoing messages");
+    public override TranslatedMessage TryTranslateOutgoing(IOutgoingTransportOperation transportOperation)
+    {
+        var body = Encoding.UTF8.GetString(transportOperation.Message.Body.Span);
+        if (!ValidSqsCharacters().IsMatch(body))
+        {
+            body = Convert.ToBase64String(transportOperation.Message.Body.Span);
+        }
+
+        return new TranslatedMessage { Success = true, TranslatorName = GetType().Name, Body = body, Headers = transportOperation.Message.Headers };
+    }
 }

@@ -6,9 +6,9 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Amazon.SQS.Model;
 
-class JustSayingTranslator : IMessageTranslator
+class JustSayingTranslator : MessageTranslatorBase
 {
-    public TranslatedMessage TryTranslateIncoming(Message message, string messageIdOverride)
+    public override TranslatedMessage TryTranslateIncoming(Message message, string messageIdOverride)
     {
         var result = new TranslatedMessage { TranslatorName = GetType().Name };
 
@@ -38,9 +38,10 @@ class JustSayingTranslator : IMessageTranslator
         return result;
     }
 
-    public OutgoingMessageTranslationResult TryTranslateOutgoing(OutgoingMessage message)
+    public override TranslatedMessage TryTranslateOutgoing(IOutgoingTransportOperation transportOperation)
     {
-        var result = new OutgoingMessageTranslationResult { Success = true };
+        var message = transportOperation.Message;
+        var result = new TranslatedMessage { Success = true, TranslatorName = GetType().Name };
 
         var jsMessageJson = Encoding.UTF8.GetString(message.Body.Span);
         var jsWrapper = new JustSayingWrapper { Subject = message.Headers[Headers.EnclosedMessageTypes], MessageJson = jsMessageJson };

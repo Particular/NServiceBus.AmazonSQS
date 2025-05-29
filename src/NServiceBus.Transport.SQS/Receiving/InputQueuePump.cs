@@ -297,7 +297,7 @@ namespace NServiceBus.Transport.SQS
 
                 try
                 {
-                    (messageContext, messageId, messageBodyBuffer) = await messageTranslation.CreateMessageContext(receivedMessage, messageId, ReceiveAddress, s3Settings, arrayPool, cancellationToken).ConfigureAwait(false);
+                    (messageContext, messageId, messageBodyBuffer) = await messageTranslation.CreateMessageContext(receivedMessage, messageId, ReceiveAddress, arrayPool, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception ex) when (!ex.IsCausedBy(cancellationToken))
                 {
@@ -569,6 +569,6 @@ namespace NServiceBus.Transport.SQS
 
         static readonly ILog Logger = LogManager.GetLogger<MessagePump>();
 
-        static readonly MessageTranslation messageTranslation = MessageTranslation.Initialize();
+        readonly MessageTranslation messageTranslation = MessageTranslation.Initialize(s3Settings: s3Settings);
     }
 }

@@ -9,4 +9,5 @@ class TranslatedMessage
     public string Body { get; set; }
     public Dictionary<string, string> Headers { get; set; } = [];
     public string S3BodyKey { get; set; }
+    public bool SupportsS3 { get; set; }
 }

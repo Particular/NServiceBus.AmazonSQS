@@ -5,17 +5,18 @@ using System.Text.Json;
 using Amazon.SQS.Model;
 using Logging;
 
-class TransportMessageTranslator : IMessageTranslator
+class TransportMessageTranslator : MessageTranslatorBase
 {
     static readonly ILog Logger = LogManager.GetLogger<MessagePump>();
-    static readonly JsonSerializerOptions transportMessageSerializerOptions = new() { TypeInfoResolver = TransportMessageSerializerContext.Default };
+    static readonly JsonSerializerOptions transportIncomingMessageSerializerOptions = new() { TypeInfoResolver = TransportMessageSerializerContext.Default };
+    static readonly JsonSerializerOptions transportOutgoingMessageSerializerOptions = new() { Converters = { new ReducedPayloadSerializerConverter() }, TypeInfoResolver = TransportMessageSerializerContext.Default };
 
-    public TranslatedMessage TryTranslateIncoming(Message message, string messageIdOverride)
+    public override TranslatedMessage TryTranslateIncoming(Message message, string messageIdOverride)
     {
         var result = new TranslatedMessage { TranslatorName = GetType().Name };
         try
         {
-            var transportMessage = JsonSerializer.Deserialize<TransportMessage>(message.Body, transportMessageSerializerOptions);
+            var transportMessage = JsonSerializer.Deserialize<TransportMessage>(message.Body, transportIncomingMessageSerializerOptions);
 
             if (CouldBeNativeMessage(transportMessage))
             {
@@ -44,7 +45,14 @@ class TransportMessageTranslator : IMessageTranslator
         return result;
     }
 
-    public OutgoingMessageTranslationResult TryTranslateOutgoing(OutgoingMessage message) => throw new InvalidOperationException("The default translator should not be used for outgoing messages");
+    public override TranslatedMessage TryTranslateOutgoing(IOutgoingTransportOperation transportOperation)
+    {
+        var transportMessage = new TransportMessage(transportOperation.Message, transportOperation.Properties);
+
+        var body = JsonSerializer.Serialize(transportMessage, transportOutgoingMessageSerializerOptions);
+
+        return new TranslatedMessage { Success = true, SupportsS3 = true, TranslatorName = GetType().Name, Body = body };
+    }
 
     static bool CouldBeNativeMessage(TransportMessage msg)
     {

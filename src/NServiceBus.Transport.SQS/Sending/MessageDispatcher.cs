@@ -5,9 +5,7 @@ namespace NServiceBus.Transport.SQS;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.S3.Model;
@@ -347,31 +345,56 @@ partial class MessageDispatcher(
 
         await ApplyUnicastOperationMapping(transportOperation, preparedMessage, CalculateDelayedDeliverySeconds(transportOperation), GetNativeMessageAttributes(transportOperation, transportTransaction), cancellationToken).ConfigureAwait(false);
 
-        async Task PrepareSqsMessageBasedOnBodySize(TransportMessage? transportMessage)
+        async Task PrepareSqsMessageBasedOnBodySize(bool s3BodySupported, string body)
         {
             preparedMessage.CalculateSize();
-            if (preparedMessage.Size > TransportConstraints.MaximumMessageSize)
+            if (preparedMessage.Size > TransportConstraints.MaximumMessageSize && s3BodySupported)
             {
-                var s3key = await UploadToS3(preparedMessage.MessageId, transportOperation, cancellationToken).ConfigureAwait(false);
-                preparedMessage.Body = transportMessage != null ? PrepareSerializedS3TransportMessage(transportMessage, s3key) : TransportMessage.EmptyMessage;
-                preparedMessage.MessageAttributes[TransportHeaders.S3BodyKey] = new MessageAttributeValue { StringValue = s3key, DataType = "String" };
+                var s3Key = await UploadToS3(preparedMessage.MessageId, transportOperation, cancellationToken).ConfigureAwait(false);
+                preparedMessage.Body = s3BodySupported && wrapOutgoingMessages ? PrepareSerializedS3TransportMessage(body, s3Key) : TransportMessage.EmptyMessage;
+                preparedMessage.MessageAttributes[TransportHeaders.S3BodyKey] = new MessageAttributeValue { StringValue = s3Key, DataType = "String" };
                 preparedMessage.CalculateSize();
+            }
+            else if (preparedMessage.Size > TransportConstraints.MaximumMessageSize)
+            {
+                Logger.Warn("Attempted to send message in a format that does not support an S3 body but the message size exceeds the maximum allowed by SQS.");
             }
         }
 
-        if (!wrapOutgoingMessages)
-        {
-            (preparedMessage.Body, var headers) = GetMessageBodyAndHeaders(transportOperation);
-            preparedMessage.MessageAttributes[TransportHeaders.Headers] = new MessageAttributeValue { StringValue = headers, DataType = "String" };
+        // async Task PrepareSqsMessageBasedOnBodySize(TransportMessage? transportMessage)
+        // {
+        //     preparedMessage.CalculateSize();
+        //     if (preparedMessage.Size > TransportConstraints.MaximumMessageSize)
+        //     {
+        //         var s3key = await UploadToS3(preparedMessage.MessageId, transportOperation, cancellationToken).ConfigureAwait(false);
+        //         preparedMessage.Body = transportMessage != null ? PrepareSerializedS3TransportMessage(transportMessage, s3key) : TransportMessage.EmptyMessage;
+        //         preparedMessage.MessageAttributes[TransportHeaders.S3BodyKey] = new MessageAttributeValue { StringValue = s3key, DataType = "String" };
+        //         preparedMessage.CalculateSize();
+        //     }
+        // }
 
-            await PrepareSqsMessageBasedOnBodySize(null).ConfigureAwait(false);
-        }
-        else
+        var (body, headers, s3BodySupported) = messageTranslation.TranslateOutgoing(transportOperation, wrapOutgoingMessages, cancellationToken);
+        preparedMessage.Body = body;
+        if (headers?.Any() == true)
         {
-            var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.Properties);
-            preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
-            await PrepareSqsMessageBasedOnBodySize(sqsTransportMessage).ConfigureAwait(false);
+            preparedMessage.MessageAttributes[TransportHeaders.Headers] = new MessageAttributeValue { StringValue = JsonSerializer.Serialize(headers), DataType = "String" };
         }
+
+        await PrepareSqsMessageBasedOnBodySize(s3BodySupported, body).ConfigureAwait(false);
+
+        // if (!wrapOutgoingMessages)
+        // {
+        //     (preparedMessage.Body, var headers) = GetMessageBodyAndHeaders(transportOperation);
+        //     preparedMessage.MessageAttributes[TransportHeaders.Headers] = new MessageAttributeValue { StringValue = headers, DataType = "String" };
+        //
+        //     await PrepareSqsMessageBasedOnBodySize(null).ConfigureAwait(false);
+        // }
+        // else
+        // {
+        //     var sqsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.Properties);
+        //     preparedMessage.Body = JsonSerializer.Serialize(sqsTransportMessage, transportMessageSerializerOptions);
+        //     await PrepareSqsMessageBasedOnBodySize(sqsTransportMessage).ConfigureAwait(false);
+        // }
 
         return preparedMessage;
     }
@@ -382,31 +405,56 @@ partial class MessageDispatcher(
 
         await ApplyMulticastOperationMapping(transportOperation, preparedMessage, cancellationToken).ConfigureAwait(false);
 
-        async Task PrepareSnsMessageBasedOnBodySize(TransportMessage? transportMessage)
+        async Task PrepareSnsMessageBasedOnBodySize(bool s3BodySupported, string body)
         {
             preparedMessage.CalculateSize();
-            if (preparedMessage.Size > TransportConstraints.MaximumMessageSize)
+            if (preparedMessage.Size > TransportConstraints.MaximumMessageSize && s3BodySupported)
             {
-                var s3key = await UploadToS3(preparedMessage.MessageId, transportOperation, cancellationToken).ConfigureAwait(false);
-                preparedMessage.Body = transportMessage != null ? PrepareSerializedS3TransportMessage(transportMessage, s3key) : TransportMessage.EmptyMessage;
-                preparedMessage.MessageAttributes[TransportHeaders.S3BodyKey] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue { StringValue = s3key, DataType = "String" };
+                var s3Key = await UploadToS3(preparedMessage.MessageId, transportOperation, cancellationToken).ConfigureAwait(false);
+                preparedMessage.Body = s3BodySupported && wrapOutgoingMessages ? PrepareSerializedS3TransportMessage(body, s3Key) : TransportMessage.EmptyMessage;
+                preparedMessage.MessageAttributes[TransportHeaders.S3BodyKey] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue { StringValue = s3Key, DataType = "String" };
                 preparedMessage.CalculateSize();
+            }
+            else if (preparedMessage.Size > TransportConstraints.MaximumMessageSize)
+            {
+                Logger.Warn("Attempted to send message in a format that does not support an S3 body but the message size exceeds the maximum allowed by SQS.");
             }
         }
 
-        if (!wrapOutgoingMessages)
-        {
-            (preparedMessage.Body, var headers) = GetMessageBodyAndHeaders(transportOperation);
-            preparedMessage.MessageAttributes[TransportHeaders.Headers] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue() { StringValue = headers, DataType = "String" };
+        // async Task PrepareSnsMessageBasedOnBodySize(TransportMessage? transportMessage)
+        // {
+        //     preparedMessage.CalculateSize();
+        //     if (preparedMessage.Size > TransportConstraints.MaximumMessageSize)
+        //     {
+        //         var s3key = await UploadToS3(preparedMessage.MessageId, transportOperation, cancellationToken).ConfigureAwait(false);
+        //         preparedMessage.Body = transportMessage != null ? PrepareSerializedS3TransportMessage(transportMessage, s3key) : TransportMessage.EmptyMessage;
+        //         preparedMessage.MessageAttributes[TransportHeaders.S3BodyKey] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue { StringValue = s3key, DataType = "String" };
+        //         preparedMessage.CalculateSize();
+        //     }
+        // }
 
-            await PrepareSnsMessageBasedOnBodySize(null).ConfigureAwait(false);
-        }
-        else
+        var (body, headers, s3BodySupported) = messageTranslation.TranslateOutgoing(transportOperation, wrapOutgoingMessages, cancellationToken);
+        preparedMessage.Body = body;
+        if (headers?.Any() == true)
         {
-            var snsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.Properties);
-            preparedMessage.Body = JsonSerializer.Serialize(snsTransportMessage, transportMessageSerializerOptions);
-            await PrepareSnsMessageBasedOnBodySize(snsTransportMessage).ConfigureAwait(false);
+            preparedMessage.MessageAttributes[TransportHeaders.Headers] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue { StringValue = JsonSerializer.Serialize(headers), DataType = "String" };
         }
+
+        await PrepareSnsMessageBasedOnBodySize(s3BodySupported, body).ConfigureAwait(false);
+
+        // if (!wrapOutgoingMessages)
+        // {
+        //     (preparedMessage.Body, var headers) = GetMessageBodyAndHeaders(transportOperation);
+        //     preparedMessage.MessageAttributes[TransportHeaders.Headers] = new Amazon.SimpleNotificationService.Model.MessageAttributeValue() { StringValue = headers, DataType = "String" };
+        //
+        //     await PrepareSnsMessageBasedOnBodySize(null).ConfigureAwait(false);
+        // }
+        // else
+        // {
+        //     var snsTransportMessage = new TransportMessage(transportOperation.Message, transportOperation.Properties);
+        //     preparedMessage.Body = JsonSerializer.Serialize(snsTransportMessage, transportMessageSerializerOptions);
+        //     await PrepareSnsMessageBasedOnBodySize(snsTransportMessage).ConfigureAwait(false);
+        // }
 
         return preparedMessage;
     }
@@ -441,42 +489,42 @@ partial class MessageDispatcher(
         return forwardingANativeMessage ? nativeMessage.MessageAttributes : null;
     }
 
-    (string, string) GetMessageBodyAndHeaders(IOutgoingTransportOperation transportOperation)
-    {
-        string body;
-        var headers = transportOperation.Message.Headers;
-        if (transportOperation.Message.Body.IsEmpty)
-        {
-            // this could be a control message
-            body = TransportMessage.EmptyMessage;
-        }
-        else if (messageTranslation.TranslateIfNeeded(transportOperation, out var translationResult))
-        {
-            body = translationResult.Body;
-            headers = translationResult.Headers;
-        }
-        else if (!wrapOutgoingMessages)
-        {
-            body = Encoding.UTF8.GetString(transportOperation.Message.Body.Span);
-            if (!ValidSqsCharacters().IsMatch(body))
-            {
-                body = Convert.ToBase64String(transportOperation.Message.Body.Span);
-            }
-        }
-        else
-        {
-            // this is any payload type
-            body = Encoding.UTF8.GetString(transportOperation.Message.Body.Span);
-        }
+    // (string, string) GetMessageBodyAndHeaders(IOutgoingTransportOperation transportOperation)
+    // {
+    //     string body;
+    //     var headers = transportOperation.Message.Headers;
+    //     if (transportOperation.Message.Body.IsEmpty)
+    //     {
+    //         // this could be a control message
+    //         body = TransportMessage.EmptyMessage;
+    //     }
+    //     else if (messageTranslation.TranslateIfNeeded(transportOperation, out var translationResult))
+    //     {
+    //         body = translationResult.Body;
+    //         headers = translationResult.Headers;
+    //     }
+    //     else if (!wrapOutgoingMessages)
+    //     {
+    //         body = Encoding.UTF8.GetString(transportOperation.Message.Body.Span);
+    //         if (!ValidSqsCharacters().IsMatch(body))
+    //         {
+    //             body = Convert.ToBase64String(transportOperation.Message.Body.Span);
+    //         }
+    //     }
+    //     else
+    //     {
+    //         // this is any payload type
+    //         body = Encoding.UTF8.GetString(transportOperation.Message.Body.Span);
+    //     }
+    //
+    //     // probably think about how compact this should be?
+    //     var serializedHeaders = JsonSerializer.Serialize(headers);
+    //
+    //     return (body, serializedHeaders);
+    // }
 
-        // probably think about how compact this should be?
-        var serializedHeaders = JsonSerializer.Serialize(headers);
-
-        return (body, serializedHeaders);
-    }
-
-    [GeneratedRegex(@"^[\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD\u10000-\u10FFFF]*$", RegexOptions.Singleline)]
-    private static partial Regex ValidSqsCharacters();
+    // [GeneratedRegex(@"^[\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD\u10000-\u10FFFF]*$", RegexOptions.Singleline)]
+    // private static partial Regex ValidSqsCharacters();
 
     async Task<string> UploadToS3(string messageId, IOutgoingTransportOperation transportOperation, CancellationToken cancellationToken)
     {
@@ -496,12 +544,29 @@ partial class MessageDispatcher(
         return key;
     }
 
-    string PrepareSerializedS3TransportMessage(TransportMessage transportMessage, string s3Key)
+    string PrepareSerializedS3TransportMessage(string serializedTransportMessage, string s3Key)
     {
-        transportMessage.S3BodyKey = s3Key;
-        transportMessage.Body = string.Empty;
-        return JsonSerializer.Serialize(transportMessage, transportMessageSerializerOptions);
+        try
+        {
+            var transportMessage = JsonSerializer.Deserialize<TransportMessage>(serializedTransportMessage)
+                                   ?? throw new JsonException($"Failed to deserialize TransportMessage from `{serializedTransportMessage}`");
+
+            transportMessage.S3BodyKey = s3Key;
+            transportMessage.Body = string.Empty;
+            return JsonSerializer.Serialize(transportMessage, transportMessageSerializerOptions);
+        }
+        catch (JsonException)
+        {
+            return serializedTransportMessage;
+        }
     }
+
+    // string PrepareSerializedS3TransportMessage(TransportMessage transportMessage, string s3Key)
+    // {
+    //     transportMessage.S3BodyKey = s3Key;
+    //     transportMessage.Body = string.Empty;
+    //     return JsonSerializer.Serialize(transportMessage, transportMessageSerializerOptions);
+    // }
 
     async Task ApplyMulticastOperationMapping(MulticastTransportOperation transportOperation, SnsPreparedMessage snsPreparedMessage, CancellationToken cancellationToken)
     {
@@ -560,5 +625,5 @@ partial class MessageDispatcher(
     readonly JsonSerializerOptions transportMessageSerializerOptions = new() { Converters = { new ReducedPayloadSerializerConverter() }, TypeInfoResolver = TransportMessageSerializerContext.Default };
 
     static readonly ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
-    static readonly MessageTranslation messageTranslation = MessageTranslation.Initialize();
+    readonly MessageTranslation messageTranslation = MessageTranslation.Initialize(s3Settings: s3);
 }

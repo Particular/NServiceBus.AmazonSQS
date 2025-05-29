@@ -1,3 +1,4 @@
+#nullable enable
 namespace NServiceBus.Transport.SQS.Envelopes;
 
 using System;
@@ -34,7 +35,7 @@ static class TranslatedMessageExtensions
         _ = translatedMessage.Headers.Remove(TransportHeaders.TimeToBeReceived);
     }
 
-    public static async ValueTask<(ReadOnlyMemory<byte> MessageBody, byte[] MessageBodyBuffer)> RetrieveBody(this TranslatedMessage transportMessage, string messageId, S3Settings s3Settings, ArrayPool<byte> arrayPool,
+    public static async ValueTask<(ReadOnlyMemory<byte> MessageBody, byte[]? MessageBodyBuffer)> RetrieveBody(this TranslatedMessage transportMessage, string messageId, S3Settings? s3Settings, ArrayPool<byte> arrayPool,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(transportMessage.S3BodyKey))

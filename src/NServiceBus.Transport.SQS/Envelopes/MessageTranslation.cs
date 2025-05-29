@@ -1,5 +1,7 @@
+#nullable enable
 namespace NServiceBus.Transport.SQS.Envelopes;
 
+using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,37 +10,20 @@ using System.Threading.Tasks;
 using Amazon.SQS.Model;
 using Extensibility;
 
-class MessageTranslation(IEnumerable<IMessageTranslator> translators)
+class MessageTranslation(IEnumerable<IMessageTranslator> translators, S3Settings? s3Settings)
 {
-    internal static MessageTranslation Initialize(IEnumerable<IMessageTranslator> additionalTranslators = null)
+    internal static MessageTranslation Initialize(IEnumerable<IMessageTranslator>? additionalTranslators = null, S3Settings? s3Settings = null)
     {
         var translators = new List<IMessageTranslator> { new SqsHeadersTranslator(), new MessageTypeFullNameTranslator(), new JustSayingTranslator(), new TransportMessageTranslator() };
 
         translators.AddRange(additionalTranslators ?? []);
 
-        return new MessageTranslation(translators);
+        return new MessageTranslation(translators, s3Settings);
     }
 
-    internal TranslatedMessage TranslateIncoming(Message message, string messageIdOverride)
+    internal async Task<(MessageContext context, string messageId, byte[]? messageBodyBuffer)> CreateMessageContext(Message message, string messageIdOverride, string receiveAddress, ArrayPool<byte> arrayPool, CancellationToken cancellationToken = default)
     {
-        TranslatedMessage translationResult = null;
-        foreach (IMessageTranslator translator in translators)
-        {
-            translationResult = translator.TryTranslateIncoming(message, messageIdOverride);
-            if (translationResult.Success)
-            {
-                break;
-            }
-        }
-
-        translationResult ??= new TransportMessageTranslator().TryTranslateIncoming(message, messageIdOverride);
-
-        return translationResult;
-    }
-
-    internal async Task<(MessageContext context, string messageId, byte[] messageBodyBuffer)> CreateMessageContext(Message message, string messageIdOverride, string receiveAddress, S3Settings s3Settings, ArrayPool<byte> arrayPool, CancellationToken cancellationToken = default)
-    {
-        TranslatedMessage translatedMessage = null;
+        TranslatedMessage? translatedMessage = null;
         foreach (IMessageTranslator translator in translators)
         {
             translatedMessage = translator.TryTranslateIncoming(message, messageIdOverride);
@@ -74,17 +59,30 @@ class MessageTranslation(IEnumerable<IMessageTranslator> translators)
         return (messageContext, messageId, messageBodyBuffer);
     }
 
-    internal bool TranslateIfNeeded(IOutgoingTransportOperation transportOperation, out OutgoingMessageTranslationResult result)
+    internal (string body, Dictionary<string, string> headers, bool s3BodySupported) TranslateOutgoing(IOutgoingTransportOperation transportOperation, bool wrapOutgoingMessages, CancellationToken cancellationToken = default)
     {
-        result = null;
+        IMessageTranslator? translator = null;
 
-        if (transportOperation.Properties.TryGetValue("EnvelopeFormat", out string outgoingTranslatorName))
+        if (transportOperation.Message.Body.IsEmpty)
         {
-            result = translators.FirstOrDefault(x => x.GetType().Name == outgoingTranslatorName)?.TryTranslateOutgoing(transportOperation.Message);
-
-            return result?.Success == true;
+            // this could be a control message
+            return (TransportMessage.EmptyMessage, transportOperation.Message.Headers, false);
         }
 
-        return false;
+        if (transportOperation.Properties.TryGetValue("EnvelopeFormat", out string? outgoingTranslatorName))
+        {
+            translator = translators.FirstOrDefault(x => x.GetType().Name == outgoingTranslatorName);
+        }
+
+        translator ??= wrapOutgoingMessages ? new TransportMessageTranslator() : new NativeTranslator();
+
+        var result = translator.TryTranslateOutgoing(transportOperation);
+
+        if (!result.Success)
+        {
+            throw new InvalidOperationException($"Translation failed for translator: {translator.GetType().Name}");
+        }
+
+        return (result.Body, result.Headers, result.SupportsS3);
     }
 }
