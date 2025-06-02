@@ -9,7 +9,7 @@ using Settings;
 [PreObsolete("https://github.com/Particular/NServiceBus/issues/6471",
     Note = "Hybrid pub/sub support cannot be obsolete until there is a viable migration path to native pub/sub",
     Message = "Hybrid pub/sub is no longer supported, use native pub/sub instead")]
-public class SqsSubscriptionMigrationModeSettings : SubscriptionMigrationModeSettings
+public partial class SqsSubscriptionMigrationModeSettings : SubscriptionMigrationModeSettings
 {
     SettingsHolder settings;
 
@@ -38,17 +38,6 @@ public class SqsSubscriptionMigrationModeSettings : SubscriptionMigrationModeSet
 
         settings.Set(SettingsKeys.SubscriptionsCacheTTL, ttl);
 
-        return this;
-    }
-
-    /// <summary>
-    /// Overrides the default value specified at the queue level for message visibility timeout.
-    /// </summary>
-    /// <param name="timeoutInSeconds">Message visibility timeout.</param>
-    [ObsoleteEx(Message = "Use the SqsTransport.MessageVisibilityTimeout property instead", TreatAsErrorFromVersion = "8.0", RemoveInVersion = "9.0")]
-    public SubscriptionMigrationModeSettings MessageVisibilityTimeout(int timeoutInSeconds)
-    {
-        ((SqsTransport)settings.Get<TransportDefinition>()).MessageVisibilityTimeout = TimeSpan.FromSeconds(timeoutInSeconds);
         return this;
     }
 }
