@@ -102,9 +102,6 @@ namespace NServiceBus.Transport.SQS.Configure
 {
     public class SqsSubscriptionMigrationModeSettings : NServiceBus.SubscriptionMigrationModeSettings
     {
-        [System.Obsolete("Use the SqsTransport.MessageVisibilityTimeout property instead. The member curren" +
-            "tly throws a NotImplementedException. Will be removed in version 9.0.0.", true)]
-        public NServiceBus.SubscriptionMigrationModeSettings MessageVisibilityTimeout(int timeoutInSeconds) { }
         public NServiceBus.SubscriptionMigrationModeSettings SubscriptionsCacheTTL(System.TimeSpan ttl) { }
         public NServiceBus.Transport.SQS.Configure.SqsSubscriptionMigrationModeSettings TopicCacheTTL(System.TimeSpan ttl) { }
     }
