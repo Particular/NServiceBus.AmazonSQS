@@ -33,7 +33,7 @@ public class When_publishing_two_event_types_to_native_and_non_native_subscriber
         new TestCase(5)
         {
             NumberOfEvents = 1000,
-            MessageVisibilityTimeout = 360,
+            MessageVisibilityTimeout = TimeSpan.FromMinutes(6),
             SubscriptionsCacheTTL = TimeSpan.FromSeconds(120),
             TestExecutionTimeout = TimeSpan.FromMinutes(8),
             NotFoundTopicsCacheTTL = TimeSpan.FromSeconds(120)
@@ -94,7 +94,7 @@ public class When_publishing_two_event_types_to_native_and_non_native_subscriber
                     var migrationMode = config.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
                     migrationMode.SubscriptionsCacheTTL(testCase.SubscriptionsCacheTTL);
                     migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);
-                    migrationMode.MessageVisibilityTimeout(testCase.MessageVisibilityTimeout);
+                    config.ConfigureSqsTransport().MessageVisibilityTimeout = testCase.MessageVisibilityTimeout;
                 });
 
                 b.When(c => c.SubscribedMessageDrivenToMyEvent && c.SubscribedMessageDrivenToMySecondEvent && c.SubscribedNative, session
