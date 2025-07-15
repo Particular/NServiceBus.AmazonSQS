@@ -23,8 +23,8 @@ jobs:
     strategy:
       matrix:
         os:
-          - { platform: windows-2019, name: Windows }
-          - { platform: ubuntu-20.04, name: Linux }
+          - { platform: windows-latest, name: Windows }
+          - { platform: ubuntu-latest, name: Linux }
         framework: [ net481, net8.0 ]
         exclude:
           - os: { name: Linux }
