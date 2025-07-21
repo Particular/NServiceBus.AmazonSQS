@@ -10,7 +10,7 @@ defaults:
     shell: bash
 jobs:
   renovate:
-    if: startsWith(github.head_ref, 'renovate/') && contains(github.event.pull_request.title, 'AWSSDK')
+    if: github.event.pull_request.user.login == 'dependencyupdates[bot]' && contains(github.event.pull_request.title, 'AWSSDK')
     runs-on: ubuntu-latest
     steps:
       - name: Approve PR
