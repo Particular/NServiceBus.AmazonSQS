@@ -62,6 +62,9 @@ public class MockS3Client : IAmazonS3
     public string GetPreSignedURL(GetPreSignedUrlRequest request) => throw new NotImplementedException();
 
     public Task<string> GetPreSignedURLAsync(GetPreSignedUrlRequest request) => throw new NotImplementedException();
+    public CreatePresignedPostResponse CreatePresignedPost(CreatePresignedPostRequest request) => throw new NotImplementedException();
+
+    public Task<CreatePresignedPostResponse> CreatePresignedPostAsync(CreatePresignedPostRequest request) => throw new NotImplementedException();
 
     public Task<AbortMultipartUploadResponse> AbortMultipartUploadAsync(string bucketName, string key, string uploadId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
