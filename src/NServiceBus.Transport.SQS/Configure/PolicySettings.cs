@@ -9,25 +9,22 @@ using System.Linq;
 /// </summary>
 public partial class PolicySettings
 {
-    bool setupTopicPoliciesWhenSubscribing = true;
-    bool accountCondition;
-    bool topicNamePrefixCondition;
-
     /// <summary>
     /// Controls if the transport sets up the IAM policies for topics to allow them to send messages to the input queue.
     /// </summary>
     public bool SetupTopicPoliciesWhenSubscribing
     {
-        get => setupTopicPoliciesWhenSubscribing;
+        get;
         set
         {
             if (AccountCondition || TopicNamePrefixCondition || TopicNamespaceConditions.Any())
             {
                 throw new Exception("Cannot disable policy setup if policy creation has been configured.");
             }
-            setupTopicPoliciesWhenSubscribing = value;
+
+            field = value;
         }
-    }
+    } = true;
 
     /// <summary>
     /// Adds an account wildcard condition for every account found on the topics subscribed to.
@@ -44,14 +41,15 @@ public partial class PolicySettings
     /// <remarks>Calling this method will opt-in for wildcard policy and no longer populate the policy with the explicit topic ARNs the endpoint subscribes to.</remarks>
     public bool AccountCondition
     {
-        get => accountCondition;
+        get;
         set
         {
-            if (!setupTopicPoliciesWhenSubscribing)
+            if (!SetupTopicPoliciesWhenSubscribing)
             {
                 throw new Exception("Cannot configure policy creation if policy setup has been disabled.");
             }
-            accountCondition = value;
+
+            field = value;
         }
     }
 
@@ -73,14 +71,15 @@ public partial class PolicySettings
     /// <remarks>Calling this method will opt-in for wildcard policy and no longer populate the policy with the explicit topic ARNs the endpoint subscribes to.</remarks>
     public bool TopicNamePrefixCondition
     {
-        get => topicNamePrefixCondition;
+        get;
         set
         {
-            if (!setupTopicPoliciesWhenSubscribing)
+            if (!SetupTopicPoliciesWhenSubscribing)
             {
                 throw new Exception("Cannot configure policy creation if policy setup has been disabled.");
             }
-            topicNamePrefixCondition = value;
+
+            field = value;
         }
     }
 

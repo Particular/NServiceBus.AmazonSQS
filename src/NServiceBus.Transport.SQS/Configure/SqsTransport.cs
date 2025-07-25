@@ -55,17 +55,16 @@ public partial class SqsTransport : TransportDefinition
     /// <exception cref="ArgumentOutOfRangeException">For values smaller than 0 or higher than 25 * 1024.</exception>
     public long ReserveBytesInMessageSizeCalculation
     {
-        get => reserveBytesInMessageSizeCalculation;
+        get;
         set
         {
             ArgumentOutOfRangeException.ThrowIfNegative(value, nameof(ReserveBytesInMessageSizeCalculation));
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 25 * 1024, nameof(ReserveBytesInMessageSizeCalculation));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 25 * 1024,
+                nameof(ReserveBytesInMessageSizeCalculation));
 
-            reserveBytesInMessageSizeCalculation = value;
+            field = value;
         }
     }
-
-    long reserveBytesInMessageSizeCalculation;
 
     /// <summary>
     /// Specifies a lambda function that allows to take control of the queue name generation logic.
@@ -73,13 +72,13 @@ public partial class SqsTransport : TransportDefinition
     /// </summary>
     public Func<string, string, string> QueueNameGenerator
     {
-        get => queueNameGenerator;
+        get;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            queueNameGenerator = value;
+            field = value;
         }
-    }
+    } = QueueCache.GetSqsQueueName;
 
     /// <summary>
     /// This is the maximum time that a message will be retained within SQS
@@ -94,17 +93,17 @@ public partial class SqsTransport : TransportDefinition
     /// </remarks>
     public TimeSpan MaxTimeToLive
     {
-        get => maxTimeToLive;
+        get;
         set
         {
-            if (maxTimeToLive <= MaxTimeToLiveLowerBound || maxTimeToLive > MaxTimeToLiveUpperBound)
+            if (value <= MaxTimeToLiveLowerBound || value > MaxTimeToLiveUpperBound)
             {
                 throw new ArgumentException($"Max TTL needs to be between {MaxTimeToLiveLowerBound} and {MaxTimeToLiveUpperBound}.");
             }
 
-            maxTimeToLive = value;
+            field = value;
         }
-    }
+    } = TimeSpan.FromDays(4);
 
     /// <summary>
     /// Specifies a string value that will be prepended to the name of every SNS topic
@@ -114,11 +113,11 @@ public partial class SqsTransport : TransportDefinition
     /// </summary>
     public string TopicNamePrefix
     {
-        get => topicNamePrefix;
+        get;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            topicNamePrefix = value;
+            field = value;
         }
     }
 
@@ -128,13 +127,13 @@ public partial class SqsTransport : TransportDefinition
     /// </summary>
     public Func<Type, string, string> TopicNameGenerator
     {
-        get => topicNameGenerator;
+        get;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            topicNameGenerator = value;
+            field = value;
         }
-    }
+    } = TopicNameHelper.GetSnsTopicName;
 
     /// <summary>
     /// Configures the SQS transport to use S3 to store payload of large messages.
@@ -163,18 +162,18 @@ public partial class SqsTransport : TransportDefinition
     /// <exception cref="ArgumentOutOfRangeException">For time spans bigger than <c>TimeSpan.FromHours(12)</c>.</exception>
     public TimeSpan MaxAutoMessageVisibilityRenewalDuration
     {
-        get => maxAutoMessageVisibilityRenewalDuration;
+        get;
         set
         {
             var maxAutoMessageVisibilityTimeoutInSeconds = (int)value.TotalSeconds;
-            ArgumentOutOfRangeException.ThrowIfNegative(maxAutoMessageVisibilityTimeoutInSeconds, nameof(MaxAutoMessageVisibilityRenewalDuration));
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(maxAutoMessageVisibilityTimeoutInSeconds, TimeSpan.FromHours(12).TotalSeconds, nameof(MaxAutoMessageVisibilityRenewalDuration));
+            ArgumentOutOfRangeException.ThrowIfNegative(maxAutoMessageVisibilityTimeoutInSeconds,
+                nameof(MaxAutoMessageVisibilityRenewalDuration));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(maxAutoMessageVisibilityTimeoutInSeconds,
+                TimeSpan.FromHours(12).TotalSeconds, nameof(MaxAutoMessageVisibilityRenewalDuration));
 
-            maxAutoMessageVisibilityRenewalDuration = value;
+            field = value;
         }
-    }
-
-    TimeSpan maxAutoMessageVisibilityRenewalDuration = TimeSpan.FromMinutes(5);
+    } = TimeSpan.FromMinutes(5);
 
     /// <summary>
     /// Gets or sets the message visibility timeout for the receive request. This value overrides the queue visibility timeout
@@ -183,10 +182,10 @@ public partial class SqsTransport : TransportDefinition
     /// <exception cref="ArgumentOutOfRangeException">For time spans bigger than <c>TimeSpan.FromHours(12)</c>.</exception>
     public TimeSpan? MessageVisibilityTimeout
     {
-        get => messageVisibilityTimeout;
+        get;
         set
         {
-            messageVisibilityTimeout = value;
+            field = value;
             if (!value.HasValue)
             {
                 messageVisibilityTimeoutInSeconds = null;
@@ -195,13 +194,12 @@ public partial class SqsTransport : TransportDefinition
 
             var visibilityTimeoutInSeconds = (int)value.Value.TotalSeconds;
             ArgumentOutOfRangeException.ThrowIfNegative(visibilityTimeoutInSeconds, nameof(MessageVisibilityTimeout));
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(visibilityTimeoutInSeconds, TimeSpan.FromHours(12).TotalSeconds, nameof(MessageVisibilityTimeout));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(visibilityTimeoutInSeconds,
+                TimeSpan.FromHours(12).TotalSeconds, nameof(MessageVisibilityTimeout));
 
             messageVisibilityTimeoutInSeconds = visibilityTimeoutInSeconds;
         }
     }
-
-    TimeSpan? messageVisibilityTimeout;
 
     int? messageVisibilityTimeoutInSeconds;
 
@@ -318,15 +316,15 @@ public partial class SqsTransport : TransportDefinition
     /// </summary>
     public override async Task<TransportInfrastructure> Initialize(HostSettings hostSettings, ReceiveSettings[] receivers, string[] sendingAddresses, CancellationToken cancellationToken = default)
     {
-        AssertQueueNameGeneratorIdempotent(queueNameGenerator);
+        AssertQueueNameGeneratorIdempotent(QueueNameGenerator);
 
         var topicCache = new TopicCache(
             SnsClient,
             hostSettings.CoreSettings,
             eventToTopicsMappings,
             eventToEventsMappings,
-            topicNameGenerator,
-            topicNamePrefix
+            TopicNameGenerator,
+            TopicNamePrefix
         );
 
         var infra = new SqsTransportInfrastructure(
@@ -341,7 +339,7 @@ public partial class SqsTransport : TransportDefinition
             QueueDelayTime,
             messageVisibilityTimeoutInSeconds,
             MaxAutoMessageVisibilityRenewalDuration,
-            topicNamePrefix,
+            TopicNamePrefix,
             DoNotWrapOutgoingMessages,
             !sqsClient.ExternallyManaged,
             !snsClient.ExternallyManaged,
@@ -351,7 +349,7 @@ public partial class SqsTransport : TransportDefinition
 
         if (hostSettings.SetupInfrastructure)
         {
-            var queueCreator = new QueueCreator(SqsClient, QueueCache, S3, maxTimeToLive, QueueDelayTime);
+            var queueCreator = new QueueCreator(SqsClient, QueueCache, S3, MaxTimeToLive, QueueDelayTime);
 
             var createQueueTasks = sendingAddresses.Select(x => queueCreator.CreateQueueIfNecessary(x, false, cancellationToken))
                 .Concat(infra.Receivers.Values.Select(x => queueCreator.CreateQueueIfNecessary(x.ReceiveAddress, SupportsDelayedDelivery, cancellationToken))).ToArray();
@@ -376,21 +374,16 @@ public partial class SqsTransport : TransportDefinition
     }
 
     QueueCache QueueCache =>
-        queueCache ??= new QueueCache(SqsClient,
-            destination => queueNameGenerator(destination, QueueNamePrefix));
+        field ??= new QueueCache(SqsClient,
+            destination => QueueNameGenerator(destination, QueueNamePrefix));
 
     /// <summary>
     /// Returns a list of all supported transaction modes of this transport.
     /// </summary>
     public override IReadOnlyCollection<TransportTransactionMode> GetSupportedTransactionModes() => SupportedTransactionModes;
 
-    QueueCache queueCache;
-    TimeSpan maxTimeToLive = TimeSpan.FromDays(4);
-    string topicNamePrefix;
-    Func<Type, string, string> topicNameGenerator = TopicNameHelper.GetSnsTopicName;
-    Func<string, string, string> queueNameGenerator = QueueCache.GetSqsQueueName;
-    readonly EventToTopicsMappings eventToTopicsMappings = new EventToTopicsMappings();
-    readonly EventToEventsMappings eventToEventsMappings = new EventToEventsMappings();
+    readonly EventToTopicsMappings eventToTopicsMappings = new();
+    readonly EventToEventsMappings eventToEventsMappings = new();
 
     static readonly TransportTransactionMode[] SupportedTransactionModes = { TransportTransactionMode.None, TransportTransactionMode.ReceiveOnly };
 
