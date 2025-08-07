@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using Amazon.SimpleNotificationService;
 using Amazon.SQS;
 using Configuration.AdvancedExtensibility;
+using Particular.Obsoletes;
 using Transport.SQS.Configure;
 
 /// <summary>
