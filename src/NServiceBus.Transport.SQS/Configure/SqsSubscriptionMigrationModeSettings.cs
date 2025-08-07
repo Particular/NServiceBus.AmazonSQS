@@ -2,6 +2,7 @@
 
 using System;
 using Settings;
+using Particular.Obsoletes;
 
 /// <summary>
 /// Publish-subscribe migration mode configuration.
