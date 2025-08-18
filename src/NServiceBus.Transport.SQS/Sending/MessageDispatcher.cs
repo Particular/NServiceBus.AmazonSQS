@@ -434,7 +434,7 @@ partial class MessageDispatcher(
                                        transportTransaction.TryGet<string>("IncomingMessageId", out var incomingMessageId) &&
                                        incomingMessageId == transportOperation.Message.MessageId;
 
-        return forwardingANativeMessage ? nativeMessage.MessageAttributes : null;
+        return forwardingANativeMessage ? nativeMessage?.MessageAttributes : null;
     }
 
     (string, string) GetMessageBodyAndHeaders(OutgoingMessage outgoingMessage)
