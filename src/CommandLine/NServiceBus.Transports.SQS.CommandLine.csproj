@@ -15,9 +15,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="4.0.6.8" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.6.9" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="4.0.0.21" />
-    <PackageReference Include="AWSSDK.SQS" Version="4.0.1" />
+    <PackageReference Include="AWSSDK.SQS" Version="4.0.1.1" />
     <PackageReference Include="BitFaster.Caching" Version="2.5.4" />
     <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1" />
     <PackageReference Include="Particular.Packaging" Version="4.5.0" PrivateAssets="All" />
