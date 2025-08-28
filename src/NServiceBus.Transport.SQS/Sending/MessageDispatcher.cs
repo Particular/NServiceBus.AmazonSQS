@@ -430,11 +430,16 @@ partial class MessageDispatcher(
     {
         // In case we're handling a message of which the incoming message id equals the outgoing message id, we're essentially handling an error or audit scenario, in which case we want copy over the message attributes
         // from the native message, so we don't lose part of the message
-        var forwardingANativeMessage = transportTransaction.TryGet<Message>(out var nativeMessage) &&
-                                       transportTransaction.TryGet<string>("IncomingMessageId", out var incomingMessageId) &&
-                                       incomingMessageId == transportOperation.Message.MessageId;
 
-        return forwardingANativeMessage ? nativeMessage.MessageAttributes : null;
+        if (transportTransaction.TryGet<Message>(out var nativeMessage))
+        {
+            if (transportTransaction.TryGet<string>("IncomingMessageId", out var incomingMessageId) && incomingMessageId == transportOperation.Message.MessageId)
+            {
+                return nativeMessage.MessageAttributes;
+            }
+        }
+
+        return null;
     }
 
     (string, string) GetMessageBodyAndHeaders(OutgoingMessage outgoingMessage)
