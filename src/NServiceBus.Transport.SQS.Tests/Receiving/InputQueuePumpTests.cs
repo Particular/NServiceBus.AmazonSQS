@@ -286,9 +286,9 @@ namespace NServiceBus.Transport.SQS.Tests
             var task = pump.ProcessMessageWithVisibilityRenewal(message, visibilityExpiresOn, timeProvider, CancellationToken.None);
 
             // Simulate the time passing. Default visibility timeout is 30 seconds.
-            timeProvider.Advance(TimeSpan.FromSeconds(16));
-            timeProvider.Advance(TimeSpan.FromSeconds(32));
-            timeProvider.Advance(TimeSpan.FromSeconds(64));
+            timeProvider.Advance(TimeSpan.FromSeconds(15));
+            timeProvider.Advance(TimeSpan.FromSeconds(30));
+            timeProvider.Advance(TimeSpan.FromSeconds(15));
 
             await task.ConfigureAwait(false);
 
