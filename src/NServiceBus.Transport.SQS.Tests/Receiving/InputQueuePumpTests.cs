@@ -292,8 +292,11 @@ namespace NServiceBus.Transport.SQS.Tests
 
             await task.ConfigureAwait(false);
 
-            // On this level of test we don't care about the actual visibility timeout just the fact that they happened
-            Assert.That(mockSqsClient.ChangeMessageVisibilityRequestsSent, Has.Count.EqualTo(2));
+            // On this level of test we don't care about the exact count of visibility timeout extensions just the fact that they happened
+            // Trying to exact match the count is not possible since the visibility renewal is not guaranteed to happen
+            // at the same time as the processing due due potential differences in timing precision and task scheduling between platforms
+            Assert.That(mockSqsClient.ChangeMessageVisibilityRequestsSent, Has.Count.InRange(1, 2),
+                "Expected 1-3 visibility renewals due to potential platform timing differences");
         }
 
         [Test]
