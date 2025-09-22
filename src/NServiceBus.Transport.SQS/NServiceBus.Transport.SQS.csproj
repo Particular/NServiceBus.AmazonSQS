@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="4.0.7.2" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.7.3" />
     <!-- Required for IAM Roles for Service Accounts even though no API is added -->
     <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.2.2" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="4.0.1.2" />
