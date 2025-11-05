@@ -36,12 +36,14 @@ class When_sending_messages_with_invalid_sqs_chars : NServiceBusAcceptanceTest
 
     class Sender : EndpointConfigurationBuilder
     {
-        public Sender() => EndpointSetup<DefaultServer>(cfg => cfg.ConfigureSqsTransport().DoNotWrapOutgoingMessages = true);
+        public Sender() => EndpointSetup<DefaultServer>(cfg =>
+        {
+            cfg.EnableFeature<DispatchControlMessageAtStartup>();
+            cfg.ConfigureSqsTransport().DoNotWrapOutgoingMessages = true;
+        });
 
         class DispatchControlMessageAtStartup : Feature
         {
-            public DispatchControlMessageAtStartup() => EnableByDefault();
-
             protected override void Setup(FeatureConfigurationContext context) =>
                 context.RegisterStartupTask(sp => new Startup(
                     sp.GetRequiredService<IMessageDispatcher>(),
