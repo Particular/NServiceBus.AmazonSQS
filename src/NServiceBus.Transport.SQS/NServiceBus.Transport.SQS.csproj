@@ -8,11 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="4.0.11.3" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.12" />
     <!-- Required for IAM Roles for Service Accounts even though no API is added -->
-    <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.4.1" />
-    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="4.0.2.5" />
-    <PackageReference Include="AWSSDK.SQS" Version="4.0.2.3" />
+    <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.5" />
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="4.0.2.6" />
+    <PackageReference Include="AWSSDK.SQS" Version="4.0.2.4" />
     <PackageReference Include="BitFaster.Caching" Version="2.5.4" />
     <PackageReference Include="NServiceBus" Version="10.0.0-alpha.14" />
   </ItemGroup>
