@@ -156,6 +156,7 @@ public class MockS3Client : IAmazonS3
     public Task<DeleteObjectTaggingResponse> DeleteObjectTaggingAsync(DeleteObjectTaggingRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
     public Task<DeletePublicAccessBlockResponse> DeletePublicAccessBlockAsync(DeletePublicAccessBlockRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public Task<GetBucketAbacResponse> GetBucketAbacAsync(GetBucketAbacRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
 
     public Task<GetACLResponse> GetACLAsync(string bucketName, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
@@ -310,6 +311,7 @@ public class MockS3Client : IAmazonS3
     public Task<PutBucketResponse> PutBucketAsync(string bucketName, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
     public Task<PutBucketResponse> PutBucketAsync(PutBucketRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public Task<PutBucketAbacResponse> PutBucketAbacAsync(PutBucketAbacRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
 
     public Task<PutBucketAccelerateConfigurationResponse> PutBucketAccelerateConfigurationAsync(PutBucketAccelerateConfigurationRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
