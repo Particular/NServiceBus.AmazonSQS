@@ -927,7 +927,7 @@ public class MessageDispatcherTests
     }
 
     [Test]
-    public async Task Does_upload_to_S3_when_payload_reserved_bytes_are_set()
+    public async Task Does_upload_to_S3_when_unicast_payload_reserved_bytes_are_set()
     {
         var mockSqsClient = new MockSqsClient();
         var mockS3Client = new MockS3Client();
@@ -942,7 +942,7 @@ public class MessageDispatcherTests
                     {TransportHeaders.TimeToBeReceived, ExpectedTtbr.ToString()},
                     {Headers.ReplyToAddress, ExpectedReplyToAddress},
                     {Headers.MessageId, "093C17C6-D32E-44FE-9134-65C10C1287EB"}
-                }, Encoding.Default.GetBytes(new string('x', 256 * 1024))),
+                }, Encoding.Default.GetBytes(new string('x', TransportConstraints.SqsMaximumMessageSize))),
                 new UnicastAddressTag("address"),
                 [],
                 DispatchConsistency.Isolated));
@@ -954,6 +954,40 @@ public class MessageDispatcherTests
         Assert.Multiple(() =>
         {
             Assert.That(mockSqsClient.RequestsSent, Is.Not.Empty, "No requests sent");
+            Assert.That(mockS3Client.PutObjectRequestsSent, Is.Not.Empty, "No S3 requests sent");
+        });
+
+        var s3Request = mockS3Client.PutObjectRequestsSent.First();
+        Assert.That(s3Request.InputStream.Length, Is.GreaterThan(0));
+    }
+
+    [Test]
+    public async Task Does_upload_to_S3_when_multicast_payload_reserved_bytes_are_set()
+    {
+        var mockSnsClient = new MockSnsClient();
+        var mockS3Client = new MockS3Client();
+        var dispatcher = new MessageDispatcher(new SettingsHolder(), null, mockSnsClient, new QueueCache(null,
+            dest => QueueCache.GetSqsQueueName(dest, "")), new TopicCache(mockSnsClient, new SettingsHolder(), new EventToTopicsMappings(), new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""), new S3Settings("bucketname", "keyprefix", mockS3Client), 15 * 60, 0);
+
+        var transportOperations = new TransportOperations(
+            new TransportOperation(
+                new OutgoingMessage("1234", new Dictionary<string, string>
+                {
+                    {TransportHeaders.TimeToBeReceived, ExpectedTtbr.ToString()},
+                    {Headers.ReplyToAddress, ExpectedReplyToAddress},
+                    {Headers.MessageId, "093C17C6-D32E-44FE-9134-65C10C1287EB"}
+                }, Encoding.Default.GetBytes(new string('x', TransportConstraints.SnsMaximumMessageSize))),
+                new MulticastAddressTag(typeof(Event)),
+                [],
+                DispatchConsistency.Isolated));
+
+        var transportTransaction = new TransportTransaction();
+
+        await dispatcher.Dispatch(transportOperations, transportTransaction);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(mockSnsClient.PublishedEvents, Is.Not.Empty, "No requests sent");
             Assert.That(mockS3Client.PutObjectRequestsSent, Is.Not.Empty, "No S3 requests sent");
         });
 
