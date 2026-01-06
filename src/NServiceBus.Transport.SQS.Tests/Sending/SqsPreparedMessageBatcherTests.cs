@@ -95,7 +95,7 @@ public class SqsPreparedMessageBatcherTests
     {
         var preparedMessages = new[]
         {
-            new SqsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(256)},
+            new SqsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(TransportConstraints.SqsMaximumMessageSize / 1024)},
         };
         PrecalculateSize(preparedMessages);
 
@@ -113,8 +113,8 @@ public class SqsPreparedMessageBatcherTests
     {
         var preparedMessages = new[]
         {
-            new SqsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(256)},
-            new SqsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(256)},
+            new SqsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(TransportConstraints.SqsMaximumMessageSize / 1024)},
+            new SqsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(TransportConstraints.SqsMaximumMessageSize / 1024)},
         };
         PrecalculateSize(preparedMessages);
 
@@ -165,16 +165,16 @@ public class SqsPreparedMessageBatcherTests
     {
         var preparedMessages = new[]
         {
-            new SqsPreparedMessage {Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(256)},
+            new SqsPreparedMessage {Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(TransportConstraints.SqsMaximumMessageSize / 1024)},
 
-            new SqsPreparedMessage {Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(256)},
+            new SqsPreparedMessage {Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(TransportConstraints.SqsMaximumMessageSize / 1024)},
 
             new SqsPreparedMessage {Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(64)},
             new SqsPreparedMessage {Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(64)},
             new SqsPreparedMessage {Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(64)},
             new SqsPreparedMessage {Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(64)},
 
-            new SqsPreparedMessage {Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(200)},
+            new SqsPreparedMessage {Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody((TransportConstraints.SqsMaximumMessageSize / 1024)-56)},
             new SqsPreparedMessage {Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
             new SqsPreparedMessage {Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
             new SqsPreparedMessage {Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
@@ -236,16 +236,16 @@ public class SqsPreparedMessageBatcherTests
     {
         var preparedMessages = new[]
         {
-            new SqsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(252)},
+            new SqsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody((TransportConstraints.SqsMaximumMessageSize / 1024)-4)},
 
-            new SqsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(252)},
+            new SqsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody((TransportConstraints.SqsMaximumMessageSize / 1024)-4)},
 
             new SqsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(63)},
             new SqsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(63)},
             new SqsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(63)},
             new SqsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(63)},
 
-            new SqsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(200)},
+            new SqsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody((TransportConstraints.SqsMaximumMessageSize / 1024)-56)},
             new SqsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
             new SqsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
             new SqsPreparedMessage {MessageId = Guid.NewGuid().ToString(), Destination = "destination1", QueueUrl = "https://destination1", Body = GenerateBody(10)},
