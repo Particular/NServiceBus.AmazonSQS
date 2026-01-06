@@ -27,7 +27,7 @@ static class SqsPreparedMessageBatcher
                 var messageSize = message.Size; // Size calculation is assumed to be done previously
 
                 // Check if this message would push the batch over the size limit
-                if (currentBatchSize + messageSize > TransportConstraints.MaximumMessageSize)
+                if (currentBatchSize + messageSize > TransportConstraints.SqsMaximumMessageSize)
                 {
                     // Finalize current batch if it has any messages
                     if (currentBatch.Count > 0)

@@ -440,7 +440,7 @@ public class SqsPreparedMessageBatcherTests
     [Test]
     public void PutsAsManyMessagesInBatchAsPossible()
     {
-        var singleMessageBody = new string('x', TransportConstraints.MaximumMessageSize / TransportConstraints.MaximumItemsInBatch);
+        var singleMessageBody = new string('x', TransportConstraints.SqsMaximumMessageSize / TransportConstraints.MaximumItemsInBatch);
 
         var preparedMessages = Enumerable
             .Range(0, 2 * TransportConstraints.MaximumItemsInBatch)
@@ -462,7 +462,7 @@ public class SqsPreparedMessageBatcherTests
     [Test]
     public void PutsAsManyMessagesWithMessageIdsInBatchAsPossible()
     {
-        var singleMessageBody = new string('x', TransportConstraints.MaximumMessageSize / TransportConstraints.MaximumItemsInBatch);
+        var singleMessageBody = new string('x', TransportConstraints.SqsMaximumMessageSize / TransportConstraints.MaximumItemsInBatch);
 
         var preparedMessages = Enumerable
             .Range(0, 2 * TransportConstraints.MaximumItemsInBatch)
