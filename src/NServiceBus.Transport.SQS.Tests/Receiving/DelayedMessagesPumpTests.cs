@@ -780,11 +780,11 @@ public class DelayedMessagesPumpTests
     int GetSqsMessageSizeToEnsureNumberOfBatches(int desiredBatchCount, int? numberOfMessages = null)
     {
         var maxSqsBatchSize = TransportConstraints.SqsMaximumMessageSize;
-        desiredBatchCount = desiredBatchCount < 1 ? 1 : desiredBatchCount;
+        desiredBatchCount = Math.Max(desiredBatchCount, 1);
         numberOfMessages ??= TransportConstraints.MaximumItemsInBatch;
 
         var totalSize = maxSqsBatchSize * desiredBatchCount;
-        var messageSize = (int)Math.Floor((double)totalSize / numberOfMessages.Value) - 500; // 500 to roughly account for headers
+        var messageSize = (int)Math.Floor((double)totalSize / numberOfMessages.Value) - TransportTestsConstraints.SqsHeadersBuffer;
         return messageSize;
     }
 

@@ -12,7 +12,7 @@ public class When_sending_not_wrapped_message : NServiceBusAcceptanceTest
     public static object[] Payload =
     {
         new object[] { new byte[4] },
-        new object[] { new byte[TransportConstraints.SqsMaximumMessageSize - 500] }
+        new object[] { new byte[TransportConstraints.SqsMaximumMessageSize - TransportTestsConstraints.SqsHeadersBuffer] }
     };
 
     [Test]

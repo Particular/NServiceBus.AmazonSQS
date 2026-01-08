@@ -11,7 +11,7 @@ public class When_using_small_message_with_no_bucket_configured : NServiceBusAcc
     [Test]
     public async Task Should_receive_message()
     {
-        var payloadToSend = new byte[TransportConstraints.SqsMaximumMessageSize - 500];
+        var payloadToSend = new byte[TransportConstraints.SqsMaximumMessageSize - TransportTestsConstraints.SqsHeadersBuffer];
         var context = await Scenario.Define<Context>()
             .WithEndpoint<Endpoint>(b => b.When(session => session.SendLocal(new MyMessage
             {
