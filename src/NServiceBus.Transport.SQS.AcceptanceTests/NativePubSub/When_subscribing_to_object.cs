@@ -11,9 +11,8 @@ public class When_subscribing_to_object : NServiceBusAcceptanceTest
     public async Task It_should_still_deliver()
     {
         var context = await Scenario.Define<Context>()
-            .WithEndpoint<Publisher>(b => b.When(c => c.EndpointsStarted, session => session.Publish(new MyEvent())))
+            .WithEndpoint<Publisher>(b => b.When(session => session.Publish(new MyEvent())))
             .WithEndpoint<Subscriber>(b => { })
-            .Done(c => c.GotTheEvent)
             .Run();
 
         Assert.That(context.GotTheEvent, Is.True);
@@ -26,16 +25,12 @@ public class When_subscribing_to_object : NServiceBusAcceptanceTest
 
     public class Publisher : EndpointConfigurationBuilder
     {
-        public Publisher()
-        {
-            EndpointSetup<DefaultPublisher>(c => { });
-        }
+        public Publisher() => EndpointSetup<DefaultPublisher>(_ => { });
     }
 
     public class Subscriber : EndpointConfigurationBuilder
     {
-        public Subscriber()
-        {
+        public Subscriber() =>
             EndpointSetup<DefaultServer>(c =>
             {
                 c.Conventions().DefiningEventsAs(t => typeof(object).IsAssignableFrom(t) || typeof(IEvent).IsAssignableFrom(t));
@@ -43,26 +38,17 @@ public class When_subscribing_to_object : NServiceBusAcceptanceTest
                 var transport = c.ConfigureSqsTransport();
                 transport.MapEvent<object, MyEvent>();
             });
-        }
 
-        public class MyHandler : IHandleMessages<object>
+        public class MyHandler(Context testContext) : IHandleMessages<object>
         {
-            Context testContext;
-
-            public MyHandler(Context testContext)
-            {
-                this.testContext = testContext;
-            }
-
             public Task Handle(object @event, IMessageHandlerContext context)
             {
                 testContext.GotTheEvent = true;
+                testContext.MarkAsCompleted();
                 return Task.CompletedTask;
             }
         }
     }
 
-    public class MyEvent : IEvent
-    {
-    }
+    public class MyEvent : IEvent;
 }

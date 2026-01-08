@@ -19,49 +19,36 @@ public class When_publishing_wrapped_event : NServiceBusAcceptanceTest
     public async Task Should_receive_event(byte[] payload)
     {
         var context = await Scenario.Define<Context>()
-            .WithEndpoint<Publisher>(b => b.When(c => c.EndpointsStarted, session => session.Publish(new MyEventWithPayload() { Payload = payload })))
+            .WithEndpoint<Publisher>(b => b.When(session => session.Publish(new MyEventWithPayload() { Payload = payload })))
             .WithEndpoint<Subscriber>(b => { })
-            .Done(c => c.GotTheEvent)
-            .Run(TimeSpan.FromSeconds(30));
+            .Run();
 
         Assert.Multiple(() =>
         {
-            Assert.That(context.GotTheEvent, Is.True);
             Assert.That(context.ReceivedPayload, Is.EqualTo(payload), "The payload should be handled correctly");
         });
     }
 
     public class Context : ScenarioContext
     {
-        public bool GotTheEvent { get; set; }
         public byte[] ReceivedPayload { get; set; }
     }
 
     public class Publisher : EndpointConfigurationBuilder
     {
-        public Publisher()
-        {
-            EndpointSetup<DefaultPublisher>(c => { }).IncludeType<TestingInMemorySubscriptionPersistence>();
-        }
+        public Publisher() => EndpointSetup<DefaultPublisher>(_ => { }).IncludeType<TestingInMemorySubscriptionPersistence>();
     }
 
     public class Subscriber : EndpointConfigurationBuilder
     {
-        public Subscriber()
+        public Subscriber() => EndpointSetup<DefaultServer>(c => { });
+
+        public class MyHandler(Context testContext) : IHandleMessages<MyEventWithPayload>
         {
-            EndpointSetup<DefaultServer>(c => { });
-        }
-
-        public class MyHandler : IHandleMessages<MyEventWithPayload>
-        {
-            readonly Context testContext;
-
-            public MyHandler(Context testContext) => this.testContext = testContext;
-
             public Task Handle(MyEventWithPayload @event, IMessageHandlerContext context)
             {
-                testContext.GotTheEvent = true;
                 testContext.ReceivedPayload = @event.Payload;
+                testContext.MarkAsCompleted();
                 return Task.CompletedTask;
             }
         }

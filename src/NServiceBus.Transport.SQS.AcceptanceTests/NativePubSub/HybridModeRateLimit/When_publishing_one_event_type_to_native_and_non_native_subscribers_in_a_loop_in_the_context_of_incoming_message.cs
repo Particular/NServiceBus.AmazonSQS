@@ -22,7 +22,11 @@ public class When_publishing_one_event_type_to_native_and_non_native_subscribers
         //new TestCase(2){ NumberOfEvents = 100 },
         //new TestCase(3){ NumberOfEvents = 200 },
         //new TestCase(4){ NumberOfEvents = 300 },
-        new TestCase(1){ NumberOfEvents = 1, PreDeployInfrastructure = false },
+        new TestCase(1)
+        {
+            NumberOfEvents = 1,
+            PreDeployInfrastructure = false
+        },
         new TestCase(5)
         {
             NumberOfEvents = 1000,
@@ -67,7 +71,7 @@ public class When_publishing_one_event_type_to_native_and_non_native_subscribers
         using var handler = NamePrefixHandler.RunTestWithNamePrefixCustomization("OneEvtMsgCtx" + testCase.Sequence);
         await DeployInfrastructure(testCase);
 
-        var context = await Scenario.Define<Context>()
+        var context = await Scenario.Define<Context>(c => c.NumberOfEvents = testCase.NumberOfEvents)
             .WithEndpoint<Publisher>(b =>
             {
                 b.CustomConfig(config =>
@@ -77,25 +81,16 @@ public class When_publishing_one_event_type_to_native_and_non_native_subscribers
                     migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);
                     config.ConfigureSqsTransport().MessageVisibilityTimeout = testCase.MessageVisibilityTimeout;
                 });
-
                 b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, session
                     => session.SendLocal(new KickOff { NumberOfEvents = testCase.NumberOfEvents }));
             })
-            .WithEndpoint<NativePubSubSubscriber>(b =>
-            {
-                b.When((_, ctx) =>
+            .WithEndpoint<NativePubSubSubscriber>(b => b.When((_, ctx) =>
                 {
                     ctx.SubscribedNative = true;
                     return Task.CompletedTask;
-                });
-            })
-            .WithEndpoint<MessageDrivenPubSubSubscriber>(b =>
-            {
-                b.When((session, _) => session.Subscribe<MyEvent>());
-            })
-            .Done(c => c.NativePubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents
-                       && c.MessageDrivenPubSubSubscriberReceivedEventsCount == testCase.NumberOfEvents)
-            .Run(testCase.TestExecutionTimeout);
+                }))
+            .WithEndpoint<MessageDrivenPubSubSubscriber>(b => b.When(session => session.Subscribe<MyEvent>()))
+            .Run();
 
         Assert.Multiple(() =>
         {
@@ -111,12 +106,15 @@ public class When_publishing_one_event_type_to_native_and_non_native_subscribers
         public bool SubscribedMessageDriven { get; set; }
         public bool SubscribedNative { get; set; }
         public TimeSpan PublishTime { get; set; }
+        public int NumberOfEvents { get; set; }
 
         public void IncrementMessageDrivenPubSubSubscriberReceivedEventsCount()
             => Interlocked.Increment(ref messageDrivenPubSubSubscriberReceivedEventsCount);
 
         public void IncrementNativePubSubSubscriberReceivedEventsCount()
             => Interlocked.Increment(ref nativePubSubSubscriberReceivedEventsCount);
+
+        public void MaybeCompleted() => MarkAsCompleted(messageDrivenPubSubSubscriberReceivedEventsCount == NumberOfEvents, nativePubSubSubscriberReceivedEventsCount == NumberOfEvents);
 
         int messageDrivenPubSubSubscriberReceivedEventsCount;
         int nativePubSubSubscriberReceivedEventsCount;
@@ -143,10 +141,8 @@ public class When_publishing_one_event_type_to_native_and_non_native_subscribers
                 });
             }).IncludeType<TestingInMemorySubscriptionPersistence>();
 
-        public class KickOffMessageHandler : IHandleMessages<KickOff>
+        public class KickOffMessageHandler(Context testContext) : IHandleMessages<KickOff>
         {
-            public KickOffMessageHandler(Context testContext) => this.testContext = testContext;
-
             public async Task Handle(KickOff message, IMessageHandlerContext context)
             {
                 var sw = Stopwatch.StartNew();
@@ -155,12 +151,11 @@ public class When_publishing_one_event_type_to_native_and_non_native_subscribers
                 {
                     tasks.Add(context.Publish(new MyEvent()));
                 }
+
                 await Task.WhenAll(tasks);
                 sw.Stop();
                 testContext.PublishTime = sw.Elapsed;
             }
-
-            readonly Context testContext;
         }
     }
 
@@ -168,18 +163,14 @@ public class When_publishing_one_event_type_to_native_and_non_native_subscribers
     {
         public NativePubSubSubscriber() => EndpointSetup<DefaultServer>();
 
-        public class MyEventMessageHandler : IHandleMessages<MyEvent>
+        public class MyEventMessageHandler(Context testContext) : IHandleMessages<MyEvent>
         {
-            public MyEventMessageHandler(Context testContext)
-                => this.testContext = testContext;
-
             public Task Handle(MyEvent @event, IMessageHandlerContext context)
             {
                 testContext.IncrementNativePubSubSubscriberReceivedEventsCount();
+                testContext.MaybeCompleted();
                 return Task.CompletedTask;
             }
-
-            readonly Context testContext;
         }
     }
 
@@ -197,17 +188,14 @@ public class When_publishing_one_event_type_to_native_and_non_native_subscribers
                 },
                 metadata => metadata.RegisterPublisherFor<MyEvent>(typeof(Publisher)));
 
-        public class MyEventMessageHandler : IHandleMessages<MyEvent>
+        public class MyEventMessageHandler(Context testContext) : IHandleMessages<MyEvent>
         {
-            public MyEventMessageHandler(Context testContext) => this.testContext = testContext;
-
             public Task Handle(MyEvent @event, IMessageHandlerContext context)
             {
                 testContext.IncrementMessageDrivenPubSubSubscriberReceivedEventsCount();
+                testContext.MaybeCompleted();
                 return Task.CompletedTask;
             }
-
-            readonly Context testContext;
         }
     }
 
@@ -216,7 +204,5 @@ public class When_publishing_one_event_type_to_native_and_non_native_subscribers
         public int NumberOfEvents { get; set; }
     }
 
-    public class MyEvent : IEvent
-    {
-    }
+    public class MyEvent : IEvent;
 }

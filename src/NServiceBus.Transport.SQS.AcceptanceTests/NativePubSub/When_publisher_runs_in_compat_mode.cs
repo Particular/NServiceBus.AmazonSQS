@@ -18,10 +18,9 @@ public class When_publisher_runs_in_compat_mode : NServiceBusAcceptanceTest
     public async Task Legacy_subscriber_can_subscribe()
     {
         var publisherMigrated = await Scenario.Define<Context>()
-            .WithEndpoint<MigratedPublisher>(b => b.When(c => c.SubscribedMessageDriven, (session, ctx) => session.Publish(new MyEvent())))
-            .WithEndpoint<Subscriber>(b => b.When((session, ctx) => session.Subscribe<MyEvent>()))
-            .Done(c => c.GotTheEvent)
-            .Run(TimeSpan.FromSeconds(30));
+            .WithEndpoint<MigratedPublisher>(b => b.When(c => c.SubscribedMessageDriven, session => session.Publish(new MyEvent())))
+            .WithEndpoint<Subscriber>(b => b.When(session => session.Subscribe<MyEvent>()))
+            .Run();
 
         Assert.That(publisherMigrated.GotTheEvent, Is.True);
     }
@@ -34,8 +33,7 @@ public class When_publisher_runs_in_compat_mode : NServiceBusAcceptanceTest
 
     public class MigratedPublisher : EndpointConfigurationBuilder
     {
-        public MigratedPublisher()
-        {
+        public MigratedPublisher() =>
             EndpointSetup<DefaultPublisher>(c =>
             {
                 c.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
@@ -48,14 +46,12 @@ public class When_publisher_runs_in_compat_mode : NServiceBusAcceptanceTest
                     }
                 });
             }).IncludeType<TestingInMemorySubscriptionPersistence>();
-        }
     }
 
     public class Subscriber : EndpointConfigurationBuilder
     {
-        public Subscriber()
-        {
-            EndpointSetup(new CustomizedServer(false), (c, rd) =>
+        public Subscriber() =>
+            EndpointSetup(new CustomizedServer(false), (c, _) =>
             {
                 c.GetSettings().GetOrCreate<Publishers>().AddOrReplacePublishers("LegacyConfig",
                 [
@@ -63,23 +59,17 @@ public class When_publisher_runs_in_compat_mode : NServiceBusAcceptanceTest
                 ]);
                 c.DisableFeature<AutoSubscribe>();
             });
-        }
 
-        public class MyHandler : IHandleMessages<MyEvent>
+        public class MyHandler(Context testContext) : IHandleMessages<MyEvent>
         {
-            readonly Context testContext;
-
-            public MyHandler(Context testContext) => this.testContext = testContext;
-
             public Task Handle(MyEvent @event, IMessageHandlerContext context)
             {
                 testContext.GotTheEvent = true;
+                testContext.MarkAsCompleted();
                 return Task.CompletedTask;
             }
         }
     }
 
-    public class MyEvent : IEvent
-    {
-    }
+    public class MyEvent : IEvent;
 }
