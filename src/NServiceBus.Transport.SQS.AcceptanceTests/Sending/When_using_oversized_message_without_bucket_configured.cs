@@ -4,6 +4,7 @@ using System;
 using AcceptanceTesting;
 using EndpointTemplates;
 using NUnit.Framework;
+using Transport.SQS;
 
 public class When_using_oversized_message_without_bucket_configured : NServiceBusAcceptanceTest
 {
@@ -24,7 +25,7 @@ public class When_using_oversized_message_without_bucket_configured : NServiceBu
         Assert.That(exception.Message, Is.EqualTo("Cannot send large message because no S3 bucket was configured. Add an S3 bucket name to your configuration."));
     }
 
-    const int PayloadSize = 150 * 1024;
+    const int PayloadSize = TransportConstraints.SqsMaximumMessageSize + 1;
 
     public class Context : ScenarioContext
     {

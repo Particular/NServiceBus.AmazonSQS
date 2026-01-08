@@ -346,7 +346,7 @@ partial class MessageDispatcher(
         async Task PrepareSqsMessageBasedOnBodySize(TransportMessage? transportMessage)
         {
             preparedMessage.CalculateSize();
-            if (preparedMessage.Size > TransportConstraints.MaximumMessageSize)
+            if (preparedMessage.Size > TransportConstraints.SqsMaximumMessageSize)
             {
                 var s3key = await UploadToS3(preparedMessage.MessageId, transportOperation, cancellationToken).ConfigureAwait(false);
                 preparedMessage.Body = transportMessage != null ? PrepareSerializedS3TransportMessage(transportMessage, s3key) : TransportMessage.EmptyMessage;
@@ -381,7 +381,7 @@ partial class MessageDispatcher(
         async Task PrepareSnsMessageBasedOnBodySize(TransportMessage? transportMessage)
         {
             preparedMessage.CalculateSize();
-            if (preparedMessage.Size > TransportConstraints.MaximumMessageSize)
+            if (preparedMessage.Size > TransportConstraints.SnsMaximumMessageSize)
             {
                 var s3key = await UploadToS3(preparedMessage.MessageId, transportOperation, cancellationToken).ConfigureAwait(false);
                 preparedMessage.Body = transportMessage != null ? PrepareSerializedS3TransportMessage(transportMessage, s3key) : TransportMessage.EmptyMessage;

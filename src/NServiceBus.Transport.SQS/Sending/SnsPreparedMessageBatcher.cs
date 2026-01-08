@@ -31,7 +31,7 @@ static class SnsPreparedMessageBatcher
                 var size = message.Size;
                 payloadSize += size;
 
-                if (payloadSize > TransportConstraints.MaximumMessageSize)
+                if (payloadSize > TransportConstraints.SnsMaximumMessageSize)
                 {
                     allBatches.Add(message.ToBatchRequest(currentDestinationBatches));
                     currentDestinationBatches.Clear();

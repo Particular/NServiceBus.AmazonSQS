@@ -165,7 +165,7 @@ public class DelayedMessagesPumpTests
         mockSqsClient.ReceiveMessagesRequestResponse = (req, token) =>
         {
             var receivedMessages = new List<Message>();
-            for (var i = 0; i < 10; i++)
+            for (var i = 0; i < TransportConstraints.MaximumItemsInBatch; i++)
             {
                 receivedMessages.Add(new Message
                 {
@@ -180,7 +180,7 @@ public class DelayedMessagesPumpTests
                         { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "20" }},
                         { Headers.MessageId, new MessageAttributeValue { StringValue = Guid.NewGuid().ToString() }}
                     },
-                    Body = new string('a', 50 * 1024)
+                    Body = new string('a', GetSqsMessageSizeToEnsureNumberOfBatches(2))
                 });
             }
 
@@ -230,7 +230,7 @@ public class DelayedMessagesPumpTests
                         { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "20" }},
                         { Headers.MessageId, new MessageAttributeValue { StringValue = messageId }}
                     },
-                    Body = new string('a', 50 * 1024),
+                    Body = new string('a', GetSqsMessageSizeToEnsureNumberOfBatches(2)),
                     ReceiptHandle = $"Message-{i}"
                 });
             }
@@ -285,7 +285,7 @@ public class DelayedMessagesPumpTests
                         { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "1500" }},
                         { Headers.MessageId, new MessageAttributeValue { StringValue = messageId }}
                     },
-                    Body = new string('a', 50 * 1024)
+                    Body = new string('a', GetSqsMessageSizeToEnsureNumberOfBatches(2))
                 });
             }
 
@@ -335,7 +335,7 @@ public class DelayedMessagesPumpTests
                         { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "1500" }},
                         { Headers.MessageId, new MessageAttributeValue { StringValue = messageId }}
                     },
-                    Body = new string('a', 50 * 1024),
+                    Body = new string('a', GetSqsMessageSizeToEnsureNumberOfBatches(2)),
                     ReceiptHandle = $"Message-{i}"
                 });
             }
@@ -775,6 +775,17 @@ public class DelayedMessagesPumpTests
         {
             await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
         });
+    }
+
+    int GetSqsMessageSizeToEnsureNumberOfBatches(int desiredBatchCount, int? numberOfMessages = null)
+    {
+        var maxSqsBatchSize = TransportConstraints.SqsMaximumMessageSize;
+        desiredBatchCount = Math.Max(desiredBatchCount, 1);
+        numberOfMessages ??= TransportConstraints.MaximumItemsInBatch;
+
+        var totalSize = maxSqsBatchSize * desiredBatchCount;
+        var messageSize = (int)Math.Floor((double)totalSize / numberOfMessages.Value) - TransportTestsConstraints.SqsHeadersBuffer;
+        return messageSize;
     }
 
     DelayedMessagesPump pump;

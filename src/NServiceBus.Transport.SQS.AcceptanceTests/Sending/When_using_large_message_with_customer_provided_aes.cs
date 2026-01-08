@@ -8,6 +8,7 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using EndpointTemplates;
 using NUnit.Framework;
+using Transport.SQS;
 using Transport.SQS.Tests;
 
 public class When_using_large_message_with_customer_provided_aes : NServiceBusAcceptanceTest
@@ -43,7 +44,7 @@ public class When_using_large_message_with_customer_provided_aes : NServiceBusAc
         });
     }
 
-    const int PayloadSize = 150 * 1024;
+    const int PayloadSize = TransportConstraints.SqsMaximumMessageSize + 1;
 
     static string BucketName;
     static string Base64Key;
