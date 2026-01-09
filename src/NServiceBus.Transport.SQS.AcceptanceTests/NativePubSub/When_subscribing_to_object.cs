@@ -25,7 +25,7 @@ public class When_subscribing_to_object : NServiceBusAcceptanceTest
 
     public class Publisher : EndpointConfigurationBuilder
     {
-        public Publisher() => EndpointSetup<DefaultPublisher>(_ => { });
+        public Publisher() => EndpointSetup<DefaultPublisher>();
     }
 
     public class Subscriber : EndpointConfigurationBuilder

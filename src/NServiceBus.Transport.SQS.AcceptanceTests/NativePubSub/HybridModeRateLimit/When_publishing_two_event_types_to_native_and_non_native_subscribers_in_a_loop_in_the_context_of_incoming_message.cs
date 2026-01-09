@@ -104,7 +104,7 @@ public class When_publishing_two_event_types_to_native_and_non_native_subscriber
                 });
 
                 b.When(c => c.SubscribedMessageDrivenToMyEvent && c.SubscribedMessageDrivenToMySecondEvent && c.SubscribedNative, session
-                    => session.SendLocal(new KickOff { NumberOfEvents = testCase.NumberOfEvents }, cancellationToken: tokenSource.Token));
+                    => session.SendLocal(new KickOff { NumberOfEvents = testCase.NumberOfEvents }));
             })
             .Run(tokenSource.Token);
 
