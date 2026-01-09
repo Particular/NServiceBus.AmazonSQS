@@ -17,10 +17,9 @@ public class When_subscriber_runs_in_compat_mode : NServiceBusAcceptanceTest
     public async Task It_can_subscribe_for_event_published_by_legacy_publisher()
     {
         var publisherMigrated = await Scenario.Define<Context>()
-            .WithEndpoint<LegacyPublisher>(b => b.When(c => c.SubscribedMessageDriven, (session, ctx) => session.Publish(new MyEvent())))
-            .WithEndpoint<MigratedSubscriber>(b => b.When((session, ctx) => session.Subscribe<MyEvent>()))
-            .Done(c => c.GotTheEvent)
-            .Run(TimeSpan.FromSeconds(30));
+            .WithEndpoint<LegacyPublisher>(b => b.When(c => c.SubscribedMessageDriven, session => session.Publish(new MyEvent())))
+            .WithEndpoint<MigratedSubscriber>(b => b.When(session => session.Subscribe<MyEvent>()))
+            .Run();
 
         Assert.That(publisherMigrated.GotTheEvent, Is.True);
     }
@@ -33,8 +32,7 @@ public class When_subscriber_runs_in_compat_mode : NServiceBusAcceptanceTest
 
     public class LegacyPublisher : EndpointConfigurationBuilder
     {
-        public LegacyPublisher()
-        {
+        public LegacyPublisher() =>
             EndpointSetup(new CustomizedServer(false), (c, rd) =>
             {
                 c.GetSettings().Set("NServiceBus.AmazonSQS.DisableNativePubSub", true);
@@ -46,36 +44,28 @@ public class When_subscriber_runs_in_compat_mode : NServiceBusAcceptanceTest
                     }
                 });
             }).IncludeType<TestingInMemorySubscriptionPersistence>();
-        }
     }
 
     public class MigratedSubscriber : EndpointConfigurationBuilder
     {
-        public MigratedSubscriber()
-        {
+        public MigratedSubscriber() =>
             EndpointSetup<DefaultServer>(c =>
             {
                 var compatMode = c.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
                 compatMode.RegisterPublisher(typeof(MyEvent), PublisherEndpoint);
                 c.DisableFeature<AutoSubscribe>();
             });
-        }
 
-        public class MyHandler : IHandleMessages<MyEvent>
+        public class MyHandler(Context testContext) : IHandleMessages<MyEvent>
         {
-            readonly Context testContext;
-
-            public MyHandler(Context context) => testContext = context;
-
             public Task Handle(MyEvent @event, IMessageHandlerContext context)
             {
                 testContext.GotTheEvent = true;
+                testContext.MarkAsCompleted();
                 return Task.CompletedTask;
             }
         }
     }
 
-    public class MyEvent : IEvent
-    {
-    }
+    public class MyEvent : IEvent;
 }

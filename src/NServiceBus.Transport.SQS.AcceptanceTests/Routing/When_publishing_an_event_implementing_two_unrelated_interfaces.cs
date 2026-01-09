@@ -12,24 +12,20 @@ public class When_publishing_an_event_implementing_two_unrelated_interfaces : NS
     [Test]
     public async Task Event_should_be_published_using_instance_type()
     {
-        var context = await Scenario.Define<Context>(c => { c.Id = Guid.NewGuid(); })
+        var context = await Scenario.Define<Context>(c => c.Id = Guid.NewGuid())
             .WithEndpoint<Publisher>(b =>
                 b.When(c => c.EventASubscribed && c.EventBSubscribed, (session, ctx) =>
                 {
-                    var message = new CompositeEvent
-                    {
-                        ContextId = ctx.Id
-                    };
+                    var message = new CompositeEvent { ContextId = ctx.Id };
                     return session.Publish(message);
                 }))
-            .WithEndpoint<Subscriber>(b => b.When((session, ctx) =>
+            .WithEndpoint<Subscriber>(b => b.When((_, ctx) =>
             {
                 ctx.EventASubscribed = true;
                 ctx.EventBSubscribed = true;
                 return Task.CompletedTask;
             }))
-            .Done(c => c.GotEventA && c.GotEventB)
-            .Run(TimeSpan.FromSeconds(20));
+            .Run();
 
         Assert.Multiple(() =>
         {
@@ -45,51 +41,36 @@ public class When_publishing_an_event_implementing_two_unrelated_interfaces : NS
         public bool EventBSubscribed { get; set; }
         public bool GotEventA { get; set; }
         public bool GotEventB { get; set; }
+        public void MaybeCompleted() => MarkAsCompleted(GotEventA, GotEventB);
     }
 
     public class Publisher : EndpointConfigurationBuilder
     {
-        public Publisher()
-        {
-            EndpointSetup<DefaultPublisher>();
-        }
+        public Publisher() => EndpointSetup<DefaultPublisher>();
     }
 
     public class Subscriber : EndpointConfigurationBuilder
     {
-        public Subscriber()
-        {
-            EndpointSetup<DefaultServer>();
-        }
+        public Subscriber() => EndpointSetup<DefaultServer>();
 
-        public class EventAHandler : IHandleMessages<IEventA>
+        public class EventAHandler(Context testContext) : IHandleMessages<IEventA>
         {
-            public EventAHandler(Context context)
-            {
-                testContext = context;
-            }
-
             public Task Handle(IEventA @event, IMessageHandlerContext context)
             {
                 if (@event.ContextId != testContext.Id)
                 {
                     return Task.CompletedTask;
                 }
+
                 testContext.GotEventA = true;
+                testContext.MaybeCompleted();
 
                 return Task.CompletedTask;
             }
-
-            Context testContext;
         }
 
-        public class EventBHandler : IHandleMessages<IEventB>
+        public class EventBHandler(Context testContext) : IHandleMessages<IEventB>
         {
-            public EventBHandler(Context context)
-            {
-                testContext = context;
-            }
-
             public Task Handle(IEventB @event, IMessageHandlerContext context)
             {
                 if (@event.ContextId != testContext.Id)
@@ -98,11 +79,10 @@ public class When_publishing_an_event_implementing_two_unrelated_interfaces : NS
                 }
 
                 testContext.GotEventB = true;
+                testContext.MaybeCompleted();
 
                 return Task.CompletedTask;
             }
-
-            Context testContext;
         }
     }
 

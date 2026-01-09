@@ -1,6 +1,5 @@
 ﻿namespace NServiceBus.AcceptanceTests;
 
-using System;
 using System.Threading.Tasks;
 using AcceptanceTesting.Customization;
 using AcceptanceTesting.Support;
@@ -11,26 +10,16 @@ using ScenarioDescriptors;
 using Transport.SQS.Tests;
 using Versioning;
 
-public class ConfigureEndpointSqsTransport : IConfigureEndpointTestExecution
+public class ConfigureEndpointSqsTransport(bool supportsPublishSubscribe = true) : IConfigureEndpointTestExecution
 {
     const string S3BucketEnvironmentVariableName = "NSERVICEBUS_AMAZONSQS_S3BUCKET";
     public const string S3Prefix = "test";
     public static string S3BucketName;
-    readonly bool supportsPublishSubscribe;
-
-    public ConfigureEndpointSqsTransport(bool supportsPublishSubscribe = true)
-        => this.supportsPublishSubscribe = supportsPublishSubscribe;
 
     public Task Configure(string endpointName, EndpointConfiguration configuration, RunSettings settings, PublisherMetadata publisherMetadata)
     {
         var transport = PrepareSqsTransport(supportsPublishSubscribe);
         configuration.UseTransport(transport);
-
-        //We set the default test execution timeout only when not explicitly set by the test
-        if (settings.TestExecutionTimeout == null || settings.TestExecutionTimeout.Value <= TimeSpan.FromSeconds(120))
-        {
-            settings.TestExecutionTimeout = TimeSpan.FromSeconds(120);
-        }
 
         ApplyMappingsToSupportMultipleInheritance(endpointName, transport);
 

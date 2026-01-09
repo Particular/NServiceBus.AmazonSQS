@@ -13,18 +13,17 @@ public class When_multi_subscribing_to_a_polymorphic_event_using_topic_mappings 
         Requires.NativePubSubSupport();
 
         var context = await Scenario.Define<Context>()
-            .WithEndpoint<Publisher1>(b => b.When(c => c.EndpointsStarted, (session, c) =>
+            .WithEndpoint<Publisher1>(b => b.When((session, c) =>
             {
                 c.AddTrace("Publishing MyEvent1");
                 return session.Publish(new MyEvent1());
             }))
-            .WithEndpoint<Publisher2>(b => b.When(c => c.EndpointsStarted, (session, c) =>
+            .WithEndpoint<Publisher2>(b => b.When((session, c) =>
             {
                 c.AddTrace("Publishing MyEvent2");
                 return session.Publish(new MyEvent2());
             }))
             .WithEndpoint<Subscriber>()
-            .Done(c => c.SubscriberGotIMyEvent && c.SubscriberGotMyEvent2)
             .Run();
 
         Assert.Multiple(() =>
@@ -38,38 +37,35 @@ public class When_multi_subscribing_to_a_polymorphic_event_using_topic_mappings 
     {
         public bool SubscriberGotIMyEvent { get; set; }
         public bool SubscriberGotMyEvent2 { get; set; }
+
+        public void MaybeCompleted() => MarkAsCompleted(SubscriberGotIMyEvent, SubscriberGotMyEvent2);
     }
 
     public class Publisher1 : EndpointConfigurationBuilder
     {
-        public Publisher1()
-        {
+        public Publisher1() =>
             EndpointSetup<DefaultPublisher>(c =>
             {
                 var transportConfig = c.ConfigureSqsTransport();
                 // to avoid pretruncation
                 transportConfig.TopicNameGenerator = (type, prefix) => $"{prefix}{type.Name}";
             });
-        }
     }
 
     public class Publisher2 : EndpointConfigurationBuilder
     {
-        public Publisher2()
-        {
+        public Publisher2() =>
             EndpointSetup<DefaultPublisher>(c =>
             {
                 var transportConfig = c.ConfigureSqsTransport();
                 // to avoid pretruncation
                 transportConfig.TopicNameGenerator = (type, prefix) => $"{prefix}{type.Name}";
             });
-        }
     }
 
     public class Subscriber : EndpointConfigurationBuilder
     {
-        public Subscriber()
-        {
+        public Subscriber() =>
             EndpointSetup<DefaultServer>(c =>
             {
                 var topicNameForMyEvent1 = SetupFixture.NamePrefix + "MyEvent1";
@@ -78,19 +74,11 @@ public class When_multi_subscribing_to_a_polymorphic_event_using_topic_mappings 
                 var transportConfig = c.ConfigureSqsTransport();
                 // to avoid pretruncation
                 transportConfig.TopicNameGenerator = (type, prefix) => $"{prefix}{type.Name}";
-                transportConfig.MapEvent<IMyEvent>(new[] { topicNameForMyEvent1, topicNameForMyEvent2 });
+                transportConfig.MapEvent<IMyEvent>([topicNameForMyEvent1, topicNameForMyEvent2]);
             });
-        }
 
-        public class MyHandler : IHandleMessages<IMyEvent>
+        public class MyHandler(Context testContext) : IHandleMessages<IMyEvent>
         {
-            Context testContext;
-
-            public MyHandler(Context testContext)
-            {
-                this.testContext = testContext;
-            }
-
             public Task Handle(IMyEvent messageThatIsEnlisted, IMessageHandlerContext context)
             {
                 testContext.AddTrace($"Got event '{messageThatIsEnlisted}'");
@@ -103,20 +91,14 @@ public class When_multi_subscribing_to_a_polymorphic_event_using_topic_mappings 
                     testContext.SubscriberGotIMyEvent = true;
                 }
 
+                testContext.MaybeCompleted();
+
                 return Task.CompletedTask;
             }
         }
     }
 
-    public class MyEvent1 : IMyEvent
-    {
-    }
-
-    public class MyEvent2 : IMyEvent
-    {
-    }
-
-    public interface IMyEvent : IEvent
-    {
-    }
+    public class MyEvent1 : IMyEvent;
+    public class MyEvent2 : IMyEvent;
+    public interface IMyEvent : IEvent;
 }

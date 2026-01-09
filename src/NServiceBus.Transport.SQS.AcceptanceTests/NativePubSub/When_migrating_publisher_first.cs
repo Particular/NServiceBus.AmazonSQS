@@ -29,9 +29,8 @@ public class When_migrating_publisher_first : NServiceBusAcceptanceTest
                     c.UsePersistence<TestingInMemoryPersistence, StorageType.Subscriptions>().UseStorage(subscriptionStorage);
                     c.GetSettings().Set("NServiceBus.AmazonSQS.DisableNativePubSub", true);
                 });
-                b.When(c => c.SubscribedMessageDriven, (session, ctx) => session.Publish(new MyEvent()));
+                b.When(c => c.SubscribedMessageDriven, session => session.Publish(new MyEvent()));
             })
-
             .WithEndpoint(new Subscriber(false), b =>
             {
                 b.CustomConfig(c =>
@@ -42,13 +41,9 @@ public class When_migrating_publisher_first : NServiceBusAcceptanceTest
                         new PublisherTableEntry(typeof(MyEvent), PublisherAddress.CreateFromEndpointName(PublisherEndpoint))
                     ]);
                 });
-                b.When(async (session, ctx) =>
-                {
-                    await session.Subscribe<MyEvent>();
-                });
+                b.When(session => session.Subscribe<MyEvent>());
             })
-            .Done(c => c.GotTheEvent)
-            .Run(TimeSpan.FromSeconds(60));
+            .Run();
 
         Assert.That(beforeMigration.GotTheEvent, Is.True);
 
@@ -61,9 +56,8 @@ public class When_migrating_publisher_first : NServiceBusAcceptanceTest
                     c.UsePersistence<TestingInMemoryPersistence, StorageType.Subscriptions>().UseStorage(subscriptionStorage);
                     c.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
                 });
-                b.When(c => c.EndpointsStarted, (session, ctx) => session.Publish(new MyEvent()));
+                b.When(session => session.Publish(new MyEvent()));
             })
-
             .WithEndpoint(new Subscriber(false), b =>
             {
                 b.CustomConfig(c =>
@@ -74,21 +68,13 @@ public class When_migrating_publisher_first : NServiceBusAcceptanceTest
                         new PublisherTableEntry(typeof(MyEvent), PublisherAddress.CreateFromEndpointName(PublisherEndpoint))
                     ]);
                 });
-                b.When(async (session, ctx) =>
-                {
-                    await session.Subscribe<MyEvent>();
-                });
+                b.When(session => session.Subscribe<MyEvent>());
             })
-            .Done(c => c.GotTheEvent)
-            .Run(TimeSpan.FromSeconds(60));
+            .Run();
 
         Assert.That(publisherMigrated.GotTheEvent, Is.True);
 
         //Subscriber migrated and in compatibility mode
-        var subscriberMigratedRunSettings = new RunSettings
-        {
-            TestExecutionTimeout = TimeSpan.FromSeconds(60)
-        };
         var subscriberMigrated = await Scenario.Define<Context>()
             .WithEndpoint(new Publisher(true), b =>
             {
@@ -97,9 +83,8 @@ public class When_migrating_publisher_first : NServiceBusAcceptanceTest
                     c.UsePersistence<TestingInMemoryPersistence, StorageType.Subscriptions>().UseStorage(subscriptionStorage);
                     c.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
                 });
-                b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, (session, ctx) => session.Publish(new MyEvent()));
+                b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, session => session.Publish(new MyEvent()));
             })
-
             .WithEndpoint(new Subscriber(true), b =>
             {
                 b.CustomConfig(c =>
@@ -116,20 +101,15 @@ public class When_migrating_publisher_first : NServiceBusAcceptanceTest
                     ctx.SubscribedNative = true;
                 });
             })
-            .Done(c => c.GotTheEvent)
-            .Run(subscriberMigratedRunSettings);
+            .Run();
 
         Assert.That(subscriberMigrated.GotTheEvent, Is.True);
 
         //Compatibility mode disabled in both publisher and subscriber
         var compatModeDisabled = await Scenario.Define<Context>()
-            .WithEndpoint(new Publisher(true), b =>
-            {
-                b.When(c => c.EndpointsStarted, (session, ctx) => session.Publish(new MyEvent()));
-            })
-            .WithEndpoint(new Subscriber(true), c => { })
-            .Done(c => c.GotTheEvent)
-            .Run(TimeSpan.FromSeconds(60));
+            .WithEndpoint(new Publisher(true), b => b.When(session => session.Publish(new MyEvent())))
+            .WithEndpoint(new Subscriber(true), _ => { })
+            .Run();
 
         Assert.That(compatModeDisabled.GotTheEvent, Is.True);
     }
@@ -143,8 +123,7 @@ public class When_migrating_publisher_first : NServiceBusAcceptanceTest
 
     public class Publisher : EndpointConfigurationBuilder
     {
-        public Publisher(bool supportsNativePubSub)
-        {
+        public Publisher(bool supportsNativePubSub) =>
             EndpointSetup(new CustomizedServer(supportsNativePubSub), (c, rd) =>
             {
                 c.OnEndpointSubscribed<Context>((s, context) =>
@@ -155,35 +134,27 @@ public class When_migrating_publisher_first : NServiceBusAcceptanceTest
                     }
                 });
             }).IncludeType<TestingInMemorySubscriptionPersistence>();
-        }
     }
 
     public class Subscriber : EndpointConfigurationBuilder
     {
-        public Subscriber(bool supportsNativePubSub)
-        {
+        public Subscriber(bool supportsNativePubSub) =>
             EndpointSetup(new CustomizedServer(supportsNativePubSub), (c, rd) =>
                 {
                     c.DisableFeature<AutoSubscribe>();
                 },
                 metadata => metadata.RegisterPublisherFor<MyEvent>(typeof(Publisher)));
-        }
 
-        public class MyEventMessageHandler : IHandleMessages<MyEvent>
+        public class MyEventMessageHandler(Context testContext) : IHandleMessages<MyEvent>
         {
-            Context testContext;
-
-            public MyEventMessageHandler(Context context) => testContext = context;
-
             public Task Handle(MyEvent @event, IMessageHandlerContext context)
             {
                 testContext.GotTheEvent = true;
+                testContext.MarkAsCompleted();
                 return Task.CompletedTask;
             }
         }
     }
 
-    public class MyEvent : IEvent
-    {
-    }
+    public class MyEvent : IEvent;
 }
