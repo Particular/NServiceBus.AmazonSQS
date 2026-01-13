@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using AcceptanceTesting;
 using EndpointTemplates;
 using NUnit.Framework;
+using Transport.SQS;
 using Transport.SQS.Tests;
 
 public class When_using_large_message_with_unencrypted_bucket : NServiceBusAcceptanceTest
@@ -28,7 +29,7 @@ public class When_using_large_message_with_unencrypted_bucket : NServiceBusAccep
         Assert.DoesNotThrowAsync(async () => await s3Client.GetObjectAsync(ConfigureEndpointSqsTransport.S3BucketName, $"{ConfigureEndpointSqsTransport.S3Prefix}/{context.MessageId}"));
     }
 
-    const int PayloadSize = 150 * 1024;
+    const int PayloadSize = TransportConstraints.SqsMaximumMessageSize + 1;
 
     public class Context : ScenarioContext
     {

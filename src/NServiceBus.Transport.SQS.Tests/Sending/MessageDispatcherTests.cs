@@ -325,11 +325,11 @@ public class MessageDispatcherTests
 
         var longBodyMessageId = Guid.NewGuid().ToString();
         /* Crazy long message id will cause the message to go over limits because attributes count as well */
-        var crazyLongMessageId = new string('x', 256 * 1024);
+        var crazyLongMessageId = new string('x', TransportConstraints.SnsMaximumMessageSize);
 
         var transportOperations = new TransportOperations(
             new TransportOperation(
-                new OutgoingMessage(longBodyMessageId, [], Encoding.UTF8.GetBytes(new string('x', 256 * 1024))),
+                new OutgoingMessage(longBodyMessageId, [], Encoding.UTF8.GetBytes(new string('x', TransportConstraints.SnsMaximumMessageSize))),
                 new MulticastAddressTag(typeof(Event)),
                 [],
                 DispatchConsistency.Isolated),
@@ -704,22 +704,21 @@ public class MessageDispatcherTests
         var mockSqsClient = new MockSqsClient();
 
         var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
-                dest => QueueCache.GetSqsQueueName(dest, "")), null,
-            new S3Settings("someBucket", "somePrefix", mockS3Client), 15 * 60, 0, wrapOutgoingMessages: wrapMessage);
+                dest => QueueCache.GetSqsQueueName(dest, "")), null, new S3Settings("someBucket", "somePrefix", mockS3Client), 15 * 60, 0, wrapOutgoingMessages: wrapMessage);
 
         var transportOperations = new TransportOperations(
             new TransportOperation(
-                new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes(new string('x', 256 * 1024))),
+                new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes(new string('x', TransportConstraints.SqsMaximumMessageSize))),
                 new UnicastAddressTag("address1"),
                 [],
                 DispatchConsistency.Default),
             new TransportOperation(
-                new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes(new string('x', 256 * 1024))),
+                new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes(new string('x', TransportConstraints.SqsMaximumMessageSize))),
                 new UnicastAddressTag("address2"),
                 [],
                 DispatchConsistency.Default),
             new TransportOperation( /* Crazy long message id will cause the message to go over limits because attributes count as well */
-                new OutgoingMessage(new string('x', 256 * 1024), [], Encoding.UTF8.GetBytes("{}")),
+                new OutgoingMessage(new string('x', TransportConstraints.SqsMaximumMessageSize), [], Encoding.UTF8.GetBytes("{}")),
                 new UnicastAddressTag("address2"),
                 [],
                 DispatchConsistency.Default));
@@ -767,22 +766,21 @@ public class MessageDispatcherTests
         var mockSqsClient = new MockSqsClient();
 
         var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
-                dest => QueueCache.GetSqsQueueName(dest, "")), null,
-            new S3Settings("someBucket", "somePrefix", mockS3Client), 15 * 60, 0, wrapOutgoingMessages: wrapMessage);
+            dest => QueueCache.GetSqsQueueName(dest, "")), null, new S3Settings("someBucket", "somePrefix", mockS3Client), 15 * 60, 0, wrapMessage);
 
         var transportOperations = new TransportOperations(
             new TransportOperation(
-                new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes(new string('x', 256 * 1024))),
+                new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes(new string('x', TransportConstraints.SqsMaximumMessageSize))),
                 new UnicastAddressTag("address1"),
                 [],
                 DispatchConsistency.Isolated),
             new TransportOperation(
-                new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes(new string('x', 256 * 1024))),
+                new OutgoingMessage(Guid.NewGuid().ToString(), [], Encoding.UTF8.GetBytes(new string('x', TransportConstraints.SqsMaximumMessageSize))),
                 new UnicastAddressTag("address2"),
                 [],
                 DispatchConsistency.Isolated),
             new TransportOperation( /* Crazy long message id will cause the message to go over limits because attributes count as well */
-                new OutgoingMessage(new string('x', 256 * 1024), [], Encoding.UTF8.GetBytes("{}")),
+                new OutgoingMessage(new string('x', TransportConstraints.SqsMaximumMessageSize), [], Encoding.UTF8.GetBytes("{}")),
                 new UnicastAddressTag("address2"),
                 [],
                 DispatchConsistency.Isolated));
@@ -930,10 +928,11 @@ public class MessageDispatcherTests
     public async Task Does_upload_to_S3_when_payload_reserved_bytes_are_set()
     {
         var mockSqsClient = new MockSqsClient();
+        var mockSnsClient = new MockSnsClient();
         var mockS3Client = new MockS3Client();
 
-        var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
-            dest => QueueCache.GetSqsQueueName(dest, "")), null, new S3Settings("bucketname", "keyprefix", mockS3Client), 15 * 60, 50);
+        var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, mockSnsClient, new QueueCache(mockSqsClient,
+            dest => QueueCache.GetSqsQueueName(dest, "")), new TopicCache(mockSnsClient, new SettingsHolder(), new EventToTopicsMappings(), new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""), new S3Settings("bucketname", "keyprefix", mockS3Client), 15 * 60, 50);
 
         var transportOperations = new TransportOperations(
             new TransportOperation(
@@ -942,8 +941,13 @@ public class MessageDispatcherTests
                     {TransportHeaders.TimeToBeReceived, ExpectedTtbr.ToString()},
                     {Headers.ReplyToAddress, ExpectedReplyToAddress},
                     {Headers.MessageId, "093C17C6-D32E-44FE-9134-65C10C1287EB"}
-                }, Encoding.Default.GetBytes(new string('x', 256 * 1024))),
+                }, Encoding.Default.GetBytes(new string('x', TransportConstraints.SqsMaximumMessageSize))),
                 new UnicastAddressTag("address"),
+                [],
+                DispatchConsistency.Isolated),
+            new TransportOperation(
+                new OutgoingMessage("5678", new Dictionary<string, string> { { TransportHeaders.TimeToBeReceived, ExpectedTtbr.ToString() }, { Headers.ReplyToAddress, ExpectedReplyToAddress }, { Headers.MessageId, "093C17C6-D32E-44FE-9134-65C10C1287EC" } }, Encoding.Default.GetBytes(new string('x', TransportConstraints.SnsMaximumMessageSize))),
+                new MulticastAddressTag(typeof(Event)),
                 [],
                 DispatchConsistency.Isolated));
 
@@ -951,11 +955,9 @@ public class MessageDispatcherTests
 
         await dispatcher.Dispatch(transportOperations, transportTransaction);
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(mockSqsClient.RequestsSent, Is.Not.Empty, "No requests sent");
-            Assert.That(mockS3Client.PutObjectRequestsSent, Is.Not.Empty, "No S3 requests sent");
-        });
+        Assert.That(mockSqsClient.RequestsSent, Is.Not.Empty, "No SQS requests sent");
+        Assert.That(mockSnsClient.PublishedEvents, Is.Not.Empty, "No SNS events published");
+        Assert.That(mockS3Client.PutObjectRequestsSent, Is.Not.Empty, "No S3 requests sent");
 
         var s3Request = mockS3Client.PutObjectRequestsSent.First();
         Assert.That(s3Request.InputStream.Length, Is.GreaterThan(0));
