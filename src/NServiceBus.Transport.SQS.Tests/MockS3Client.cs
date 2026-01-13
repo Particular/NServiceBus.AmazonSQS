@@ -62,6 +62,9 @@ public class MockS3Client : IAmazonS3
     public string GetPreSignedURL(GetPreSignedUrlRequest request) => throw new NotImplementedException();
 
     public Task<string> GetPreSignedURLAsync(GetPreSignedUrlRequest request) => throw new NotImplementedException();
+    public CreatePresignedPostResponse CreatePresignedPost(CreatePresignedPostRequest request) => throw new NotImplementedException();
+
+    public Task<CreatePresignedPostResponse> CreatePresignedPostAsync(CreatePresignedPostRequest request) => throw new NotImplementedException();
 
     public Task<AbortMultipartUploadResponse> AbortMultipartUploadAsync(string bucketName, string key, string uploadId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
@@ -85,6 +88,7 @@ public class MockS3Client : IAmazonS3
         throw new NotImplementedException();
 
     public Task<CopyPartResponse> CopyPartAsync(CopyPartRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public Task<CreateBucketMetadataConfigurationResponse> CreateBucketMetadataConfigurationAsync(CreateBucketMetadataConfigurationRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
 
     public Task<CreateBucketMetadataTableConfigurationResponse> CreateBucketMetadataTableConfigurationAsync(CreateBucketMetadataTableConfigurationRequest request,
         CancellationToken cancellationToken = default) =>
@@ -101,6 +105,7 @@ public class MockS3Client : IAmazonS3
     public Task<DeleteBucketEncryptionResponse> DeleteBucketEncryptionAsync(DeleteBucketEncryptionRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
     public Task<DeleteBucketInventoryConfigurationResponse> DeleteBucketInventoryConfigurationAsync(DeleteBucketInventoryConfigurationRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public Task<DeleteBucketMetadataConfigurationResponse> DeleteBucketMetadataConfigurationAsync(DeleteBucketMetadataConfigurationRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
 
     public Task<DeleteBucketMetadataTableConfigurationResponse> DeleteBucketMetadataTableConfigurationAsync(DeleteBucketMetadataTableConfigurationRequest request,
         CancellationToken cancellationToken = default) =>
@@ -145,6 +150,7 @@ public class MockS3Client : IAmazonS3
     public Task<DeleteObjectTaggingResponse> DeleteObjectTaggingAsync(DeleteObjectTaggingRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
     public Task<DeletePublicAccessBlockResponse> DeletePublicAccessBlockAsync(DeletePublicAccessBlockRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public Task<GetBucketAbacResponse> GetBucketAbacAsync(GetBucketAbacRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
 
     public Task<GetACLResponse> GetACLAsync(string bucketName, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
@@ -169,6 +175,7 @@ public class MockS3Client : IAmazonS3
     public Task<GetBucketLoggingResponse> GetBucketLoggingAsync(string bucketName, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
     public Task<GetBucketLoggingResponse> GetBucketLoggingAsync(GetBucketLoggingRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public Task<GetBucketMetadataConfigurationResponse> GetBucketMetadataConfigurationAsync(GetBucketMetadataConfigurationRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
 
     public Task<GetBucketMetadataTableConfigurationResponse> GetBucketMetadataTableConfigurationAsync(GetBucketMetadataTableConfigurationRequest request,
         CancellationToken cancellationToken = default) =>
@@ -295,6 +302,7 @@ public class MockS3Client : IAmazonS3
     public Task<PutBucketResponse> PutBucketAsync(string bucketName, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
     public Task<PutBucketResponse> PutBucketAsync(PutBucketRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public Task<PutBucketAbacResponse> PutBucketAbacAsync(PutBucketAbacRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
 
     public Task<PutBucketAccelerateConfigurationResponse> PutBucketAccelerateConfigurationAsync(PutBucketAccelerateConfigurationRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
@@ -349,6 +357,7 @@ public class MockS3Client : IAmazonS3
     public Task<PutObjectTaggingResponse> PutObjectTaggingAsync(PutObjectTaggingRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
     public Task<PutPublicAccessBlockResponse> PutPublicAccessBlockAsync(PutPublicAccessBlockRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public Task<RenameObjectResponse> RenameObjectAsync(RenameObjectRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
 
     public Task<RestoreObjectResponse> RestoreObjectAsync(string bucketName, string key, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
@@ -364,6 +373,10 @@ public class MockS3Client : IAmazonS3
     public Task<RestoreObjectResponse> RestoreObjectAsync(RestoreObjectRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
     public Task<SelectObjectContentResponse> SelectObjectContentAsync(SelectObjectContentRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public Task<UpdateBucketMetadataInventoryTableConfigurationResponse> UpdateBucketMetadataInventoryTableConfigurationAsync(UpdateBucketMetadataInventoryTableConfigurationRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
+
+    public Task<UpdateBucketMetadataJournalTableConfigurationResponse> UpdateBucketMetadataJournalTableConfigurationAsync(UpdateBucketMetadataJournalTableConfigurationRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
+
     public Task<UploadPartResponse> UploadPartAsync(UploadPartRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
     public Task<WriteGetObjectResponseResponse> WriteGetObjectResponseAsync(WriteGetObjectResponseRequest request,
