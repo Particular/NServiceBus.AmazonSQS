@@ -44,7 +44,12 @@ public class When_sending_not_wrapped_message : NServiceBusAcceptanceTest
             EndpointSetup<DefaultServer>(builder =>
             {
                 builder.ConfigureRouting().RouteToEndpoint(typeof(MyMessageWithPayload), typeof(Receiver));
-                builder.ConfigureSqsTransport().DoNotWrapOutgoingMessages = true;
+
+                var transport = builder.ConfigureSqsTransport();
+                transport.DoNotWrapOutgoingMessages = true;
+
+                // Configure a static message group id to exercise fair-queue configuration
+                transport.MessageGroupIdSelector = _ => "StaticGroupId";
             });
 
         public class Handler : IHandleMessages<Reply>

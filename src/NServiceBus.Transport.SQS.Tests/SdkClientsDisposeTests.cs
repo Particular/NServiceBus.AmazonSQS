@@ -64,7 +64,8 @@ public class SdkClientsDisposeTests
             disposeSqs,
             disposeSns,
             false,
-            0);
+            0,
+            msg => msg.MessageId);
 
         await sut.Shutdown(CancellationToken.None);
 

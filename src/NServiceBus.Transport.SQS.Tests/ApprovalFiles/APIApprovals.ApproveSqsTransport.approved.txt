@@ -58,6 +58,7 @@ namespace NServiceBus
         public System.TimeSpan MaxTimeToLive { get; set; }
         public System.TimeSpan? MessageVisibilityTimeout { get; set; }
         public NServiceBus.PolicySettings Policies { get; }
+        public System.Func<NServiceBus.Transport.OutgoingMessage, string> MessageGroupIdSelector { get; set; }
         public System.Func<string, string, string> QueueNameGenerator { get; set; }
         public string QueueNamePrefix { get; set; }
         public long ReserveBytesInMessageSizeCalculation { get; set; }

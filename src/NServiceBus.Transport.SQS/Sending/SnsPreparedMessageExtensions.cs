@@ -16,7 +16,8 @@ static class SnsPreparedMessageExtensions
                 DataType = x.Value.DataType,
                 StringValue = x.Value.StringValue,
                 BinaryValue = x.Value.BinaryValue,
-            })
+            }),
+            MessageGroupId = message.MessageGroupId
         };
 
     static PublishBatchRequestEntry ToBatchEntry(this SnsPreparedMessage message, string batchEntryId) =>
@@ -24,7 +25,8 @@ static class SnsPreparedMessageExtensions
         {
             MessageAttributes = message.MessageAttributes,
             Id = batchEntryId,
-            Message = message.Body
+            Message = message.Body,
+            MessageGroupId = message.MessageGroupId
         };
 
     public static SnsBatchEntry ToBatchRequest(this SnsPreparedMessage message, Dictionary<string, SnsPreparedMessage> batchEntries)

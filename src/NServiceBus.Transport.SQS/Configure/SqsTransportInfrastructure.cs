@@ -19,7 +19,8 @@ class SqsTransportInfrastructure : TransportInfrastructure
         int? visibilityTimeoutInSeconds, TimeSpan maxAutoMessageVisibilityRenewalDuration, string topicNamePrefix,
         bool doNotWrapOutgoingMessages,
         bool shouldDisposeSqsClient, bool shouldDisposeSnsClient, bool disableDelayedDelivery,
-        long reserveBytesInMessageSizeCalculation)
+        long reserveBytesInMessageSizeCalculation,
+        Func<OutgoingMessage, string> messageGroupIdSelector)
     {
         this.sqsClient = sqsClient;
         this.snsClient = snsClient;
@@ -33,7 +34,7 @@ class SqsTransportInfrastructure : TransportInfrastructure
             .ToDictionary(x => x.Id, x => x);
 
         Dispatcher = new MessageDispatcher(hostSettings.CoreSettings, sqsClient, snsClient, queueCache, topicCache, s3Settings,
-            queueDelayTimeSeconds, reserveBytesInMessageSizeCalculation, !doNotWrapOutgoingMessages);
+            queueDelayTimeSeconds, reserveBytesInMessageSizeCalculation, !doNotWrapOutgoingMessages, messageGroupIdSelector);
     }
 
     static IMessageReceiver CreateMessagePump(ReceiveSettings receiveSettings, IAmazonSQS sqsClient,

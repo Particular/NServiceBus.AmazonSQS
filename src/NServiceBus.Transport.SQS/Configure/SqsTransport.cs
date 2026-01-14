@@ -146,6 +146,12 @@ public partial class SqsTransport : TransportDefinition
     public PolicySettings Policies { get; } = new PolicySettings();
 
     /// <summary>
+    /// Configures a function that computes the MessageGroupId used for SQS fair queues.
+    /// If not specified, the transport will fall back to using the MessageId.
+    /// </summary>
+    public Func<OutgoingMessage, string> MessageGroupIdSelector { get; set; }
+
+    /// <summary>
     /// Configures the SQS transport to not use a custom wrapper for outgoing messages.
     /// NServiceBus headers will be sent as an Amazon message attribute.
     /// Only turn this on if all your endpoints are version 6.1.0 or above.
@@ -344,7 +350,8 @@ public partial class SqsTransport : TransportDefinition
             !sqsClient.ExternallyManaged,
             !snsClient.ExternallyManaged,
             !SupportsDelayedDelivery,
-            ReserveBytesInMessageSizeCalculation
+            ReserveBytesInMessageSizeCalculation,
+            MessageGroupIdSelector
         );
 
         if (hostSettings.SetupInfrastructure)

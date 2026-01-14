@@ -23,6 +23,9 @@ class SnsPreparedMessage
     public long Size { get; private set; }
     public long ReserveBytesInMessageSizeCalculation { get; init; }
 
+    // Used for fair queues over SNS (message group id is forwarded to SQS standard queues)
+    public string MessageGroupId { get; set; }
+
     public Dictionary<string, MessageAttributeValue> MessageAttributes { get; } = [];
 
     public void CalculateSize()

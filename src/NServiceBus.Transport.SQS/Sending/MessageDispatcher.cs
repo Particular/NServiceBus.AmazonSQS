@@ -27,9 +27,15 @@ partial class MessageDispatcher(
     S3Settings? s3,
     int queueDelaySeconds,
     long reserveBytesInMessageSizeCalculation,
-    bool wrapOutgoingMessages = true)
+    bool wrapOutgoingMessages = true,
+    Func<OutgoingMessage, string>? messageGroupIdSelector = null)
     : IMessageDispatcher
 {
+    readonly Func<OutgoingMessage, string>? messageGroupIdSelectorField = messageGroupIdSelector;
+
+    string GetMessageGroupId(OutgoingMessage message) =>
+        messageGroupIdSelectorField is not null ? messageGroupIdSelectorField(message) : message.MessageId;
+
     public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, CancellationToken cancellationToken = default)
     {
         var concurrentDispatchTasks = new List<Task>(4);
@@ -175,11 +181,11 @@ partial class MessageDispatcher(
                 var redispatchTasks = new List<Task>(result.Failed.Count);
                 foreach (var errorEntry in result.Failed)
                 {
-
                     var messageToRetry = batch.PreparedMessagesBydId[errorEntry.Id];
                     Logger.Info($"Retrying message with MessageId {messageToRetry.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
                     redispatchTasks.Add(SendMessageForBatch(messageToRetry, batchNumber, totalBatches, cancellationToken));
                 }
+
                 await Task.WhenAll(redispatchTasks).ConfigureAwait(false);
             }
         }
@@ -239,6 +245,7 @@ partial class MessageDispatcher(
                     Logger.Info($"Republishing message with MessageId {messageToRetry.MessageId} that failed in batch '{batchNumber}/{totalBatches}' due to '{errorEntry.Message}'.");
                     redispatchTasks.Add(PublishForBatch(messageToRetry, batchNumber, totalBatches, cancellationToken));
                 }
+
                 await Task.WhenAll(redispatchTasks).ConfigureAwait(false);
             }
         }
@@ -378,6 +385,13 @@ partial class MessageDispatcher(
 
         await ApplyMulticastOperationMapping(transportOperation, preparedMessage, cancellationToken).ConfigureAwait(false);
 
+        // Apply fair-queue MessageGroupId for SNS publishes (selector or default header-based)
+        var publishGroupId = GetMessageGroupId(transportOperation.Message);
+        if (!string.IsNullOrEmpty(publishGroupId))
+        {
+            preparedMessage.MessageGroupId = publishGroupId;
+        }
+
         async Task PrepareSnsMessageBasedOnBodySize(TransportMessage? transportMessage)
         {
             preparedMessage.CalculateSize();
@@ -475,14 +489,7 @@ partial class MessageDispatcher(
 
         var key = $"{s3.KeyPrefix}/{messageId}";
         using var bodyStream = new ReadonlyStream(transportOperation.Message.Body);
-        var putObjectRequest = new PutObjectRequest
-        {
-            BucketName = s3.BucketName,
-            InputStream = bodyStream,
-            Key = key,
-            DisablePayloadSigning = s3.DisablePayloadSigning
-        };
-
+        var putObjectRequest = new PutObjectRequest { BucketName = s3.BucketName, InputStream = bodyStream, Key = key, DisablePayloadSigning = s3.DisablePayloadSigning };
         s3.NullSafeEncryption.ModifyPutRequest(putObjectRequest);
 
         await s3.S3Client.PutObjectAsync(putObjectRequest, cancellationToken).ConfigureAwait(false);
@@ -520,11 +527,7 @@ partial class MessageDispatcher(
             sqsPreparedMessage.MessageDeduplicationId = sqsPreparedMessage.MessageId;
             sqsPreparedMessage.MessageGroupId = sqsPreparedMessage.MessageId;
 
-            sqsPreparedMessage.MessageAttributes[TransportHeaders.DelaySeconds] = new MessageAttributeValue
-            {
-                StringValue = delaySeconds.ToString(),
-                DataType = "String"
-            };
+            sqsPreparedMessage.MessageAttributes[TransportHeaders.DelaySeconds] = new MessageAttributeValue { StringValue = delaySeconds.ToString(), DataType = "String" };
         }
         else
         {
@@ -550,16 +553,19 @@ partial class MessageDispatcher(
             {
                 sqsPreparedMessage.DelaySeconds = Convert.ToInt32(delaySeconds);
             }
+
+            // Apply fair-queue MessageGroupId for standard sends (selector or default header-based)
+            var sendGroupId = GetMessageGroupId(transportOperation.Message);
+            if (!string.IsNullOrEmpty(sendGroupId))
+            {
+                sqsPreparedMessage.MessageGroupId = sendGroupId;
+            }
         }
     }
 
     readonly HybridPubSubChecker hybridPubSubChecker = new(settings, topicCache, queueCache, snsClient);
 
-    readonly JsonSerializerOptions transportMessageSerializerOptions = new()
-    {
-        Converters = { new ReducedPayloadSerializerConverter() },
-        TypeInfoResolver = TransportMessageSerializerContext.Default
-    };
+    readonly JsonSerializerOptions transportMessageSerializerOptions = new() { Converters = { new ReducedPayloadSerializerConverter() }, TypeInfoResolver = TransportMessageSerializerContext.Default };
 
     static readonly ILog Logger = LogManager.GetLogger(typeof(MessageDispatcher));
 }
