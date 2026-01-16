@@ -18,7 +18,7 @@
   },
   "MessageBody": "my message body",
   "MessageDeduplicationId": null,
-  "MessageGroupId": null,
+  "MessageGroupId": "1234",
   "MessageSystemAttributes": null,
   "QueueUrl": "address"
 }
