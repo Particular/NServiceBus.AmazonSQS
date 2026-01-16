@@ -380,11 +380,11 @@ partial class MessageDispatcher(
 
         await ApplyMulticastOperationMapping(transportOperation, preparedMessage, cancellationToken).ConfigureAwait(false);
 
-        // Apply fair-queue MessageGroupId for SNS publishes (selector or default header-based)
-        var publishGroupId = GetMessageGroupId(transportOperation.Message);
-        if (!string.IsNullOrEmpty(publishGroupId))
+        // Apply fair-queue MessageGroupId if set by the user
+        var messageGroupId = messageGroupIdSelector?.Invoke(transportOperation.Message);
+        if (!string.IsNullOrEmpty(messageGroupId))
         {
-            preparedMessage.MessageGroupId = publishGroupId;
+            preparedMessage.MessageGroupId = messageGroupId;
         }
 
         async Task PrepareSnsMessageBasedOnBodySize(TransportMessage? transportMessage)
@@ -549,16 +549,14 @@ partial class MessageDispatcher(
                 sqsPreparedMessage.DelaySeconds = Convert.ToInt32(delaySeconds);
             }
 
-            // Apply fair-queue MessageGroupId for standard sends (selector or default header-based)
-            var sendGroupId = GetMessageGroupId(transportOperation.Message);
-            if (!string.IsNullOrEmpty(sendGroupId))
+            // Apply fair-queue MessageGroupId if set by the user
+            var messageGroupId = messageGroupIdSelector?.Invoke(transportOperation.Message);
+            if (!string.IsNullOrEmpty(messageGroupId))
             {
-                sqsPreparedMessage.MessageGroupId = sendGroupId;
+                sqsPreparedMessage.MessageGroupId = messageGroupId;
             }
         }
     }
-
-    string? GetMessageGroupId(OutgoingMessage message) => messageGroupIdSelector?.Invoke(message);
 
     readonly HybridPubSubChecker hybridPubSubChecker = new(settings, topicCache, queueCache, snsClient);
 
