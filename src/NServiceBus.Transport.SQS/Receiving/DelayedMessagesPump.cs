@@ -264,16 +264,11 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
         return preparedMessages;
     }
 
-    string? ExtractMessageGroupId(Message messsage)
+    string ExtractMessageGroupId(Message messsage)
     {
         var messageGroupId = messsage.Attributes.GetValueOrDefault("MessageGroupId");
 
-        if (!string.IsNullOrEmpty(messageGroupId))
-        {
-            return messageGroupId;
-        }
-
-        return null;
+        return !string.IsNullOrEmpty(messageGroupId) ? messageGroupId : null;
     }
 
     async Task BatchDispatchPreparedMessages(IReadOnlyCollection<SqsReceivedDelayedMessage> preparedMessages, CancellationToken cancellationToken)
