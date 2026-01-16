@@ -147,9 +147,9 @@ public partial class SqsTransport : TransportDefinition
 
     /// <summary>
     /// Configures a function that computes the MessageGroupId used for SQS fair queues.
-    /// If not specified, the transport will fall back to using the MessageId.
+    /// If set and the return value is not an empty string, the transport will use SQS fair queues.
     /// </summary>
-    public Func<OutgoingMessage, string> MessageGroupIdSelector { get; set; }
+    public Func<OutgoingMessage, string> MessageGroupIdSelector { get; set; } = static _ => string.Empty;
 
     /// <summary>
     /// Configures the SQS transport to not use a custom wrapper for outgoing messages.

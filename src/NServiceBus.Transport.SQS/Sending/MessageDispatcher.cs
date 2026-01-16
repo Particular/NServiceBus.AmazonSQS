@@ -31,11 +31,6 @@ partial class MessageDispatcher(
     Func<OutgoingMessage, string>? messageGroupIdSelector = null)
     : IMessageDispatcher
 {
-    readonly Func<OutgoingMessage, string>? messageGroupIdSelectorField = messageGroupIdSelector;
-
-    string GetMessageGroupId(OutgoingMessage message) =>
-        messageGroupIdSelectorField is not null ? messageGroupIdSelectorField(message) : message.MessageId;
-
     public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, CancellationToken cancellationToken = default)
     {
         var concurrentDispatchTasks = new List<Task>(4);
@@ -562,6 +557,8 @@ partial class MessageDispatcher(
             }
         }
     }
+
+    string? GetMessageGroupId(OutgoingMessage message) => messageGroupIdSelector?.Invoke(message);
 
     readonly HybridPubSubChecker hybridPubSubChecker = new(settings, topicCache, queueCache, snsClient);
 

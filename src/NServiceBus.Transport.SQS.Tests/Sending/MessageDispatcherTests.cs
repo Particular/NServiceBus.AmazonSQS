@@ -987,39 +987,11 @@ public class MessageDispatcherTests
     }
 
     [Test]
-    public async Task Should_use_message_id_as_default_message_group_id_for_sns()
-    {
-        var mockSnsClient = new MockSnsClient();
-
-        var dispatcher = new MessageDispatcher(new SettingsHolder(), null, mockSnsClient, new QueueCache(null,
-                dest => QueueCache.GetSqsQueueName(dest, "")),
-            new TopicCache(mockSnsClient, new SettingsHolder(), new EventToTopicsMappings(),
-                new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""), null,
-            15 * 60, 0);
-
-        var expectedId = "5678";
-
-        var transportOperations = new TransportOperations(
-            new TransportOperation(
-                new OutgoingMessage(expectedId, [], Encoding.UTF8.GetBytes("{}")),
-                new MulticastAddressTag(typeof(Event)),
-                [],
-                DispatchConsistency.Isolated));
-
-        var transportTransaction = new TransportTransaction();
-
-        await dispatcher.Dispatch(transportOperations, transportTransaction);
-
-        var published = mockSnsClient.PublishedEvents.First();
-        Assert.That(published.MessageGroupId, Is.EqualTo(expectedId));
-    }
-
-    [Test]
     public async Task Should_use_configured_message_group_id_selector_for_sqs()
     {
         var mockSqsClient = new MockSqsClient();
         var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
-            dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, 0, messageGroupIdSelector: msg => "MyStaticGroupId");
+            dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, 0, messageGroupIdSelector: _ => "MyStaticGroupId");
 
         var transportOperations = new TransportOperations(
             new TransportOperation(
