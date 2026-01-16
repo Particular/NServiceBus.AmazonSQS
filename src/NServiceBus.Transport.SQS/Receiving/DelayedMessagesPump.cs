@@ -211,7 +211,10 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
                     deduplicationId = Guid.NewGuid().ToString();
                 }
 
-                preparedMessage.MessageDeduplicationId = preparedMessage.MessageGroupId = deduplicationId;
+                // Preserve fair queue MessageGroupId if it was set
+                preparedMessage.MessageGroupId = receivedMessage.Attributes.GetValueOrDefault("MessageGroupId", deduplicationId);
+
+                preparedMessage.MessageDeduplicationId = deduplicationId;
             }
             else
             {
