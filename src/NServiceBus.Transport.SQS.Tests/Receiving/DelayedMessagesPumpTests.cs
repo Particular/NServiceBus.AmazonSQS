@@ -261,7 +261,7 @@ public class DelayedMessagesPumpTests
     }
 
     [Test]
-    public async Task Consume_sends__due_messages_and_preserves_fair_queue_message_group_id()
+    public async Task Consume_sends_due_messages_and_preserves_fair_queue_message_group_id()
     {
         await SetupInitializedPump();
 
