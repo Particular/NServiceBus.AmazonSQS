@@ -212,7 +212,8 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
                 }
 
                 // Preserve fair queue MessageGroupId if it was set
-                preparedMessage.MessageGroupId = receivedMessage.Attributes.GetValueOrDefault("MessageGroupId", deduplicationId);
+                var existingMessageGroupId = ExtractMessageGroupId(receivedMessage);
+                preparedMessage.MessageGroupId = existingMessageGroupId ?? deduplicationId;
 
                 preparedMessage.MessageDeduplicationId = deduplicationId;
             }
@@ -225,6 +226,13 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
 
                 // Copy over all the message attributes so we don't lose part of the message when moving to the delayed delivery queue
                 preparedMessage.CopyMessageAttributes(receivedMessage.MessageAttributes);
+
+                // Preserve fair queue MessageGroupId if it was set
+                var existingMessageGroupId = ExtractMessageGroupId(receivedMessage);
+                if (existingMessageGroupId != null)
+                {
+                    preparedMessage.MessageGroupId = existingMessageGroupId;
+                }
 
                 preparedMessage.MessageAttributes.Remove(TransportHeaders.DelaySeconds);
                 if (remainingDelay > 0)
@@ -254,6 +262,18 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
         }
 
         return preparedMessages;
+    }
+
+    string? ExtractMessageGroupId(Message messsage)
+    {
+        var messageGroupId = messsage.Attributes.GetValueOrDefault("MessageGroupId");
+
+        if (!string.IsNullOrEmpty(messageGroupId))
+        {
+            return messageGroupId;
+        }
+
+        return null;
     }
 
     async Task BatchDispatchPreparedMessages(IReadOnlyCollection<SqsReceivedDelayedMessage> preparedMessages, CancellationToken cancellationToken)

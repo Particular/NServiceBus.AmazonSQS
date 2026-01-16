@@ -261,6 +261,61 @@ public class DelayedMessagesPumpTests
     }
 
     [Test]
+    public async Task Consume_sends__due_messages_and_preserves_fair_queue_message_group_id()
+    {
+        await SetupInitializedPump();
+
+        mockSqsClient.ReceiveMessagesRequestResponse = (req, token) =>
+        {
+            var receivedMessages = new List<Message>();
+            for (var i = 0; i < TransportConstraints.MaximumItemsInBatch; i++)
+            {
+                var messageId = Guid.NewGuid().ToString();
+                receivedMessages.Add(new Message
+                {
+                    Attributes = new Dictionary<string, string>
+                    {
+                        { "SentTimestamp", "10" },
+                        { "ApproximateFirstReceiveTimestamp", "15" },
+                        { "ApproximateReceiveCount", "0" },
+                        { "MessageGroupId", "SomeMessageGroupId" }
+                    },
+                    MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                    {
+                        { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "20" }},
+                        { Headers.MessageId, new MessageAttributeValue { StringValue = Guid.NewGuid().ToString() }}
+                    },
+                    Body = new string('a', GetSqsMessageSizeToEnsureNumberOfBatches(2))
+                });
+            }
+
+            return new ReceiveMessageResponse
+            {
+                Messages = receivedMessages
+            };
+        };
+
+        await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(mockSqsClient.RequestsSent, Is.Empty);
+            Assert.That(mockSqsClient.BatchRequestsSent, Has.Count.EqualTo(2));
+
+            var distinctMessageGroupIds = mockSqsClient.BatchRequestsSent.SelectMany(x => x.Entries.Select(e => e.MessageGroupId)).Distinct().ToList();
+            Assert.That(distinctMessageGroupIds, Has.Count.EqualTo(1));
+            Assert.That(distinctMessageGroupIds.Single(), Is.EqualTo("SomeMessageGroupId"));
+
+        });
+        Assert.Multiple(() =>
+        {
+            Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(0).Entries, Has.Count.EqualTo(5));
+            Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(1).Entries, Has.Count.EqualTo(5));
+            Assert.That(mockSqsClient.BatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeInputQueueQueueUrl), Is.True);
+        });
+    }
+
+    [Test]
     public async Task Consume_sends_not_yet_due_messages_in_batches_back_to_delayed_queue()
     {
         await SetupInitializedPump();
@@ -363,6 +418,71 @@ public class DelayedMessagesPumpTests
         Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(1).Entries.ElementAt(0).ReceiptHandle, Is.EqualTo("Message-5"));
         Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.ElementAt(1).Entries.ElementAt(4).ReceiptHandle, Is.EqualTo("Message-9"));
         Assert.That(mockSqsClient.DeleteMessageBatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeDelayedMessagesFifoQueueUrl), Is.True);
+    }
+
+    [Test]
+    [TestCase("")]
+    [TestCase("SomeMessageGroupId")]
+    public async Task Consume_sends_not_yet_due_messages_and_preserves_fair_queue_message_group_id(string messageGroupId)
+    {
+        await SetupInitializedPump();
+
+        mockSqsClient.ReceiveMessagesRequestResponse = (req, token) =>
+        {
+            var receivedMessages = new List<Message>();
+            for (var i = 0; i < TransportConstraints.MaximumItemsInBatch; i++)
+            {
+                var messageId = Guid.NewGuid().ToString();
+                receivedMessages.Add(new Message
+                {
+                    Attributes = new Dictionary<string, string>
+                    {
+                        { "SentTimestamp", "10" },
+                        { "ApproximateFirstReceiveTimestamp", "15" },
+                        { "ApproximateReceiveCount", "0" },
+                        { "MessageGroupId", messageGroupId },
+                        { "MessageDeduplicationId", messageId }
+                    },
+                    MessageAttributes = new Dictionary<string, MessageAttributeValue>
+                    {
+                        { TransportHeaders.DelaySeconds, new MessageAttributeValue { StringValue = "1500" }},
+                        { Headers.MessageId, new MessageAttributeValue { StringValue = Guid.NewGuid().ToString() }}
+                    },
+                    Body = new string('a', GetSqsMessageSizeToEnsureNumberOfBatches(2))
+                });
+            }
+
+            return new ReceiveMessageResponse
+            {
+                Messages = receivedMessages
+            };
+        };
+
+        await pump.ConsumeDelayedMessages(new ReceiveMessageRequest(), cancellationTokenSource.Token);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(mockSqsClient.RequestsSent, Is.Empty);
+            Assert.That(mockSqsClient.BatchRequestsSent, Has.Count.EqualTo(2));
+
+            var distinctMessageGroupIds = mockSqsClient.BatchRequestsSent.SelectMany(x => x.Entries.Select(e => e.MessageGroupId)).Distinct().ToList();
+            if (string.IsNullOrEmpty(messageGroupId))
+            {
+                Assert.That(distinctMessageGroupIds, Has.Count.EqualTo(10));
+                Assert.That(distinctMessageGroupIds.All(id => !string.IsNullOrEmpty(id) && id != messageGroupId), Is.True);
+            }
+            else
+            {
+                Assert.That(distinctMessageGroupIds, Has.Count.EqualTo(1));
+                Assert.That(distinctMessageGroupIds.Single(), Is.EqualTo(messageGroupId));
+            }
+        });
+        Assert.Multiple(() =>
+        {
+            Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(0).Entries, Has.Count.EqualTo(5));
+            Assert.That(mockSqsClient.BatchRequestsSent.ElementAt(1).Entries, Has.Count.EqualTo(5));
+            Assert.That(mockSqsClient.BatchRequestsSent.Select(b => b.QueueUrl).All(x => x == FakeDelayedMessagesFifoQueueUrl), Is.True);
+        });
     }
 
     [Test]
