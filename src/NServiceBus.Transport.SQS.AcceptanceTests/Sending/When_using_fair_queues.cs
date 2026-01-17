@@ -1,33 +1,36 @@
-﻿namespace NServiceBus.AcceptanceTests.Sending;
+namespace NServiceBus.AcceptanceTests.Sending;
 
+using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AcceptanceTesting;
 using AcceptanceTesting.Customization;
 using EndpointTemplates;
+using NServiceBus.Pipeline;
 using NUnit.Framework;
-using Transport.SQS;
 
-public class When_sending_not_wrapped_message : NServiceBusAcceptanceTest
+public class When_using_fair_queues : NServiceBusAcceptanceTest
 {
-    public static object[] Payload =
-    {
-        new object[] { new byte[4] },
-        new object[] { new byte[TransportConstraints.SqsMaximumMessageSize - TransportTestsConstraints.SqsHeadersBuffer] }
-    };
-
     [Test]
-    [TestCaseSource(nameof(Payload))]
-    public async Task Should_receive_message(byte[] payload)
+    public async Task Should_receive_message()
     {
+        var payload = new byte[4];
         var context = await Scenario.Define<Context>()
             .WithEndpoint<Sender>(b => b.When(session => session.Send(new MyMessageWithPayload() { Payload = payload })))
-            .WithEndpoint<Receiver>()
+            .WithEndpoint<Receiver>(r =>
+            {
+                r.CustomConfig(config =>
+                {
+                    config.Pipeline.Register(new FairQueueTestBehavior(), "Fair queue test behavior");
+                });
+            })
             .Done(c => c.Received)
             .Run();
 
         Assert.Multiple(() =>
         {
             Assert.That(context.Received, Is.True);
+            Assert.That(context.ReceivedPayloadWithExpectedMessageGroupId, Is.True);
             Assert.That(context.ReceivedPayload, Is.EqualTo(payload), "The payload should be handled correctly");
         });
     }
@@ -36,6 +39,7 @@ public class When_sending_not_wrapped_message : NServiceBusAcceptanceTest
     {
         public byte[] ReceivedPayload { get; set; }
         public bool Received { get; set; }
+        public bool ReceivedPayloadWithExpectedMessageGroupId { get; set; }
     }
 
     public class Sender : EndpointConfigurationBuilder
@@ -44,7 +48,7 @@ public class When_sending_not_wrapped_message : NServiceBusAcceptanceTest
             EndpointSetup<DefaultServer>(builder =>
             {
                 builder.ConfigureRouting().RouteToEndpoint(typeof(MyMessageWithPayload), typeof(Receiver));
-                builder.ConfigureSqsTransport().DoNotWrapOutgoingMessages = true;
+                builder.ConfigureSqsTransport().MessageGroupIdSelector = _ => MessageGroupId;
             });
 
         public class Handler : IHandleMessages<Reply>
@@ -54,6 +58,7 @@ public class When_sending_not_wrapped_message : NServiceBusAcceptanceTest
 
             public Task Handle(Reply message, IMessageHandlerContext context)
             {
+                testContext.ReceivedPayloadWithExpectedMessageGroupId = context.Extensions.Get<string>(MessageGroupIdHeaderKey) == MessageGroupId;
                 testContext.Received = true;
 
                 return Task.CompletedTask;
@@ -63,9 +68,23 @@ public class When_sending_not_wrapped_message : NServiceBusAcceptanceTest
         }
     }
 
+    public class FairQueueTestBehavior : Behavior<IIncomingLogicalMessageContext>
+    {
+        public override Task Invoke(IIncomingLogicalMessageContext context, Func<Task> next)
+        {
+            var sqsMessage = context.Extensions.Get<Amazon.SQS.Model.Message>();
+            var messageGroupId = sqsMessage.Attributes.GetValueOrDefault("MessageGroupId");
+            context.Extensions.Set(MessageGroupIdHeaderKey, messageGroupId);
+            return next();
+        }
+    }
+
     public class Receiver : EndpointConfigurationBuilder
     {
-        public Receiver() => EndpointSetup<DefaultServer>();
+        public Receiver() => EndpointSetup<DefaultServer>(builder =>
+        {
+            builder.ConfigureSqsTransport().MessageGroupIdSelector = _ => MessageGroupId;
+        });
 
         public class MyMessageHandler : IHandleMessages<MyMessageWithPayload>
         {
@@ -91,4 +110,7 @@ public class When_sending_not_wrapped_message : NServiceBusAcceptanceTest
     public class Reply : IMessage
     {
     }
+
+    const string MessageGroupId = "SomeGroupId";
+    const string MessageGroupIdHeaderKey = "AmazonSQS.MessageGroupId";
 }
