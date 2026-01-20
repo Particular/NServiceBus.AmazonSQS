@@ -382,7 +382,7 @@ partial class MessageDispatcher(
 
         // Apply fair-queue MessageGroupId if set by the user
         var messageGroupId = messageGroupIdSelector?.Invoke(transportOperation.Message);
-        if (!string.IsNullOrEmpty(messageGroupId))
+        if (!string.IsNullOrWhiteSpace(messageGroupId))
         {
             preparedMessage.MessageGroupId = messageGroupId;
         }
@@ -520,7 +520,9 @@ partial class MessageDispatcher(
                 .ConfigureAwait(false);
 
             sqsPreparedMessage.MessageDeduplicationId = sqsPreparedMessage.MessageId;
-            sqsPreparedMessage.MessageGroupId = sqsPreparedMessage.MessageId;
+            sqsPreparedMessage.MessageGroupId = string.IsNullOrWhiteSpace(sqsPreparedMessage.MessageGroupId) ?
+                sqsPreparedMessage.MessageId :
+                sqsPreparedMessage.MessageGroupId;
 
             sqsPreparedMessage.MessageAttributes[TransportHeaders.DelaySeconds] = new MessageAttributeValue { StringValue = delaySeconds.ToString(), DataType = "String" };
         }
