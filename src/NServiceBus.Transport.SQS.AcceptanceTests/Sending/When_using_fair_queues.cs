@@ -58,7 +58,8 @@ public class When_using_fair_queues : NServiceBusAcceptanceTest
 
             public Task Handle(Reply message, IMessageHandlerContext context)
             {
-                testContext.ReceivedPayloadWithExpectedMessageGroupId = context.Extensions.Get<string>(MessageGroupIdHeaderKey) == MessageGroupId;
+                context.Extensions.TryGet(MessageGroupIdHeaderKey, out string messageGroupId);
+                testContext.ReceivedPayloadWithExpectedMessageGroupId = messageGroupId == MessageGroupId;
                 testContext.Received = true;
 
                 return Task.CompletedTask;
@@ -74,7 +75,10 @@ public class When_using_fair_queues : NServiceBusAcceptanceTest
         {
             var sqsMessage = context.Extensions.Get<Amazon.SQS.Model.Message>();
             var messageGroupId = sqsMessage.Attributes.GetValueOrDefault("MessageGroupId");
-            context.Extensions.Set(MessageGroupIdHeaderKey, messageGroupId);
+            if (!string.IsNullOrWhiteSpace(messageGroupId))
+            {
+                context.Extensions.Set(MessageGroupIdHeaderKey, messageGroupId);
+            }
             return next();
         }
     }
