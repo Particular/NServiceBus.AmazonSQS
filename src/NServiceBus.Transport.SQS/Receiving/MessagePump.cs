@@ -24,14 +24,15 @@ class MessagePump : IMessageReceiver
         TimeSpan maxAutoMessageVisibilityRenewalDuration,
         Action<string, Exception, CancellationToken> criticalErrorAction,
         bool setupInfrastructure,
-        bool disableDelayedDelivery)
+        bool disableDelayedDelivery,
+        bool enableFairQueues)
     {
         this.disableDelayedDelivery = disableDelayedDelivery;
         inputQueuePump = new InputQueuePump(receiverId, receiveAddress, errorQueueAddress, purgeOnStartup, sqsClient, queueCache, s3Settings, subscriptionManager, criticalErrorAction, visibilityTimeoutInSeconds, maxAutoMessageVisibilityRenewalDuration, setupInfrastructure);
         if (!disableDelayedDelivery)
         {
             delayedMessagesPump =
-                new DelayedMessagesPump(receiveAddress, sqsClient, queueCache, queueDelayTimeSeconds);
+                new DelayedMessagesPump(receiveAddress, sqsClient, queueCache, queueDelayTimeSeconds, enableFairQueues);
         }
     }
 

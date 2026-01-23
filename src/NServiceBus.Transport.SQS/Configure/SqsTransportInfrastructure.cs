@@ -20,7 +20,7 @@ class SqsTransportInfrastructure : TransportInfrastructure
         bool doNotWrapOutgoingMessages,
         bool shouldDisposeSqsClient, bool shouldDisposeSnsClient, bool disableDelayedDelivery,
         long reserveBytesInMessageSizeCalculation,
-        Func<OutgoingMessage, string> messageGroupIdSelector)
+        bool enableFairQueues)
     {
         this.sqsClient = sqsClient;
         this.snsClient = snsClient;
@@ -30,23 +30,23 @@ class SqsTransportInfrastructure : TransportInfrastructure
         s3Client = s3Settings?.S3Client;
         shouldDisposeS3Client = s3Settings is { ShouldDisposeS3Client: true };
         Receivers = receiverSettings
-            .Select(receiverSetting => CreateMessagePump(receiverSetting, sqsClient, snsClient, queueCache, hostSettings.SetupInfrastructure, disableDelayedDelivery, topicCache, s3Settings, policySettings, queueDelayTimeSeconds, visibilityTimeoutInSeconds, maxAutoMessageVisibilityRenewalDuration, topicNamePrefix, hostSettings.CriticalErrorAction))
+            .Select(receiverSetting => CreateMessagePump(receiverSetting, sqsClient, snsClient, queueCache, hostSettings.SetupInfrastructure, disableDelayedDelivery, topicCache, s3Settings, policySettings, queueDelayTimeSeconds, visibilityTimeoutInSeconds, maxAutoMessageVisibilityRenewalDuration, topicNamePrefix, hostSettings.CriticalErrorAction, enableFairQueues))
             .ToDictionary(x => x.Id, x => x);
 
         Dispatcher = new MessageDispatcher(hostSettings.CoreSettings, sqsClient, snsClient, queueCache, topicCache, s3Settings,
-            queueDelayTimeSeconds, reserveBytesInMessageSizeCalculation, !doNotWrapOutgoingMessages, messageGroupIdSelector);
+            queueDelayTimeSeconds, reserveBytesInMessageSizeCalculation, !doNotWrapOutgoingMessages, enableFairQueues);
     }
 
     static IMessageReceiver CreateMessagePump(ReceiveSettings receiveSettings, IAmazonSQS sqsClient,
         IAmazonSimpleNotificationService snsClient, QueueCache queueCache, bool setupInfrastructure, bool disableDelayedDelivery,
         TopicCache topicCache, S3Settings s3Settings, PolicySettings policySettings, int queueDelayTimeSeconds,
         int? visibilityTimeoutInSeconds, TimeSpan maxAutoMessageVisibilityRenewalDuration, string topicNamePrefix,
-        Action<string, Exception, CancellationToken> criticalErrorAction)
+        Action<string, Exception, CancellationToken> criticalErrorAction, bool enableFairQueues)
     {
         var receiveAddress = ToTransportAddressCore(receiveSettings.ReceiveAddress, queueCache);
         var subManager = new SubscriptionManager(sqsClient, snsClient, receiveAddress, queueCache, topicCache, policySettings, topicNamePrefix, setupInfrastructure);
 
-        return new MessagePump(receiveSettings.Id, receiveAddress, receiveSettings.ErrorQueue, receiveSettings.PurgeOnStartup, sqsClient, queueCache, s3Settings, subManager, queueDelayTimeSeconds, visibilityTimeoutInSeconds, maxAutoMessageVisibilityRenewalDuration, criticalErrorAction, setupInfrastructure, disableDelayedDelivery);
+        return new MessagePump(receiveSettings.Id, receiveAddress, receiveSettings.ErrorQueue, receiveSettings.PurgeOnStartup, sqsClient, queueCache, s3Settings, subManager, queueDelayTimeSeconds, visibilityTimeoutInSeconds, maxAutoMessageVisibilityRenewalDuration, criticalErrorAction, setupInfrastructure, disableDelayedDelivery, enableFairQueues);
     }
 
     public override async Task Shutdown(CancellationToken cancellationToken = default)

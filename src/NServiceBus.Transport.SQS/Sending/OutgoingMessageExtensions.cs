@@ -15,4 +15,14 @@ static class OutgoingMessageExtensions
 
         return messageIntent;
     }
+
+    public static bool TryGetMessageGroupIdFromHeaders(this OutgoingMessage message, out string messageGroupId)
+    {
+        if (message.Headers.TryGetValue(TransportHeaders.FairQueuesMessageGroupId, out messageGroupId))
+        {
+            return string.IsNullOrWhiteSpace(messageGroupId);
+        }
+
+        return false;
+    }
 }

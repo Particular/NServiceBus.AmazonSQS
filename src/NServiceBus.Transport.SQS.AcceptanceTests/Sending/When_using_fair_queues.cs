@@ -48,7 +48,7 @@ public class When_using_fair_queues : NServiceBusAcceptanceTest
             EndpointSetup<DefaultServer>(builder =>
             {
                 builder.ConfigureRouting().RouteToEndpoint(typeof(MyMessageWithPayload), typeof(Receiver));
-                builder.ConfigureSqsTransport().MessageGroupIdSelector = _ => MessageGroupId;
+                builder.ConfigureSqsTransport().EnableFairQueues = true;
             });
 
         public class Handler : IHandleMessages<Reply>
@@ -87,7 +87,7 @@ public class When_using_fair_queues : NServiceBusAcceptanceTest
     {
         public Receiver() => EndpointSetup<DefaultServer>(builder =>
         {
-            builder.ConfigureSqsTransport().MessageGroupIdSelector = _ => MessageGroupId;
+            builder.ConfigureSqsTransport().EnableFairQueues = true;
         });
 
         public class MyMessageHandler : IHandleMessages<MyMessageWithPayload>

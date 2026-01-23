@@ -12,7 +12,7 @@ using Amazon.SQS.Model;
 using Extensions;
 using Logging;
 
-class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCache queueCache, int queueDelayTimeSeconds)
+class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCache queueCache, int queueDelayTimeSeconds, bool enableFairQueues = false)
 {
     public async Task Initialize(CancellationToken cancellationToken = default)
     {
@@ -212,8 +212,15 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
                 }
 
                 // Preserve fair queue MessageGroupId if it was set
-                var existingMessageGroupId = ExtractMessageGroupId(receivedMessage);
-                preparedMessage.MessageGroupId = existingMessageGroupId ?? deduplicationId;
+                if (enableFairQueues)
+                {
+                    var existingMessageGroupId = ExtractMessageGroupId(receivedMessage);
+                    preparedMessage.MessageGroupId = existingMessageGroupId ?? deduplicationId;
+                }
+                else
+                {
+                    preparedMessage.MessageGroupId = deduplicationId;
+                }
 
                 preparedMessage.MessageDeduplicationId = deduplicationId;
             }
@@ -228,10 +235,13 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
                 preparedMessage.CopyMessageAttributes(receivedMessage.MessageAttributes);
 
                 // Preserve fair queue MessageGroupId if it was set
-                var existingMessageGroupId = ExtractMessageGroupId(receivedMessage);
-                if (existingMessageGroupId != null)
+                if (enableFairQueues)
                 {
-                    preparedMessage.MessageGroupId = existingMessageGroupId;
+                    var existingMessageGroupId = ExtractMessageGroupId(receivedMessage);
+                    if (existingMessageGroupId != null)
+                    {
+                        preparedMessage.MessageGroupId = existingMessageGroupId;
+                    }
                 }
 
                 preparedMessage.MessageAttributes.Remove(TransportHeaders.DelaySeconds);

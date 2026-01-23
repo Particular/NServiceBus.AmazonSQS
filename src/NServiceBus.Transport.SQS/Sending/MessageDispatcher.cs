@@ -28,7 +28,7 @@ partial class MessageDispatcher(
     int queueDelaySeconds,
     long reserveBytesInMessageSizeCalculation,
     bool wrapOutgoingMessages = true,
-    Func<OutgoingMessage, string>? messageGroupIdSelector = null)
+    bool enableFairQueues = false)
     : IMessageDispatcher
 {
     public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, CancellationToken cancellationToken = default)
@@ -44,10 +44,10 @@ partial class MessageDispatcher(
             switch (dispatchConsistencyGroup.Key)
             {
                 case DispatchConsistency.Isolated:
-                    concurrentDispatchTasks.Add(PublishIsolated(dispatchConsistencyGroup, transaction, multicastEventsMessageIdsToType, cancellationToken));
+                    concurrentDispatchTasks.Add(PublishIsolated(dispatchConsistencyGroup, multicastEventsMessageIdsToType, cancellationToken));
                     break;
                 case DispatchConsistency.Default:
-                    concurrentDispatchTasks.Add(PublishBatched(dispatchConsistencyGroup, transaction, multicastEventsMessageIdsToType, cancellationToken));
+                    concurrentDispatchTasks.Add(PublishBatched(dispatchConsistencyGroup, multicastEventsMessageIdsToType, cancellationToken));
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -81,26 +81,26 @@ partial class MessageDispatcher(
         }
     }
 
-    Task PublishIsolated(IEnumerable<MulticastTransportOperation> isolatedTransportOperations, TransportTransaction transportTransaction, Dictionary<string, Type> multicastEventsMessageIdsToType, CancellationToken cancellationToken)
+    Task PublishIsolated(IEnumerable<MulticastTransportOperation> isolatedTransportOperations, Dictionary<string, Type> multicastEventsMessageIdsToType, CancellationToken cancellationToken)
     {
         List<Task>? tasks = null;
         foreach (var operation in isolatedTransportOperations)
         {
             multicastEventsMessageIdsToType.Add(operation.Message.MessageId, operation.MessageType);
             tasks ??= [];
-            tasks.Add(Publish(operation, transportTransaction, cancellationToken));
+            tasks.Add(Publish(operation, cancellationToken));
         }
 
         return tasks != null ? Task.WhenAll(tasks) : Task.CompletedTask;
     }
 
-    async Task PublishBatched(IEnumerable<MulticastTransportOperation> multicastTransportOperations, TransportTransaction transportTransaction, Dictionary<string, Type> multicastEventsMessageIdsToType, CancellationToken cancellationToken)
+    async Task PublishBatched(IEnumerable<MulticastTransportOperation> multicastTransportOperations, Dictionary<string, Type> multicastEventsMessageIdsToType, CancellationToken cancellationToken)
     {
         var tasks = new List<Task<SnsPreparedMessage>>();
         foreach (var operation in multicastTransportOperations)
         {
             multicastEventsMessageIdsToType.Add(operation.Message.MessageId, operation.MessageType);
-            tasks.Add(PrepareMessage(operation, transportTransaction, cancellationToken));
+            tasks.Add(PrepareMessage(operation, cancellationToken));
         }
 
         await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -259,9 +259,9 @@ partial class MessageDispatcher(
         Logger.Info($"Republished message with MessageId {message.MessageId} that failed in batch '{batchNumber}/{totalBatches}'.");
     }
 
-    async Task Publish(MulticastTransportOperation transportOperation, TransportTransaction transportTransaction, CancellationToken cancellationToken)
+    async Task Publish(MulticastTransportOperation transportOperation, CancellationToken cancellationToken)
     {
-        var message = await PrepareMessage(transportOperation, transportTransaction, cancellationToken)
+        var message = await PrepareMessage(transportOperation, cancellationToken)
             .ConfigureAwait(false);
 
         await PublishMessage(message, cancellationToken).ConfigureAwait(false);
@@ -343,7 +343,7 @@ partial class MessageDispatcher(
 
         var preparedMessage = new SqsPreparedMessage { MessageId = transportOperation.Message.MessageId, ReserveBytesInMessageSizeCalculation = reserveBytesInMessageSizeCalculation };
 
-        await ApplyUnicastOperationMapping(transportOperation, transportTransaction, preparedMessage, CalculateDelayedDeliverySeconds(transportOperation), GetNativeMessageAttributes(transportOperation, transportTransaction), cancellationToken).ConfigureAwait(false);
+        await ApplyUnicastOperationMapping(transportOperation, preparedMessage, CalculateDelayedDeliverySeconds(transportOperation), GetNativeMessageAttributes(transportOperation, transportTransaction), cancellationToken).ConfigureAwait(false);
 
         async Task PrepareSqsMessageBasedOnBodySize(TransportMessage? transportMessage)
         {
@@ -374,11 +374,11 @@ partial class MessageDispatcher(
         return preparedMessage;
     }
 
-    async Task<SnsPreparedMessage> PrepareMessage(MulticastTransportOperation transportOperation, TransportTransaction transportTransaction, CancellationToken cancellationToken)
+    async Task<SnsPreparedMessage> PrepareMessage(MulticastTransportOperation transportOperation, CancellationToken cancellationToken)
     {
         var preparedMessage = new SnsPreparedMessage { MessageId = transportOperation.Message.MessageId, ReserveBytesInMessageSizeCalculation = reserveBytesInMessageSizeCalculation };
 
-        await ApplyMulticastOperationMapping(transportOperation, transportTransaction, preparedMessage, cancellationToken).ConfigureAwait(false);
+        await ApplyMulticastOperationMapping(transportOperation, preparedMessage, cancellationToken).ConfigureAwait(false);
 
         async Task PrepareSnsMessageBasedOnBodySize(TransportMessage? transportMessage)
         {
@@ -492,21 +492,18 @@ partial class MessageDispatcher(
         return JsonSerializer.Serialize(transportMessage, transportMessageSerializerOptions);
     }
 
-    async Task ApplyMulticastOperationMapping(MulticastTransportOperation transportOperation, TransportTransaction transportTransaction, SnsPreparedMessage snsPreparedMessage, CancellationToken cancellationToken)
+    async Task ApplyMulticastOperationMapping(MulticastTransportOperation transportOperation, SnsPreparedMessage snsPreparedMessage, CancellationToken cancellationToken)
     {
-        // Apply fair-queue MessageGroupId if set by the user
-        var messageGroupId = messageGroupIdSelector?.Invoke(transportOperation.Message);
-        if (!string.IsNullOrWhiteSpace(messageGroupId))
+        if (enableFairQueues && transportOperation.Message.TryGetMessageGroupIdFromHeaders(out var messageGroupId))
         {
             snsPreparedMessage.MessageGroupId = messageGroupId;
-            transportTransaction.Set(TransportHeaders.FairQueuesMessageGroupId, messageGroupId);
         }
 
         var existingTopicArn = await topicCache.GetTopicArn(transportOperation.MessageType, cancellationToken).ConfigureAwait(false);
         snsPreparedMessage.Destination = existingTopicArn;
     }
 
-    async ValueTask ApplyUnicastOperationMapping(UnicastTransportOperation transportOperation, TransportTransaction transportTransaction, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, Dictionary<string, MessageAttributeValue>? nativeMessageAttributes, CancellationToken cancellationToken)
+    async ValueTask ApplyUnicastOperationMapping(UnicastTransportOperation transportOperation, SqsPreparedMessage sqsPreparedMessage, long delaySeconds, Dictionary<string, MessageAttributeValue>? nativeMessageAttributes, CancellationToken cancellationToken)
     {
         // copy over the message attributes that were set on the incoming message for error/audit scenario's if available
         sqsPreparedMessage.CopyMessageAttributes(nativeMessageAttributes);
@@ -521,7 +518,14 @@ partial class MessageDispatcher(
                 .ConfigureAwait(false);
 
             sqsPreparedMessage.MessageDeduplicationId = sqsPreparedMessage.MessageId;
-            sqsPreparedMessage.MessageGroupId = string.IsNullOrWhiteSpace(sqsPreparedMessage.MessageGroupId) ? sqsPreparedMessage.MessageId : sqsPreparedMessage.MessageGroupId;
+            if (enableFairQueues && transportOperation.Message.TryGetMessageGroupIdFromHeaders(out var messageGroupId))
+            {
+                sqsPreparedMessage.MessageGroupId = messageGroupId;
+            }
+            else
+            {
+                sqsPreparedMessage.MessageGroupId = sqsPreparedMessage.MessageId;
+            }
 
             sqsPreparedMessage.MessageAttributes[TransportHeaders.DelaySeconds] = new MessageAttributeValue { StringValue = delaySeconds.ToString(), DataType = "String" };
         }
@@ -550,12 +554,9 @@ partial class MessageDispatcher(
                 sqsPreparedMessage.DelaySeconds = Convert.ToInt32(delaySeconds);
             }
 
-            // Apply fair-queue MessageGroupId if set by the user
-            var messageGroupId = messageGroupIdSelector?.Invoke(transportOperation.Message);
-            if (!string.IsNullOrEmpty(messageGroupId))
+            if (enableFairQueues && transportOperation.Message.TryGetMessageGroupIdFromHeaders(out var messageGroupId))
             {
                 sqsPreparedMessage.MessageGroupId = messageGroupId;
-                transportTransaction.Set(TransportHeaders.FairQueuesMessageGroupId, messageGroupId);
             }
         }
     }
