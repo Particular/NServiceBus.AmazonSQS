@@ -1,7 +1,6 @@
 namespace NServiceBus.Transport.SQS.Features;
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using NServiceBus.Features;
 using Pipeline;
@@ -24,13 +23,11 @@ class PersistIncomingMessageGroupIdToHeadersBehavior : IBehavior<IIncomingPhysic
 {
     public Task Invoke(IIncomingPhysicalMessageContext context, Func<IIncomingPhysicalMessageContext, Task> next)
     {
-        if (context.Extensions.TryGet<Amazon.SQS.Model.Message>(out var nativeMessage))
+        if (context.Extensions.TryGet<Amazon.SQS.Model.Message>(out var nativeMessage)
+            && nativeMessage.Attributes.TryGetValue("MessageGroupId", out var messageGroupId)
+            && !string.IsNullOrWhiteSpace(messageGroupId))
         {
-            var messageGroupId = nativeMessage.Attributes.GetValueOrDefault("MessageGroupId");
-            if (!string.IsNullOrWhiteSpace(messageGroupId))
-            {
-                context.Message.Headers[TransportHeaders.FairQueuesMessageGroupId] = messageGroupId;
-            }
+            context.Message.Headers[TransportHeaders.FairQueuesMessageGroupId] = messageGroupId;
         }
         return next(context);
     }
