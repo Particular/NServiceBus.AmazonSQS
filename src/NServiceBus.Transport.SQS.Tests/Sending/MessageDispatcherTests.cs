@@ -995,7 +995,7 @@ public class MessageDispatcherTests
 
         var transportOperations = new TransportOperations(
             new TransportOperation(
-                new OutgoingMessage("1234", new Dictionary<string, string>{ { TransportHeaders.FairQueuesMessageGroupId, "MyStaticGroupId" } }, Encoding.UTF8.GetBytes("{}")),
+                new OutgoingMessage("1234", new Dictionary<string, string> { { TransportHeaders.FairQueuesMessageGroupId, "MyStaticGroupId" } }, Encoding.UTF8.GetBytes("{}")),
                 new UnicastAddressTag("address"),
                 [],
                 DispatchConsistency.Isolated));
@@ -1021,7 +1021,7 @@ public class MessageDispatcherTests
 
         var transportOperations = new TransportOperations(
                 new TransportOperation(
-                new OutgoingMessage("5678", new Dictionary<string, string>{ { TransportHeaders.FairQueuesMessageGroupId, "MyStaticGroupId" } }, Encoding.UTF8.GetBytes("{}")),
+                new OutgoingMessage("5678", new Dictionary<string, string> { { TransportHeaders.FairQueuesMessageGroupId, "MyStaticGroupId" } }, Encoding.UTF8.GetBytes("{}")),
                 new MulticastAddressTag(typeof(Event)),
                 [],
                 DispatchConsistency.Isolated));
