@@ -10,8 +10,13 @@ class FairQueuesFeature : Feature
 {
     protected override void Setup(FeatureConfigurationContext context)
     {
-        context.Pipeline.Register(new PersistIncomingMessageGroupIdToHeadersBehavior(), "SQS persist incoming MessageGroupId to headers behavior");
-        context.Pipeline.Register(new ApplyMessageGroupIdFromHeadersToOutgoingMessageBehavior(), "SQS apply MessageGroupId from headers to outgoing message behavior");
+        var transportDefinition = context.Settings.Get<TransportDefinition>() as SqsTransport;
+
+        if (transportDefinition?.EnableFairQueues ?? false)
+        {
+            context.Pipeline.Register(new PersistIncomingMessageGroupIdToHeadersBehavior(), "SQS persist incoming MessageGroupId to headers behavior");
+            context.Pipeline.Register(new ApplyMessageGroupIdFromHeadersToOutgoingMessageBehavior(), "SQS apply MessageGroupId from headers to outgoing message behavior");
+        }
     }
 }
 

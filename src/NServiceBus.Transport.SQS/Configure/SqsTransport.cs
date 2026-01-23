@@ -355,10 +355,7 @@ public partial class SqsTransport : TransportDefinition
             EnableFairQueues
         );
 
-        if (EnableFairQueues)
-        {
-            EnableEndpointFeature<FairQueuesFeature>();
-        }
+        EnableEndpointFeature<FairQueuesFeature>();
 
         if (hostSettings.SetupInfrastructure)
         {
