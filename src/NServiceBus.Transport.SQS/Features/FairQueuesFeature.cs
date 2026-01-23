@@ -15,9 +15,9 @@ class FairQueuesFeature : Feature
     }
 }
 
-class PersistIncomingMessageGroupIdToHeadersBehavior : Behavior<IIncomingPhysicalMessageContext>
+class PersistIncomingMessageGroupIdToHeadersBehavior : IBehavior<IIncomingPhysicalMessageContext, IIncomingPhysicalMessageContext>
 {
-    public override async Task Invoke(IIncomingPhysicalMessageContext context, Func<Task> next)
+    public Task Invoke(IIncomingPhysicalMessageContext context, Func<IIncomingPhysicalMessageContext, Task> next)
     {
         if (context.Extensions.TryGet<Amazon.SQS.Model.Message>(out var nativeMessage))
         {
@@ -27,24 +27,20 @@ class PersistIncomingMessageGroupIdToHeadersBehavior : Behavior<IIncomingPhysica
                 context.Message.Headers[TransportHeaders.FairQueuesMessageGroupId] = messageGroupId;
             }
         }
-        await next().ConfigureAwait(false);
+        return next(context);
     }
 }
 
-class ApplyMessageGroupIdFromHeadersToOutgoingMessageBehavior : Behavior<IOutgoingPhysicalMessageContext>
+class ApplyMessageGroupIdFromHeadersToOutgoingMessageBehavior : IBehavior<IOutgoingPhysicalMessageContext, IOutgoingPhysicalMessageContext>
 {
-    public override async Task Invoke(IOutgoingPhysicalMessageContext context, Func<Task> next)
+    public Task Invoke(IOutgoingPhysicalMessageContext context, Func<IOutgoingPhysicalMessageContext, Task> next)
     {
-        if (context.TryGetIncomingPhysicalMessage(out var incomingMessage))
+        if (context.TryGetIncomingPhysicalMessage(out var incomingMessage)
+            && incomingMessage.Headers.TryGetValue(TransportHeaders.FairQueuesMessageGroupId, out var messageGroupId)
+            && !string.IsNullOrWhiteSpace(messageGroupId))
         {
-            if (incomingMessage.Headers.TryGetValue(TransportHeaders.FairQueuesMessageGroupId, out var messageGroupId))
-            {
-                if (!string.IsNullOrWhiteSpace(messageGroupId))
-                {
-                    context.Headers[TransportHeaders.FairQueuesMessageGroupId] = messageGroupId;
-                }
-            }
+            context.Headers[TransportHeaders.FairQueuesMessageGroupId] = messageGroupId;
         }
-        await next().ConfigureAwait(false);
+        return next(context);
     }
 }
