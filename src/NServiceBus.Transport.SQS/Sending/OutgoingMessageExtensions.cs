@@ -20,7 +20,7 @@ static class OutgoingMessageExtensions
     {
         if (message.Headers.TryGetValue(TransportHeaders.FairQueuesMessageGroupId, out messageGroupId))
         {
-            return string.IsNullOrWhiteSpace(messageGroupId);
+            return !string.IsNullOrWhiteSpace(messageGroupId);
         }
 
         return false;

@@ -987,15 +987,15 @@ public class MessageDispatcherTests
     }
 
     [Test]
-    public async Task Should_use_configured_message_group_id_selector_for_sqs()
+    public async Task Should_set_message_group_id_if_fair_queues_enabled()
     {
         var mockSqsClient = new MockSqsClient();
         var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
-            dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, 0, messageGroupIdSelector: _ => "MyStaticGroupId");
+            dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, 0, enableFairQueues: true);
 
         var transportOperations = new TransportOperations(
             new TransportOperation(
-                new OutgoingMessage("1234", [], Encoding.UTF8.GetBytes("{}")),
+                new OutgoingMessage("1234", new Dictionary<string, string>{ { TransportHeaders.FairQueuesMessageGroupId, "MyStaticGroupId" } }, Encoding.UTF8.GetBytes("{}")),
                 new UnicastAddressTag("address"),
                 [],
                 DispatchConsistency.Isolated));
@@ -1017,11 +1017,11 @@ public class MessageDispatcherTests
                 dest => QueueCache.GetSqsQueueName(dest, "")),
             new TopicCache(mockSnsClient, settings, new EventToTopicsMappings(),
                 new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""), null,
-            15 * 60, 0, messageGroupIdSelector: msg => "MyStaticGroupId");
+            15 * 60, 0, enableFairQueues: true);
 
         var transportOperations = new TransportOperations(
                 new TransportOperation(
-                new OutgoingMessage("5678", [], Encoding.UTF8.GetBytes("{}")),
+                new OutgoingMessage("5678", new Dictionary<string, string>{ { TransportHeaders.FairQueuesMessageGroupId, "MyStaticGroupId" } }, Encoding.UTF8.GetBytes("{}")),
                 new MulticastAddressTag(typeof(Event)),
                 [],
                 DispatchConsistency.Isolated));
