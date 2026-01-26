@@ -53,8 +53,8 @@ namespace NServiceBus
     {
         public SqsTransport(bool disableUnrestrictedDelayedDelivery = false) { }
         public SqsTransport(Amazon.SQS.IAmazonSQS sqsClient, Amazon.SimpleNotificationService.IAmazonSimpleNotificationService snsClient, bool disableUnrestrictedDelayedDelivery = false) { }
+        public bool DoNotAutomaticallyPropagateMessageGroupId { get; set; }
         public bool DoNotWrapOutgoingMessages { get; set; }
-        public bool EnableFairQueues { get; set; }
         public System.TimeSpan MaxAutoMessageVisibilityRenewalDuration { get; set; }
         public System.TimeSpan MaxTimeToLive { get; set; }
         public System.TimeSpan? MessageVisibilityTimeout { get; set; }

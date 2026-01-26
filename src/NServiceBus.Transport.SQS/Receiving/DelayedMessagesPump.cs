@@ -12,7 +12,7 @@ using Amazon.SQS.Model;
 using Extensions;
 using Logging;
 
-class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCache queueCache, int queueDelayTimeSeconds, bool enableFairQueues = false)
+class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCache queueCache, int queueDelayTimeSeconds, bool doNotAutomaticallyPropagateMessageGroupId = false)
 {
     public async Task Initialize(CancellationToken cancellationToken = default)
     {
@@ -212,9 +212,9 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
                 }
 
                 // Preserve fair queue MessageGroupId if it was set
-                if (enableFairQueues)
+                if (!doNotAutomaticallyPropagateMessageGroupId)
                 {
-                    var existingMessageGroupId = ExtractMessageGroupId(receivedMessage);
+                    var existingMessageGroupId = receivedMessage.ExtractMessageGroupId();
                     preparedMessage.MessageGroupId = existingMessageGroupId ?? deduplicationId;
                 }
                 else
@@ -235,9 +235,9 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
                 preparedMessage.CopyMessageAttributes(receivedMessage.MessageAttributes);
 
                 // Preserve fair queue MessageGroupId if it was set
-                if (enableFairQueues)
+                if (!doNotAutomaticallyPropagateMessageGroupId)
                 {
-                    var existingMessageGroupId = ExtractMessageGroupId(receivedMessage);
+                    var existingMessageGroupId = receivedMessage.ExtractMessageGroupId();
                     if (existingMessageGroupId != null)
                     {
                         preparedMessage.MessageGroupId = existingMessageGroupId;
@@ -272,13 +272,6 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
         }
 
         return preparedMessages;
-    }
-
-    string ExtractMessageGroupId(Message messsage)
-    {
-        var messageGroupId = messsage.Attributes.GetValueOrDefault("MessageGroupId");
-
-        return !string.IsNullOrEmpty(messageGroupId) ? messageGroupId : null;
     }
 
     async Task BatchDispatchPreparedMessages(IReadOnlyCollection<SqsReceivedDelayedMessage> preparedMessages, CancellationToken cancellationToken)

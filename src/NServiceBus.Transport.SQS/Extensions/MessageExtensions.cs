@@ -3,6 +3,7 @@
 namespace NServiceBus.Transport.SQS.Extensions;
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Amazon.SQS.Model;
 
@@ -14,6 +15,13 @@ static class MessageExtensions
         // Adjust for clock skew between this endpoint and aws.
         // https://aws.amazon.com/blogs/developer/clock-skew-correction/
         return result + clockOffset;
+    }
+
+    public static string? ExtractMessageGroupId(this Message messsage)
+    {
+        var messageGroupId = messsage.Attributes.GetValueOrDefault("MessageGroupId");
+
+        return !string.IsNullOrEmpty(messageGroupId) ? messageGroupId : null;
     }
 
     static readonly DateTimeOffset UnixEpoch = new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero);

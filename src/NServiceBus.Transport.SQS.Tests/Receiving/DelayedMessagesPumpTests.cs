@@ -84,9 +84,9 @@ public class DelayedMessagesPumpTests
         Assert.That(exception.Message, Is.EqualTo("Delayed delivery queue 'queue-delay.fifo' should not have Redrive Policy enabled."));
     }
 
-    async Task SetupInitializedPump(bool enableFairQueues = false)
+    async Task SetupInitializedPump(bool doNotAutomaticallyPropagateMessageGroupId = false)
     {
-        pump = new DelayedMessagesPump(FakeInputQueueQueueUrl, mockSqsClient, new QueueCache(mockSqsClient, q => QueueCache.GetSqsQueueName(q, "")), 15 * 60, enableFairQueues: enableFairQueues);
+        pump = new DelayedMessagesPump(FakeInputQueueQueueUrl, mockSqsClient, new QueueCache(mockSqsClient, q => QueueCache.GetSqsQueueName(q, "")), 15 * 60, doNotAutomaticallyPropagateMessageGroupId: doNotAutomaticallyPropagateMessageGroupId);
 
         mockSqsClient.GetAttributeNamesRequestsResponse = (queue, attributes) => new GetQueueAttributesResponse
         {
@@ -263,7 +263,7 @@ public class DelayedMessagesPumpTests
     [Test]
     public async Task Consume_sends_due_messages_and_preserves_fair_queue_message_group_id()
     {
-        await SetupInitializedPump(true);
+        await SetupInitializedPump();
 
         mockSqsClient.ReceiveMessagesRequestResponse = (req, token) =>
         {
@@ -425,7 +425,7 @@ public class DelayedMessagesPumpTests
     [TestCase("SomeMessageGroupId")]
     public async Task Consume_sends_not_yet_due_messages_and_preserves_fair_queue_message_group_id(string messageGroupId)
     {
-        await SetupInitializedPump(true);
+        await SetupInitializedPump();
 
         mockSqsClient.ReceiveMessagesRequestResponse = (req, token) =>
         {

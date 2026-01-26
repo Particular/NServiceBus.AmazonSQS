@@ -147,10 +147,10 @@ public partial class SqsTransport : TransportDefinition
     public PolicySettings Policies { get; } = new PolicySettings();
 
     /// <summary>
-    /// Configures the SQS transport to use fair queues.
-    /// If set to true, the transport will use SQS fair queues by preserving the MessageGroupId across incoming and outgoing messages.
+    /// The fair queues are enabled by default.
+    /// Set this property to opt-out, as the transport will not be passing the MessageGroupId.
     /// </summary>
-    public bool EnableFairQueues { get; set; }
+    public bool DoNotAutomaticallyPropagateMessageGroupId { get; set; }
 
     /// <summary>
     /// Configures the SQS transport to not use a custom wrapper for outgoing messages.
@@ -352,7 +352,7 @@ public partial class SqsTransport : TransportDefinition
             !snsClient.ExternallyManaged,
             !SupportsDelayedDelivery,
             ReserveBytesInMessageSizeCalculation,
-            EnableFairQueues
+            DoNotAutomaticallyPropagateMessageGroupId
         );
 
         EnableEndpointFeature<FairQueuesFeature>();

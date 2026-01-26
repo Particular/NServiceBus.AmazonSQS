@@ -25,14 +25,14 @@ class MessagePump : IMessageReceiver
         Action<string, Exception, CancellationToken> criticalErrorAction,
         bool setupInfrastructure,
         bool disableDelayedDelivery,
-        bool enableFairQueues)
+        bool doNotAutomaticallyPropagateMessageGroupId)
     {
         this.disableDelayedDelivery = disableDelayedDelivery;
         inputQueuePump = new InputQueuePump(receiverId, receiveAddress, errorQueueAddress, purgeOnStartup, sqsClient, queueCache, s3Settings, subscriptionManager, criticalErrorAction, visibilityTimeoutInSeconds, maxAutoMessageVisibilityRenewalDuration, setupInfrastructure);
         if (!disableDelayedDelivery)
         {
             delayedMessagesPump =
-                new DelayedMessagesPump(receiveAddress, sqsClient, queueCache, queueDelayTimeSeconds, enableFairQueues);
+                new DelayedMessagesPump(receiveAddress, sqsClient, queueCache, queueDelayTimeSeconds, doNotAutomaticallyPropagateMessageGroupId);
         }
     }
 

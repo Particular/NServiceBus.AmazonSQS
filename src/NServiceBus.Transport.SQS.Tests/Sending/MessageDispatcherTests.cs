@@ -991,7 +991,7 @@ public class MessageDispatcherTests
     {
         var mockSqsClient = new MockSqsClient();
         var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
-            dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, 0, enableFairQueues: true);
+            dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, 0, doNotAutomaticallyPropagateMessageGroupId: false);
 
         var transportOperations = new TransportOperations(
             new TransportOperation(
@@ -1017,7 +1017,7 @@ public class MessageDispatcherTests
                 dest => QueueCache.GetSqsQueueName(dest, "")),
             new TopicCache(mockSnsClient, settings, new EventToTopicsMappings(),
                 new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""), null,
-            15 * 60, 0, enableFairQueues: true);
+            15 * 60, 0, doNotAutomaticallyPropagateMessageGroupId: false);
 
         var transportOperations = new TransportOperations(
                 new TransportOperation(

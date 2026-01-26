@@ -28,7 +28,7 @@ partial class MessageDispatcher(
     int queueDelaySeconds,
     long reserveBytesInMessageSizeCalculation,
     bool wrapOutgoingMessages = true,
-    bool enableFairQueues = false)
+    bool doNotAutomaticallyPropagateMessageGroupId = false)
     : IMessageDispatcher
 {
     public async Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, CancellationToken cancellationToken = default)
@@ -494,7 +494,7 @@ partial class MessageDispatcher(
 
     async Task ApplyMulticastOperationMapping(MulticastTransportOperation transportOperation, SnsPreparedMessage snsPreparedMessage, CancellationToken cancellationToken)
     {
-        if (enableFairQueues && transportOperation.Message.TryGetMessageGroupIdFromHeaders(out var messageGroupId))
+        if (!doNotAutomaticallyPropagateMessageGroupId && transportOperation.Message.TryGetMessageGroupIdFromHeaders(out var messageGroupId))
         {
             snsPreparedMessage.MessageGroupId = messageGroupId;
         }
@@ -518,7 +518,7 @@ partial class MessageDispatcher(
                 .ConfigureAwait(false);
 
             sqsPreparedMessage.MessageDeduplicationId = sqsPreparedMessage.MessageId;
-            if (enableFairQueues && transportOperation.Message.TryGetMessageGroupIdFromHeaders(out var messageGroupId))
+            if (!doNotAutomaticallyPropagateMessageGroupId && transportOperation.Message.TryGetMessageGroupIdFromHeaders(out var messageGroupId))
             {
                 sqsPreparedMessage.MessageGroupId = messageGroupId;
             }
@@ -554,7 +554,7 @@ partial class MessageDispatcher(
                 sqsPreparedMessage.DelaySeconds = Convert.ToInt32(delaySeconds);
             }
 
-            if (enableFairQueues && transportOperation.Message.TryGetMessageGroupIdFromHeaders(out var messageGroupId))
+            if (!doNotAutomaticallyPropagateMessageGroupId && transportOperation.Message.TryGetMessageGroupIdFromHeaders(out var messageGroupId))
             {
                 sqsPreparedMessage.MessageGroupId = messageGroupId;
             }
