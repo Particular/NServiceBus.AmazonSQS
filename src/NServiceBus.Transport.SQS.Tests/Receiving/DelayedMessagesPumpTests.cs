@@ -84,9 +84,9 @@ public class DelayedMessagesPumpTests
         Assert.That(exception.Message, Is.EqualTo("Delayed delivery queue 'queue-delay.fifo' should not have Redrive Policy enabled."));
     }
 
-    async Task SetupInitializedPump(bool doNotAutomaticallyPropagateMessageGroupId = false)
+    async Task SetupInitializedPump()
     {
-        pump = new DelayedMessagesPump(FakeInputQueueQueueUrl, mockSqsClient, new QueueCache(mockSqsClient, q => QueueCache.GetSqsQueueName(q, "")), 15 * 60, doNotAutomaticallyPropagateMessageGroupId: doNotAutomaticallyPropagateMessageGroupId);
+        pump = new DelayedMessagesPump(FakeInputQueueQueueUrl, mockSqsClient, new QueueCache(mockSqsClient, q => QueueCache.GetSqsQueueName(q, "")), 15 * 60);
 
         mockSqsClient.GetAttributeNamesRequestsResponse = (queue, attributes) => new GetQueueAttributesResponse
         {

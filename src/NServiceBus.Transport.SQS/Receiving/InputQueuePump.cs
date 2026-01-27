@@ -29,7 +29,8 @@ namespace NServiceBus.Transport.SQS
         Action<string, Exception, CancellationToken> criticalErrorAction,
         int? configuredVisibilityTimeoutInSeconds,
         TimeSpan maxAutoMessageVisibilityRenewalDuration,
-        bool setupInfrastructure = true)
+        bool setupInfrastructure = true,
+        bool doNotAutomaticallyPropagateMessageGroupId = false)
         : IMessageReceiver
     {
         public async Task Initialize(PushRuntimeSettings limitations, OnMessage onMessage, OnError onError, CancellationToken cancellationToken = default)
@@ -470,6 +471,15 @@ namespace NServiceBus.Transport.SQS
             var transportTransaction = new TransportTransaction();
             transportTransaction.Set(nativeMessage);
             transportTransaction.Set("IncomingMessageId", headers[Headers.MessageId]);
+
+            if (doNotAutomaticallyPropagateMessageGroupId is false)
+            {
+                var messageGroupId = nativeMessage.ExtractMessageGroupId();
+                if (!string.IsNullOrEmpty(messageGroupId))
+                {
+                    headers[TransportHeaders.MessageGroupId] = messageGroupId;
+                }
+            }
 
             try
             {

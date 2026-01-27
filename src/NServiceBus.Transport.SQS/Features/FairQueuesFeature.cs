@@ -16,22 +16,7 @@ class FairQueuesFeature : Feature
             return;
         }
 
-        context.Pipeline.Register(new PersistIncomingMessageGroupIdToHeadersBehavior(), "SQS persist incoming MessageGroupId to headers behavior");
         context.Pipeline.Register(new ApplyMessageGroupIdFromHeadersToOutgoingMessageBehavior(), "SQS apply MessageGroupId from headers to outgoing message behavior");
-    }
-}
-
-class PersistIncomingMessageGroupIdToHeadersBehavior : IBehavior<IIncomingPhysicalMessageContext, IIncomingPhysicalMessageContext>
-{
-    public Task Invoke(IIncomingPhysicalMessageContext context, Func<IIncomingPhysicalMessageContext, Task> next)
-    {
-        if (context.Extensions.TryGet<Amazon.SQS.Model.Message>(out var nativeMessage)
-            && nativeMessage.Attributes.TryGetValue("MessageGroupId", out var messageGroupId)
-            && !string.IsNullOrWhiteSpace(messageGroupId))
-        {
-            context.Message.Headers[TransportHeaders.MessageGroupId] = messageGroupId;
-        }
-        return next(context);
     }
 }
 

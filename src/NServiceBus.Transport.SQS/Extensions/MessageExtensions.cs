@@ -19,7 +19,7 @@ static class MessageExtensions
 
     public static string? ExtractMessageGroupId(this Message messsage)
     {
-        var messageGroupId = messsage.Attributes.GetValueOrDefault("MessageGroupId");
+        var messageGroupId = messsage.Attributes?.GetValueOrDefault("MessageGroupId");
 
         return !string.IsNullOrEmpty(messageGroupId) ? messageGroupId : null;
     }

@@ -28,11 +28,11 @@ class MessagePump : IMessageReceiver
         bool doNotAutomaticallyPropagateMessageGroupId)
     {
         this.disableDelayedDelivery = disableDelayedDelivery;
-        inputQueuePump = new InputQueuePump(receiverId, receiveAddress, errorQueueAddress, purgeOnStartup, sqsClient, queueCache, s3Settings, subscriptionManager, criticalErrorAction, visibilityTimeoutInSeconds, maxAutoMessageVisibilityRenewalDuration, setupInfrastructure);
+        inputQueuePump = new InputQueuePump(receiverId, receiveAddress, errorQueueAddress, purgeOnStartup, sqsClient, queueCache, s3Settings, subscriptionManager, criticalErrorAction, visibilityTimeoutInSeconds, maxAutoMessageVisibilityRenewalDuration, setupInfrastructure, doNotAutomaticallyPropagateMessageGroupId);
         if (!disableDelayedDelivery)
         {
             delayedMessagesPump =
-                new DelayedMessagesPump(receiveAddress, sqsClient, queueCache, queueDelayTimeSeconds, doNotAutomaticallyPropagateMessageGroupId);
+                new DelayedMessagesPump(receiveAddress, sqsClient, queueCache, queueDelayTimeSeconds);
         }
     }
 

@@ -12,7 +12,7 @@ using Amazon.SQS.Model;
 using Extensions;
 using Logging;
 
-class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCache queueCache, int queueDelayTimeSeconds, bool doNotAutomaticallyPropagateMessageGroupId = false)
+class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCache queueCache, int queueDelayTimeSeconds)
 {
     public async Task Initialize(CancellationToken cancellationToken = default)
     {
@@ -225,14 +225,10 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
                 // Copy over all the message attributes so we don't lose part of the message when moving to the delayed delivery queue
                 preparedMessage.CopyMessageAttributes(receivedMessage.MessageAttributes);
 
-                // Preserve fair queue MessageGroupId if it was set
-                if (!doNotAutomaticallyPropagateMessageGroupId)
+                var existingMessageGroupId = receivedMessage.ExtractMessageGroupId();
+                if (!string.IsNullOrEmpty(existingMessageGroupId))
                 {
-                    var existingMessageGroupId = receivedMessage.ExtractMessageGroupId();
-                    if (existingMessageGroupId != null)
-                    {
-                        preparedMessage.MessageGroupId = existingMessageGroupId;
-                    }
+                    preparedMessage.MessageGroupId = existingMessageGroupId;
                 }
 
                 preparedMessage.MessageAttributes.Remove(TransportHeaders.DelaySeconds);
