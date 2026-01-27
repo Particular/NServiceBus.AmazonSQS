@@ -211,7 +211,9 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
                     deduplicationId = Guid.NewGuid().ToString();
                 }
 
-                preparedMessage.MessageDeduplicationId = preparedMessage.MessageGroupId = deduplicationId;
+                var existingMessageGroupId = receivedMessage.ExtractMessageGroupId();
+                preparedMessage.MessageGroupId = existingMessageGroupId ?? deduplicationId;
+                preparedMessage.MessageDeduplicationId = deduplicationId;
             }
             else
             {
@@ -222,6 +224,12 @@ class DelayedMessagesPump(string receiveAddress, IAmazonSQS sqsClient, QueueCach
 
                 // Copy over all the message attributes so we don't lose part of the message when moving to the delayed delivery queue
                 preparedMessage.CopyMessageAttributes(receivedMessage.MessageAttributes);
+
+                var existingMessageGroupId = receivedMessage.ExtractMessageGroupId();
+                if (!string.IsNullOrEmpty(existingMessageGroupId))
+                {
+                    preparedMessage.MessageGroupId = existingMessageGroupId;
+                }
 
                 preparedMessage.MessageAttributes.Remove(TransportHeaders.DelaySeconds);
                 if (remainingDelay > 0)

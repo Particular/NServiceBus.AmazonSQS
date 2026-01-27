@@ -8,4 +8,5 @@ static class TransportHeaders
     public const string Headers = Prefix + nameof(Headers);
     public const string S3BodyKey = "S3BodyKey";
     public const string MessageTypeFullName = "MessageTypeFullName";
+    public const string MessageGroupId = nameof(MessageGroupId);
 }
