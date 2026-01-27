@@ -29,7 +29,7 @@ class PersistIncomingMessageGroupIdToHeadersBehavior : IBehavior<IIncomingPhysic
             && nativeMessage.Attributes.TryGetValue("MessageGroupId", out var messageGroupId)
             && !string.IsNullOrWhiteSpace(messageGroupId))
         {
-            context.Message.Headers[TransportHeaders.FairQueuesMessageGroupId] = messageGroupId;
+            context.Message.Headers[TransportHeaders.MessageGroupId] = messageGroupId;
         }
         return next(context);
     }
@@ -40,10 +40,10 @@ class ApplyMessageGroupIdFromHeadersToOutgoingMessageBehavior : IBehavior<IOutgo
     public Task Invoke(IOutgoingPhysicalMessageContext context, Func<IOutgoingPhysicalMessageContext, Task> next)
     {
         if (context.TryGetIncomingPhysicalMessage(out var incomingMessage)
-            && incomingMessage.Headers.TryGetValue(TransportHeaders.FairQueuesMessageGroupId, out var messageGroupId)
+            && incomingMessage.Headers.TryGetValue(TransportHeaders.MessageGroupId, out var messageGroupId)
             && !string.IsNullOrWhiteSpace(messageGroupId))
         {
-            context.Headers[TransportHeaders.FairQueuesMessageGroupId] = messageGroupId;
+            context.Headers[TransportHeaders.MessageGroupId] = messageGroupId;
         }
         return next(context);
     }

@@ -18,7 +18,7 @@ static class OutgoingMessageExtensions
 
     public static bool TryGetMessageGroupIdFromHeaders(this OutgoingMessage message, out string messageGroupId)
     {
-        if (message.Headers.TryGetValue(TransportHeaders.FairQueuesMessageGroupId, out messageGroupId))
+        if (message.Headers.TryGetValue(TransportHeaders.MessageGroupId, out messageGroupId))
         {
             return !string.IsNullOrWhiteSpace(messageGroupId);
         }
