@@ -10,6 +10,7 @@ using Amazon.SQS;
 using Transport;
 using Transport.SQS;
 using Transport.SQS.Configure;
+using Transport.SQS.Features;
 using TransportInfrastructure = Transport.TransportInfrastructure;
 
 /// <summary>
@@ -144,6 +145,12 @@ public partial class SqsTransport : TransportDefinition
     /// Configures the policy creation during subscription.
     /// </summary>
     public PolicySettings Policies { get; } = new PolicySettings();
+
+    /// <summary>
+    /// The fair queues are enabled by default.
+    /// Set this property to opt-out, as the transport will not be passing the MessageGroupId.
+    /// </summary>
+    public bool DoNotAutomaticallyPropagateMessageGroupId { get; set; }
 
     /// <summary>
     /// Configures the SQS transport to not use a custom wrapper for outgoing messages.
@@ -344,8 +351,11 @@ public partial class SqsTransport : TransportDefinition
             !sqsClient.ExternallyManaged,
             !snsClient.ExternallyManaged,
             !SupportsDelayedDelivery,
-            ReserveBytesInMessageSizeCalculation
+            ReserveBytesInMessageSizeCalculation,
+            DoNotAutomaticallyPropagateMessageGroupId
         );
+
+        EnableEndpointFeature<FairQueuesFeature>();
 
         if (hostSettings.SetupInfrastructure)
         {

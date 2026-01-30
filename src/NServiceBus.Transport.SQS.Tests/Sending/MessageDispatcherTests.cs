@@ -963,6 +963,54 @@ public class MessageDispatcherTests
         Assert.That(s3Request.InputStream.Length, Is.GreaterThan(0));
     }
 
+    [Test]
+    public async Task Should_set_message_group_id_if_fair_queues_enabled()
+    {
+        var mockSqsClient = new MockSqsClient();
+        var dispatcher = new MessageDispatcher(new SettingsHolder(), mockSqsClient, null, new QueueCache(mockSqsClient,
+            dest => QueueCache.GetSqsQueueName(dest, "")), null, null, 15 * 60, 0, doNotAutomaticallyPropagateMessageGroupId: false);
+
+        var transportOperations = new TransportOperations(
+            new TransportOperation(
+                new OutgoingMessage("1234", new Dictionary<string, string> { { TransportHeaders.MessageGroupId, "MyStaticGroupId" } }, Encoding.UTF8.GetBytes("{}")),
+                new UnicastAddressTag("address"),
+                [],
+                DispatchConsistency.Isolated));
+
+        var transportTransaction = new TransportTransaction();
+
+        await dispatcher.Dispatch(transportOperations, transportTransaction);
+
+        var sentMessage = mockSqsClient.RequestsSent.First();
+        Assert.That(sentMessage.MessageGroupId, Is.EqualTo("MyStaticGroupId"));
+    }
+
+    [Test]
+    public async Task Should_use_configured_message_group_id_selector_for_sns()
+    {
+        var settings = new SettingsHolder();
+        var mockSnsClient = new MockSnsClient();
+        var dispatcher = new MessageDispatcher(new SettingsHolder(), null, mockSnsClient, new QueueCache(null,
+                dest => QueueCache.GetSqsQueueName(dest, "")),
+            new TopicCache(mockSnsClient, settings, new EventToTopicsMappings(),
+                new EventToEventsMappings(), (type, s) => TopicNameHelper.GetSnsTopicName(type, ""), ""), null,
+            15 * 60, 0, doNotAutomaticallyPropagateMessageGroupId: false);
+
+        var transportOperations = new TransportOperations(
+                new TransportOperation(
+                new OutgoingMessage("5678", new Dictionary<string, string> { { TransportHeaders.MessageGroupId, "MyStaticGroupId" } }, Encoding.UTF8.GetBytes("{}")),
+                new MulticastAddressTag(typeof(Event)),
+                [],
+                DispatchConsistency.Isolated));
+
+        var transportTransaction = new TransportTransaction();
+
+        await dispatcher.Dispatch(transportOperations, transportTransaction);
+
+        var published = mockSnsClient.PublishedEvents.First();
+        Assert.That(published.MessageGroupId, Is.EqualTo("MyStaticGroupId"));
+    }
+
     interface IEvent { }
     interface IMyEvent : IEvent { }
     class Event : IMyEvent { }

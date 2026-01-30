@@ -6,4 +6,5 @@ static class SettingsKeys
 
     public const string SubscriptionsCacheTTL = Prefix + nameof(SubscriptionsCacheTTL);
     public const string NotFoundTopicsCacheTTL = Prefix + nameof(NotFoundTopicsCacheTTL);
+    public const string MessageGroupIdSelector = Prefix + nameof(MessageGroupIdSelector);
 }

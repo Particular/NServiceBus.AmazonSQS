@@ -24,10 +24,11 @@ class MessagePump : IMessageReceiver
         TimeSpan maxAutoMessageVisibilityRenewalDuration,
         Action<string, Exception, CancellationToken> criticalErrorAction,
         bool setupInfrastructure,
-        bool disableDelayedDelivery)
+        bool disableDelayedDelivery,
+        bool doNotAutomaticallyPropagateMessageGroupId)
     {
         this.disableDelayedDelivery = disableDelayedDelivery;
-        inputQueuePump = new InputQueuePump(receiverId, receiveAddress, errorQueueAddress, purgeOnStartup, sqsClient, queueCache, s3Settings, subscriptionManager, criticalErrorAction, visibilityTimeoutInSeconds, maxAutoMessageVisibilityRenewalDuration, setupInfrastructure);
+        inputQueuePump = new InputQueuePump(receiverId, receiveAddress, errorQueueAddress, purgeOnStartup, sqsClient, queueCache, s3Settings, subscriptionManager, criticalErrorAction, visibilityTimeoutInSeconds, maxAutoMessageVisibilityRenewalDuration, setupInfrastructure, doNotAutomaticallyPropagateMessageGroupId);
         if (!disableDelayedDelivery)
         {
             delayedMessagesPump =
