@@ -392,6 +392,8 @@ public class MockS3Client : IAmazonS3
         CancellationToken cancellationToken = new CancellationToken()) =>
         throw new NotImplementedException();
 
+    public Task<UpdateObjectEncryptionResponse> UpdateObjectEncryptionAsync(UpdateObjectEncryptionRequest request, CancellationToken cancellationToken = new CancellationToken()) => throw new NotImplementedException();
+
     public Task<UploadPartResponse> UploadPartAsync(UploadPartRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
     public Task<WriteGetObjectResponseResponse> WriteGetObjectResponseAsync(WriteGetObjectResponseRequest request,
