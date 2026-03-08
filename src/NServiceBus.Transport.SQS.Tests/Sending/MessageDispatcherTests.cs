@@ -921,7 +921,7 @@ public class MessageDispatcherTests
         var batch = mockSqsClient.BatchRequestsSent.First();
         var request = batch.Entries.First();
 
-        Assert.That(request.MessageBody, Is.Not.Null.Or.Empty);
+        Assert.That(request.MessageBody, Is.Not.Null.And.Not.Empty);
     }
 
     [Test]

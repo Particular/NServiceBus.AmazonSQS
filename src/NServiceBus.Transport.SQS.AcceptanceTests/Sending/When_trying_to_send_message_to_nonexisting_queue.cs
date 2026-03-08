@@ -34,7 +34,7 @@ public class When_trying_to_send_message_to_nonexisting_queue : NServiceBusAccep
             Assert.That(exception.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
             Assert.That(exception.ErrorType, Is.EqualTo(ErrorType.Sender));
             Assert.That(exception.ErrorCode, Is.EqualTo("AWS.SimpleQueueService.NonExistentQueue"));
-            Assert.That(exception.RequestId, Is.Not.Null.Or.Empty);
+            Assert.That(exception.RequestId, Is.Not.Null.And.Not.Empty);
         });
     }
 
