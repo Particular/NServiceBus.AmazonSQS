@@ -2,7 +2,7 @@
 
   <!-- This project can be replaced with a permutation once the core supports it for transport tests https://github.com/Particular/NServiceBus/issues/7231 -->
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\NServiceBusTests.snk</AssemblyOriginatorKeyFile>
     <RootNamespace>TransportTests</RootNamespace>
