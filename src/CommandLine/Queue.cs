@@ -27,18 +27,16 @@ static class Queue
     public static async Task<string> Create(IAmazonSQS sqs, string prefix, string endpointName, double retentionPeriodInSeconds)
     {
         var queueName = $"{prefix}{endpointName}";
-        var sqsRequest = new CreateQueueRequest { QueueName = queueName };
-        await Console.Out.WriteLineAsync($"Creating SQS Queue with name '{sqsRequest.QueueName}' for endpoint '{endpointName}'.");
-        var createQueueResponse = await sqs.CreateQueueAsync(sqsRequest).ConfigureAwait(false);
-        var sqsAttributesRequest = new SetQueueAttributesRequest
+        var sqsRequest = new CreateQueueRequest
         {
-            QueueUrl = createQueueResponse.QueueUrl,
+            QueueName = queueName,
             Attributes = new Dictionary<string, string>
             {
                 { QueueAttributeName.MessageRetentionPeriod, retentionPeriodInSeconds.ToString(CultureInfo.InvariantCulture) }
             }
         };
-        await sqs.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
+        await Console.Out.WriteLineAsync($"Creating SQS Queue with name '{sqsRequest.QueueName}' for endpoint '{endpointName}'.");
+        var createQueueResponse = await sqs.CreateQueueAsync(sqsRequest).ConfigureAwait(false);
         await Console.Out.WriteLineAsync($"Created SQS Queue with name '{sqsRequest.QueueName}' for endpoint '{endpointName}'.");
         return createQueueResponse.QueueUrl;
     }
@@ -49,20 +47,15 @@ static class Queue
         var sqsRequest = new CreateQueueRequest
         {
             QueueName = delayedDeliveryQueueName,
-            Attributes = new Dictionary<string, string> { { "FifoQueue", "true" } }
-        };
-        await Console.Out.WriteLineAsync($"Creating SQS delayed delivery queue with name '{sqsRequest.QueueName}' for endpoint '{endpointName}'.");
-        var createQueueResponse = await sqs.CreateQueueAsync(sqsRequest).ConfigureAwait(false);
-        var sqsAttributesRequest = new SetQueueAttributesRequest
-        {
-            QueueUrl = createQueueResponse.QueueUrl,
             Attributes = new Dictionary<string, string>
             {
+                { "FifoQueue", "true" },
                 { QueueAttributeName.MessageRetentionPeriod, retentionPeriodInSeconds.ToString(CultureInfo.InvariantCulture) },
                 { QueueAttributeName.DelaySeconds, delayInSeconds.ToString(CultureInfo.InvariantCulture) }
             }
         };
-        await sqs.SetQueueAttributesAsync(sqsAttributesRequest).ConfigureAwait(false);
+        await Console.Out.WriteLineAsync($"Creating SQS delayed delivery queue with name '{sqsRequest.QueueName}' for endpoint '{endpointName}'.");
+        var createQueueResponse = await sqs.CreateQueueAsync(sqsRequest).ConfigureAwait(false);
         await Console.Out.WriteLineAsync($"Created SQS delayed delivery queue with name '{sqsRequest.QueueName}' for endpoint '{endpointName}'.");
         return createQueueResponse.QueueUrl;
     }

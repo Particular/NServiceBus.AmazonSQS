@@ -8,17 +8,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="4.0.17.2" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.23.4" />
     <!-- Required for IAM Roles for Service Accounts even though no API is added -->
-    <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.5.7" />
-    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="4.0.2.14" />
-    <PackageReference Include="AWSSDK.SQS" Version="4.0.2.12" />
-    <PackageReference Include="BitFaster.Caching" Version="2.5.4" />
-    <PackageReference Include="NServiceBus" Version="10.0.0-alpha.24" />
+    <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.6.7" />
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="4.0.2.34" />
+    <PackageReference Include="AWSSDK.SQS" Version="4.0.2.32" />
+    <PackageReference Include="BitFaster.Caching" Version="2.6.0" />
+    <PackageReference Include="NServiceBus" Version="10.2.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Particular.Obsoletes" Version="1.0.0" PrivateAssets="All" ExcludeAssets="runtime" />
+    <PackageReference Include="Particular.Obsoletes" Version="1.1.0"  PrivateAssets="All" ExcludeAssets="runtime" />
     <PackageReference Include="Particular.Packaging" Version="4.5.0" PrivateAssets="All" />
   </ItemGroup>
 

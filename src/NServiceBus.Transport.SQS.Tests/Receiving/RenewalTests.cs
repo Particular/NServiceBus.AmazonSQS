@@ -53,15 +53,21 @@ public class RenewalTests
         var tokenSource = new CancellationTokenSource();
         var messageVisibilityLostCancellationTokenSource = new CancellationTokenSource();
         var sqsClient = new MockSqsClient();
-        var fakeTimeProvider = new FakeTimeProvider();
+        var fakeTimeProvider = new SignalingFakeTimeProvider();
 
         var expiresOn = fakeTimeProvider.Start.AddSeconds(10);
 
         var renewalTask = Renewal.RenewMessageVisibility(message, expiresOn, visibilityTimeoutInSeconds: 10, sqsClient: sqsClient, inputQueueUrl: "inputQueue", messageVisibilityLostCancellationTokenSource, timeProvider: fakeTimeProvider, cancellationToken: tokenSource.Token);
+        // RenewMessageVisibility synchronously registers the first timer before returning.
+        // Wait for the second timer (registered after the first renewal completes) before advancing again.
 
-        // advance time twice to simulate more than one renewal
+        var waitForSecondTimer = fakeTimeProvider.WaitForNextTimer();
         fakeTimeProvider.Advance(TimeSpan.FromSeconds(5));
+        await waitForSecondTimer; // ensures first renewal is done and next timer is registered
+
+        var waitForThirdTimer = fakeTimeProvider.WaitForNextTimer();
         fakeTimeProvider.Advance(TimeSpan.FromSeconds(11));
+        await waitForThirdTimer; // ensures second renewal is done and next timer is registered
 
         await tokenSource.CancelAsync();
 
@@ -76,6 +82,28 @@ public class RenewalTests
             Assert.That(sqsClient.ChangeMessageVisibilityRequestsSent.ElementAt(1).VisibilityTimeout, Is.EqualTo(14));
             Assert.That(result, Is.EqualTo(Renewal.Result.Stopped));
         });
+    }
+
+    class SignalingFakeTimeProvider : FakeTimeProvider
+    {
+        volatile TaskCompletionSource _nextTimerRegistered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        /// <summary>
+        /// Returns a task that completes when the next <see cref="CreateTimer"/> call occurs.
+        /// Call this before the action that will trigger timer creation.
+        /// </summary>
+        public Task WaitForNextTimer()
+        {
+            _nextTimerRegistered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            return _nextTimerRegistered.Task;
+        }
+
+        public override ITimer CreateTimer(TimerCallback callback, object state, TimeSpan dueTime, TimeSpan period)
+        {
+            var timer = base.CreateTimer(callback, state, dueTime, period);
+            _nextTimerRegistered.TrySetResult();
+            return timer;
+        }
     }
 
     [Test]
