@@ -51,7 +51,9 @@ public class When_subscriber_runs_in_compat_mode : NServiceBusAcceptanceTest
         public MigratedSubscriber() =>
             EndpointSetup<DefaultServer>(c =>
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 var compatMode = c.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
+#pragma warning restore CS0618 // Type or member is obsolete
                 compatMode.RegisterPublisher(typeof(MyEvent), PublisherEndpoint);
                 c.DisableFeature<AutoSubscribe>();
             });

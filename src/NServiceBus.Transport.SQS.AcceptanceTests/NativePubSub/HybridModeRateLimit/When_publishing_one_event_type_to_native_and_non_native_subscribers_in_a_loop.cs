@@ -68,7 +68,9 @@ public class When_publishing_one_event_type_to_native_and_non_native_subscribers
             {
                 b.CustomConfig(config =>
                 {
+#pragma warning disable CS0618 // Type or member is obsolete
                     var migrationMode = config.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
+#pragma warning restore CS0618 // Type or member is obsolete
                     migrationMode.SubscriptionsCacheTTL(testCase.SubscriptionsCacheTTL);
                     migrationMode.TopicCacheTTL(testCase.NotFoundTopicsCacheTTL);
                 });

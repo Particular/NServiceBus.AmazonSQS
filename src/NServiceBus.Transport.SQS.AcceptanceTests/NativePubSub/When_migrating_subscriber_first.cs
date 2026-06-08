@@ -62,7 +62,9 @@ public class When_migrating_subscriber_first : NServiceBusAcceptanceTest
             {
                 b.CustomConfig(c =>
                 {
+#pragma warning disable CS0618 // Type or member is obsolete
                     var compatModeSettings = c.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
+#pragma warning restore CS0618 // Type or member is obsolete
 
                     compatModeSettings.RegisterPublisher(typeof(MyEvent), PublisherEndpoint);
                 });
@@ -84,7 +86,9 @@ public class When_migrating_subscriber_first : NServiceBusAcceptanceTest
                 b.CustomConfig(c =>
                 {
                     c.UsePersistence<TestingInMemoryPersistence, StorageType.Subscriptions>().UseStorage(subscriptionStorage);
+#pragma warning disable CS0618 // Type or member is obsolete
                     c.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
+#pragma warning restore CS0618 // Type or member is obsolete
                 });
                 b.When(c => c.SubscribedMessageDriven && c.SubscribedNative, session => session.Publish(new MyEvent()));
             })
@@ -92,7 +96,9 @@ public class When_migrating_subscriber_first : NServiceBusAcceptanceTest
             {
                 b.CustomConfig(c =>
                 {
+#pragma warning disable CS0618 // Type or member is obsolete
                     var compatModeSettings = c.ConfigureRouting().EnableMessageDrivenPubSubCompatibilityMode();
+#pragma warning restore CS0618 // Type or member is obsolete
 
                     // not needed but left here to enforce duplicates
                     compatModeSettings.RegisterPublisher(typeof(MyEvent), PublisherEndpoint);

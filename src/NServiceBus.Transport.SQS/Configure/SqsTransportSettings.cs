@@ -291,9 +291,10 @@ public static class MessageDrivenPubSubCompatibilityModeConfiguration
     /// Enables compatibility with endpoints running on message-driven pub-sub
     /// </summary>
     /// <param name="transportExtensions">The transport to enable pub-sub compatibility on</param>
-    [PreObsolete("https://github.com/Particular/NServiceBus/issues/6471",
-        Note = "Hybrid pub/sub support cannot be obsolete until there is a viable migration path to native pub/sub",
-        Message = "Hybrid pub/sub is no longer supported, use native pub/sub instead")]
+    [Obsolete("Hybrid pub/sub is no longer supported, use native pub/sub instead. Will be treated as an error from version 10.0.0. Will be removed in version 11.0.0.", false)]
+    [ObsoleteMetadata(Message = "Hybrid pub/sub is no longer supported, use native pub/sub instead",
+        TreatAsErrorFromVersion = "10.0.0",
+        RemoveInVersion = "11.0.0")]
     public static SqsSubscriptionMigrationModeSettings EnableMessageDrivenPubSubCompatibilityMode(this TransportExtensions<SqsTransport> transportExtensions)
     {
         var routingSettings = transportExtensions.Routing();
@@ -306,11 +307,12 @@ public static class MessageDrivenPubSubCompatibilityModeConfiguration
     ///     Enables compatibility with endpoints running on message-driven pub-sub
     /// </summary>
     /// <param name="routingSettings">The transport to enable pub-sub compatibility on</param>
-    [PreObsolete("https://github.com/Particular/NServiceBus/issues/6471",
-        Note = "Hybrid pub/sub support cannot be obsolete until there is a viable migration path to native pub/sub",
-        Message = "Hybrid pub/sub is no longer supported, use native pub/sub instead")]
+    [Obsolete("Hybrid pub/sub is no longer supported, use native pub/sub instead. Will be treated as an error from version 10.0.0. Will be removed in version 11.0.0.", false)]
+    [ObsoleteMetadata(Message = "Hybrid pub/sub is no longer supported, use native pub/sub instead",
+        TreatAsErrorFromVersion = "10.0.0",
+        RemoveInVersion = "11.0.0")]
     public static SqsSubscriptionMigrationModeSettings EnableMessageDrivenPubSubCompatibilityMode(
-        this RoutingSettings routingSettings)
+            this RoutingSettings routingSettings)
     {
         var settings = routingSettings.GetSettings();
         settings.Set("NServiceBus.Subscriptions.EnableMigrationMode", true);
