@@ -6,11 +6,13 @@ namespace NServiceBus
 {
     public static class MessageDrivenPubSubCompatibilityModeConfiguration
     {
-        [System.Obsolete("Hybrid pub/sub is no longer supported, use native pub/sub instead. Will be treate" +
-            "d as an error from version 10.0.0. Will be removed in version 11.0.0.", false)]
+        [System.Obsolete("Hybrid pub/sub is deprecated and endpoints needs to migrate to native pub/sub. Wi" +
+            "ll be treated as an error from version 10.0.0. Will be removed in version 11.0.0" +
+            ".", false)]
         public static NServiceBus.Transport.SQS.Configure.SqsSubscriptionMigrationModeSettings EnableMessageDrivenPubSubCompatibilityMode(this NServiceBus.RoutingSettings routingSettings) { }
-        [System.Obsolete("Hybrid pub/sub is no longer supported, use native pub/sub instead. Will be treate" +
-            "d as an error from version 10.0.0. Will be removed in version 11.0.0.", false)]
+        [System.Obsolete("Hybrid pub/sub is deprecated and endpoints needs to migrate to native pub/sub. Wi" +
+            "ll be treated as an error from version 10.0.0. Will be removed in version 11.0.0" +
+            ".", false)]
         public static NServiceBus.Transport.SQS.Configure.SqsSubscriptionMigrationModeSettings EnableMessageDrivenPubSubCompatibilityMode(this NServiceBus.TransportExtensions<NServiceBus.SqsTransport> transportExtensions) { }
     }
     public class PolicySettings
@@ -104,8 +106,9 @@ namespace NServiceBus
 }
 namespace NServiceBus.Transport.SQS.Configure
 {
-    [System.Obsolete("Hybrid pub/sub is no longer supported, use native pub/sub instead. Will be treate" +
-        "d as an error from version 10.0.0. Will be removed in version 11.0.0.", false)]
+    [System.Obsolete("Hybrid pub/sub is deprecated and endpoints needs to migrate to native pub/sub. Wi" +
+        "ll be treated as an error from version 10.0.0. Will be removed in version 11.0.0" +
+        ".", false)]
     public class SqsSubscriptionMigrationModeSettings : NServiceBus.SubscriptionMigrationModeSettings
     {
         public NServiceBus.SubscriptionMigrationModeSettings SubscriptionsCacheTTL(System.TimeSpan ttl) { }
