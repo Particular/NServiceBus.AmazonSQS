@@ -204,7 +204,13 @@ class MockSqsClient : IAmazonSQS
 
     public Task<CreateQueueResponse> CreateQueueAsync(string queueName, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public Task<CreateQueueResponse> CreateQueueAsync(CreateQueueRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public ConcurrentQueue<CreateQueueRequest> CreateQueueRequestsSent { get; } = [];
+
+    public Task<CreateQueueResponse> CreateQueueAsync(CreateQueueRequest request, CancellationToken cancellationToken = default)
+    {
+        CreateQueueRequestsSent.Enqueue(request);
+        return Task.FromResult(new CreateQueueResponse { QueueUrl = request.QueueName });
+    }
 
     public Task<DeleteMessageBatchResponse> DeleteMessageBatchAsync(string queueUrl, List<DeleteMessageBatchRequestEntry> entries, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
@@ -242,7 +248,7 @@ class MockSqsClient : IAmazonSQS
 
     public Task<SetQueueAttributesResponse> SetQueueAttributesAsync(string queueUrl, Dictionary<string, string> attributes, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-    public Task<SetQueueAttributesResponse> SetQueueAttributesAsync(SetQueueAttributesRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public Task<SetQueueAttributesResponse> SetQueueAttributesAsync(SetQueueAttributesRequest request, CancellationToken cancellationToken = default) => Task.FromResult(new SetQueueAttributesResponse());
 
     public Task<StartMessageMoveTaskResponse> StartMessageMoveTaskAsync(StartMessageMoveTaskRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
