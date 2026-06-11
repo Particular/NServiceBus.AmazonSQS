@@ -7,9 +7,10 @@ using Particular.Obsoletes;
 /// <summary>
 /// Publish-subscribe migration mode configuration.
 /// </summary>
-[PreObsolete("https://github.com/Particular/NServiceBus/issues/6471",
-    Note = "Hybrid pub/sub support cannot be obsolete until there is a viable migration path to native pub/sub",
-    Message = "Hybrid pub/sub is no longer supported, use native pub/sub instead")]
+[Obsolete("Hybrid pub/sub is deprecated and endpoints needs to migrate to native pub/sub. Will be treated as an error from version 10.0.0. Will be removed in version 11.0.0.", false)]
+[ObsoleteMetadata(Message = "Hybrid pub/sub is deprecated and endpoints needs to migrate to native pub/sub",
+    TreatAsErrorFromVersion = "10.0.0",
+    RemoveInVersion = "11.0.0")]
 public partial class SqsSubscriptionMigrationModeSettings : SubscriptionMigrationModeSettings
 {
     SettingsHolder settings;
