@@ -7,7 +7,7 @@ using Amazon.SQS;
 
 class MessagePump : IMessageReceiver
 {
-    readonly bool disableDelayedDelivery;
+    readonly bool disableUnrestrictedDelayedDelivery;
     readonly InputQueuePump inputQueuePump;
     readonly DelayedMessagesPump delayedMessagesPump;
 
@@ -24,11 +24,11 @@ class MessagePump : IMessageReceiver
         TimeSpan maxAutoMessageVisibilityRenewalDuration,
         Action<string, Exception, CancellationToken> criticalErrorAction,
         bool setupInfrastructure,
-        bool disableDelayedDelivery)
+        bool disableUnrestrictedDelayedDelivery)
     {
-        this.disableDelayedDelivery = disableDelayedDelivery;
+        this.disableUnrestrictedDelayedDelivery = disableUnrestrictedDelayedDelivery;
         inputQueuePump = new InputQueuePump(receiverId, receiveAddress, errorQueueAddress, purgeOnStartup, sqsClient, queueCache, s3Settings, subscriptionManager, criticalErrorAction, visibilityTimeoutInSeconds, maxAutoMessageVisibilityRenewalDuration, setupInfrastructure);
-        if (!disableDelayedDelivery)
+        if (!disableUnrestrictedDelayedDelivery)
         {
             delayedMessagesPump =
                 new DelayedMessagesPump(receiveAddress, sqsClient, queueCache, queueDelayTimeSeconds);
@@ -38,7 +38,7 @@ class MessagePump : IMessageReceiver
     public async Task Initialize(PushRuntimeSettings limitations, OnMessage onMessage, OnError onError, CancellationToken cancellationToken = default)
     {
         await inputQueuePump.Initialize(limitations, onMessage, onError, cancellationToken).ConfigureAwait(false);
-        if (!disableDelayedDelivery)
+        if (!disableUnrestrictedDelayedDelivery)
         {
             await delayedMessagesPump.Initialize(cancellationToken).ConfigureAwait(false);
         }
@@ -47,7 +47,7 @@ class MessagePump : IMessageReceiver
     public async Task StartReceive(CancellationToken cancellationToken = default)
     {
         await inputQueuePump.StartReceive(cancellationToken).ConfigureAwait(false);
-        if (!disableDelayedDelivery)
+        if (!disableUnrestrictedDelayedDelivery)
         {
             delayedMessagesPump.Start(cancellationToken);
         }
@@ -55,7 +55,7 @@ class MessagePump : IMessageReceiver
 
     public Task StopReceive(CancellationToken cancellationToken = default)
     {
-        var stopDelayed = !disableDelayedDelivery
+        var stopDelayed = !disableUnrestrictedDelayedDelivery
             ? delayedMessagesPump.Stop(cancellationToken)
             : Task.CompletedTask;
         var stopPump = inputQueuePump.StopReceive(cancellationToken);

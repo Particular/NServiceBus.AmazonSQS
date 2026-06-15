@@ -276,7 +276,7 @@ public partial class SqsTransport : TransportDefinition
     /// </summary>
     /// <paramref name="disableUnrestrictedDelayedDelivery">If set to <c>true</c>, the unrestricted delayed delivery will be disabled. This causes the transport to fail with a <see cref="NServiceBus.Unicast.Queuing.QueueNotFoundException"/> when trying to send delayed messages that exceed the <see cref="QueueDelayTime" /> value, which by default is 15 minutes.</paramref>.
     public SqsTransport(IAmazonSQS sqsClient, IAmazonSimpleNotificationService snsClient, bool disableUnrestrictedDelayedDelivery = false)
-        : this(sqsClient, snsClient, externallyManaged: true, enableDelayedDelivery: !disableUnrestrictedDelayedDelivery)
+        : this(sqsClient, snsClient, externallyManaged: true, disableUnrestrictedDelayedDelivery: disableUnrestrictedDelayedDelivery)
     {
     }
 
@@ -287,7 +287,7 @@ public partial class SqsTransport : TransportDefinition
     /// </summary>
     /// <paramref name="disableUnrestrictedDelayedDelivery">If set to <c>true</c>, the unrestricted delayed delivery will be disabled. This causes the transport to fail with a <see cref="NServiceBus.Unicast.Queuing.QueueNotFoundException"/> when trying to send delayed messages that exceed the <see cref="QueueDelayTime" /> value, which by default is 15 minutes.</paramref>.
     public SqsTransport(bool disableUnrestrictedDelayedDelivery = false)
-        : this(DefaultClientFactories.SqsFactory(), DefaultClientFactories.SnsFactory(), externallyManaged: false, enableDelayedDelivery: !disableUnrestrictedDelayedDelivery)
+        : this(DefaultClientFactories.SqsFactory(), DefaultClientFactories.SnsFactory(), externallyManaged: false, disableUnrestrictedDelayedDelivery: disableUnrestrictedDelayedDelivery)
     {
     }
 
@@ -297,17 +297,18 @@ public partial class SqsTransport : TransportDefinition
         IAmazonSimpleNotificationService snsClient,
         bool externallyManaged,
         bool supportsPublishSubscribe = true,
-        bool enableDelayedDelivery = true
+        bool disableUnrestrictedDelayedDelivery = false
     )
         : base(
             TransportTransactionMode.ReceiveOnly,
-            enableDelayedDelivery,
+            supportsDelayedDelivery: true,
             supportsPublishSubscribe,
             supportsTTBR: true
         )
     {
         SetupSqsClient(sqsClient, externallyManaged);
         SetupSnsClient(snsClient, externallyManaged);
+        this.disableUnrestrictedDelayedDelivery = disableUnrestrictedDelayedDelivery;
     }
 
     /// <summary>
@@ -328,7 +329,6 @@ public partial class SqsTransport : TransportDefinition
             topicNameGenerator,
             topicNamePrefix
         );
-
         var infra = new SqsTransportInfrastructure(
             hostSettings,
             receivers,
@@ -345,7 +345,7 @@ public partial class SqsTransport : TransportDefinition
             DoNotWrapOutgoingMessages,
             !sqsClient.ExternallyManaged,
             !snsClient.ExternallyManaged,
-            !SupportsDelayedDelivery,
+            disableUnrestrictedDelayedDelivery,
             ReserveBytesInMessageSizeCalculation
         );
 
@@ -354,7 +354,7 @@ public partial class SqsTransport : TransportDefinition
             var queueCreator = new QueueCreator(SqsClient, QueueCache, S3, maxTimeToLive, QueueDelayTime);
 
             var createQueueTasks = sendingAddresses.Select(x => queueCreator.CreateQueueIfNecessary(x, false, cancellationToken))
-                .Concat(infra.Receivers.Values.Select(x => queueCreator.CreateQueueIfNecessary(x.ReceiveAddress, SupportsDelayedDelivery, cancellationToken))).ToArray();
+                .Concat(infra.Receivers.Values.Select(x => queueCreator.CreateQueueIfNecessary(x.ReceiveAddress, !disableUnrestrictedDelayedDelivery, cancellationToken))).ToArray();
 
             await Task.WhenAll(createQueueTasks).ConfigureAwait(false);
         }
@@ -396,6 +396,7 @@ public partial class SqsTransport : TransportDefinition
 
     static readonly TimeSpan MaxTimeToLiveUpperBound = TimeSpan.FromDays(14);
     static readonly TimeSpan MaxTimeToLiveLowerBound = TimeSpan.FromSeconds(60);
+    readonly bool disableUnrestrictedDelayedDelivery;
     (IAmazonSQS Instance, bool ExternallyManaged) sqsClient;
     (IAmazonSimpleNotificationService Instance, bool ExternallyManaged) snsClient;
 }
