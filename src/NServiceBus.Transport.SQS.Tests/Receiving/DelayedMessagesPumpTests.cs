@@ -44,11 +44,11 @@ public class DelayedMessagesPumpTests
         };
 
         var exception = Assert.ThrowsAsync<Exception>(async () => { await pump.Initialize(); });
-        Assert.That(exception.Message, Is.EqualTo("Delayed delivery queue 'queue-delay.fifo' has a Delivery Delay of '00:00:01'. It should be less than '00:15:00'."));
+        Assert.That(exception.Message, Is.EqualTo("Delayed delivery queue 'queue-delay.fifo' has a Delivery Delay of '00:00:01'. It should be at least '00:15:00'."));
     }
 
     [Test]
-    public void Initialize_retention_smaller_than_required_throws()
+    public void Initialize_retention_period_smaller_than_required_throws()
     {
         pump = new DelayedMessagesPump("queue", mockSqsClient, new QueueCache(mockSqsClient, q => QueueCache.GetSqsQueueName(q, "Prefix")), 15 * 60);
 
@@ -62,7 +62,7 @@ public class DelayedMessagesPumpTests
         };
 
         var exception = Assert.ThrowsAsync<Exception>(async () => { await pump.Initialize(); });
-        Assert.That(exception.Message, Is.EqualTo("Delayed delivery queue 'queue-delay.fifo' has a Message Retention Period of '00:00:10'. It should be less than '4.00:00:00'."));
+        Assert.That(exception.Message, Is.EqualTo("Delayed delivery queue 'queue-delay.fifo' has a Message Retention Period of '00:00:10'. It should be at least '4.00:00:00'."));
     }
 
     [Test]
