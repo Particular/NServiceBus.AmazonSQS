@@ -410,5 +410,11 @@ public class MockS3Client : IAmazonS3
 
     public IS3PaginatorFactory Paginators { get; }
 
+    public Task<DeleteObjectAnnotationResponse> DeleteObjectAnnotationAsync(DeleteObjectAnnotationRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public Task<GetObjectAnnotationResponse> GetObjectAnnotationAsync(GetObjectAnnotationRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public Task<ListObjectAnnotationsResponse> ListObjectAnnotationsAsync(ListObjectAnnotationsRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public Task<PutObjectAnnotationResponse> PutObjectAnnotationAsync(PutObjectAnnotationRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+    public Task<UpdateBucketMetadataAnnotationTableConfigurationResponse> UpdateBucketMetadataAnnotationTableConfigurationAsync(UpdateBucketMetadataAnnotationTableConfigurationRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+
     #endregion
 }
