@@ -14,7 +14,7 @@
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="4.0.100.11" />
     <PackageReference Include="AWSSDK.SQS" Version="4.0.100.11" />
     <PackageReference Include="BitFaster.Caching" Version="2.6.1" />
-    <PackageReference Include="NServiceBus" Version="10.2.8" />
+    <PackageReference Include="NServiceBus" Version="10.2.9" />
   </ItemGroup>
 
   <ItemGroup>
