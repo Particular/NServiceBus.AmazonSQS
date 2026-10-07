@@ -1,6 +1,7 @@
 ﻿namespace TransportTests;
 
 using System;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.SimpleNotificationService;
@@ -31,7 +32,8 @@ public class SetupFixture
         // This is to work around an SQS limitation that prevents
         // us from deleting then creating a queue with the
         // same name in a 60 second period.
-        NamePrefix = $"TT{DateTime.UtcNow:yyyyMMddHHmmss}";
+        // The GUID keeps assemblies running in parallel from sharing a prefix and cleaning up each other's resources.
+        NamePrefix = $"TT{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToUpperInvariant()}";
 
     [OneTimeTearDown]
     public async Task OneTimeTearDown()
