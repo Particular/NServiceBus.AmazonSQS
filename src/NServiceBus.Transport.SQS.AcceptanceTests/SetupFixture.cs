@@ -1,7 +1,8 @@
-﻿namespace NServiceBus.AcceptanceTests;
+namespace NServiceBus.AcceptanceTests;
 
 using System;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using Transport.SQS.Tests;
@@ -9,20 +10,22 @@ using Transport.SQS.Tests;
 [SetUpFixture]
 public class SetupFixture
 {
+    static readonly AsyncLocal<string> customization = new();
+
     /// <summary>
-    /// The name prefix for the current run of the test suite.
+    /// The name prefix for the current run of the test suite, including the customization of the running test.
     /// </summary>
-    public static string NamePrefix { get; private set; }
+    public static string NamePrefix => runPrefix + customization.Value;
 
-    public static void AppendToNamePrefix(string customization) => NamePrefix += customization;
-
-    public static void RestoreNamePrefix(string namePrefixBackup)
+    // AsyncLocal so fixtures running in parallel don't see each other's customization.
+    public static string SetCustomization(string value)
     {
-        if (!string.IsNullOrWhiteSpace(namePrefixBackup))
-        {
-            NamePrefix = namePrefixBackup;
-        }
+        var previous = customization.Value;
+        customization.Value = previous + value;
+        return previous;
     }
+
+    public static void RestoreCustomization(string previous) => customization.Value = previous;
 
     [OneTimeSetUp]
     public void OneTimeSetUp()
@@ -32,8 +35,8 @@ public class SetupFixture
         // This is to work around an SQS limitation that prevents
         // us from deleting then creating a queue with the
         // same name in a 60 second period.
-        NamePrefix = $"AT{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToUpperInvariant()}";
-        TestContext.Out.WriteLine($"Generated name prefix: '{NamePrefix}'");
+        runPrefix = $"AT{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToUpperInvariant()}";
+        TestContext.Out.WriteLine($"Generated name prefix: '{runPrefix}'");
     }
 
     [OneTimeTearDown]
@@ -43,6 +46,8 @@ public class SetupFixture
         using var snsClient = ClientFactories.CreateSnsClient();
         using var s3Client = ClientFactories.CreateS3Client();
 
-        await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, NamePrefix).ConfigureAwait(false);
+        await Cleanup.DeleteAllResourcesWithPrefix(sqsClient, snsClient, s3Client, runPrefix).ConfigureAwait(false);
     }
+
+    static string runPrefix;
 }
