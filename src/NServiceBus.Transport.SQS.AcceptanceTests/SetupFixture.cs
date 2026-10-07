@@ -1,7 +1,7 @@
 namespace NServiceBus.AcceptanceTests;
 
 using System;
-using System.Security.Cryptography;
+using System.IO.Hashing;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -23,7 +23,7 @@ public class SetupFixture
     static string FixtureToken()
     {
         var className = TestContext.CurrentContext.Test.ClassName;
-        return string.IsNullOrEmpty(className) ? string.Empty : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(className)))[..6];
+        return string.IsNullOrEmpty(className) ? string.Empty : (XxHash32.HashToUInt32(Encoding.UTF8.GetBytes(className)) & 0xFFFFFF).ToString("X6");
     }
 
     // AsyncLocal so fixtures running in parallel don't see each other's customization.
