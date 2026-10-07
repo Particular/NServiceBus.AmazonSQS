@@ -1,6 +1,8 @@
 namespace NServiceBus.AcceptanceTests;
 
 using System;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,9 +15,16 @@ public class SetupFixture
     static readonly AsyncLocal<string> customization = new();
 
     /// <summary>
-    /// The name prefix for the current run of the test suite, including the customization of the running test.
+    /// The name prefix for the current run of the test suite, including the fixture of the running test and its customization.
     /// </summary>
-    public static string NamePrefix => runPrefix + customization.Value;
+    public static string NamePrefix => runPrefix + FixtureToken() + customization.Value;
+
+    // Shared tests hard-code some endpoint names, so fixtures running in parallel need their own queues and topics.
+    static string FixtureToken()
+    {
+        var className = TestContext.CurrentContext.Test.ClassName;
+        return string.IsNullOrEmpty(className) ? string.Empty : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(className)))[..6];
+    }
 
     // AsyncLocal so fixtures running in parallel don't see each other's customization.
     public static string SetCustomization(string value)
