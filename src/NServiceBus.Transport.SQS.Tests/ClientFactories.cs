@@ -10,10 +10,13 @@ using Amazon.SQS;
 
 public static class ClientFactories
 {
+    // Tests run in parallel against one account and hit control-plane throttling with the default retries.
+    const int MaxErrorRetry = 10;
+
     public static IAmazonSQS CreateSqsClient(Action<AmazonSQSConfig>? configure = null)
     {
         var credentials = new EnvironmentVariablesAWSCredentials();
-        var config = new AmazonSQSConfig();
+        var config = new AmazonSQSConfig { MaxErrorRetry = MaxErrorRetry };
         configure?.Invoke(config);
         return new AmazonSQSClient(credentials, config);
     }
@@ -22,7 +25,7 @@ public static class ClientFactories
         Action<AmazonSimpleNotificationServiceConfig>? configure = null)
     {
         var credentials = new EnvironmentVariablesAWSCredentials();
-        var config = new AmazonSimpleNotificationServiceConfig();
+        var config = new AmazonSimpleNotificationServiceConfig { MaxErrorRetry = MaxErrorRetry };
         configure?.Invoke(config);
         return new AmazonSimpleNotificationServiceClient(credentials, config);
     }

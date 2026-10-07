@@ -44,7 +44,8 @@ public class SetupFixture
         // This is to work around an SQS limitation that prevents
         // us from deleting then creating a queue with the
         // same name in a 60 second period.
-        runPrefix = $"AT{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), "[/+=]", "").ToUpperInvariant()}";
+        // Kept short because the fixture token is added to every queue name, which is limited to 80 characters.
+        runPrefix = $"AT{Regex.Replace(Convert.ToBase64String(Guid.NewGuid().ToByteArray(), 8, 8), "[/+=]", "").ToUpperInvariant()}";
         TestContext.Out.WriteLine($"Generated name prefix: '{runPrefix}'");
     }
 
